@@ -28,10 +28,30 @@ dotenv.config();
 const app = express();
 const httpServer = http.createServer(app);
 const isProduction = process.env.NODE_ENV === 'production';
-const configuredOrigins = (process.env.FRONTEND_URL || '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+function normalizeOrigin(rawOrigin) {
+  const value = String(rawOrigin || '').trim();
+
+  if (!value) {
+    return '';
+  }
+
+  try {
+    const parsedOrigin = new URL(value);
+    return `${parsedOrigin.protocol}//${parsedOrigin.host}`;
+  } catch (_error) {
+    return value.replace(/\/+$/, '');
+  }
+}
+
+const configuredOrigins = Array.from(
+  new Set(
+    [process.env.FRONTEND_URL, process.env.APP_URL]
+      .join(',')
+      .split(',')
+      .map((origin) => normalizeOrigin(origin))
+      .filter(Boolean)
+  )
+);
 const defaultDevOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
 const allowedCorsOrigins = configuredOrigins.length > 0 ? configuredOrigins : isProduction ? [] : defaultDevOrigins;
 const localHostnames = new Set(['localhost', '127.0.0.1', '::1']);
@@ -68,7 +88,9 @@ function validateCorsOrigin(origin, callback) {
     return callback(null, true);
   }
 
-  if (allowedCorsOrigins.includes(origin)) {
+  const normalizedOrigin = normalizeOrigin(origin);
+
+  if (allowedCorsOrigins.includes(normalizedOrigin)) {
     return callback(null, true);
   }
 
