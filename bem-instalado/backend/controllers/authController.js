@@ -9,6 +9,15 @@ const { logAudit } = require('../utils/auditLog');
 const REGISTER_PLAN_PRICE = Number(process.env.SUBSCRIPTION_PRICE || 40);
 const PASSWORD_RESET_EXPIRATION_MINUTES = Number(process.env.PASSWORD_RESET_EXPIRATION_MINUTES || 30);
 const PASSWORD_RESET_EXPOSE_TOKEN = process.env.PASSWORD_RESET_EXPOSE_TOKEN === 'true';
+const OWNER_ADMIN_EMAILS = new Set(
+  [
+    'matheuschavesminadasilva@gmail.com',
+    ...String(process.env.OWNER_ADMIN_EMAILS || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean),
+  ].map((value) => String(value || '').trim().toLowerCase())
+);
 
 function signToken(id) {
   return jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
@@ -16,6 +25,10 @@ function signToken(id) {
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function isOwnerAdminEmail(email) {
+  return OWNER_ADMIN_EMAILS.has(normalizeEmail(email));
 }
 
 function sanitizeUser(user) {
@@ -77,10 +90,12 @@ exports.register = async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const shouldGrantOwnerAdmin = isOwnerAdminEmail(normalizedEmail);
+
     const { rows } = await pool.query(
       `
         INSERT INTO users (name, email, password, phone, business_name, is_admin)
-        VALUES ($1, $2, $3, $4, $5, FALSE)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING
           id,
           name,
@@ -98,7 +113,7 @@ exports.register = async (req, res) => {
           is_admin,
           two_factor_enabled
       `,
-      [name, normalizedEmail, passwordHash, phone || null, business_name || null]
+      [name, normalizedEmail, passwordHash, phone || null, business_name || null, shouldGrantOwnerAdmin]
     );
 
     const user = rows[0];
@@ -118,7 +133,7 @@ exports.register = async (req, res) => {
       entityId: user.id,
       metadata: {
         email: user.email,
-        isAdmin: false,
+        isAdmin: Boolean(user.is_admin),
       },
       req,
     });
@@ -142,7 +157,7 @@ exports.login = async (req, res) => {
     const { email, password, twoFactorToken } = req.body;
     const normalizedEmail = normalizeEmail(email);
     const { rows } = await pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [normalizedEmail]);
-    const user = rows[0];
+    let user = rows[0];
 
     if (!user) {
       await logAudit({
@@ -168,6 +183,19 @@ exports.login = async (req, res) => {
         req,
       });
       return res.status(401).json({ error: 'Credenciais inválidas.' });
+    }
+
+    if (!user.is_admin && isOwnerAdminEmail(user.email)) {
+      const elevatedUser = await pool.query(
+        `
+          UPDATE users
+          SET is_admin = TRUE
+          WHERE id = $1
+          RETURNING *
+        `,
+        [user.id]
+      );
+      user = elevatedUser.rows[0] || { ...user, is_admin: true };
     }
 
     if (user.two_factor_enabled) {
