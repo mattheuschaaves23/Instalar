@@ -37,12 +37,42 @@ const STORY_POINTS = [
   'Perfis completos com fotos de instalações',
 ];
 
+const STORY_POINTS_MOBILE = [
+  'Instaladores verificados',
+  'Avaliações reais',
+  'Contato direto no WhatsApp',
+];
+
 const HERO_MINI_TOPICS = [
   'Instaladores de papel de parede verificados na sua região',
   'Avaliações reais de clientes',
   'Contato direto pelo WhatsApp',
   'Horários disponíveis para instalação',
   'Suporte do início ao fim',
+];
+
+const HERO_MINI_TOPICS_MOBILE = [
+  'Instaladores verificados',
+  'Avaliações reais',
+  'Contato no WhatsApp',
+];
+
+const HOW_IT_WORKS_MOBILE = [
+  {
+    step: '01',
+    title: 'Busque',
+    copy: 'Digite cidade ou estado.',
+  },
+  {
+    step: '02',
+    title: 'Compare',
+    copy: 'Veja notas e fotos reais.',
+  },
+  {
+    step: '03',
+    title: 'Agende',
+    copy: 'Fale no WhatsApp.',
+  },
 ];
 
 const moneyFormatter = new Intl.NumberFormat('pt-BR', {
@@ -96,6 +126,46 @@ function getStoreCardsPerView() {
   return 3;
 }
 
+function getInstallerCardsPerView() {
+  if (typeof window === 'undefined') {
+    return INSTALLER_CARDS_PER_VIEW;
+  }
+
+  if (window.innerWidth <= 680) {
+    return 1;
+  }
+
+  if (window.innerWidth <= 1080) {
+    return 2;
+  }
+
+  if (window.innerWidth <= 1380) {
+    return 3;
+  }
+
+  return INSTALLER_CARDS_PER_VIEW;
+}
+
+function getReviewCardsPerView() {
+  if (typeof window === 'undefined') {
+    return REVIEW_CARDS_PER_VIEW;
+  }
+
+  if (window.innerWidth <= 680) {
+    return 1;
+  }
+
+  if (window.innerWidth <= 1080) {
+    return 2;
+  }
+
+  if (window.innerWidth <= 1380) {
+    return 3;
+  }
+
+  return REVIEW_CARDS_PER_VIEW;
+}
+
 function RatingDots({ value }) {
   const rounded = Math.max(1, Math.round(Number(value || 0)));
 
@@ -113,6 +183,15 @@ export default function ClientLanding() {
   const [reviews, setReviews] = useState([]);
   const [recommendedStores, setRecommendedStores] = useState([]);
   const [storesPerView, setStoresPerView] = useState(getStoreCardsPerView);
+  const [isMobileLayout, setIsMobileLayout] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.innerWidth <= 760;
+  });
+  const [installerCardsPerView, setInstallerCardsPerView] = useState(getInstallerCardsPerView);
+  const [reviewCardsPerView, setReviewCardsPerView] = useState(getReviewCardsPerView);
   const [activeStoreIndex, setActiveStoreIndex] = useState(0);
   const [activeInstallerIndex, setActiveInstallerIndex] = useState(0);
   const [activeReviewIndex, setActiveReviewIndex] = useState(0);
@@ -158,7 +237,12 @@ export default function ClientLanding() {
   }, []);
 
   useEffect(() => {
-    const handleResize = () => setStoresPerView(getStoreCardsPerView());
+    const handleResize = () => {
+      setStoresPerView(getStoreCardsPerView());
+      setIsMobileLayout(window.innerWidth <= 760);
+      setInstallerCardsPerView(getInstallerCardsPerView());
+      setReviewCardsPerView(getReviewCardsPerView());
+    };
     handleResize();
     window.addEventListener('resize', handleResize);
 
@@ -228,23 +312,26 @@ export default function ClientLanding() {
   );
 
   const maxInstallerIndex = useMemo(
-    () => Math.max(0, topInstallers.length - INSTALLER_CARDS_PER_VIEW),
-    [topInstallers.length]
+    () => Math.max(0, topInstallers.length - installerCardsPerView),
+    [topInstallers.length, installerCardsPerView]
   );
   const installerSlidePositions = useMemo(
     () => Array.from({ length: maxInstallerIndex + 1 }, (_, index) => index),
     [maxInstallerIndex]
   );
-  const installerCardWidth = 100 / INSTALLER_CARDS_PER_VIEW;
+  const installerCardWidth = 100 / Math.max(installerCardsPerView, 1);
   const maxReviewIndex = useMemo(
-    () => Math.max(0, reviews.length - REVIEW_CARDS_PER_VIEW),
-    [reviews.length]
+    () => Math.max(0, reviews.length - reviewCardsPerView),
+    [reviews.length, reviewCardsPerView]
   );
   const reviewSlidePositions = useMemo(
     () => Array.from({ length: maxReviewIndex + 1 }, (_, index) => index),
     [maxReviewIndex]
   );
-  const reviewCardWidth = 100 / REVIEW_CARDS_PER_VIEW;
+  const reviewCardWidth = 100 / Math.max(reviewCardsPerView, 1);
+  const heroMiniTopics = isMobileLayout ? HERO_MINI_TOPICS_MOBILE : HERO_MINI_TOPICS;
+  const storyPoints = isMobileLayout ? STORY_POINTS_MOBILE : STORY_POINTS;
+  const howItWorksItems = isMobileLayout ? HOW_IT_WORKS_MOBILE : HOW_IT_WORKS;
 
   useEffect(() => {
     if (maxStoreIndex <= 0) {
@@ -345,16 +432,33 @@ export default function ClientLanding() {
           <div className="clean-hero-content">
             <p className="eyebrow">Para clientes</p>
             <h1>
-              Encontre os <span className="gold-keyword">melhores</span> instaladores de{' '}
-              <span className="gold-keyword">papel de parede</span> da sua <span className="gold-keyword">região</span>.
+              {isMobileLayout ? (
+                <>
+                  Encontre <span className="gold-keyword">instaladores</span> de{' '}
+                  <span className="gold-keyword">papel de parede</span> na sua <span className="gold-keyword">região</span>.
+                </>
+              ) : (
+                <>
+                  Encontre os <span className="gold-keyword">melhores</span> instaladores de{' '}
+                  <span className="gold-keyword">papel de parede</span> da sua <span className="gold-keyword">região</span>.
+                </>
+              )}
             </h1>
             <p>
-              Compare <span className="gold-keyword">avaliações reais</span> e fale direto no{' '}
-              <span className="gold-keyword">WhatsApp</span>.
+              {isMobileLayout ? (
+                <>
+                  Compare nota e fale no <span className="gold-keyword">WhatsApp</span>.
+                </>
+              ) : (
+                <>
+                  Compare <span className="gold-keyword">avaliações reais</span> e fale direto no{' '}
+                  <span className="gold-keyword">WhatsApp</span>.
+                </>
+              )}
             </p>
 
             <ul className="clean-hero-topics">
-              {HERO_MINI_TOPICS.map((topic, index) => (
+              {heroMiniTopics.map((topic, index) => (
                 <li className="clean-hero-topic-item" key={topic} style={{ animationDelay: `${0.14 + index * 0.08}s` }}>
                   {topic}
                 </li>
@@ -372,8 +476,12 @@ export default function ClientLanding() {
         <section className="clean-stores fade-up" style={{ animationDelay: '0.07s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Lojas recomendadas</p>
-            <h2>Onde comprar com segurança para sua instalação</h2>
-            <p>Seleção atualizada pelo administrador da plataforma com as melhores opções do momento.</p>
+            <h2>{isMobileLayout ? 'Lojas para comprar com segurança' : 'Onde comprar com segurança para sua instalação'}</h2>
+            <p>
+              {isMobileLayout
+                ? 'Opções recomendadas pela plataforma.'
+                : 'Seleção atualizada pelo administrador da plataforma com as melhores opções do momento.'}
+            </p>
           </div>
 
           {activeStores.length > 0 ? (
@@ -461,14 +569,15 @@ export default function ClientLanding() {
         <section className="clean-story fade-up" style={{ animationDelay: '0.08s' }}>
           <div className="clean-story-text">
             <p className="eyebrow">Por que escolher</p>
-            <h2>Mais clareza para decidir, mais segurança para contratar.</h2>
+            <h2>{isMobileLayout ? 'Decisão rápida e segura.' : 'Mais clareza para decidir, mais segurança para contratar.'}</h2>
             <p>
-              A plataforma foi feita para ser objetiva: você encontra os melhores profissionais, compara rápido e conversa
-              direto com quem vai fazer a instalação.
+              {isMobileLayout
+                ? 'Veja profissionais confiáveis e agende em minutos.'
+                : 'A plataforma foi feita para ser objetiva: você encontra os melhores profissionais, compara rápido e conversa direto com quem vai fazer a instalação.'}
             </p>
 
             <ul>
-              {STORY_POINTS.map((point) => (
+              {storyPoints.map((point) => (
                 <li key={point}>{point}</li>
               ))}
             </ul>
@@ -483,8 +592,12 @@ export default function ClientLanding() {
         <section className="clean-installers fade-up" style={{ animationDelay: '0.14s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Em destaque</p>
-            <h2>Melhores instaladores de papel de parede da plataforma</h2>
-            <p>Perfis organizados com nota, cidade, portfólio e contato direto.</p>
+            <h2>
+              {isMobileLayout
+                ? 'Instaladores de papel de parede em destaque'
+                : 'Melhores instaladores de papel de parede da plataforma'}
+            </h2>
+            <p>{isMobileLayout ? 'Perfis com nota, cidade e experiência.' : 'Perfis organizados com nota, cidade, portfólio e contato direto.'}</p>
           </div>
 
           <div className="clean-installers-grid">
@@ -574,7 +687,7 @@ export default function ClientLanding() {
         <section className="clean-reviews fade-up" style={{ animationDelay: '0.17s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Avaliações</p>
-            <h2>Clientes satisfeitos com a experiência</h2>
+            <h2>{isMobileLayout ? 'Clientes satisfeitos' : 'Clientes satisfeitos com a experiência'}</h2>
           </div>
 
           <div className="clean-reviews-grid">
@@ -627,7 +740,7 @@ export default function ClientLanding() {
         </section>
 
         <section className="clean-how fade-up" style={{ animationDelay: '0.2s' }}>
-          {HOW_IT_WORKS.map((item) => (
+          {howItWorksItems.map((item) => (
             <article key={item.step}>
               <span>{item.step}</span>
               <h4>{item.title}</h4>
