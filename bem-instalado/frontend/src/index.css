@@ -5745,6 +5745,11 @@ body {
   .clean-priority-trust {
     order: 1;
     display: grid;
+    position: relative;
+    z-index: 4;
+    margin-top: -1.55rem;
+    margin-bottom: 0.1rem;
+    filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.22));
   }
 
   .clean-priority-search {
@@ -6031,6 +6036,10 @@ body {
 @media (max-width: 680px) {
   .clean-landing-topbar {
     padding: 0.58rem 0.72rem;
+  }
+
+  .clean-priority-trust {
+    margin-top: -1.25rem;
   }
 
   .clean-landing-topbar .client-topbar-wordmark {
