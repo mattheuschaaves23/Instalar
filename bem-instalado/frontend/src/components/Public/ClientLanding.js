@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useRef } from 'react';
 import api from '../../services/api';
 import BrandMark from '../Layout/BrandMark';
 import BrandWordmark from '../Layout/BrandWordmark';
@@ -57,6 +58,12 @@ const HERO_MINI_TOPICS_MOBILE = [
   'Contato no WhatsApp',
 ];
 
+const MOBILE_TRUST_ITEMS = [
+  'Perfis verificados',
+  'Avaliações reais',
+  'Contato rápido',
+];
+
 const HOW_IT_WORKS_MOBILE = [
   {
     step: '01',
@@ -108,6 +115,44 @@ function getInitials(name) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('');
+}
+
+function getTouchPointX(event) {
+  const touch = event.changedTouches?.[0] || event.touches?.[0];
+  return typeof touch?.clientX === 'number' ? touch.clientX : null;
+}
+
+function buildSwipeHandlers(startRef, onPrevious, onNext) {
+  return {
+    onTouchStart: (event) => {
+      startRef.current = getTouchPointX(event);
+    },
+    onTouchCancel: () => {
+      startRef.current = null;
+    },
+    onTouchEnd: (event) => {
+      const startX = startRef.current;
+      const endX = getTouchPointX(event);
+
+      startRef.current = null;
+
+      if (startX === null || endX === null) {
+        return;
+      }
+
+      const delta = endX - startX;
+      if (Math.abs(delta) < 42) {
+        return;
+      }
+
+      if (delta > 0) {
+        onPrevious();
+        return;
+      }
+
+      onNext();
+    },
+  };
 }
 
 function getStoreCardsPerView() {
@@ -196,6 +241,9 @@ export default function ClientLanding() {
   const [activeInstallerIndex, setActiveInstallerIndex] = useState(0);
   const [activeReviewIndex, setActiveReviewIndex] = useState(0);
   const [openedStoreCardId, setOpenedStoreCardId] = useState(null);
+  const storeTouchStartRef = useRef(null);
+  const installerTouchStartRef = useRef(null);
+  const reviewTouchStartRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
@@ -332,6 +380,7 @@ export default function ClientLanding() {
   const heroMiniTopics = isMobileLayout ? HERO_MINI_TOPICS_MOBILE : HERO_MINI_TOPICS;
   const storyPoints = isMobileLayout ? STORY_POINTS_MOBILE : STORY_POINTS;
   const howItWorksItems = isMobileLayout ? HOW_IT_WORKS_MOBILE : HOW_IT_WORKS;
+  const visibleMobileTrustItems = MOBILE_TRUST_ITEMS.slice(0, 3);
 
   useEffect(() => {
     if (maxStoreIndex <= 0) {
@@ -396,6 +445,38 @@ export default function ClientLanding() {
     }
   }, [activeReviewIndex, maxReviewIndex]);
 
+  const goToPreviousStore = () => {
+    setActiveStoreIndex((current) => (current <= 0 ? maxStoreIndex : current - 1));
+  };
+
+  const goToNextStore = () => {
+    setActiveStoreIndex((current) => (current >= maxStoreIndex ? 0 : current + 1));
+  };
+
+  const goToPreviousInstaller = () => {
+    setActiveInstallerIndex((current) => (current <= 0 ? maxInstallerIndex : current - 1));
+  };
+
+  const goToNextInstaller = () => {
+    setActiveInstallerIndex((current) => (current >= maxInstallerIndex ? 0 : current + 1));
+  };
+
+  const goToPreviousReview = () => {
+    setActiveReviewIndex((current) => (current <= 0 ? maxReviewIndex : current - 1));
+  };
+
+  const goToNextReview = () => {
+    setActiveReviewIndex((current) => (current >= maxReviewIndex ? 0 : current + 1));
+  };
+
+  const storeSwipeHandlers = buildSwipeHandlers(storeTouchStartRef, goToPreviousStore, goToNextStore);
+  const installerSwipeHandlers = buildSwipeHandlers(
+    installerTouchStartRef,
+    goToPreviousInstaller,
+    goToNextInstaller
+  );
+  const reviewSwipeHandlers = buildSwipeHandlers(reviewTouchStartRef, goToPreviousReview, goToNextReview);
+
   return (
     <div className="auth-scene min-h-screen overflow-x-hidden">
       <div className="clean-landing-shell">
@@ -434,7 +515,7 @@ export default function ClientLanding() {
             <h1>
               {isMobileLayout ? (
                 <>
-                  Encontre <span className="gold-keyword">instaladores</span> de{' '}
+                  Ache <span className="gold-keyword">instaladores</span> de{' '}
                   <span className="gold-keyword">papel de parede</span> na sua <span className="gold-keyword">região</span>.
                 </>
               ) : (
@@ -447,7 +528,7 @@ export default function ClientLanding() {
             <p>
               {isMobileLayout ? (
                 <>
-                  Compare nota e fale no <span className="gold-keyword">WhatsApp</span>.
+                  Compare nota e fale no <span className="gold-keyword">WhatsApp</span> em minutos.
                 </>
               ) : (
                 <>
@@ -473,7 +554,26 @@ export default function ClientLanding() {
           </div>
         </section>
 
-        <section className="clean-stores fade-up" style={{ animationDelay: '0.07s' }}>
+        <section className="clean-mobile-trust clean-priority-trust fade-up" style={{ animationDelay: '0.06s' }}>
+          {visibleMobileTrustItems.map((item) => (
+            <article className="clean-mobile-trust-item" key={item}>
+              <span />
+              <strong>{item}</strong>
+            </article>
+          ))}
+        </section>
+
+        <section className="clean-mobile-search clean-priority-search fade-up" style={{ animationDelay: '0.065s' }}>
+          <div className="clean-mobile-search-copy">
+            <p className="eyebrow">Busca rápida</p>
+            <strong>Abra a vitrine e procure por cidade ou estado.</strong>
+          </div>
+          <Link className="ghost-button clean-mobile-search-button" to="/cliente">
+            Abrir busca
+          </Link>
+        </section>
+
+        <section className="clean-stores clean-priority-stores fade-up" style={{ animationDelay: '0.07s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Lojas recomendadas</p>
             <h2>{isMobileLayout ? 'Lojas para comprar com segurança' : 'Onde comprar com segurança para sua instalação'}</h2>
@@ -485,7 +585,7 @@ export default function ClientLanding() {
           </div>
 
           {activeStores.length > 0 ? (
-            <div className="clean-stores-carousel">
+            <div className="clean-stores-carousel" {...(isTouchDevice ? storeSwipeHandlers : {})}>
               <div
                 className="clean-stores-track"
                 style={{ transform: `translateX(-${activeStoreIndex * storeCardWidth}%)` }}
@@ -566,7 +666,7 @@ export default function ClientLanding() {
           )}
         </section>
 
-        <section className="clean-story fade-up" style={{ animationDelay: '0.08s' }}>
+        <section className="clean-story clean-priority-story fade-up" style={{ animationDelay: '0.08s' }}>
           <div className="clean-story-text">
             <p className="eyebrow">Por que escolher</p>
             <h2>{isMobileLayout ? 'Decisão rápida e segura.' : 'Mais clareza para decidir, mais segurança para contratar.'}</h2>
@@ -589,7 +689,7 @@ export default function ClientLanding() {
           </div>
         </section>
 
-        <section className="clean-installers fade-up" style={{ animationDelay: '0.14s' }}>
+        <section className="clean-installers clean-priority-installers fade-up" id="landing-installers" style={{ animationDelay: '0.14s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Em destaque</p>
             <h2>
@@ -602,7 +702,7 @@ export default function ClientLanding() {
 
           <div className="clean-installers-grid">
             {topInstallers.length > 0 ? (
-              <div className="clean-installers-carousel">
+              <div className="clean-installers-carousel" {...(isTouchDevice ? installerSwipeHandlers : {})}>
                 <div
                   className="clean-installers-track"
                   style={{ transform: `translateX(-${activeInstallerIndex * installerCardWidth}%)` }}
@@ -638,6 +738,12 @@ export default function ClientLanding() {
                             {Number(installer.average_rating || 0).toFixed(1)} • {installer.review_count} avaliações
                           </span>
                         </div>
+
+                        {isMobileLayout ? (
+                          <p className="clean-installer-mobile-bio">
+                            {installer.installation_method || 'Instalação profissional com acabamento limpo e cuidadoso.'}
+                          </p>
+                        ) : null}
 
                         <div className="clean-installer-details">
                           <p>
@@ -684,7 +790,7 @@ export default function ClientLanding() {
           </div>
         </section>
 
-        <section className="clean-reviews fade-up" style={{ animationDelay: '0.17s' }}>
+        <section className="clean-reviews clean-priority-reviews fade-up" id="landing-reviews" style={{ animationDelay: '0.17s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Avaliações</p>
             <h2>{isMobileLayout ? 'Clientes satisfeitos' : 'Clientes satisfeitos com a experiência'}</h2>
@@ -692,7 +798,7 @@ export default function ClientLanding() {
 
           <div className="clean-reviews-grid">
             {reviews.length > 0 ? (
-              <div className="clean-reviews-carousel">
+              <div className="clean-reviews-carousel" {...(isTouchDevice ? reviewSwipeHandlers : {})}>
                 <div
                   className="clean-reviews-track"
                   style={{ transform: `translateX(-${activeReviewIndex * reviewCardWidth}%)` }}
@@ -705,13 +811,18 @@ export default function ClientLanding() {
                     >
                       <div className="clean-review-item">
                         <div className="clean-review-head">
-                          <strong>{review.reviewer_name || 'Cliente verificado'}</strong>
+                          <div className="clean-review-person">
+                            <div className="clean-review-avatar">{getInitials(review.reviewer_name || 'CV')}</div>
+                            <div className="clean-review-person-copy">
+                              <strong>{review.reviewer_name || 'Cliente verificado'}</strong>
+                              <p className="clean-review-meta">
+                                {review.installer_name}
+                                {review.reviewer_region ? ` • ${review.reviewer_region}` : ''}
+                              </p>
+                            </div>
+                          </div>
                           <span>{review.rating}/5</span>
                         </div>
-                        <p className="clean-review-meta">
-                          {review.installer_name}
-                          {review.reviewer_region ? ` • ${review.reviewer_region}` : ''}
-                        </p>
                         <p className="clean-review-text">{review.comment || 'Atendimento excelente e instalação impecável.'}</p>
                         <p className="clean-review-date">{formatReviewDate(review.created_at)}</p>
                       </div>
@@ -739,7 +850,7 @@ export default function ClientLanding() {
           </div>
         </section>
 
-        <section className="clean-how fade-up" style={{ animationDelay: '0.2s' }}>
+        <section className="clean-how clean-priority-how fade-up" style={{ animationDelay: '0.2s' }}>
           {howItWorksItems.map((item) => (
             <article key={item.step}>
               <span>{item.step}</span>
@@ -748,6 +859,14 @@ export default function ClientLanding() {
             </article>
           ))}
         </section>
+
+        {isMobileLayout ? (
+          <div className="clean-mobile-sticky-cta">
+            <Link className="gold-button clean-mobile-sticky-button" to="/cliente">
+              Encontrar instaladores
+            </Link>
+          </div>
+        ) : null}
       </div>
     </div>
   );
