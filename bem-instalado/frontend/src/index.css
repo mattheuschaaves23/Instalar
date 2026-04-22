@@ -4752,6 +4752,22 @@ body {
   max-width: 40ch;
 }
 
+.clean-hero-badges {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  max-width: 36rem;
+}
+
+.clean-hero-badges .status-pill {
+  border-color: rgba(205, 163, 73, 0.34);
+  color: #f6e8c4;
+  background: rgba(11, 10, 9, 0.34);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
 .clean-hero-content .gold-keyword {
   color: var(--gold-strong);
   text-shadow: 0 0 12px rgba(205, 163, 73, 0.22);
@@ -5967,6 +5983,17 @@ body {
     line-height: 0.94;
   }
 
+  .clean-hero-badges {
+    margin-top: 0.68rem;
+    gap: 0.38rem;
+  }
+
+  .clean-hero-badges .status-pill {
+    font-size: 0.7rem;
+    padding: 0.38rem 0.62rem;
+    letter-spacing: 0.06em;
+  }
+
   .clean-hero-content p {
     max-width: 34ch;
     font-size: 0.96rem;
@@ -6065,6 +6092,16 @@ body {
     max-width: 10.8ch;
   }
 
+  .clean-hero-badges {
+    gap: 0.32rem;
+    max-width: 100%;
+  }
+
+  .clean-hero-badges .status-pill {
+    font-size: 0.64rem;
+    padding: 0.34rem 0.56rem;
+  }
+
   .clean-hero-content p {
     font-size: 0.9rem;
     max-width: 28ch;
@@ -6074,7 +6111,7 @@ body {
     font-size: 0.84rem;
   }
 
-  .clean-hero-topics li:nth-child(n + 3) {
+  .clean-hero-topics li:nth-child(n + 4) {
     display: none;
   }
 

@@ -64,6 +64,12 @@ const MOBILE_TRUST_ITEMS = [
   'Mais segurança na escolha',
 ];
 
+const HERO_SEALS = [
+  'Perfis verificados',
+  'Atendimento em todo o Brasil',
+  'Resposta rápida',
+];
+
 const HOW_IT_WORKS_MOBILE = [
   {
     step: '01',
@@ -512,6 +518,13 @@ export default function ClientLanding() {
 
           <div className="clean-hero-content">
             <p className="eyebrow">Para clientes</p>
+            <div className="clean-hero-badges">
+              {HERO_SEALS.map((item) => (
+                <span className="status-pill" data-tone="info" key={item}>
+                  {item}
+                </span>
+              ))}
+            </div>
             <h1>
               {isMobileLayout ? (
                 <>
@@ -528,7 +541,7 @@ export default function ClientLanding() {
             <p>
               {isMobileLayout ? (
                 <>
-                  Compare nota e fale no <span className="gold-keyword">WhatsApp</span> em minutos.
+                  Compare nota, veja fotos do trabalho e fale no <span className="gold-keyword">WhatsApp</span> em minutos.
                 </>
               ) : (
                 <>
