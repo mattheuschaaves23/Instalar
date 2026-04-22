@@ -45,16 +45,16 @@ const STORY_POINTS_MOBILE = [
 ];
 
 const HERO_MINI_TOPICS = [
-  'Instaladores especializados',
-  'Perfis verificados',
+  'Profissionais verificados e especializados',
+  'Avaliações reais de clientes',
   'Atendimento em todo o Brasil',
-  'Contato rápido no WhatsApp',
-  'Agendamento sem complicação',
+  'Contato rápido pelo WhatsApp',
+  'Suporte antes, durante e depois',
 ];
 
 const HERO_MINI_TOPICS_MOBILE = [
-  'Instaladores especializados',
-  'Perfis verificados',
+  'Profissionais verificados',
+  'Avaliações de clientes',
   'Contato rápido no WhatsApp',
 ];
 
