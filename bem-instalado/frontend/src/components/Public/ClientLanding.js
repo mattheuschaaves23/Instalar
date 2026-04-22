@@ -45,10 +45,10 @@ const STORY_POINTS_MOBILE = [
 ];
 
 const HERO_MINI_TOPICS = [
-  'Profissionais verificados e especializados',
-  'Avaliações reais de clientes',
+  'Perfis verificados e avaliados',
+  'Instaladores especializados',
   'Atendimento em todo o Brasil',
-  'Contato rápido pelo WhatsApp',
+  'Contato rápido no WhatsApp',
   'Suporte antes, durante e depois',
 ];
 
@@ -512,7 +512,7 @@ export default function ClientLanding() {
 
           <div className="clean-hero-content">
             <p className="eyebrow">Para clientes</p>
-            <h1>
+            <h1 className="clean-hero-title">
               {isMobileLayout ? (
                 <>
                   Ache <span className="gold-keyword">instaladores</span> de{' '}
@@ -520,20 +520,20 @@ export default function ClientLanding() {
                 </>
               ) : (
                 <>
-                  Encontre os <span className="gold-keyword">melhores</span> instaladores de{' '}
-                  <span className="gold-keyword">papel de parede</span> da sua <span className="gold-keyword">região</span>.
+                  Encontre o <span className="gold-keyword">instalador certo</span> para aplicar seu{' '}
+                  <span className="gold-keyword">papel de parede</span>.
                 </>
               )}
             </h1>
-            <p>
+            <p className="clean-hero-description">
               {isMobileLayout ? (
                 <>
                   Compare nota, veja fotos do trabalho e fale no <span className="gold-keyword">WhatsApp</span> em minutos, sem perder tempo procurando.
                 </>
               ) : (
                 <>
-                  Compare <span className="gold-keyword">nota</span>, <span className="gold-keyword">portfólio</span> e disponibilidade, e fale direto no{' '}
-                  <span className="gold-keyword">WhatsApp</span>.
+                  Compare <span className="gold-keyword">avaliações</span>, veja <span className="gold-keyword">portfólios</span> e escolha com mais{' '}
+                  <span className="gold-keyword">segurança</span>, falando direto no <span className="gold-keyword">WhatsApp</span>.
                 </>
               )}
             </p>
