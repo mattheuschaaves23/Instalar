@@ -59,9 +59,9 @@ const HERO_MINI_TOPICS_MOBILE = [
 ];
 
 const MOBILE_TRUST_ITEMS = [
-  'Especialistas',
-  'Resposta rápida',
-  'Mais praticidade',
+  'Especialistas em todo o Brasil',
+  'Busca rápida e prática',
+  'Mais segurança na escolha',
 ];
 
 const HOW_IT_WORKS_MOBILE = [

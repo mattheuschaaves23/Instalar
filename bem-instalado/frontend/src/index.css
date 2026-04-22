@@ -4851,7 +4851,7 @@ body {
 .clean-mobile-trust {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.48rem;
-  align-items: end;
+  align-items: stretch;
 }
 
 .clean-mobile-trust-item {
@@ -4866,8 +4866,11 @@ body {
     rgba(10, 9, 8, 0.9);
   display: grid;
   justify-items: center;
+  align-content: center;
   gap: 0.42rem;
   text-align: center;
+  min-height: 5.7rem;
+  height: 100%;
   backdrop-filter: blur(12px);
   box-shadow:
     0 12px 24px rgba(0, 0, 0, 0.26),
@@ -4907,23 +4910,11 @@ body {
 .clean-mobile-trust-item strong {
   position: relative;
   z-index: 1;
-  font-size: 0.76rem;
-  line-height: 1.22;
+  font-size: 0.74rem;
+  line-height: 1.2;
   color: #fbf0d8;
   letter-spacing: 0.02em;
   text-wrap: balance;
-}
-
-.clean-mobile-trust-item:nth-child(2) {
-  transform: translateY(-0.42rem) scale(1.04);
-  border-color: rgba(230, 194, 111, 0.38);
-  background:
-    linear-gradient(180deg, rgba(255, 246, 219, 0.07) 0%, rgba(255, 255, 255, 0.015) 44%, rgba(0, 0, 0, 0.18) 100%),
-    radial-gradient(circle at 50% -10%, rgba(221, 181, 94, 0.28), transparent 54%),
-    rgba(11, 10, 9, 0.94);
-  box-shadow:
-    0 18px 30px rgba(0, 0, 0, 0.34),
-    0 0 0 1px rgba(205, 163, 73, 0.14) inset;
 }
 
 .clean-before-after {
