@@ -45,29 +45,23 @@ const STORY_POINTS_MOBILE = [
 ];
 
 const HERO_MINI_TOPICS = [
-  'Nota média visível',
-  'Portfólios lado a lado',
-  'Contato no WhatsApp',
-  'Horários disponíveis',
-  'Decisão com mais clareza',
+  'Instaladores especializados',
+  'Perfis verificados',
+  'Atendimento em todo o Brasil',
+  'Contato rápido no WhatsApp',
+  'Agendamento sem complicação',
 ];
 
 const HERO_MINI_TOPICS_MOBILE = [
-  'Nota média visível',
-  'Fotos para comparar',
-  'Agendamento fácil',
+  'Instaladores especializados',
+  'Perfis verificados',
+  'Contato rápido no WhatsApp',
 ];
 
 const MOBILE_TRUST_ITEMS = [
   'Especialistas em todo o Brasil',
   'Busca rápida e prática',
   'Mais segurança na escolha',
-];
-
-const HERO_SEALS = [
-  'Perfis verificados',
-  'Atendimento em todo o Brasil',
-  'Resposta rápida',
 ];
 
 const HOW_IT_WORKS_MOBILE = [
@@ -518,13 +512,6 @@ export default function ClientLanding() {
 
           <div className="clean-hero-content">
             <p className="eyebrow">Para clientes</p>
-            <div className="clean-hero-badges">
-              {HERO_SEALS.map((item) => (
-                <span className="status-pill" data-tone="info" key={item}>
-                  {item}
-                </span>
-              ))}
-            </div>
             <h1>
               {isMobileLayout ? (
                 <>
@@ -541,11 +528,11 @@ export default function ClientLanding() {
             <p>
               {isMobileLayout ? (
                 <>
-                  Compare nota, veja fotos do trabalho e fale no <span className="gold-keyword">WhatsApp</span> em minutos.
+                  Compare nota, veja fotos do trabalho e fale no <span className="gold-keyword">WhatsApp</span> em minutos, sem perder tempo procurando.
                 </>
               ) : (
                 <>
-                  Compare <span className="gold-keyword">nota</span>, <span className="gold-keyword">portfólio</span> e fale direto no{' '}
+                  Compare <span className="gold-keyword">nota</span>, <span className="gold-keyword">portfólio</span> e disponibilidade, e fale direto no{' '}
                   <span className="gold-keyword">WhatsApp</span>.
                 </>
               )}
