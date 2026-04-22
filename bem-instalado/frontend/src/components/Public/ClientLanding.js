@@ -45,9 +45,9 @@ const STORY_POINTS_MOBILE = [
 ];
 
 const HERO_MINI_TOPICS = [
-  'Perfis verificados e avaliados',
   'Instaladores especializados',
-  'Atendimento em todo o Brasil',
+  'Perfis verificados',
+  'Avaliações reais de clientes',
   'Contato rápido no WhatsApp',
   'Suporte antes, durante e depois',
 ];
@@ -520,8 +520,8 @@ export default function ClientLanding() {
                 </>
               ) : (
                 <>
-                  Encontre o <span className="gold-keyword">instalador certo</span> para aplicar seu{' '}
-                  <span className="gold-keyword">papel de parede</span>.
+                  Encontre <span className="gold-keyword">instaladores</span> de{' '}
+                  <span className="gold-keyword">papel de parede</span> com mais <span className="gold-keyword">segurança</span>.
                 </>
               )}
             </h1>
@@ -532,8 +532,8 @@ export default function ClientLanding() {
                 </>
               ) : (
                 <>
-                  Compare <span className="gold-keyword">avaliações</span>, veja <span className="gold-keyword">portfólios</span> e escolha com mais{' '}
-                  <span className="gold-keyword">segurança</span>, falando direto no <span className="gold-keyword">WhatsApp</span>.
+                  Compare <span className="gold-keyword">avaliações reais</span>, veja <span className="gold-keyword">portfólios</span> e fale direto no{' '}
+                  <span className="gold-keyword">WhatsApp</span> sem perder tempo procurando.
                 </>
               )}
             </p>
@@ -548,7 +548,7 @@ export default function ClientLanding() {
 
             <div className="clean-hero-actions">
               <Link className="gold-button clean-cta-main" to="/cliente">
-                Encontrar instaladores de papel de parede
+                {isMobileLayout ? 'Encontrar instaladores de papel de parede' : 'Encontrar instaladores agora'}
               </Link>
             </div>
           </div>
