@@ -4844,7 +4844,6 @@ body {
 }
 
 .clean-mobile-trust,
-.clean-mobile-search,
 .clean-mobile-sticky-cta {
   display: none;
 }
@@ -4925,37 +4924,6 @@ body {
   box-shadow:
     0 18px 30px rgba(0, 0, 0, 0.34),
     0 0 0 1px rgba(205, 163, 73, 0.14) inset;
-}
-
-.clean-mobile-search {
-  border: 1px solid rgba(205, 163, 73, 0.16);
-  border-radius: 16px;
-  padding: 0.85rem 0.9rem;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.024), transparent 72%),
-    rgba(9, 8, 8, 0.82);
-  gap: 0.7rem;
-}
-
-.clean-mobile-search-copy {
-  display: grid;
-  gap: 0.18rem;
-}
-
-.clean-mobile-search-copy .eyebrow {
-  margin: 0;
-}
-
-.clean-mobile-search-copy strong {
-  color: #f6eedf;
-  font-size: 0.9rem;
-  line-height: 1.35;
-}
-
-.clean-mobile-search-button {
-  width: 100%;
-  justify-content: center;
-  min-height: 2.85rem;
 }
 
 .clean-before-after {
@@ -5800,29 +5768,24 @@ body {
     filter: drop-shadow(0 20px 34px rgba(0, 0, 0, 0.24));
   }
 
-  .clean-priority-search {
-    order: 2;
-    display: grid;
-  }
-
   .clean-priority-installers {
-    order: 3;
+    order: 2;
   }
 
   .clean-priority-reviews {
-    order: 4;
+    order: 3;
   }
 
   .clean-priority-stores {
-    order: 5;
+    order: 4;
   }
 
   .clean-priority-story {
-    order: 6;
+    order: 5;
   }
 
   .clean-priority-how {
-    order: 7;
+    order: 6;
   }
 
   .clean-store-card {

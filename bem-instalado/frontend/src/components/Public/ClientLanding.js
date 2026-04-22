@@ -22,7 +22,7 @@ const HOW_IT_WORKS = [
   {
     step: '02',
     title: 'Compare perfis',
-    copy: 'Veja nota, avaliações e fotos reais.',
+    copy: 'Veja nota, experiência e fotos de instalações.',
   },
   {
     step: '03',
@@ -32,36 +32,36 @@ const HOW_IT_WORKS = [
 ];
 
 const STORY_POINTS = [
-  'Instaladores de papel de parede verificados',
-  'Avaliações de clientes reais',
+  'Instaladores de papel de parede especializados',
+  'Comparação clara entre profissionais',
   'Contato direto com o profissional',
   'Perfis completos com fotos de instalações',
 ];
 
 const STORY_POINTS_MOBILE = [
-  'Instaladores verificados',
-  'Avaliações reais',
-  'Contato direto no WhatsApp',
+  'Escolha por cidade',
+  'Veja fotos de instalações',
+  'Fale direto no WhatsApp',
 ];
 
 const HERO_MINI_TOPICS = [
-  'Instaladores de papel de parede verificados na sua região',
-  'Avaliações reais de clientes',
+  'Busca por cidade e estado',
+  'Notas e portfólios lado a lado',
   'Contato direto pelo WhatsApp',
   'Horários disponíveis para instalação',
   'Suporte do início ao fim',
 ];
 
 const HERO_MINI_TOPICS_MOBILE = [
-  'Instaladores verificados',
-  'Avaliações reais',
-  'Contato no WhatsApp',
+  'Busca por cidade',
+  'Resposta no WhatsApp',
+  'Agendamento fácil',
 ];
 
 const MOBILE_TRUST_ITEMS = [
-  'Perfis verificados',
-  'Avaliações reais',
-  'Contato rápido',
+  'Escolha por região',
+  'Resposta rápida',
+  'Horário flexível',
 ];
 
 const HOW_IT_WORKS_MOBILE = [
@@ -73,7 +73,7 @@ const HOW_IT_WORKS_MOBILE = [
   {
     step: '02',
     title: 'Compare',
-    copy: 'Veja notas e fotos reais.',
+    copy: 'Veja nota e fotos reais.',
   },
   {
     step: '03',
@@ -532,7 +532,7 @@ export default function ClientLanding() {
                 </>
               ) : (
                 <>
-                  Compare <span className="gold-keyword">avaliações reais</span> e fale direto no{' '}
+                  Compare <span className="gold-keyword">nota</span>, <span className="gold-keyword">portfólio</span> e fale direto no{' '}
                   <span className="gold-keyword">WhatsApp</span>.
                 </>
               )}
@@ -561,16 +561,6 @@ export default function ClientLanding() {
               <strong>{item}</strong>
             </article>
           ))}
-        </section>
-
-        <section className="clean-mobile-search clean-priority-search fade-up" style={{ animationDelay: '0.065s' }}>
-          <div className="clean-mobile-search-copy">
-            <p className="eyebrow">Busca rápida</p>
-            <strong>Abra a vitrine e procure por cidade ou estado.</strong>
-          </div>
-          <Link className="ghost-button clean-mobile-search-button" to="/cliente">
-            Abrir busca
-          </Link>
         </section>
 
         <section className="clean-stores clean-priority-stores fade-up" style={{ animationDelay: '0.07s' }}>
