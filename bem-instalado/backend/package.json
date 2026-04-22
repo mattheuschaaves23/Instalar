@@ -12,7 +12,7 @@
     "seed:demo": "node scripts/seedDemoData.js",
     "seed:demo:clear": "node scripts/seedDemoData.js --clear",
     "start": "npm run db:init && node server.js",
-    "build:web": "npm --prefix ../frontend install && npm --prefix ../frontend run build"
+    "build:web": "node -e \"const fs=require('fs');const path=require('path');fs.rmSync(path.resolve(process.cwd(),'..','frontend','build'),{recursive:true,force:true});\" && npm --prefix ../frontend install && npm --prefix ../frontend run build"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

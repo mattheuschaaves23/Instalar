@@ -28,6 +28,35 @@ dotenv.config();
 const app = express();
 const httpServer = http.createServer(app);
 const isProduction = process.env.NODE_ENV === 'production';
+const frontendBuildPath = path.join(__dirname, '..', 'frontend', 'build');
+const frontendAssetManifestPath = path.join(frontendBuildPath, 'asset-manifest.json');
+const renderGitCommit = process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || null;
+const renderGitBranch = process.env.RENDER_GIT_BRANCH || process.env.GIT_BRANCH || null;
+
+function getFrontendBuildInfo() {
+  if (!fs.existsSync(frontendAssetManifestPath)) {
+    return null;
+  }
+
+  try {
+    const manifest = JSON.parse(fs.readFileSync(frontendAssetManifestPath, 'utf8'));
+    const files = manifest.files || {};
+
+    return {
+      js: files['main.js'] || null,
+      css: files['main.css'] || null,
+      assetManifestExists: true,
+    };
+  } catch (error) {
+    return {
+      js: null,
+      css: null,
+      assetManifestExists: false,
+      error: error.message,
+    };
+  }
+}
+
 function normalizeOrigin(rawOrigin) {
   const value = String(rawOrigin || '').trim();
 
@@ -268,11 +297,15 @@ io.on('connection', (socket) => {
 });
 
 app.get('/api/health', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
   res.json({
     ok: true,
     service: 'bem-instalado-backend',
     date: new Date().toISOString(),
     mode: isProduction ? 'production' : 'development',
+    gitCommit: renderGitCommit,
+    gitBranch: renderGitBranch,
+    frontendBuild: getFrontendBuildInfo(),
   });
 });
 
@@ -289,8 +322,6 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
 
 if (isProduction) {
-  const frontendBuildPath = path.join(__dirname, '..', 'frontend', 'build');
-
   if (fs.existsSync(frontendBuildPath)) {
     app.use(express.static(frontendBuildPath));
 
@@ -299,6 +330,7 @@ if (isProduction) {
         return next();
       }
 
+      res.set('Cache-Control', 'no-store');
       return res.sendFile(path.join(frontendBuildPath, 'index.html'));
     });
   }
@@ -549,6 +581,10 @@ async function startServer() {
   const port = Number(process.env.PORT || 5000);
   httpServer.listen(port, () => {
     console.log(`Bem Instalado backend rodando na porta ${port}`);
+    if (isProduction) {
+      console.log('Build frontend em producao:', getFrontendBuildInfo());
+      console.log('Commit atual:', renderGitCommit || 'nao informado');
+    }
   });
 }
 
