@@ -5795,7 +5795,7 @@ body {
     display: grid;
     position: relative;
     z-index: 4;
-    margin-top: -3.45rem;
+    margin-top: -5.65rem;
     margin-bottom: 0.2rem;
     filter: drop-shadow(0 20px 34px rgba(0, 0, 0, 0.24));
   }
@@ -6087,7 +6087,7 @@ body {
   }
 
   .clean-priority-trust {
-    margin-top: -2.85rem;
+    margin-top: -5.05rem;
   }
 
   .clean-landing-topbar .client-topbar-wordmark {
