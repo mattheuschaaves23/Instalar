@@ -33,35 +33,35 @@ const HOW_IT_WORKS = [
 
 const STORY_POINTS = [
   'Instaladores de papel de parede especializados',
-  'Comparação clara entre profissionais',
-  'Contato direto com o profissional',
-  'Perfis completos com fotos de instalações',
+  'Comparação simples entre opções',
+  'Contato direto sem intermediários',
+  'Fotos para validar o acabamento',
 ];
 
 const STORY_POINTS_MOBILE = [
-  'Escolha por cidade',
-  'Veja fotos de instalações',
-  'Fale direto no WhatsApp',
+  'Especialistas no serviço',
+  'Fotos para comparar',
+  'Contato sem intermediários',
 ];
 
 const HERO_MINI_TOPICS = [
-  'Busca por cidade e estado',
-  'Notas e portfólios lado a lado',
-  'Contato direto pelo WhatsApp',
-  'Horários disponíveis para instalação',
-  'Suporte do início ao fim',
+  'Nota média visível',
+  'Portfólios lado a lado',
+  'Contato no WhatsApp',
+  'Horários disponíveis',
+  'Decisão com mais clareza',
 ];
 
 const HERO_MINI_TOPICS_MOBILE = [
-  'Busca por cidade',
-  'Resposta no WhatsApp',
+  'Nota média visível',
+  'Fotos para comparar',
   'Agendamento fácil',
 ];
 
 const MOBILE_TRUST_ITEMS = [
-  'Escolha por região',
+  'Especialistas',
   'Resposta rápida',
-  'Horário flexível',
+  'Mais praticidade',
 ];
 
 const HOW_IT_WORKS_MOBILE = [
