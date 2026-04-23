@@ -4859,7 +4859,7 @@ body {
 
   .clean-hero-content {
     width: min(100%, 41rem);
-    margin-left: clamp(1.05rem, 3.8vw, 4.2rem);
+    margin-left: clamp(2.25rem, 6.2vw, 7rem);
   }
 
   .clean-hero-title {
