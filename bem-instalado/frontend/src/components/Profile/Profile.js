@@ -564,10 +564,10 @@ export default function Profile() {
               <p className="mt-2 text-xs text-[var(--muted)]">
                 Mostre ambientes já instalados para aumentar a confiança do cliente.
               </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="profile-gallery-grid mt-3">
                 {(form.installation_gallery || []).map((photo, index) => (
                   <article
-                    className="rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-2"
+                    className="profile-gallery-item"
                     key={`${index}-${photo.slice(0, 24)}`}
                   >
                     <img
@@ -698,10 +698,10 @@ export default function Profile() {
 
             <div className="md:col-span-2">
               <span className="field-label">Dias que instala</span>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="profile-toggle-list grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {installationDayOptions.map((day) => (
                   <label
-                    className="flex items-center gap-3 rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-4 py-3 text-sm text-[var(--text)]"
+                    className="profile-toggle-row"
                     key={day.value}
                   >
                     <input
@@ -716,7 +716,7 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="md:col-span-2 rounded-[22px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-5">
+            <div className="profile-availability-shell md:col-span-2 rounded-[22px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-5">
               <div className="flex flex-wrap items-end gap-3">
                 <label className="block">
                   <span className="field-label">Mês dos horários vagos</span>
@@ -772,7 +772,7 @@ export default function Profile() {
                 {slotSaving ? 'Salvando horário...' : 'Adicionar horário vago'}
               </button>
 
-              <div className="mt-4 grid gap-2">
+              <div className="profile-slot-list mt-4">
                 {availabilityLoading ? (
                   <div className="empty-state">Carregando horários vagos...</div>
                 ) : null}
@@ -786,7 +786,7 @@ export default function Profile() {
                 {!availabilityLoading && availabilitySlots.length > 0
                   ? availabilitySlots.map((slot) => (
                       <div
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-4 py-3"
+                        className="profile-slot-row"
                         key={slot.id}
                       >
                         <div>
@@ -918,8 +918,8 @@ export default function Profile() {
               />
             </label>
 
-            <div className="md:col-span-2 grid gap-3">
-              <label className="flex items-center gap-3 rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-4 py-3 text-sm text-[var(--text)]">
+            <div className="profile-toggle-list md:col-span-2 grid gap-3">
+              <label className="profile-toggle-row">
                 <input
                   checked={Boolean(form.accepts_service_contract)}
                   className="field-checkbox"
@@ -930,7 +930,7 @@ export default function Profile() {
                 Forneço contrato de serviço para o cliente
               </label>
 
-              <label className="flex items-center gap-3 rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-4 py-3 text-sm text-[var(--text)]">
+              <label className="profile-toggle-row">
                 <input
                   checked={Boolean(form.provides_warranty)}
                   className="field-checkbox"
@@ -942,7 +942,7 @@ export default function Profile() {
               </label>
             </div>
 
-            <label className="flex items-center gap-3 rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-4 py-3 text-sm text-[var(--text)] md:col-span-2">
+            <label className="profile-toggle-row md:col-span-2">
               <input
                 checked={Boolean(form.public_profile)}
                 className="field-checkbox"
@@ -953,7 +953,7 @@ export default function Profile() {
               Mostrar meu perfil na busca pública de clientes
             </label>
 
-            <label className="flex items-center gap-3 rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-4 py-3 text-sm text-[var(--text)] md:col-span-2">
+            <label className="profile-toggle-row md:col-span-2">
               <input
                 checked={Boolean(form.wallpaper_store_recommended)}
                 className="field-checkbox"

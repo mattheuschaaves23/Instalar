@@ -153,67 +153,54 @@ export default function Budgets() {
         title="Um pipeline elegante ajuda voce a vender como consultor, nao como tirador de preco."
       />
 
-      <article className="lux-panel-soft fade-up rounded-[24px] p-5" style={{ animationDelay: '0.04s' }}>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="eyebrow">Ação principal</p>
-            <h2 className="mt-2 text-xl font-semibold text-[var(--text)]">Criar um novo orçamento</h2>
-            <p className="mt-2 text-sm text-[var(--muted)]">
-              Use este botão para abrir direto o formulário de proposta.
-            </p>
-          </div>
-          <Link className="gold-button w-full sm:w-auto" to="/budgets/new">
-            + Criar novo orçamento
-          </Link>
-        </div>
-      </article>
-
       <div className="grid gap-4">
-        {paginatedBudgets.map((budget, index) => (
-          <article
-            className="lux-panel fade-up min-w-0 overflow-hidden p-6"
-            key={budget.id}
-            style={{ animationDelay: `${0.08 + index * 0.05}s` }}
-          >
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0 grid gap-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <p className="break-words text-2xl font-semibold text-[var(--text)]">
-                    #{budget.id} - {budget.client_name}
-                  </p>
-                  <span className="status-pill" data-tone={budget.status}>
-                    {formatStatusLabel(budget.status)}
-                  </span>
+        <div className="list-surface lux-panel fade-up min-w-0 overflow-hidden">
+          {paginatedBudgets.map((budget, index) => (
+            <article
+              className="list-row"
+              key={budget.id}
+              style={{ animationDelay: `${0.08 + index * 0.05}s` }}
+            >
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0 grid gap-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="break-words text-2xl font-semibold text-[var(--text)]">
+                      #{budget.id} - {budget.client_name}
+                    </p>
+                    <span className="status-pill" data-tone={budget.status}>
+                      {formatStatusLabel(budget.status)}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-2 break-words text-sm text-[var(--muted)] md:grid-cols-3">
+                    <p>Criado em {formatDateTime(budget.created_at)}</p>
+                    <p>Total calculado {formatCurrency(budget.total_amount)}</p>
+                    <p>{formatPaymentTerms(budget)}</p>
+                  </div>
                 </div>
 
-                <div className="grid gap-2 break-words text-sm text-[var(--muted)] md:grid-cols-3">
-                  <p>Criado em {formatDateTime(budget.created_at)}</p>
-                  <p>Total calculado {formatCurrency(budget.total_amount)}</p>
-                  <p>{formatPaymentTerms(budget)}</p>
+                <div className="action-cluster flex flex-wrap gap-3">
+                  {budget.status === 'pending' ? (
+                    <>
+                      <button className="gold-button w-full sm:w-auto" onClick={() => openApprovalModal(budget.id)} type="button">
+                        Aprovar e agendar
+                      </button>
+                      <button className="danger-button w-full sm:w-auto" onClick={() => rejectBudget(budget.id)} type="button">
+                        Rejeitar
+                      </button>
+                    </>
+                  ) : null}
+                  <button className="ghost-button w-full sm:w-auto" onClick={() => downloadPdf(budget.id)} type="button">
+                    Baixar PDF
+                  </button>
+                  <button className="ghost-button w-full sm:w-auto" onClick={() => openWhatsapp(budget.id)} type="button">
+                    Enviar no WhatsApp
+                  </button>
                 </div>
               </div>
-
-              <div className="flex flex-wrap gap-3">
-                {budget.status === 'pending' ? (
-                  <>
-                    <button className="gold-button w-full sm:w-auto" onClick={() => openApprovalModal(budget.id)} type="button">
-                      Aprovar e agendar
-                    </button>
-                    <button className="danger-button w-full sm:w-auto" onClick={() => rejectBudget(budget.id)} type="button">
-                      Rejeitar
-                    </button>
-                  </>
-                ) : null}
-                <button className="ghost-button w-full sm:w-auto" onClick={() => downloadPdf(budget.id)} type="button">
-                  Baixar PDF
-                </button>
-                <button className="ghost-button w-full sm:w-auto" onClick={() => openWhatsapp(budget.id)} type="button">
-                  Enviar no WhatsApp
-                </button>
-              </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          ))}
+        </div>
 
         {budgets.length > 0 ? (
           <PaginationControls

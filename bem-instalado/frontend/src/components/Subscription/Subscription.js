@@ -170,7 +170,7 @@ export default function Subscription() {
             a assinatura muda para ativa e as rotas protegidas voltam a abrir.
           </p>
 
-          <div className="mt-6 rounded-[22px] border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-5">
+          <div className="subscription-inline-note mt-6">
             <p className="eyebrow">Plano e benefícios</p>
             <p className="mt-3 text-xl font-semibold text-[var(--gold-strong)]">
               {pricing.label || 'Plano instalador'} • {formatCurrency(pricing.amount)}/{pricing.period || 'mês'}
@@ -195,7 +195,7 @@ export default function Subscription() {
             ) : null}
           </div>
 
-          <div className="mt-6 rounded-[22px] border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-5">
+          <div className="subscription-inline-note mt-6">
             <p className="text-sm leading-7 text-[var(--muted)]">
               {isAutomaticMode
                 ? 'Validação automática ligada com Mercado Pago. Sem aprovação do provedor, o acesso continua bloqueado.'
@@ -231,36 +231,36 @@ export default function Subscription() {
                 />
               ) : null}
 
-              <div className="mt-5 grid gap-3 text-sm text-[var(--muted)]">
-                <div className="flex items-center justify-between rounded-[18px] border border-[var(--line)] px-4 py-3">
+              <div className="subscription-info-stack mt-5 text-sm text-[var(--muted)]">
+                <div className="subscription-info-row">
                   <span>Valor</span>
                   <strong className="text-[var(--text)]">{formatCurrency(payment?.payment?.amount)}</strong>
                 </div>
 
-                <div className="flex items-center justify-between rounded-[18px] border border-[var(--line)] px-4 py-3">
+                <div className="subscription-info-row">
                   <span>Validação</span>
                   <strong className="text-[var(--text)]">Automática via provedor</strong>
                 </div>
 
                 {payment.expirationDate ? (
-                  <div className="flex items-center justify-between rounded-[18px] border border-[var(--line)] px-4 py-3">
+                  <div className="subscription-info-row">
                     <span>Validade</span>
                     <strong className="text-[var(--text)]">{formatDateTime(payment.expirationDate)}</strong>
                   </div>
                 ) : null}
 
                 {showRecipient ? (
-                  <div className="rounded-[18px] border border-[var(--line)] px-4 py-3">
+                  <div className="subscription-info-row !items-start !justify-between gap-4">
                     <p className="text-xs uppercase tracking-[0.16em] text-[var(--gold-strong)]">Recebedor</p>
-                    <p className="mt-2 break-words text-[var(--text)]">
+                    <p className="break-words text-right text-[var(--text)]">
                       {[payment.recipientName, payment.city].filter(Boolean).join(' - ')}
                     </p>
                   </div>
                 ) : null}
 
-                <div className="rounded-[18px] border border-[var(--line)] px-4 py-3">
+                  <div className="subscription-info-row !items-start !justify-between gap-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-[var(--gold-strong)]">Código copia e cola</p>
-                  <p className="mt-2 break-all text-[var(--text)]">{payment.copyPaste}</p>
+                    <p className="break-all text-right text-[var(--text)]">{payment.copyPaste}</p>
                 </div>
               </div>
 
@@ -282,7 +282,7 @@ export default function Subscription() {
                 </button>
               </div>
 
-              <div className="mt-5 rounded-[22px] border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-5">
+              <div className="subscription-inline-note mt-5">
                 <p className="text-sm leading-7 text-[var(--muted)]">
                   Depois do pagamento, o sistema consulta o provedor e só libera o uso quando o PIX estiver
                   realmente aprovado. Enquanto isso, dashboard, clientes, agenda e orçamentos permanecem bloqueados.

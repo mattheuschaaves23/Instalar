@@ -352,7 +352,7 @@ export default function Agenda() {
               : 'Nenhum compromisso marcado para este dia.'}
           </p>
 
-          <div className="mt-6 grid gap-4">
+          <div className="list-surface mt-6 grid gap-4">
             {loading ? (
               <div className="empty-state">Carregando compromissos do calendário...</div>
             ) : null}

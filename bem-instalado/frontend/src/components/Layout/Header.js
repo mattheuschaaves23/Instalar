@@ -45,17 +45,44 @@ const routeCopy = {
   },
 };
 
+const adminSectionCopy = {
+  overview: {
+    title: 'Administrador',
+    subtitle: 'Visão consolidada da operação, pagamentos e atividade recente.',
+  },
+  users: {
+    title: 'Administrador',
+    subtitle: 'Usuários, permissões, perfis públicos e confiança da vitrine.',
+  },
+  payments: {
+    title: 'Administrador',
+    subtitle: 'Acompanhamento de cobranças, pendências e confirmações.',
+  },
+  stores: {
+    title: 'Administrador',
+    subtitle: 'Curadoria das lojas recomendadas exibidas na área pública.',
+  },
+  announcements: {
+    title: 'Administrador',
+    subtitle: 'Comunicados globais para orientar toda a base de usuários.',
+  },
+};
+
 export default function Header({ onOpenMenu = () => {} }) {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { notifications } = useNotifications();
   const unread = notifications.filter((item) => !item.read).length;
+  const adminSection = new URLSearchParams(location.search).get('section') || 'overview';
 
-  const currentCopy = routeCopy[location.pathname]
-    ? routeCopy[location.pathname]
-    : location.pathname.startsWith('/budgets/')
-      ? routeCopy['/budgets/new']
-      : routeCopy['/dashboard'];
+  const currentCopy =
+    location.pathname === '/admin'
+      ? adminSectionCopy[adminSection] || adminSectionCopy.overview
+      : routeCopy[location.pathname]
+        ? routeCopy[location.pathname]
+        : location.pathname.startsWith('/budgets/')
+          ? routeCopy['/budgets/new']
+          : routeCopy['/dashboard'];
 
   const formattedDate = new Intl.DateTimeFormat('pt-BR', {
     weekday: 'long',
@@ -65,7 +92,7 @@ export default function Header({ onOpenMenu = () => {} }) {
 
   return (
     <header className="panel-topbar border-b border-[var(--line)] bg-[rgba(8,8,7,0.72)] backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-4 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between lg:px-8 xl:px-10">
         <div className="min-w-0">
           <div className="mb-2 flex items-center justify-between gap-3 md:mb-0 md:block">
             <p className="eyebrow">Painel interno</p>

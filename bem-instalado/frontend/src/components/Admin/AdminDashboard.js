@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useConfirm } from '../../contexts/ConfirmContext';
@@ -64,6 +65,7 @@ function formatCurrencyParts(value) {
 export default function AdminDashboard() {
   const confirm = useConfirm();
   const storeFormRef = useRef(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [overview, setOverview] = useState(initialOverview);
   const [users, setUsers] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -527,6 +529,15 @@ export default function AdminDashboard() {
   const normalizedPaymentsPage = Math.min(paymentsPage, totalPaymentsPages);
   const paymentsStart = (normalizedPaymentsPage - 1) * PAYMENTS_PER_PAGE;
   const paginatedPayments = payments.slice(paymentsStart, paymentsStart + PAYMENTS_PER_PAGE);
+  const adminSection = searchParams.get('section') || 'overview';
+  const adminSections = [
+    { key: 'overview', label: 'Visão geral', detail: 'Métricas e atividade recente' },
+    { key: 'users', label: 'Usuários', detail: 'Perfis, permissões e confiança' },
+    { key: 'payments', label: 'Pagamentos', detail: 'Cobrança, pendências e status' },
+    { key: 'stores', label: 'Lojas recomendadas', detail: 'Carrossel público e vitrine' },
+    { key: 'announcements', label: 'Comunicados', detail: 'Mensagens globais da plataforma' },
+  ];
+  const activeAdminSection = adminSections.find((item) => item.key === adminSection) || adminSections[0];
 
   if (loading) {
     return (
@@ -561,38 +572,53 @@ export default function AdminDashboard() {
         title="Painel administrativo do criador"
       />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_430px]">
-        <section className="grid gap-6">
+      <section className="admin-section-nav fade-up" style={{ animationDelay: '0.05s' }}>
+        {adminSections.map((section) => (
+          <button
+            className={`admin-section-tab ${activeAdminSection.key === section.key ? 'is-active' : ''}`}
+            key={section.key}
+            onClick={() => setSearchParams({ section: section.key })}
+            type="button"
+          >
+            <span className="admin-section-tab-label">{section.label}</span>
+            <span className="admin-section-tab-detail">{section.detail}</span>
+          </button>
+        ))}
+      </section>
+
+      <div className="grid gap-6">
+        <section className={`${['overview', 'payments'].includes(activeAdminSection.key) ? 'grid gap-6' : 'hidden'}`}>
+          {activeAdminSection.key === 'overview' ? (
           <article className="lux-panel fade-up p-6">
             <p className="eyebrow">Métricas da plataforma</p>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <article className="metric-card">
+            <div className="summary-strip mt-5 md:grid-cols-2 xl:grid-cols-3">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Instaladores públicos</p>
                 <p className="metric-value admin-metric-value mt-2">{metrics.public_installers || 0}</p>
               </article>
 
-              <article className="metric-card">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Admins ativos</p>
                 <p className="metric-value admin-metric-value mt-2">{metrics.total_admins || 0}</p>
               </article>
 
-              <article className="metric-card">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Pagamentos pendentes</p>
                 <p className="metric-value admin-metric-value mt-2">{metrics.pending_payments || 0}</p>
               </article>
 
-              <article className="metric-card">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Orçamentos aprovados</p>
                 <p className="metric-value admin-metric-value mt-2">{metrics.approved_budgets || 0}</p>
               </article>
 
-              <article className="metric-card">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Orçamentos pendentes</p>
                 <p className="metric-value admin-metric-value mt-2">{metrics.pending_budgets || 0}</p>
               </article>
 
-              <article className="metric-card">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Pagamentos do mês</p>
                 <div className="admin-money mt-2">
                   <span className="admin-money-currency">{paidMonthMetric.currency}</span>
@@ -604,38 +630,40 @@ export default function AdminDashboard() {
                 </div>
               </article>
 
-              <article className="metric-card">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Instaladores em destaque</p>
                 <p className="metric-value admin-metric-value mt-2">{metrics.featured_installers || 0}</p>
               </article>
 
-              <article className="metric-card">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Certificados verificados</p>
                 <p className="metric-value admin-metric-value mt-2">{metrics.certified_installers || 0}</p>
               </article>
 
-              <article className="metric-card">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Suporte aberto</p>
                 <p className="metric-value admin-metric-value mt-2">{metrics.support_open_conversations || 0}</p>
               </article>
 
-              <article className="metric-card">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Ideias pendentes</p>
                 <p className="metric-value admin-metric-value mt-2">{metrics.support_pending_ideas || 0}</p>
               </article>
             </div>
           </article>
+          ) : null}
 
+          {activeAdminSection.key === 'overview' ? (
           <article className="lux-panel fade-up p-6" style={{ animationDelay: '0.06s' }}>
             <p className="eyebrow">Atividade recente</p>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
-              <section className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-4">
+            <div className="admin-activity-grid mt-5 md:grid-cols-3">
+              <section className="admin-activity-column">
                 <p className="text-sm font-semibold text-[var(--text)]">Novos usuários</p>
 
-                <div className="mt-3 grid gap-3">
+                <div className="admin-activity-list mt-3">
                   {(overview.recent_users || []).map((item) => (
-                    <div key={item.id}>
+                    <div className="admin-activity-entry" key={item.id}>
                       <p className="text-sm text-[var(--text)]">{item.name}</p>
                       <p className="text-xs text-[var(--muted)]">{item.email}</p>
                       <p className="text-xs text-[var(--muted)]">{formatDateTime(item.created_at)}</p>
@@ -644,12 +672,12 @@ export default function AdminDashboard() {
                 </div>
               </section>
 
-              <section className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-4">
+              <section className="admin-activity-column">
                 <p className="text-sm font-semibold text-[var(--text)]">Pagamentos</p>
 
-                <div className="mt-3 grid gap-3">
+                <div className="admin-activity-list mt-3">
                   {(overview.recent_payments || []).map((item) => (
-                    <div key={item.id}>
+                    <div className="admin-activity-entry" key={item.id}>
                       <p className="text-sm text-[var(--text)]">{item.user_name}</p>
                       <p className="text-xs text-[var(--muted)]">
                         {formatCurrency(item.amount)} • {formatStatusLabel(item.status)}
@@ -660,12 +688,12 @@ export default function AdminDashboard() {
                 </div>
               </section>
 
-              <section className="rounded-[22px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-4">
+              <section className="admin-activity-column">
                 <p className="text-sm font-semibold text-[var(--text)]">Orçamentos</p>
 
-                <div className="mt-3 grid gap-3">
+                <div className="admin-activity-list mt-3">
                   {(overview.recent_budgets || []).map((item) => (
-                    <div key={item.id}>
+                    <div className="admin-activity-entry" key={item.id}>
                       <p className="text-sm text-[var(--text)]">
                         #{item.id} • {item.installer_name}
                       </p>
@@ -679,7 +707,9 @@ export default function AdminDashboard() {
               </section>
             </div>
           </article>
+          ) : null}
 
+          {activeAdminSection.key === 'payments' ? (
           <article className="lux-panel fade-up p-6" style={{ animationDelay: '0.08s' }}>
             <p className="eyebrow">Gestão de pagamentos</p>
 
@@ -717,69 +747,74 @@ export default function AdminDashboard() {
                 <div className="empty-state">Nenhum pagamento encontrado com esse filtro.</div>
               ) : null}
 
-              {paginatedPayments.map((item) => (
-                <article
-                  className="rounded-[20px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-4"
-                  key={item.id}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-[var(--text)]">{item.user_name}</p>
-                      <p className="truncate text-xs text-[var(--muted)]">{item.user_email}</p>
-                      <p className="text-xs text-[var(--muted)]">{formatDateTime(item.created_at)}</p>
-                    </div>
+              {!loadingPayments && paginatedPayments.length > 0 ? (
+                <div className="list-surface">
+                  {paginatedPayments.map((item) => (
+                    <article className="list-row" key={item.id}>
+                      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0 grid gap-3">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-[var(--text)]">{item.user_name}</p>
+                              <p className="truncate text-xs text-[var(--muted)]">{item.user_email}</p>
+                              <p className="text-xs text-[var(--muted)]">{formatDateTime(item.created_at)}</p>
+                            </div>
 
-                    <span className="status-pill" data-tone={item.status}>
-                      {formatStatusLabel(item.status)}
-                    </span>
-                  </div>
+                            <span className="status-pill" data-tone={item.status}>
+                              {formatStatusLabel(item.status)}
+                            </span>
+                          </div>
 
-                  <div className="mt-3 grid gap-1 text-xs text-[var(--muted)]">
-                    <p>Valor: {formatCurrency(item.amount)}</p>
-                    <p>Metodo: {item.method || '-'}</p>
-                    <p>Provedor: {item.provider || '-'}</p>
-                    <p>ID externo: {item.external_id || '-'}</p>
-                  </div>
+                          <div className="admin-data-grid">
+                            <p>Valor: {formatCurrency(item.amount)}</p>
+                            <p>Método: {item.method || '-'}</p>
+                            <p>Provedor: {item.provider || '-'}</p>
+                            <p>ID externo: {item.external_id || '-'}</p>
+                          </div>
+                        </div>
 
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                    <button
-                      className="gold-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingPaymentId === item.id}
-                      onClick={() => confirmPaymentStatus(item.id, 'paid')}
-                      type="button"
-                    >
-                      Marcar pago
-                    </button>
+                        <div className="action-cluster flex flex-wrap gap-2 lg:max-w-[19rem]">
+                          <button
+                            className="gold-button w-full !min-h-0 !px-3 !py-2 text-xs"
+                            disabled={savingPaymentId === item.id}
+                            onClick={() => confirmPaymentStatus(item.id, 'paid')}
+                            type="button"
+                          >
+                            Marcar pago
+                          </button>
 
-                    <button
-                      className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingPaymentId === item.id}
-                      onClick={() => confirmPaymentStatus(item.id, 'pending')}
-                      type="button"
-                    >
-                      Voltar pendente
-                    </button>
+                          <button
+                            className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
+                            disabled={savingPaymentId === item.id}
+                            onClick={() => confirmPaymentStatus(item.id, 'pending')}
+                            type="button"
+                          >
+                            Voltar pendente
+                          </button>
 
-                    <button
-                      className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingPaymentId === item.id}
-                      onClick={() => confirmPaymentStatus(item.id, 'failed')}
-                      type="button"
-                    >
-                      Marcar falha
-                    </button>
+                          <button
+                            className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
+                            disabled={savingPaymentId === item.id}
+                            onClick={() => confirmPaymentStatus(item.id, 'failed')}
+                            type="button"
+                          >
+                            Marcar falha
+                          </button>
 
-                    <button
-                      className="danger-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingPaymentId === item.id}
-                      onClick={() => confirmPaymentStatus(item.id, 'canceled')}
-                      type="button"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </article>
-              ))}
+                          <button
+                            className="danger-button w-full !min-h-0 !px-3 !py-2 text-xs"
+                            disabled={savingPaymentId === item.id}
+                            onClick={() => confirmPaymentStatus(item.id, 'canceled')}
+                            type="button"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
 
               {payments.length > 0 ? (
                 <PaginationControls
@@ -790,9 +825,11 @@ export default function AdminDashboard() {
               ) : null}
             </div>
           </article>
+          ) : null}
         </section>
 
-        <aside className="grid gap-6">
+        <aside className={`${['users', 'stores', 'announcements'].includes(activeAdminSection.key) ? 'grid gap-6' : 'hidden'}`}>
+          {activeAdminSection.key === 'users' ? (
           <section className="lux-panel fade-up p-6" style={{ animationDelay: '0.1s' }}>
             <p className="eyebrow">Gestão de usuários</p>
 
@@ -829,11 +866,10 @@ export default function AdminDashboard() {
                 <div className="empty-state">Nenhum usuário encontrado com esse filtro.</div>
               ) : null}
 
-              {paginatedUsers.map((item) => (
-                <article
-                  className="rounded-[20px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-4"
-                  key={item.id}
-                >
+              {!loadingUsers && paginatedUsers.length > 0 ? (
+                <div className="list-surface">
+                  {paginatedUsers.map((item) => (
+                    <article className="list-row" key={item.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate font-semibold text-[var(--text)]">{item.name}</p>
@@ -846,7 +882,7 @@ export default function AdminDashboard() {
                     </span>
                   </div>
 
-                  <div className="mt-3 grid gap-1 text-xs text-[var(--muted)]">
+                  <div className="admin-data-grid mt-3">
                     <p>Orçamentos: {item.budgets_count}</p>
                     <p>Aprovados: {item.approved_count}</p>
                     <p>Perfil público: {item.public_profile ? 'Sim' : 'Não'}</p>
@@ -856,7 +892,7 @@ export default function AdminDashboard() {
                     <p>Admin: {item.is_admin ? 'Sim' : 'Não'}</p>
                   </div>
 
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <div className="action-cluster mt-4 grid gap-2 sm:grid-cols-2">
                     <button
                       className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
                       disabled={savingUserId === item.id}
@@ -911,8 +947,10 @@ export default function AdminDashboard() {
                       Excluir usuário
                     </button>
                   </div>
-                </article>
-              ))}
+                    </article>
+                  ))}
+                </div>
+              ) : null}
 
               {users.length > 0 ? (
                 <PaginationControls
@@ -923,7 +961,9 @@ export default function AdminDashboard() {
               ) : null}
             </div>
           </section>
+          ) : null}
 
+          {activeAdminSection.key === 'stores' ? (
           <section className="lux-panel fade-up p-6" style={{ animationDelay: '0.12s' }}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="eyebrow">Lojas recomendadas</p>
@@ -1015,13 +1055,15 @@ export default function AdminDashboard() {
                 <div className="empty-state">Nenhuma loja recomendada cadastrada ainda.</div>
               ) : null}
 
-              {recommendedStores.map((store) => (
-                <article
-                  className={`admin-store-card rounded-[20px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-4 ${
+              {!loadingStores && recommendedStores.length > 0 ? (
+                <div className="list-surface admin-store-surface">
+                  {recommendedStores.map((store) => (
+                    <article
+                      className={`admin-store-card list-row admin-store-row ${
                     editingStoreId === store.id ? 'admin-store-card-editing' : ''
-                  }`}
-                  key={store.id}
-                >
+                      }`}
+                      key={store.id}
+                    >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-semibold text-[var(--text)]">{store.name}</p>
@@ -1081,11 +1123,15 @@ export default function AdminDashboard() {
                       Excluir
                     </button>
                   </div>
-                </article>
-              ))}
+                    </article>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </section>
+          ) : null}
 
+          {activeAdminSection.key === 'announcements' ? (
           <section className="lux-panel fade-up p-6" style={{ animationDelay: '0.14s' }}>
             <p className="eyebrow">Comunicado global</p>
 
@@ -1123,6 +1169,7 @@ export default function AdminDashboard() {
               </button>
             </form>
           </section>
+          ) : null}
         </aside>
       </div>
     </section>

@@ -239,7 +239,7 @@ export default function BudgetForm() {
               </select>
             </label>
 
-            <div className="md:col-span-2 rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-4">
+            <div className="subscription-inline-note md:col-span-2 rounded-[18px] p-4">
               <p className="field-label">Modo da calculadora</p>
               <div className="mt-2 grid gap-3 md:grid-cols-2">
                 <label className="flex items-center gap-3 rounded-[14px] border border-[var(--line)] px-4 py-3">
@@ -309,7 +309,7 @@ export default function BudgetForm() {
             </label>
           </div>
 
-          <div className="mt-4 rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-4">
+            <div className="subscription-inline-note mt-4 rounded-[18px] p-4">
             <label className="flex items-center gap-3">
               <input
                 checked={installmentEnabled}
@@ -354,7 +354,7 @@ export default function BudgetForm() {
               const environmentTotal = baseSubtotal + (Number.isFinite(removalValue) ? removalValue : 0);
 
               return (
-                <div className="lux-panel-soft rounded-[24px] p-5" key={`env-${index}`}>
+                <div className="budget-environment-card lux-panel-soft rounded-[24px] p-5" key={`env-${index}`}>
                   <div className="mb-4 flex items-center justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-lg font-semibold text-[var(--text)]">Ambiente {index + 1}</p>
@@ -412,7 +412,7 @@ export default function BudgetForm() {
                     ) : null}
                   </div>
 
-                  <label className="mt-4 flex items-center gap-3 rounded-[14px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-4 py-3">
+                  <label className="profile-toggle-row mt-4">
                     <input
                       checked={Boolean(environment.removal_included)}
                       className="field-checkbox"
@@ -436,7 +436,7 @@ export default function BudgetForm() {
                     </label>
                   ) : null}
 
-                  <div className="mt-4 rounded-[14px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-4 py-3 text-sm text-[var(--muted)]">
+                  <div className="subscription-inline-note mt-4 text-sm text-[var(--muted)]">
                     <div className="flex items-center justify-between">
                       <span>{pricingMode === 'square_meter' ? 'Subtotal por m²' : 'Subtotal dos papéis'}</span>
                       <strong className="text-[var(--text)]">{formatCurrency(baseSubtotal)}</strong>
@@ -466,7 +466,7 @@ export default function BudgetForm() {
         </div>
 
         <aside className="grid gap-6">
-          <div className="metric-card fade-up" style={{ animationDelay: '0.08s' }}>
+          <div className="budget-summary-card metric-card fade-up" style={{ animationDelay: '0.08s' }}>
             <p className="eyebrow">Resumo financeiro</p>
             <div className="mt-5 grid gap-4 text-sm text-[var(--muted)]">
               <div className="flex items-center justify-between">

@@ -17,7 +17,7 @@ export default function Layout() {
 
       <div className="relative min-w-0 flex-1">
         <Header onOpenMenu={() => setSidebarOpen(true)} />
-        <main className="mx-auto w-full max-w-7xl px-4 pb-10 pt-6 sm:px-5 lg:px-8">
+        <main className="mx-auto w-full max-w-[1480px] px-4 pb-10 pt-6 sm:px-5 lg:px-8 xl:px-10">
           <div className="min-w-0 space-y-6">
             <Outlet />
           </div>

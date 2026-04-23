@@ -6,7 +6,7 @@ export default function PageIntro({
   stats = [],
 }) {
   return (
-    <section className="page-intro-grid grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.2fr)_350px] xl:items-end">
+    <section className="page-intro-grid grid min-w-0 gap-5">
       <div className="page-intro-main lux-panel fade-up min-w-0 overflow-hidden p-6 sm:p-7">
         <div className="relative z-10 min-w-0">
           <p className="eyebrow">{eyebrow}</p>
@@ -16,10 +16,10 @@ export default function PageIntro({
         </div>
       </div>
 
-      <div className="page-intro-stats grid min-w-0 gap-3 sm:grid-cols-3 xl:grid-cols-1">
+      <div className="page-intro-stats grid min-w-0 gap-3 sm:grid-cols-3">
         {stats.map((stat, index) => (
           <article
-            className="metric-card fade-up min-w-0 !p-5"
+            className="metric-card page-intro-stat fade-up min-w-0 !p-5"
             key={`${stat.label}-${index}`}
             style={{ animationDelay: `${index * 0.08}s` }}
           >

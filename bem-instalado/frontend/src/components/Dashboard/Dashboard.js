@@ -88,20 +88,20 @@ export default function Dashboard() {
               </span>
             </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <article className="metric-card !p-5">
+            <div className="summary-strip mt-5 md:grid-cols-2 xl:grid-cols-4">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.15em] text-[var(--muted)]">Aprovados</p>
                 <p className="metric-value mt-2">{metrics.approved_this_month}</p>
               </article>
-              <article className="metric-card !p-5">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.15em] text-[var(--muted)]">Pendentes</p>
                 <p className="metric-value mt-2">{metrics.pending_budgets}</p>
               </article>
-              <article className="metric-card !p-5">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.15em] text-[var(--muted)]">Nota média</p>
                 <p className="metric-value mt-2">{Number(metrics.average_rating || 0).toFixed(1)}</p>
               </article>
-              <article className="metric-card !p-5">
+              <article className="summary-strip-item">
                 <p className="text-xs uppercase tracking-[0.15em] text-[var(--muted)]">Perfil completo</p>
                 <p className="metric-value mt-2">{metrics.profile_completeness}%</p>
               </article>
@@ -133,7 +133,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="mt-5 rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.015)] p-4 text-sm text-[var(--muted)]">
+            <div className="soft-note mt-5 text-sm text-[var(--muted)]">
               Região de atendimento: <strong className="text-[var(--text)]">{regionLabel}</strong>. Perfil público{' '}
               <strong className="text-[var(--text)]">{metrics.public_profile ? 'ativo' : 'inativo'}</strong>.
             </div>
@@ -142,9 +142,9 @@ export default function Dashboard() {
           {motivation.length > 0 ? (
             <article className="lux-panel-soft fade-up rounded-[22px] p-6" style={{ animationDelay: '0.12s' }}>
               <p className="eyebrow">Foco da semana</p>
-              <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="editorial-list mt-4">
                 {motivation.slice(0, 3).map((item) => (
-                  <div className="rounded-[16px] border border-[var(--line)] bg-[rgba(255,255,255,0.016)] p-4" key={item.title}>
+                  <div className="editorial-list-item" key={item.title}>
                     <p className="font-semibold text-[var(--text)]">{item.title}</p>
                     <p className="mt-2 text-sm leading-7 text-[var(--muted)]">{item.description}</p>
                   </div>
@@ -159,13 +159,10 @@ export default function Dashboard() {
             <p className="eyebrow">Top instaladores</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--text)]">Ranking público</h2>
 
-            <div className="mt-4 grid gap-2">
+            <div className="rank-list mt-4">
               {ranking.length ? (
                 ranking.map((item) => (
-                  <article
-                    className="rounded-[14px] border border-[var(--line)] bg-[rgba(255,255,255,0.018)] px-3 py-3"
-                    key={item.id}
-                  >
+                  <article className="rank-list-item" key={item.id}>
                     <p className="truncate text-sm font-semibold text-[var(--text)]">
                       #{item.ranking_position} {item.display_name}
                     </p>
@@ -182,7 +179,7 @@ export default function Dashboard() {
 
           <section className="lux-panel-soft fade-up rounded-[22px] p-5" style={{ animationDelay: '0.1s' }}>
             <p className="eyebrow">Atalhos</p>
-            <div className="mt-3 grid gap-2">
+            <div className="action-stack mt-3 grid gap-2">
               <Link className="ghost-button w-full justify-center" to="/clients">
                 Gerenciar clientes
               </Link>

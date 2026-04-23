@@ -180,33 +180,35 @@ export default function Clients() {
         </form>
 
         <section className="grid gap-4">
-          {paginatedClients.map((client, index) => (
-            <article
-              className="lux-panel-soft lift-card fade-up rounded-[26px] p-5"
-              key={client.id}
-              style={{ animationDelay: `${0.08 + index * 0.05}s` }}
-            >
-              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0 grid gap-3">
-                  <div className="min-w-0">
-                    <p className="break-words text-xl font-semibold text-[var(--text)]">{client.name}</p>
-                    <p className="mt-1 text-sm text-[var(--gold-strong)]">{client.phone}</p>
+          <div className="list-surface lux-panel-soft fade-up">
+            {paginatedClients.map((client, index) => (
+              <article
+                className="list-row"
+                key={client.id}
+                style={{ animationDelay: `${0.08 + index * 0.05}s` }}
+              >
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 grid gap-3">
+                    <div className="min-w-0">
+                      <p className="break-words text-xl font-semibold text-[var(--text)]">{client.name}</p>
+                      <p className="mt-1 text-sm text-[var(--gold-strong)]">{client.phone}</p>
+                    </div>
+                    <div className="grid gap-2 break-words text-sm text-[var(--muted)]">
+                      <p>E-mail: {client.email || 'Não informado'}</p>
+                      <p>Endereço: {buildAddressSummary(client)}</p>
+                      <p>Especificação: {client.address_reference || '-'}</p>
+                    </div>
                   </div>
-                  <div className="grid gap-2 break-words text-sm text-[var(--muted)]">
-                    <p>E-mail: {client.email || 'Não informado'}</p>
-                    <p>Endereço: {buildAddressSummary(client)}</p>
-                    <p>Especificação: {client.address_reference || '-'}</p>
-                  </div>
-                </div>
 
-                <div className="flex flex-wrap gap-3">
-                  <button className="ghost-button" onClick={() => handleDelete(client.id)} type="button">
-                    Remover
-                  </button>
+                  <div className="flex flex-wrap gap-3">
+                    <button className="ghost-button" onClick={() => handleDelete(client.id)} type="button">
+                      Remover
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))}
+          </div>
 
           {clients.length > 0 ? (
             <PaginationControls

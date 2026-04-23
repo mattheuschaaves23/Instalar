@@ -360,9 +360,9 @@ export default function Home() {
           </div>
         </div>
 
-        <header className="lux-panel fade-up overflow-hidden p-6 sm:p-8">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_360px] lg:items-start">
-            <div className="min-w-0">
+        <header className="public-directory-hero lux-panel fade-up overflow-hidden p-6 sm:p-8">
+          <div className="public-directory-hero-grid grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_360px] lg:items-start">
+            <div className="public-directory-hero-copy min-w-0">
               <p className="eyebrow">InstaLar • Área do cliente</p>
               <h1 className="hero-title mt-4 max-w-4xl">
                 Encontre instaladores da sua região com clareza e segurança.
@@ -372,41 +372,35 @@ export default function Home() {
                 completo do profissional antes de decidir.
               </p>
 
-              <div className="hero-key-points mt-5">
-                <span className="status-pill" data-tone="info">
-                  Busca por cidade e estado
-                </span>
-                <span className="status-pill" data-tone="info">
-                  Avaliações verificadas
-                </span>
-                <span className="status-pill" data-tone="info">
-                  Contato direto por WhatsApp
-                </span>
-              </div>
+              <ul className="directory-checklist mt-5">
+                <li>Busca por cidade e estado</li>
+                <li>Avaliações de clientes reais</li>
+                <li>Contato direto por WhatsApp</li>
+              </ul>
 
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="directory-hero-actions mt-6 flex flex-wrap gap-3">
                 <a className="gold-button" href="#lista-instaladores">
                   Ver instaladores agora
                 </a>
               </div>
 
-              <div className="hero-kpis mt-6">
-                <article className="hero-kpi">
+              <div className="directory-hero-strip mt-6">
+                <article className="directory-hero-stat">
                   <strong>{directory.installers.length}</strong>
                   <span>Instaladores listados</span>
                 </article>
-                <article className="hero-kpi">
+                <article className="directory-hero-stat">
                   <strong>{highlightedInstallers}</strong>
                   <span>Perfis em destaque</span>
                 </article>
-                <article className="hero-kpi">
+                <article className="directory-hero-stat">
                   <strong>{recentReviews}</strong>
                   <span>Avaliações recentes</span>
                 </article>
               </div>
             </div>
 
-            <aside className="lux-panel-soft rounded-[24px] p-5">
+            <aside className="public-filter-panel lux-panel-soft rounded-[24px] p-5">
               <p className="eyebrow">Busca rápida</p>
               <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{locationState.message}</p>
 
@@ -488,10 +482,7 @@ export default function Home() {
                 {!noResultsSuggestions.loading && noResultsSuggestions.items.length > 0 ? (
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     {noResultsSuggestions.items.map((installer) => (
-                      <article
-                        className="rounded-[14px] border border-[var(--line)] bg-[rgba(255,255,255,0.015)] p-3"
-                        key={`suggestion-${installer.id}`}
-                      >
+                      <article className="directory-suggestion-item" key={`suggestion-${installer.id}`}>
                         <div className="flex items-start gap-3">
                           {installer.installer_photo ? (
                             <img
@@ -552,7 +543,7 @@ export default function Home() {
 
               return (
                 <article
-                  className="lux-panel fade-up overflow-hidden p-6"
+                  className="directory-installer-card lux-panel fade-up overflow-hidden p-6"
                   key={installer.id}
                   style={{ animationDelay: `${0.05 + index * 0.04}s` }}
                 >
@@ -602,7 +593,7 @@ export default function Home() {
                             {installer.bio || 'Este instalador ainda está atualizando sua apresentação pública.'}
                           </p>
 
-                          <div className="mt-3 grid gap-2 text-sm text-[var(--muted)] md:grid-cols-2">
+                          <div className="directory-meta-grid mt-3 grid gap-2 text-sm text-[var(--muted)] md:grid-cols-2">
                             <p>
                               Região:{' '}
                               {[installer.city, installer.state].filter(Boolean).join(' - ') ||
@@ -617,7 +608,7 @@ export default function Home() {
                           </div>
 
                           {installer.installation_gallery_preview?.length ? (
-                            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                            <div className="directory-gallery-preview mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                               {installer.installation_gallery_preview.map((photo, photoIndex) => (
                                 <img
                                   alt={`Instalação ${photoIndex + 1} de ${installer.display_name}`}
@@ -631,7 +622,7 @@ export default function Home() {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
+                      <div className="directory-installer-actions flex flex-wrap gap-2">
                         {installer.whatsapp_link ? (
                           <a className="ghost-button" href={installer.whatsapp_link} rel="noreferrer" target="_blank">
                             Contatar no WhatsApp
@@ -658,7 +649,7 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div className="rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.014)] p-4">
+                    <div className="directory-inline-panel">
                       <p className="text-xs uppercase tracking-[0.14em] text-[var(--gold-strong)]">Próximas datas</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {installer.available_dates?.length ? (
@@ -689,7 +680,7 @@ export default function Home() {
                     </div>
 
                     {isReviewOpen ? (
-                      <div className="rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.014)] p-4">
+                      <div className="directory-inline-panel">
                         <div className="grid gap-3 md:grid-cols-2">
                           <label className="block">
                             <span className="field-label">Seu nome</span>
@@ -763,17 +754,14 @@ export default function Home() {
           </div>
 
           <aside className="grid gap-5">
-            <section className="lux-panel fade-up p-5">
+            <section className="directory-side-section lux-panel fade-up p-5">
               <p className="eyebrow">Ranking de instaladores</p>
               <h2 className="mt-2 text-xl font-semibold text-[var(--text)]">Mais bem avaliados</h2>
 
               <div className="mt-4 grid gap-2">
                 {directory.ranking.length ? (
                   directory.ranking.map((item) => (
-                    <article
-                      className="rounded-[14px] border border-[var(--line)] bg-[rgba(255,255,255,0.015)] px-3 py-3"
-                      key={item.id}
-                    >
+                    <article className="directory-rank-item" key={item.id}>
                       <p className="truncate text-sm font-semibold text-[var(--text)]">
                         #{item.ranking_position} {item.display_name}
                       </p>
@@ -788,12 +776,12 @@ export default function Home() {
               </div>
             </section>
 
-            <section className="lux-panel-soft fade-up rounded-[22px] p-5" style={{ animationDelay: '0.08s' }}>
+            <section className="directory-side-section lux-panel-soft fade-up rounded-[22px] p-5" style={{ animationDelay: '0.08s' }}>
               <p className="eyebrow">Avaliações recentes</p>
               <div className="mt-3 grid gap-3">
                 {directory.reviews.length ? (
                   directory.reviews.map((review) => (
-                    <article className="rounded-[14px] border border-[var(--line)] p-3" key={review.id}>
+                    <article className="directory-review-item" key={review.id}>
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate text-sm font-semibold text-[var(--text)]">{review.reviewer_name}</p>
                         <span className="status-pill" data-tone="success">
@@ -812,7 +800,7 @@ export default function Home() {
               </div>
             </section>
 
-            <section className="lux-panel-soft fade-up rounded-[22px] p-5" style={{ animationDelay: '0.1s' }}>
+            <section className="directory-store-section lux-panel-soft fade-up rounded-[22px] p-5" style={{ animationDelay: '0.1s' }}>
               <p className="eyebrow">Loja recomendada</p>
               <h2 className="mt-2 text-xl font-semibold text-[var(--text)]">{marketplace.title}</h2>
               <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
@@ -822,7 +810,7 @@ export default function Home() {
                 beminstalado.com.br
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="directory-highlight-tags mt-4 flex flex-wrap gap-2">
                 {(marketplace.highlights || []).map((highlight) => (
                   <span className="status-pill" data-tone="scheduled" key={highlight}>
                     {highlight}

@@ -60,34 +60,38 @@ export default function Notifications() {
       />
 
       <div className="grid gap-4">
-        {paginatedItems.map((item, index) => (
-          <article
-            className="lux-panel fade-up min-w-0 overflow-hidden p-6"
-            key={item.id}
-            style={{ animationDelay: `${0.08 + index * 0.05}s` }}
-          >
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0 max-w-3xl">
-                <div className="flex flex-wrap items-center gap-3">
-                  <p className="break-words text-xl font-semibold text-[var(--text)]">{item.title}</p>
-                  <span className="status-pill" data-tone={item.read ? 'completed' : item.type}>
-                    {item.read ? 'Lida' : formatStatusLabel(item.type)}
-                  </span>
-                </div>
-                <p className="mt-4 break-words text-sm leading-7 text-[var(--muted)]">{item.message}</p>
-                <p className="mt-4 text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
-                  {formatDateTime(item.created_at)}
-                </p>
-              </div>
+        {paginatedItems.length > 0 ? (
+          <div className="list-surface notification-surface">
+            {paginatedItems.map((item, index) => (
+              <article
+                className="list-row fade-up"
+                key={item.id}
+                style={{ animationDelay: `${0.08 + index * 0.05}s` }}
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 max-w-3xl">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="break-words text-xl font-semibold text-[var(--text)]">{item.title}</p>
+                      <span className="status-pill" data-tone={item.read ? 'completed' : item.type}>
+                        {item.read ? 'Lida' : formatStatusLabel(item.type)}
+                      </span>
+                    </div>
+                    <p className="mt-4 break-words text-sm leading-7 text-[var(--muted)]">{item.message}</p>
+                    <p className="mt-4 text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+                      {formatDateTime(item.created_at)}
+                    </p>
+                  </div>
 
-              {!item.read ? (
-                <button className="gold-button" onClick={() => markAsRead(item.id)} type="button">
-                  Marcar como lida
-                </button>
-              ) : null}
-            </div>
-          </article>
-        ))}
+                  {!item.read ? (
+                    <button className="gold-button" onClick={() => markAsRead(item.id)} type="button">
+                      Marcar como lida
+                    </button>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : null}
 
         {items.length > 0 ? (
           <PaginationControls
