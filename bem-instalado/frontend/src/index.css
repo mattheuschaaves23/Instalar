@@ -5986,13 +5986,19 @@ body {
 
   .clean-landing-topbar {
     margin-inline: calc(50% - 50vw);
-    padding: 0.65rem 0.9rem;
-    gap: 0.6rem;
+    padding: 0.72rem 0.9rem;
+    gap: 0;
+    justify-content: center;
+    border-color: rgba(10, 10, 10, 0.16);
+    background: #fffaf1;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
   }
 
   .clean-landing-brand {
     width: 100%;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
 
   .clean-landing-topbar .client-brand-mark {
@@ -6006,13 +6012,11 @@ body {
   }
 
   .clean-landing-brand p {
-    font-size: 0.74rem;
-    max-width: 30ch;
+    display: none;
   }
 
   .clean-landing-top-actions {
-    width: 100%;
-    justify-content: stretch;
+    display: none;
   }
 
   .clean-landing-topbar .ghost-button,
@@ -6034,46 +6038,84 @@ body {
 
   .clean-hero {
     margin-top: 0;
-    min-height: clamp(430px, 88dvh, 640px);
-    padding: 1.15rem 0.95rem 1.35rem;
+    min-height: clamp(610px, 92svh, 760px);
+    padding: 3.15rem 1.05rem 1.6rem;
     align-items: flex-start;
   }
 
   .clean-hero-image {
-    object-position: 70% 38%;
+    object-position: 68% 42%;
+  }
+
+  .clean-hero-overlay {
+    background:
+      linear-gradient(180deg, rgba(7, 7, 7, 0.95) 0%, rgba(9, 9, 9, 0.94) 38%, rgba(9, 9, 9, 0.76) 67%, rgba(8, 8, 8, 0.9) 100%),
+      radial-gradient(circle at 50% 15%, rgba(205, 163, 73, 0.18), transparent 38%);
   }
 
   .clean-hero-content {
     width: 100%;
     max-width: 100%;
     margin-left: 0;
+    text-align: center;
   }
 
   .clean-hero-content h1 {
-    max-width: 11.5ch;
-    font-size: clamp(2rem, 10.2vw, 3.4rem);
-    line-height: 0.94;
+    max-width: 13.4ch;
+    margin-inline: auto;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: clamp(2.5rem, 11vw, 4.25rem);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.055em;
+    color: #fffdf6;
   }
 
   .clean-hero-content p {
-    max-width: 34ch;
-    font-size: 0.96rem;
-    line-height: 1.5;
+    max-width: 23rem;
+    margin-inline: auto;
+    color: #fff8ed;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: clamp(1rem, 4.4vw, 1.22rem);
+    font-weight: 500;
+    line-height: 1.42;
+  }
+
+  .clean-hero-content .gold-keyword {
+    color: #d9b23e;
+    text-shadow: 0 0 16px rgba(217, 178, 62, 0.16);
+  }
+
+  .clean-hero-content .hero-white-keyword {
+    color: #ffffff;
+    text-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
   }
 
   .clean-hero-topics {
-    margin-top: 0.85rem;
-    gap: 0.42rem;
-    max-width: 100%;
+    width: min(100%, 28rem);
+    margin: 2rem auto 0;
+    gap: 0.52rem;
+    text-align: left;
   }
 
   .clean-hero-topics li {
-    font-size: 0.9rem;
-    line-height: 1.35;
+    gap: 0.7rem;
+    color: #fffaf0;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: clamp(0.98rem, 4.1vw, 1.15rem);
+    font-weight: 400;
+    line-height: 1.28;
   }
 
   .clean-hero-topics li:nth-child(n + 5) {
-    display: none;
+    display: flex;
+  }
+
+  .clean-hero-topics li::before {
+    margin-top: -0.02rem;
+    color: #d9b23e;
+    font-size: 1.35rem;
+    text-shadow: 0 0 14px rgba(217, 178, 62, 0.2);
   }
 
   .clean-review-avatar {
@@ -6083,16 +6125,28 @@ body {
   }
 
   .clean-hero-actions {
-    margin-top: 0.95rem;
+    margin: 1.8rem auto 0;
     width: 100%;
+    max-width: 30rem;
   }
 
   .clean-hero-actions .clean-cta-main {
     width: 100%;
     justify-content: center;
-    min-height: 3rem;
-    font-size: 0.9rem;
-    padding-inline: 0.9rem;
+    min-height: 4.25rem;
+    border-radius: 999px;
+    border-color: rgba(255, 231, 166, 0.66);
+    background: linear-gradient(135deg, #efcf68, #d6aa3d);
+    color: #171108;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: clamp(0.92rem, 3.8vw, 1.05rem);
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    box-shadow:
+      0 18px 42px rgba(214, 170, 61, 0.26),
+      0 0 0 4px rgba(255, 255, 255, 0.04) inset,
+      0 0 0 1px rgba(0, 0, 0, 0.5);
   }
 
   .clean-section-head h2 {
@@ -6125,15 +6179,15 @@ body {
 
 @media (max-width: 680px) {
   .clean-landing-topbar {
-    padding: 0.58rem 0.72rem;
+    padding: 0.6rem 0.7rem;
   }
 
   .clean-priority-trust {
-    margin-top: -5.05rem;
+    margin-top: -3.35rem;
   }
 
   .clean-landing-topbar .client-topbar-wordmark {
-    width: min(13.2rem, 58vw) !important;
+    width: min(17rem, 68vw) !important;
   }
 
   .clean-landing-topbar .ghost-button,
@@ -6144,31 +6198,31 @@ body {
   }
 
   .clean-hero {
-    min-height: clamp(390px, 82dvh, 560px);
-    padding: 0.95rem 0.72rem 1.15rem;
+    min-height: clamp(600px, 91svh, 720px);
+    padding: 2.55rem 0.72rem 1.2rem;
   }
 
   .clean-hero-content h1 {
-    font-size: clamp(1.82rem, 9.2vw, 2.8rem);
-    max-width: 10.8ch;
+    font-size: clamp(2.25rem, 10.4vw, 3.45rem);
+    max-width: 13.2ch;
   }
 
   .clean-hero-content p {
-    font-size: 0.9rem;
-    max-width: 28ch;
+    font-size: clamp(0.98rem, 4.2vw, 1.16rem);
+    max-width: 22rem;
   }
 
   .clean-hero-topics li {
-    font-size: 0.9rem;
+    font-size: clamp(0.96rem, 4vw, 1.08rem);
   }
 
   .clean-hero-topics li:nth-child(n + 4) {
-    display: none;
+    display: flex;
   }
 
   .clean-hero-topics li::before {
-    margin-top: 0.12rem;
-    font-size: 0.9rem;
+    margin-top: -0.04rem;
+    font-size: 1.25rem;
   }
 
   .clean-story {

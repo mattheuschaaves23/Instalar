@@ -53,9 +53,11 @@ const HERO_MINI_TOPICS = [
 ];
 
 const HERO_MINI_TOPICS_MOBILE = [
-  'Profissionais verificados',
-  'Avaliações de clientes',
-  'Contato rápido no WhatsApp',
+  'Instaladores especializados',
+  'Perfis verificados',
+  'Avaliações reais de clientes',
+  'Contato direto no WhatsApp',
+  'Suporte antes e depois',
 ];
 
 const MOBILE_TRUST_ITEMS = [
@@ -515,8 +517,8 @@ export default function ClientLanding() {
             <h1 className="clean-hero-title">
               {isMobileLayout ? (
                 <>
-                  Ache <span className="gold-keyword">instaladores</span> de{' '}
-                  <span className="gold-keyword">papel de parede</span> na sua <span className="gold-keyword">região</span>.
+                  <span className="gold-keyword">Transforme seu ambiente com</span>{' '}
+                  <span className="hero-white-keyword">papel de parede</span>.
                 </>
               ) : (
                 <>
@@ -528,7 +530,8 @@ export default function ClientLanding() {
             <p className="clean-hero-description">
               {isMobileLayout ? (
                 <>
-                  Compare nota, veja fotos do trabalho e fale no <span className="gold-keyword">WhatsApp</span> em minutos, sem perder tempo procurando.
+                  Encontre <span className="gold-keyword">instaladores especializados</span>, compare avaliações e fale direto no{' '}
+                  <span className="gold-keyword">WhatsApp</span>.
                 </>
               ) : (
                 <>
@@ -548,7 +551,7 @@ export default function ClientLanding() {
 
             <div className="clean-hero-actions">
               <Link className="gold-button clean-cta-main" to="/cliente">
-                {isMobileLayout ? 'Encontrar instaladores de papel de parede' : 'Encontrar instaladores agora'}
+                {isMobileLayout ? 'Encontrar instalador agora' : 'Encontrar instaladores agora'}
               </Link>
             </div>
           </div>
