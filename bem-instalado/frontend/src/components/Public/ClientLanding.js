@@ -38,12 +38,6 @@ const STORY_POINTS = [
   'Fotos para validar o acabamento',
 ];
 
-const STORY_POINTS_MOBILE = [
-  'Especialistas no serviço',
-  'Fotos para comparar',
-  'Contato sem intermediários',
-];
-
 const HERO_MINI_TOPICS = [
   'Instaladores especializados',
   'Perfis verificados',
@@ -380,7 +374,7 @@ export default function ClientLanding() {
   );
   const reviewCardWidth = 100 / Math.max(reviewCardsPerView, 1);
   const heroMiniTopics = isMobileLayout ? HERO_MINI_TOPICS_MOBILE : HERO_MINI_TOPICS;
-  const storyPoints = isMobileLayout ? STORY_POINTS_MOBILE : STORY_POINTS;
+  const storyPoints = STORY_POINTS;
   const howItWorksItems = isMobileLayout ? HOW_IT_WORKS_MOBILE : HOW_IT_WORKS;
   const visibleMobileTrustItems = MOBILE_TRUST_ITEMS.slice(0, 3);
 
@@ -662,11 +656,9 @@ export default function ClientLanding() {
         <section className="clean-story clean-priority-story fade-up" style={{ animationDelay: '0.08s' }}>
           <div className="clean-story-text">
             <p className="eyebrow">Por que escolher</p>
-            <h2>{isMobileLayout ? 'Decisão rápida e segura.' : 'Mais clareza para decidir, mais segurança para contratar.'}</h2>
+            <h2>Mais clareza para decidir, mais segurança para contratar.</h2>
             <p>
-              {isMobileLayout
-                ? 'Veja profissionais confiáveis e agende em minutos.'
-                : 'A plataforma foi feita para ser objetiva: você encontra os melhores profissionais, compara rápido e conversa direto com quem vai fazer a instalação.'}
+              A plataforma foi feita para ser objetiva: você encontra os melhores profissionais, compara rápido e conversa direto com quem vai fazer a instalação.
             </p>
 
             <ul>
