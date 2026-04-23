@@ -517,8 +517,8 @@ export default function ClientLanding() {
             <h1 className="clean-hero-title">
               {isMobileLayout ? (
                 <>
-                  <span className="gold-keyword">Transforme seu ambiente com</span>{' '}
-                  <span className="hero-white-keyword">papel de parede</span>.
+                  Encontre <span className="gold-keyword">instaladores</span> de{' '}
+                  <span className="hero-white-keyword">papel de parede</span> com mais <span className="gold-keyword">segurança</span>.
                 </>
               ) : (
                 <>
