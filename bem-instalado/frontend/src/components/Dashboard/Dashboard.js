@@ -641,7 +641,7 @@ export default function Dashboard() {
           </svg>
           <input
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar cliente, status ou numero do orcamento..."
+            placeholder="Buscar no sistema..."
             type="text"
             value={search}
           />
@@ -657,7 +657,7 @@ export default function Dashboard() {
           </div>
 
           <Link className="dashboard-neo-primary" to="/budgets/new">
-            Novo orcamento
+            Novo orçamento
           </Link>
         </div>
       </div>
@@ -665,11 +665,11 @@ export default function Dashboard() {
       <div className="dashboard-neo-frame fade-up" style={{ animationDelay: '0.06s' }}>
         <div className="dashboard-neo-heading">
           <div>
-            <p className="dashboard-neo-kicker">Dashboard</p>
-            <h1>Bem-vindo de volta, {firstName}.</h1>
+            <p className="dashboard-neo-kicker">Resumo do negócio</p>
+            <h1>Dashboard</h1>
             <p>
-              Veja receita, propostas, clientes e agenda em uma unica leitura, com foco no que
-              realmente precisa de atencao agora.
+              Bem-vindo de volta, {firstName}. Acompanhe receita, propostas, clientes e agenda
+              em uma leitura mais clara e organizada.
             </p>
           </div>
 
@@ -702,11 +702,11 @@ export default function Dashboard() {
           <article className="dashboard-neo-panel dashboard-neo-panel--chart">
             <div className="dashboard-neo-panel-head">
               <div>
-                <h3>Visao geral de vendas</h3>
+                <h3>Visão geral de vendas</h3>
                 <p>{chartData.description}</p>
               </div>
               <div className="dashboard-neo-panel-tools">
-                <div className="dashboard-neo-view-switch" role="tablist" aria-label="Periodo do grafico">
+                <div className="dashboard-neo-view-switch" role="tablist" aria-label="Período do gráfico">
                   {CHART_VIEWS.map((view) => (
                     <button
                       aria-selected={chartView === view}
@@ -722,7 +722,7 @@ export default function Dashboard() {
 
                 <div className={`dashboard-neo-period-controls ${chartView === 'monthly' ? '' : 'is-single'}`.trim()}>
                   <button
-                    aria-label="Periodo anterior"
+                    aria-label="Período anterior"
                     className="dashboard-neo-nav"
                     onClick={() => handleChartShift(-1)}
                     type="button"
@@ -787,7 +787,7 @@ export default function Dashboard() {
                   ) : null}
 
                   <button
-                    aria-label="Proximo periodo"
+                    aria-label="Próximo período"
                     className="dashboard-neo-nav"
                     disabled={!canAdvanceChart}
                     onClick={() => handleChartShift(1)}
@@ -802,7 +802,7 @@ export default function Dashboard() {
             <div className="dashboard-neo-chart-meta">
               <span className="dashboard-neo-filter">{chartData.periodLabel}</span>
               {!chartGeometry.hasValues ? (
-                <span className="dashboard-neo-chart-empty">Sem valores registrados neste periodo.</span>
+                  <span className="dashboard-neo-chart-empty">Sem valores registrados neste período.</span>
               ) : null}
             </div>
 
@@ -850,10 +850,10 @@ export default function Dashboard() {
           <article className="dashboard-neo-panel dashboard-neo-panel--donut">
             <div className="dashboard-neo-panel-head">
               <div>
-                <h3>Distribuicao das propostas</h3>
-                <p>Como o valor total do mes esta dividido por status.</p>
+                <h3>Distribuição das propostas</h3>
+                <p>Como o valor total do mês está dividido por status.</p>
               </div>
-              <span className="dashboard-neo-filter">Este mes</span>
+              <span className="dashboard-neo-filter">Este mês</span>
             </div>
 
             <div className="dashboard-neo-donut-layout">
@@ -885,8 +885,8 @@ export default function Dashboard() {
           <article className="dashboard-neo-panel">
             <div className="dashboard-neo-panel-head">
               <div>
-                <h3>Orcamentos recentes</h3>
-                <p>As oportunidades mais novas da operacao comercial.</p>
+                <h3>Orçamentos recentes</h3>
+                <p>As oportunidades mais novas da operação comercial.</p>
               </div>
               <Link className="dashboard-neo-link" to="/budgets">
                 Ver todos
@@ -897,7 +897,7 @@ export default function Dashboard() {
               <table className="dashboard-neo-table">
                 <thead>
                   <tr>
-                    <th>Orcamento</th>
+                    <th>Orçamento</th>
                     <th>Cliente</th>
                     <th>Data</th>
                     <th>Status</th>
@@ -908,8 +908,8 @@ export default function Dashboard() {
                   {filteredRecentBudgets.length > 0 ? (
                     filteredRecentBudgets.map((budget) => (
                       <tr key={budget.id}>
-                        <td data-label="Orcamento">#{budget.id}</td>
-                        <td data-label="Cliente">{budget.client_name || 'Cliente nao informado'}</td>
+                        <td data-label="Orçamento">#{budget.id}</td>
+                        <td data-label="Cliente">{budget.client_name || 'Cliente não informado'}</td>
                         <td data-label="Data">{formatDateTime(budget.created_at)}</td>
                         <td data-label="Status">
                           <span className="dashboard-neo-status" data-tone={budget.status}>
@@ -922,7 +922,7 @@ export default function Dashboard() {
                   ) : (
                     <tr>
                       <td className="dashboard-neo-empty-row" colSpan="5">
-                        Nenhum orcamento encontrado para esse filtro.
+                        Nenhum orçamento encontrado para esse filtro.
                       </td>
                     </tr>
                   )}
@@ -935,7 +935,7 @@ export default function Dashboard() {
             <div className="dashboard-neo-panel-head">
               <div>
                 <h3>Resumo financeiro</h3>
-                <p>Leitura rapida do que entra, do que esta em aberto e do desempenho do perfil.</p>
+                <p>Leitura rápida do que entra, do que está em aberto e do desempenho do perfil.</p>
               </div>
               <span className="dashboard-neo-filter">Hoje</span>
             </div>
@@ -951,10 +951,10 @@ export default function Dashboard() {
 
             <div className="dashboard-neo-note">
               <p>
-                Ranking publico atual: <strong>#{metrics.ranking_position || '--'}</strong>
+                Ranking público atual: <strong>#{metrics.ranking_position || '--'}</strong>
               </p>
               <p>
-                Avaliacoes recebidas: <strong>{metrics.review_count || 0}</strong>
+                Avaliações recebidas: <strong>{metrics.review_count || 0}</strong>
               </p>
               <p>
                 Perfil completo: <strong>{metrics.profile_completeness || 0}%</strong>
@@ -962,7 +962,7 @@ export default function Dashboard() {
             </div>
 
             <div className="dashboard-neo-mini-feed">
-              <p className="dashboard-neo-mini-title">Proximas datas disponiveis</p>
+              <p className="dashboard-neo-mini-title">Próximas datas disponíveis</p>
               {metrics.available_dates?.length ? (
                 metrics.available_dates.slice(0, 4).map((date) => (
                   <span className="dashboard-neo-mini-chip" key={date}>
@@ -970,13 +970,13 @@ export default function Dashboard() {
                   </span>
                 ))
               ) : (
-                <span className="dashboard-neo-mini-chip is-muted">Defina horarios no perfil</span>
+                <span className="dashboard-neo-mini-chip is-muted">Defina horários no perfil</span>
               )}
             </div>
 
             {ranking.length > 0 ? (
               <div className="dashboard-neo-top-list">
-                <p className="dashboard-neo-mini-title">Melhores instaladores no ranking publico</p>
+                <p className="dashboard-neo-mini-title">Melhores instaladores no ranking público</p>
                 {ranking.slice(0, 3).map((item) => (
                   <div className="dashboard-neo-top-item" key={item.id}>
                     <span>#{item.ranking_position}</span>

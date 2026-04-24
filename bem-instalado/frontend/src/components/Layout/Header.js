@@ -74,6 +74,7 @@ export default function Header({ onOpenMenu = () => {} }) {
   const { notifications } = useNotifications();
   const unread = notifications.filter((item) => !item.read).length;
   const adminSection = new URLSearchParams(location.search).get('section') || 'overview';
+  const isDashboardRoute = location.pathname === '/dashboard';
 
   const currentCopy =
     location.pathname === '/admin'
@@ -91,12 +92,24 @@ export default function Header({ onOpenMenu = () => {} }) {
   }).format(new Date());
 
   return (
-    <header className="panel-topbar border-b border-[var(--line)] bg-[rgba(8,8,7,0.72)] backdrop-blur-xl">
+    <header
+      className={`panel-topbar border-b backdrop-blur-xl ${
+        isDashboardRoute
+          ? 'panel-topbar--dashboard border-[#e7d7b1] bg-[rgba(255,251,244,0.94)]'
+          : 'border-[var(--line)] bg-[rgba(8,8,7,0.72)]'
+      }`}
+    >
       <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-4 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between lg:px-8 xl:px-10">
         <div className="min-w-0">
           <div className="mb-2 flex items-center justify-between gap-3 md:mb-0 md:block">
             <p className="eyebrow">Painel interno</p>
-            <button className="ghost-button !min-h-0 !px-3 !py-2 text-xs md:hidden" onClick={onOpenMenu} type="button">
+            <button
+              className={`ghost-button !min-h-0 !px-3 !py-2 text-xs md:hidden ${
+                isDashboardRoute ? 'dashboard-topbar-chip dashboard-topbar-chip--button' : ''
+              }`}
+              onClick={onOpenMenu}
+              type="button"
+            >
               Menu
             </button>
           </div>
@@ -106,16 +119,40 @@ export default function Header({ onOpenMenu = () => {} }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <span className="hidden rounded-full border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-4 py-2 text-sm text-[var(--muted)] sm:inline-flex">
+          <span
+            className={`hidden rounded-full px-4 py-2 text-sm sm:inline-flex ${
+              isDashboardRoute
+                ? 'dashboard-topbar-chip'
+                : 'border border-[var(--line)] bg-[rgba(255,255,255,0.02)] text-[var(--muted)]'
+            }`}
+          >
             {formattedDate}
           </span>
 
-          <span className="rounded-full border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-4 py-2 text-sm text-[var(--muted)]">
+          <span
+            className={`rounded-full px-4 py-2 text-sm ${
+              isDashboardRoute
+                ? 'dashboard-topbar-chip'
+                : 'border border-[var(--line)] bg-[rgba(255,255,255,0.02)] text-[var(--muted)]'
+            }`}
+          >
             Alertas: <strong className="text-[var(--gold-strong)]">{unread}</strong>
           </span>
 
-          <div className="flex items-center gap-3 rounded-full border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-3 py-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--gold-soft)] text-sm font-bold text-[var(--gold-strong)]">
+          <div
+            className={`flex items-center gap-3 rounded-full px-3 py-2 ${
+              isDashboardRoute
+                ? 'dashboard-topbar-user'
+                : 'border border-[var(--line)] bg-[rgba(255,255,255,0.02)]'
+            }`}
+          >
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${
+                isDashboardRoute
+                  ? 'dashboard-topbar-avatar'
+                  : 'border border-[var(--line)] bg-[var(--gold-soft)] text-[var(--gold-strong)]'
+              }`}
+            >
               {user?.name?.slice(0, 2).toUpperCase() || 'IL'}
             </div>
 
@@ -124,7 +161,13 @@ export default function Header({ onOpenMenu = () => {} }) {
               <p className="text-xs text-[var(--muted)]">Conta conectada</p>
             </div>
 
-            <button className="ghost-button !min-h-0 !px-4 !py-2 text-xs" onClick={logout} type="button">
+            <button
+              className={`ghost-button !min-h-0 !px-4 !py-2 text-xs ${
+                isDashboardRoute ? 'dashboard-topbar-chip dashboard-topbar-chip--button' : ''
+              }`}
+              onClick={logout}
+              type="button"
+            >
               Sair
             </button>
           </div>
