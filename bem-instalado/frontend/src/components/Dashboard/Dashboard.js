@@ -526,15 +526,15 @@ export default function Dashboard() {
                   {filteredRecentBudgets.length > 0 ? (
                     filteredRecentBudgets.map((budget) => (
                       <tr key={budget.id}>
-                        <td>#{budget.id}</td>
-                        <td>{budget.client_name || 'Cliente nao informado'}</td>
-                        <td>{formatDateTime(budget.created_at)}</td>
-                        <td>
+                        <td data-label="Orcamento">#{budget.id}</td>
+                        <td data-label="Cliente">{budget.client_name || 'Cliente nao informado'}</td>
+                        <td data-label="Data">{formatDateTime(budget.created_at)}</td>
+                        <td data-label="Status">
                           <span className="dashboard-neo-status" data-tone={budget.status}>
                             {formatStatusLabel(budget.status)}
                           </span>
                         </td>
-                        <td>{formatCurrency(budget.total_amount)}</td>
+                        <td data-label="Total">{formatCurrency(budget.total_amount)}</td>
                       </tr>
                     ))
                   ) : (
