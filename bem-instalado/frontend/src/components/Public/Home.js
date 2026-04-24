@@ -3,26 +3,179 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatCurrency, formatLongDate } from '../../utils/formatters';
-import { formatInstallationDays } from '../../utils/installerDays';
 import BrandMark from '../Layout/BrandMark';
-import BrandWordmark from '../Layout/BrandWordmark';
 import PaginationControls from '../Layout/PaginationControls';
 
 const AUTO_LOCATION_SESSION_KEY = 'bem_instalado_client_location_checked';
-const INSTALLERS_PER_PAGE = 5;
-const emptyReview = { reviewer_name: '', reviewer_region: '', rating: 5, comment: '' };
-const defaultMarketplace = {
-  title: 'Loja Oficial Bem Instalado',
-  description:
-    'A loja oficial Bem Instalado Home Decor reúne papéis de parede para vários estilos, com operação em Florianópolis e atendimento para todo o Brasil.',
-  url: 'https://www.beminstalado.com.br',
-  cta_label: 'Visitar loja oficial',
-  whatsapp_url: 'https://api.whatsapp.com/send?phone=5548999816000',
-  contact_phone: '(48) 99981-6000',
-  contact_email: 'beminstaladohd@gmail.com',
-  highlights: ['Papel de parede', 'Infantil e ambientes', 'Pagamento via Pix'],
-};
+const INSTALLERS_PER_PAGE = 6;
+
+const CATEGORY_OPTIONS = [
+  { value: 'all', label: 'Todos', keywords: [] },
+  { value: 'residential', label: 'Residencial', keywords: ['residencial', 'casa', 'apartamento', 'sala', 'quarto'] },
+  { value: 'commercial', label: 'Comercial', keywords: ['comercial', 'empresa', 'escritorio', 'escritório', 'loja'] },
+  { value: 'textured', label: 'Texturizados', keywords: ['textura', 'texturizado', 'texturizados'] },
+  { value: 'vinyl', label: 'Vinilicos', keywords: ['vinil', 'vinílico', 'vinilico', 'vinilicos', 'vinílicos'] },
+  { value: 'kids', label: 'Infantil', keywords: ['infantil', 'crianca', 'criança', 'kids', 'bebê', 'bebe'] },
+];
+
+const QUICK_FILTER_OPTIONS = [
+  { value: 'all', label: 'Todos' },
+  { value: 'verified', label: 'Verificados' },
+  { value: 'available', label: 'Disponiveis' },
+  { value: 'featured', label: 'Destaques' },
+];
+
+function AppIcon({ name, className = '' }) {
+  const commonProps = {
+    className,
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    strokeWidth: 1.8,
+    viewBox: '0 0 24 24',
+  };
+
+  switch (name) {
+    case 'bell':
+      return (
+        <svg {...commonProps}>
+          <path d="M6 9a6 6 0 0 1 12 0v4.2l1.6 2.4a1 1 0 0 1-.83 1.55H5.23a1 1 0 0 1-.83-1.55L6 13.2V9Z" />
+          <path d="M10 18a2 2 0 0 0 4 0" />
+        </svg>
+      );
+    case 'map-pin':
+      return (
+        <svg {...commonProps}>
+          <path d="M12 21s6-5.33 6-11a6 6 0 1 0-12 0c0 5.67 6 11 6 11Z" />
+          <circle cx="12" cy="10" r="2.4" />
+        </svg>
+      );
+    case 'target':
+      return (
+        <svg {...commonProps}>
+          <circle cx="12" cy="12" r="7.5" />
+          <circle cx="12" cy="12" r="3.2" />
+          <path d="M12 2v2.2M12 19.8V22M2 12h2.2M19.8 12H22" />
+        </svg>
+      );
+    case 'search':
+      return (
+        <svg {...commonProps}>
+          <circle cx="11" cy="11" r="6.8" />
+          <path d="m20 20-3.7-3.7" />
+        </svg>
+      );
+    case 'filter':
+      return (
+        <svg {...commonProps}>
+          <path d="M4 6h16l-6.4 7.1v4.9l-3.2-1.8v-3.1L4 6Z" />
+        </svg>
+      );
+    case 'sort':
+      return (
+        <svg {...commonProps}>
+          <path d="M8 6v12" />
+          <path d="m5 9 3-3 3 3" />
+          <path d="M16 18V6" />
+          <path d="m13 15 3 3 3-3" />
+        </svg>
+      );
+    case 'users':
+      return (
+        <svg {...commonProps}>
+          <path d="M16 21v-1.3A4.7 4.7 0 0 0 11.3 15H7.7A4.7 4.7 0 0 0 3 19.7V21" />
+          <circle cx="9.5" cy="8" r="3.2" />
+          <path d="M21 21v-1.3a4.3 4.3 0 0 0-3.1-4.15" />
+          <path d="M15.8 4.9a3.2 3.2 0 0 1 0 6.2" />
+        </svg>
+      );
+    case 'home':
+      return (
+        <svg {...commonProps}>
+          <path d="m3 10.6 9-7 9 7" />
+          <path d="M5.5 9.8V20h13V9.8" />
+        </svg>
+      );
+    case 'building':
+      return (
+        <svg {...commonProps}>
+          <path d="M4 21V6.5A1.5 1.5 0 0 1 5.5 5H14v16" />
+          <path d="M14 21V3.5A1.5 1.5 0 0 1 15.5 2H19a1 1 0 0 1 1 1V21" />
+          <path d="M8 9h2M8 13h2M8 17h2M16 9h1.5M16 13h1.5M16 17h1.5" />
+        </svg>
+      );
+    case 'texture':
+      return (
+        <svg {...commonProps}>
+          <rect x="4" y="4" width="16" height="16" rx="2.4" />
+          <path d="M8 8h8M8 12h8M8 16h8" />
+          <path d="M8 8v8M12 8v8M16 8v8" />
+        </svg>
+      );
+    case 'roller':
+      return (
+        <svg {...commonProps}>
+          <path d="M5 7.5A1.5 1.5 0 0 1 6.5 6H16a2 2 0 0 1 2 2v2H9a2 2 0 0 0-2 2v6" />
+          <path d="M9 18h4" />
+          <path d="M13 18v2.5" />
+        </svg>
+      );
+    case 'smile':
+      return (
+        <svg {...commonProps}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M9 10h.01M15 10h.01" />
+          <path d="M8.5 14a5 5 0 0 0 7 0" />
+        </svg>
+      );
+    case 'shield':
+      return (
+        <svg {...commonProps}>
+          <path d="M12 3.2 5.4 5.9v5.2c0 4.2 2.8 8 6.6 9.7 3.8-1.7 6.6-5.5 6.6-9.7V5.9L12 3.2Z" />
+          <path d="m9.5 12 1.7 1.8 3.4-3.8" />
+        </svg>
+      );
+    case 'star':
+      return (
+        <svg {...commonProps}>
+          <path d="m12 3.8 2.45 4.96 5.48.8-3.97 3.86.94 5.46L12 16.5l-4.9 2.58.94-5.46-3.97-3.86 5.48-.8L12 3.8Z" />
+        </svg>
+      );
+    case 'heart':
+      return (
+        <svg {...commonProps}>
+          <path d="m12 20.5-1.2-1.08C5.8 14.95 3 12.4 3 9.26A4.26 4.26 0 0 1 7.35 5a4.7 4.7 0 0 1 4.65 2.82A4.7 4.7 0 0 1 16.65 5 4.26 4.26 0 0 1 21 9.26c0 3.14-2.8 5.69-7.8 10.16L12 20.5Z" />
+        </svg>
+      );
+    case 'message':
+      return (
+        <svg {...commonProps}>
+          <path d="M5 6.5h14A1.5 1.5 0 0 1 20.5 8v8A1.5 1.5 0 0 1 19 17.5H9L4.5 20v-4A1.5 1.5 0 0 1 3.5 14.5V8A1.5 1.5 0 0 1 5 6.5Z" />
+        </svg>
+      );
+    case 'profile':
+      return (
+        <svg {...commonProps}>
+          <circle cx="12" cy="8.1" r="3.2" />
+          <path d="M5 20a7 7 0 0 1 14 0" />
+        </svg>
+      );
+    case 'check-badge':
+      return (
+        <svg {...commonProps}>
+          <path d="M12 3.4 14.7 5l3.08-.11.87 2.95L21 10l-1.35 2.16.52 3.02-2.8 1.22L15.9 19l-2.9-.64L10.1 19l-1.47-2.6-2.8-1.22.52-3.02L3 10l2.35-2.16.87-2.95L9.3 5 12 3.4Z" />
+          <path d="m9.3 12 1.8 1.8 3.7-4" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...commonProps}>
+          <circle cx="12" cy="12" r="8" />
+        </svg>
+      );
+  }
+}
 
 function getInitials(name) {
   return (name || 'IL')
@@ -33,30 +186,102 @@ function getInitials(name) {
     .join('');
 }
 
-function RatingStars({ value }) {
-  const rounded = Math.round(Number(value || 0));
-
-  return (
-    <div className="flex items-center gap-1">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <span
-          className={`h-2.5 w-2.5 rounded-full border border-[var(--gold)] ${
-            index < rounded ? 'bg-[var(--gold)]' : 'bg-transparent'
-          }`}
-          key={index}
-        />
-      ))}
-    </div>
-  );
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 }
 
-function formatAvailabilitySlotLabel(slot) {
-  if (!slot?.slot_date) {
-    return '';
+function installerTextBlob(installer) {
+  return normalizeText([
+    installer.display_name,
+    installer.bio,
+    installer.installation_method,
+    installer.service_region,
+    installer.city,
+    installer.state,
+  ].join(' '));
+}
+
+function matchesCategory(installer, categoryValue) {
+  if (categoryValue === 'all') {
+    return true;
   }
 
-  const dateLabel = formatLongDate(`${slot.slot_date}T12:00:00`);
-  return `${dateLabel} • ${slot.start_time} - ${slot.end_time}`;
+  const category = CATEGORY_OPTIONS.find((item) => item.value === categoryValue);
+  if (!category) {
+    return true;
+  }
+
+  const text = installerTextBlob(installer);
+  return category.keywords.some((keyword) => text.includes(normalizeText(keyword)));
+}
+
+function deriveInstallerTags(installer) {
+  const matched = CATEGORY_OPTIONS.filter((item) => item.value !== 'all' && matchesCategory(installer, item.value)).map(
+    (item) => item.label
+  );
+
+  if (matched.length > 0) {
+    return matched.slice(0, 3);
+  }
+
+  if (installer.installation_method) {
+    return [installer.installation_method.split(',')[0].trim().slice(0, 28)];
+  }
+
+  return ['Papel de parede'];
+}
+
+function getAvailabilityState(installer) {
+  if ((installer.availability_slots || []).length > 0) {
+    return { label: 'Disponivel', tone: 'available' };
+  }
+
+  if ((installer.available_dates || []).length > 0) {
+    return { label: 'Agenda aberta', tone: 'scheduled' };
+  }
+
+  return { label: 'Agenda cheia', tone: 'busy' };
+}
+
+function sortInstallers(items, sortBy) {
+  const nextItems = [...items];
+
+  nextItems.sort((left, right) => {
+    if (sortBy === 'reviews') {
+      return Number(right.review_count || 0) - Number(left.review_count || 0);
+    }
+
+    if (sortBy === 'available') {
+      return (right.availability_slots || []).length - (left.availability_slots || []).length;
+    }
+
+    if (sortBy === 'name') {
+      return String(left.display_name || '').localeCompare(String(right.display_name || ''), 'pt-BR');
+    }
+
+    const leftScore = Number(left.average_rating || 0) * 100 + Number(left.review_count || 0);
+    const rightScore = Number(right.average_rating || 0) * 100 + Number(right.review_count || 0);
+    return rightScore - leftScore;
+  });
+
+  return nextItems;
+}
+
+function RatingStars({ value }) {
+  const rounded = Math.max(0, Math.min(5, Math.round(Number(value || 0))));
+
+  return (
+    <span className="client-app-rating-stars" aria-hidden="true">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <span className={index < rounded ? 'is-on' : ''} key={index}>
+          ★
+        </span>
+      ))}
+    </span>
+  );
 }
 
 function buildSuggestionScenarios(filters) {
@@ -67,7 +292,7 @@ function buildSuggestionScenarios(filters) {
 
   if (state) {
     scenarios.push({
-      label: `Instaladores próximos em ${state}`,
+      label: `Profissionais proximos em ${state}`,
       params: { search: '', city: '', state },
     });
   }
@@ -81,7 +306,7 @@ function buildSuggestionScenarios(filters) {
 
   if (search) {
     scenarios.push({
-      label: 'Sugestões relacionadas',
+      label: 'Sugestoes relacionadas',
       params: { search, city: '', state: '' },
     });
   }
@@ -102,6 +327,10 @@ function buildSuggestionScenarios(filters) {
   });
 }
 
+function getRegionLabel(installer) {
+  return [installer.city, installer.state].filter(Boolean).join(', ') || installer.service_region || 'Regiao nao informada';
+}
+
 export default function Home() {
   const { user } = useAuth();
   const [filters, setFilters] = useState({ search: '', city: '', state: '' });
@@ -109,30 +338,57 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [locationState, setLocationState] = useState({
     status: 'idle',
-    message: 'Ative sua localização para encontrar profissionais mais próximos.',
+    message: 'Ative sua localizacao para encontrar profissionais mais proximos.',
   });
-  const [activeReviewInstaller, setActiveReviewInstaller] = useState(null);
-  const [reviewDrafts, setReviewDrafts] = useState({});
   const [installersPage, setInstallersPage] = useState(1);
+  const [category, setCategory] = useState('all');
+  const [quickFilter, setQuickFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('rating');
+  const [favorites, setFavorites] = useState({});
   const [noResultsSuggestions, setNoResultsSuggestions] = useState({
     loading: false,
     label: '',
     items: [],
   });
 
-  const totalInstallersPages = Math.max(1, Math.ceil(directory.installers.length / INSTALLERS_PER_PAGE));
-  const normalizedInstallersPage = Math.min(installersPage, totalInstallersPages);
-  const installersStart = (normalizedInstallersPage - 1) * INSTALLERS_PER_PAGE;
-  const paginatedInstallers = useMemo(
-    () => directory.installers.slice(installersStart, installersStart + INSTALLERS_PER_PAGE),
-    [directory.installers, installersStart]
-  );
-  const marketplace = directory.marketplace || defaultMarketplace;
-  const highlightedInstallers = directory.ranking.length;
-  const recentReviews = directory.reviews.length;
   const hasActiveFilters = useMemo(
     () => Boolean(filters.search.trim() || filters.city.trim() || filters.state.trim()),
     [filters.search, filters.city, filters.state]
+  );
+
+  const filteredInstallers = useMemo(() => {
+    const categoryFiltered = directory.installers.filter((installer) => matchesCategory(installer, category));
+
+    const quickFiltered = categoryFiltered.filter((installer) => {
+      if (quickFilter === 'verified') {
+        return Boolean(installer.certificate_verified || installer.safety?.document_masked);
+      }
+
+      if (quickFilter === 'available') {
+        return Boolean((installer.availability_slots || []).length > 0 || (installer.available_dates || []).length > 0);
+      }
+
+      if (quickFilter === 'featured') {
+        return Boolean(installer.featured_installer);
+      }
+
+      return true;
+    });
+
+    return sortInstallers(quickFiltered, sortBy);
+  }, [category, directory.installers, quickFilter, sortBy]);
+
+  const favoriteInstallers = useMemo(
+    () => filteredInstallers.filter((installer) => favorites[installer.id]),
+    [favorites, filteredInstallers]
+  );
+
+  const totalInstallersPages = Math.max(1, Math.ceil(filteredInstallers.length / INSTALLERS_PER_PAGE));
+  const normalizedInstallersPage = Math.min(installersPage, totalInstallersPages);
+  const installersStart = (normalizedInstallersPage - 1) * INSTALLERS_PER_PAGE;
+  const paginatedInstallers = useMemo(
+    () => filteredInstallers.slice(installersStart, installersStart + INSTALLERS_PER_PAGE),
+    [filteredInstallers, installersStart]
   );
 
   const loadDirectory = async (nextFilters = filters) => {
@@ -142,7 +398,7 @@ export default function Home() {
       const response = await api.get('/public/installers', { params: nextFilters });
       setDirectory(response.data);
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Não foi possível carregar os instaladores.');
+      toast.error(error.response?.data?.error || 'Nao foi possivel carregar os instaladores.');
     } finally {
       setLoading(false);
     }
@@ -160,14 +416,14 @@ export default function Home() {
     if (typeof window === 'undefined' || !navigator.geolocation) {
       setLocationState({
         status: 'unsupported',
-        message: 'Seu navegador não oferece localização automática. Você pode buscar manualmente.',
+        message: 'Seu navegador nao oferece localizacao automatica. Voce pode buscar manualmente.',
       });
       return;
     }
 
     setLocationState({
       status: 'locating',
-      message: 'Buscando sua região para filtrar os instaladores.',
+      message: 'Buscando sua regiao para filtrar os instaladores.',
     });
 
     navigator.geolocation.getCurrentPosition(
@@ -178,6 +434,7 @@ export default function Home() {
             ...filters,
             city: region.city || '',
             state: region.state || '',
+            search: region.city || filters.search,
           };
 
           setFilters(nextFilters);
@@ -185,23 +442,23 @@ export default function Home() {
           setLocationState({
             status: 'resolved',
             message: region.label
-              ? `Mostrando profissionais próximos de ${region.label}.`
-              : 'Mostrando profissionais da sua região.',
+              ? `Mostrando profissionais proximos de ${region.label}.`
+              : 'Mostrando profissionais da sua regiao.',
           });
 
           if (!silent) {
-            toast.success(region.label ? `Região encontrada: ${region.label}.` : 'Região encontrada.');
+            toast.success(region.label ? `Regiao encontrada: ${region.label}.` : 'Regiao encontrada.');
           }
 
           await loadDirectory(nextFilters);
         } catch (error) {
           setLocationState({
             status: 'error',
-            message: error.response?.data?.error || 'Não foi possível localizar sua região agora.',
+            message: error.response?.data?.error || 'Nao foi possivel localizar sua regiao agora.',
           });
 
           if (!silent) {
-            toast.error(error.response?.data?.error || 'Não foi possível localizar sua região agora.');
+            toast.error(error.response?.data?.error || 'Nao foi possivel localizar sua regiao agora.');
           }
         }
       },
@@ -210,8 +467,8 @@ export default function Home() {
         setLocationState({
           status: permissionDenied ? 'denied' : 'error',
           message: permissionDenied
-            ? 'Permita a localização para mostrar primeiro os profissionais da sua região.'
-            : 'Não foi possível usar sua localização no momento.',
+            ? 'Permita a localizacao para mostrar primeiro os profissionais da sua regiao.'
+            : 'Nao foi possivel usar sua localizacao no momento.',
         });
       },
       {
@@ -239,52 +496,9 @@ export default function Home() {
     requestLocationSearch({ silent: true });
   }, []);
 
-  const handleFilterChange = (event) => {
-    setFilters((current) => ({ ...current, [event.target.name]: event.target.value }));
-  };
-
-  const handleSearch = async (event) => {
-    event.preventDefault();
+  useEffect(() => {
     setInstallersPage(1);
-    await loadDirectory(filters);
-  };
-
-  const clearFilters = async () => {
-    const nextFilters = { search: '', city: '', state: '' };
-    setFilters(nextFilters);
-    setInstallersPage(1);
-    await loadDirectory(nextFilters);
-  };
-
-  const updateReviewDraft = (installerId, field, value) => {
-    setReviewDrafts((current) => ({
-      ...current,
-      [installerId]: {
-        ...(current[installerId] || emptyReview),
-        [field]: value,
-      },
-    }));
-  };
-
-  const submitReview = async (installerId) => {
-    const payload = reviewDrafts[installerId] || emptyReview;
-    const isOwnProfile = Boolean(user && Number(user.id) === Number(installerId));
-
-    if (isOwnProfile) {
-      toast.error('Você não pode avaliar o seu próprio perfil.');
-      return;
-    }
-
-    try {
-      await api.post(`/public/installers/${installerId}/reviews`, payload);
-      toast.success('Avaliação enviada.');
-      setReviewDrafts((current) => ({ ...current, [installerId]: emptyReview }));
-      setActiveReviewInstaller(null);
-      await loadDirectory(filters);
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Não foi possível enviar a avaliação.');
-    }
-  };
+  }, [category, quickFilter, sortBy]);
 
   useEffect(() => {
     if (loading) {
@@ -318,7 +532,7 @@ export default function Home() {
             return;
           }
         } catch (_error) {
-          // Tenta automaticamente o próximo cenário.
+          // Tenta o proximo cenario automaticamente.
         }
       }
 
@@ -332,512 +546,477 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [loading, directory.installers.length, hasActiveFilters, filters.search, filters.city, filters.state]);
+  }, [directory.installers.length, filters, hasActiveFilters, loading]);
+
+  const handleFilterChange = (event) => {
+    setFilters((current) => ({ ...current, [event.target.name]: event.target.value }));
+  };
+
+  const handleSearch = async (event) => {
+    event.preventDefault();
+    setInstallersPage(1);
+    await loadDirectory(filters);
+  };
+
+  const clearFilters = async () => {
+    const nextFilters = { search: '', city: '', state: '' };
+    setFilters(nextFilters);
+    setCategory('all');
+    setQuickFilter('all');
+    setSortBy('rating');
+    setInstallersPage(1);
+    await loadDirectory(nextFilters);
+  };
+
+  const toggleFavorite = (installerId) => {
+    setFavorites((current) => ({
+      ...current,
+      [installerId]: !current[installerId],
+    }));
+  };
+
+  const cycleQuickFilter = () => {
+    const currentIndex = QUICK_FILTER_OPTIONS.findIndex((item) => item.value === quickFilter);
+    const nextIndex = (currentIndex + 1) % QUICK_FILTER_OPTIONS.length;
+    setQuickFilter(QUICK_FILTER_OPTIONS[nextIndex].value);
+  };
 
   return (
-    <div className="auth-scene min-h-screen overflow-x-hidden px-4 py-8 md:px-6 lg:px-8">
-      <div className="page-shell mx-auto flex w-full max-w-7xl flex-col gap-7">
-        <div className="client-topbar fade-up">
-          <div className="client-topbar-brand">
-            <BrandMark className="client-brand-mark" />
-            <div className="client-topbar-brand-content">
-              <BrandWordmark className="client-topbar-wordmark" size="lg" />
-              <p className="client-topbar-copy">A primeira busca confiável para contratar instaladores perto de você.</p>
+    <div className="client-app-page" id="top">
+      <div className="client-app-shell">
+        <header className="client-app-topbar fade-up">
+          <div className="client-app-brand">
+            <BrandMark className="client-app-brand-mark" />
+            <div className="client-app-brand-copy">
+              <strong>InstaLar</strong>
+              <span>Encontre instaladores no Brasil</span>
             </div>
           </div>
 
-          <div className="client-topbar-actions">
+          <div className="client-app-top-actions">
+            <button className="client-app-icon-button" type="button">
+              <AppIcon name="bell" />
+            </button>
             {user ? (
-              <Link className="ghost-button" to="/dashboard">
-                Abrir meu painel
+              <Link className="client-app-chip-link" to="/dashboard">
+                Meu painel
               </Link>
-            ) : null}
-            {!user ? (
-              <Link className="gold-button" to="/instalador/entrar">
-                Login ou criar conta (instalador)
+            ) : (
+              <Link className="client-app-chip-link" to="/instalador/entrar">
+                Entrar
               </Link>
-            ) : null}
-          </div>
-        </div>
-
-        <header className="public-directory-hero lux-panel fade-up overflow-hidden p-6 sm:p-8">
-          <div className="public-directory-hero-grid grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_360px] lg:items-start">
-            <div className="public-directory-hero-copy min-w-0">
-              <p className="eyebrow">InstaLar • Área do cliente</p>
-              <h1 className="hero-title mt-4 max-w-4xl">
-                Encontre instaladores da sua região com clareza e segurança.
-              </h1>
-              <p className="page-copy mt-4 max-w-3xl">
-                Pesquise por cidade, estado ou estilo de instalação. Veja avaliações reais, horários vagos e abra o perfil
-                completo do profissional antes de decidir.
-              </p>
-
-              <ul className="directory-checklist mt-5">
-                <li>Busca por cidade e estado</li>
-                <li>Avaliações de clientes reais</li>
-                <li>Contato direto por WhatsApp</li>
-              </ul>
-
-              <div className="directory-hero-actions mt-6 flex flex-wrap gap-3">
-                <a className="gold-button" href="#lista-instaladores">
-                  Ver instaladores agora
-                </a>
-              </div>
-
-              <div className="directory-hero-strip mt-6">
-                <article className="directory-hero-stat">
-                  <strong>{directory.installers.length}</strong>
-                  <span>Instaladores listados</span>
-                </article>
-                <article className="directory-hero-stat">
-                  <strong>{highlightedInstallers}</strong>
-                  <span>Perfis em destaque</span>
-                </article>
-                <article className="directory-hero-stat">
-                  <strong>{recentReviews}</strong>
-                  <span>Avaliações recentes</span>
-                </article>
-              </div>
-            </div>
-
-            <aside className="public-filter-panel lux-panel-soft rounded-[24px] p-5">
-              <p className="eyebrow">Busca rápida</p>
-              <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{locationState.message}</p>
-
-              <button className="ghost-button mt-4 w-full" onClick={() => requestLocationSearch()} type="button">
-                {locationState.status === 'locating' ? 'Localizando...' : 'Usar minha localização'}
-              </button>
-
-              <form className="mt-5 space-y-3" onSubmit={handleSearch}>
-                <label className="block">
-                  <span className="field-label">Busca geral</span>
-                  <input
-                    className="field-input"
-                    name="search"
-                    onChange={handleFilterChange}
-                    placeholder="Nome, região ou estilo de instalação"
-                    value={filters.search}
-                  />
-                </label>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="field-label">Cidade</span>
-                    <input
-                      className="field-input"
-                      name="city"
-                      onChange={handleFilterChange}
-                      placeholder="Ex.: Blumenau"
-                      value={filters.city}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="field-label">Estado</span>
-                    <input
-                      className="field-input"
-                      name="state"
-                      onChange={handleFilterChange}
-                      placeholder="Ex.: SC"
-                      value={filters.state}
-                    />
-                  </label>
-                </div>
-
-                <button className="gold-button mt-1 w-full" type="submit">
-                  Buscar instaladores
-                </button>
-              </form>
-            </aside>
+            )}
           </div>
         </header>
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_350px]" id="lista-instaladores">
-          <div className="grid gap-4">
-            {loading ? <div className="empty-state">Carregando instaladores...</div> : null}
+        <section className="client-app-hero fade-up">
+          <div className="client-app-hero-copy">
+            <p className="client-app-kicker">Area do cliente</p>
+            <h1>
+              Encontre instaladores
+              <br />
+              de <span>papel de parede</span>
+            </h1>
+            <p>Profissionais qualificados proximos de voce.</p>
+          </div>
 
-            {!loading && directory.installers.length === 0 ? (
-              <div className="empty-state">
-                <p className="text-base font-semibold text-[var(--text)]">Nenhum instalador encontrado com esse filtro.</p>
-                <p className="mt-2 text-sm text-[var(--muted)]">
-                  Ajuste cidade, estado ou termo da busca. Abaixo mostramos sugestões automáticas para você não ficar sem opção.
-                </p>
-                {hasActiveFilters ? (
-                  <button className="ghost-button mt-4" onClick={clearFilters} type="button">
-                    Limpar filtros e ver todos
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
+          <div className="client-app-hero-visual" aria-hidden="true">
+            <div className="client-app-roll-shadow" />
+            <div className="client-app-roll-sheet" />
+            <div className="client-app-roll-core" />
+            <span className="client-app-leaf client-app-leaf--one" />
+            <span className="client-app-leaf client-app-leaf--two" />
+          </div>
+        </section>
 
-            {!loading && directory.installers.length === 0 && hasActiveFilters ? (
-              <section className="lux-panel-soft rounded-[20px] p-4">
-                <p className="eyebrow">Sugestões automáticas</p>
-                <p className="mt-2 text-sm text-[var(--muted)]">
-                  {noResultsSuggestions.loading
-                    ? 'Buscando instaladores parecidos para você...'
-                    : noResultsSuggestions.label || 'Confira instaladores em destaque enquanto ajustamos sua busca.'}
-                </p>
-
-                {!noResultsSuggestions.loading && noResultsSuggestions.items.length > 0 ? (
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {noResultsSuggestions.items.map((installer) => (
-                      <article className="directory-suggestion-item" key={`suggestion-${installer.id}`}>
-                        <div className="flex items-start gap-3">
-                          {installer.installer_photo ? (
-                            <img
-                              alt={`Foto de ${installer.display_name}`}
-                              className="h-12 w-12 rounded-full border border-[var(--line)] object-cover"
-                              src={installer.installer_photo}
-                            />
-                          ) : installer.logo ? (
-                            <img
-                              alt={`Logo de ${installer.display_name}`}
-                              className="h-12 w-12 rounded-[12px] border border-[var(--line)] object-cover"
-                              src={installer.logo}
-                            />
-                          ) : (
-                            <div className="flex h-12 w-12 items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--gold-soft)] text-sm font-bold text-[var(--gold-strong)]">
-                              {getInitials(installer.display_name)}
-                            </div>
-                          )}
-
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-[var(--text)]">{installer.display_name}</p>
-                            <p className="mt-1 text-xs text-[var(--muted)]">
-                              {[installer.city, installer.state].filter(Boolean).join(' - ') || 'Região não informada'}
-                            </p>
-                            <div className="mt-1 flex items-center gap-2 text-xs text-[var(--muted)]">
-                              <RatingStars value={installer.average_rating} />
-                              <span>{Number(installer.average_rating || 0).toFixed(1)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Link className="gold-button !min-h-[2.5rem] !px-4 !text-xs" to={`/installers/${installer.id}`}>
-                            Ver perfil
-                          </Link>
-                          {installer.whatsapp_link ? (
-                            <a
-                              className="ghost-button !min-h-[2.5rem] !px-4 !text-xs"
-                              href={installer.whatsapp_link}
-                              rel="noreferrer"
-                              target="_blank"
-                            >
-                              WhatsApp
-                            </a>
-                          ) : null}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                ) : null}
-              </section>
-            ) : null}
-
-            {paginatedInstallers.map((installer, index) => {
-              const reviewDraft = reviewDrafts[installer.id] || emptyReview;
-              const isOwnInstallerProfile = Boolean(user && Number(user.id) === Number(installer.id));
-              const isReviewOpen = activeReviewInstaller === installer.id && !isOwnInstallerProfile;
-
-              return (
-                <article
-                  className="directory-installer-card lux-panel fade-up overflow-hidden p-6"
-                  key={installer.id}
-                  style={{ animationDelay: `${0.05 + index * 0.04}s` }}
+        <section className="client-app-search-card fade-up" id="busca">
+          <form className="client-app-search-form" onSubmit={handleSearch}>
+            <div className="client-app-search-main">
+              <div className="client-app-search-inputwrap">
+                <AppIcon className="client-app-inline-icon" name="map-pin" />
+                <input
+                  name="search"
+                  onChange={handleFilterChange}
+                  placeholder="Digite sua cidade ou CEP"
+                  value={filters.search}
+                />
+                <button
+                  className="client-app-locate-button"
+                  onClick={() => requestLocationSearch()}
+                  type="button"
                 >
-                  <div className="flex flex-col gap-5">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0 flex gap-4">
+                  <AppIcon name="target" />
+                </button>
+              </div>
+
+              <button className="client-app-search-submit" type="submit">
+                Buscar
+              </button>
+            </div>
+
+            <div className="client-app-search-advanced">
+              <label>
+                <span>Cidade</span>
+                <input
+                  name="city"
+                  onChange={handleFilterChange}
+                  placeholder="Ex.: Sao Paulo"
+                  value={filters.city}
+                />
+              </label>
+
+              <label>
+                <span>Estado</span>
+                <input
+                  name="state"
+                  onChange={handleFilterChange}
+                  placeholder="Ex.: SP"
+                  value={filters.state}
+                />
+              </label>
+            </div>
+          </form>
+        </section>
+
+        <section className="client-app-category-row fade-up">
+          {CATEGORY_OPTIONS.map((item) => (
+            <button
+              className={`client-app-category ${category === item.value ? 'is-active' : ''}`}
+              key={item.value}
+              onClick={() => setCategory(item.value)}
+              type="button"
+            >
+              <span className="client-app-category-icon">
+                <AppIcon
+                  name={
+                    item.value === 'all'
+                      ? 'users'
+                      : item.value === 'residential'
+                        ? 'home'
+                        : item.value === 'commercial'
+                          ? 'building'
+                          : item.value === 'textured'
+                            ? 'texture'
+                            : item.value === 'vinyl'
+                              ? 'roller'
+                              : 'smile'
+                  }
+                />
+              </span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </section>
+
+        <section className="client-app-toolbar fade-up">
+          <button className="client-app-toolbar-pill" onClick={() => requestLocationSearch()} type="button">
+            <AppIcon name="map-pin" />
+            <span>
+              {filters.city
+                ? `${filters.city}${filters.state ? `, ${filters.state}` : ''}`
+                : 'Minha localizacao'}
+            </span>
+          </button>
+
+          <div className="client-app-toolbar-actions">
+            <button className="client-app-toolbar-action" onClick={cycleQuickFilter} type="button">
+              <AppIcon name="filter" />
+              <span>{QUICK_FILTER_OPTIONS.find((item) => item.value === quickFilter)?.label || 'Filtro'}</span>
+            </button>
+
+            <label className="client-app-toolbar-select">
+              <AppIcon name="sort" />
+              <select onChange={(event) => setSortBy(event.target.value)} value={sortBy}>
+                <option value="rating">Melhor avaliados</option>
+                <option value="reviews">Mais avaliacoes</option>
+                <option value="available">Mais disponiveis</option>
+                <option value="name">Ordem alfabetica</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section className="client-app-results-head fade-up">
+          <div>
+            <h2>Instaladores encontrados</h2>
+          </div>
+          <span className="client-app-count-badge">{filteredInstallers.length} profissionais</span>
+        </section>
+
+        {loading ? <div className="client-app-empty fade-up">Carregando instaladores...</div> : null}
+
+        {!loading && filteredInstallers.length === 0 ? (
+          <div className="client-app-empty fade-up">
+            <strong>Nenhum instalador encontrado com esse filtro.</strong>
+            <p>
+              Ajuste sua busca ou limpe os filtros para ver novamente todos os profissionais disponiveis.
+            </p>
+            {hasActiveFilters ? (
+              <button className="client-app-ghost-button" onClick={clearFilters} type="button">
+                Limpar filtros
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {!loading && filteredInstallers.length === 0 && hasActiveFilters && noResultsSuggestions.items.length > 0 ? (
+          <section className="client-app-suggestion-box fade-up">
+            <div className="client-app-section-copy">
+              <p className="client-app-kicker">Sugestoes automaticas</p>
+              <h3>{noResultsSuggestions.label || 'Confira outros profissionais parecidos'}</h3>
+            </div>
+
+            <div className="client-app-suggestion-grid">
+              {noResultsSuggestions.items.map((installer) => (
+                <Link className="client-app-suggestion-card" key={`suggestion-${installer.id}`} to={`/installers/${installer.id}`}>
+                  {installer.installer_photo ? (
+                    <img alt={`Foto de ${installer.display_name}`} src={installer.installer_photo} />
+                  ) : installer.logo ? (
+                    <img alt={`Logo de ${installer.display_name}`} src={installer.logo} />
+                  ) : (
+                    <span className="client-app-avatar-fallback">{getInitials(installer.display_name)}</span>
+                  )}
+                  <div>
+                    <strong>{installer.display_name}</strong>
+                    <span>{getRegionLabel(installer)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {favoriteInstallers.length > 0 ? (
+          <section className="client-app-favorites fade-up" id="favoritos">
+            <div className="client-app-results-head client-app-results-head--small">
+              <div>
+                <h2>Favoritos</h2>
+              </div>
+              <span className="client-app-count-badge">{favoriteInstallers.length} salvos</span>
+            </div>
+
+            <div className="client-app-results-list">
+              {favoriteInstallers.slice(0, 3).map((installer) => {
+                const availability = getAvailabilityState(installer);
+                const tags = deriveInstallerTags(installer);
+                const isVerified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
+
+                return (
+                  <article className="client-app-installer-card" key={`favorite-${installer.id}`}>
+                    <div className="client-app-status-badge" data-tone={availability.tone}>
+                      <span />
+                      {availability.label}
+                    </div>
+
+                    <div className="client-app-installer-main">
+                      <div className="client-app-installer-media">
                         {installer.installer_photo ? (
-                          <img
-                            alt={`Foto de ${installer.display_name}`}
-                            className="h-16 w-16 shrink-0 rounded-full border border-[var(--line)] object-cover"
-                            src={installer.installer_photo}
-                          />
+                          <img alt={`Foto de ${installer.display_name}`} src={installer.installer_photo} />
                         ) : installer.logo ? (
-                          <img
-                            alt={`Logo de ${installer.display_name}`}
-                            className="h-16 w-16 shrink-0 rounded-[16px] border border-[var(--line)] object-cover"
-                            src={installer.logo}
-                          />
+                          <img alt={`Logo de ${installer.display_name}`} src={installer.logo} />
                         ) : (
-                          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[16px] border border-[var(--line)] bg-[var(--gold-soft)] text-lg font-bold text-[var(--gold-strong)]">
-                            {getInitials(installer.display_name)}
-                          </div>
+                          <div className="client-app-avatar-fallback">{getInitials(installer.display_name)}</div>
                         )}
-
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="break-words text-2xl font-semibold text-[var(--text)]">{installer.display_name}</h2>
-                            <span className="status-pill" data-tone="active">
-                              {installer.review_count > 0 ? `${Number(installer.average_rating).toFixed(1)} de nota` : 'Novo perfil'}
-                            </span>
-                            {installer.featured_installer ? (
-                              <span className="status-pill" data-tone="success">Destaque</span>
-                            ) : null}
-                            {installer.certificate_verified ? (
-                              <span className="status-pill" data-tone="success">Certificado verificado</span>
-                            ) : null}
-                          </div>
-
-                          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
-                            <RatingStars value={installer.average_rating} />
-                            <span>{installer.review_count} avaliações</span>
-                            <span>•</span>
-                            <span>{installer.completed_jobs || 0} instalações concluídas</span>
-                          </div>
-
-                          <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-                            {installer.bio || 'Este instalador ainda está atualizando sua apresentação pública.'}
-                          </p>
-
-                          <div className="directory-meta-grid mt-3 grid gap-2 text-sm text-[var(--muted)] md:grid-cols-2">
-                            <p>
-                              Região:{' '}
-                              {[installer.city, installer.state].filter(Boolean).join(' - ') ||
-                                installer.service_region ||
-                                'Não informada'}
-                            </p>
-                            <p>Atendimento: {installer.service_hours || 'Não informado'}</p>
-                            <p>Estilo: {installer.installation_method || 'Não informado'}</p>
-                            <p>Dias: {formatInstallationDays(installer.installation_days)}</p>
-                            <p>Custo base: {formatCurrency(installer.base_service_cost)}</p>
-                            <p>Deslocamento: {formatCurrency(installer.travel_fee)}</p>
-                          </div>
-
-                          {installer.installation_gallery_preview?.length ? (
-                            <div className="directory-gallery-preview mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                              {installer.installation_gallery_preview.map((photo, photoIndex) => (
-                                <img
-                                  alt={`Instalação ${photoIndex + 1} de ${installer.display_name}`}
-                                  className="h-24 w-full rounded-[10px] border border-[var(--line)] object-cover"
-                                  key={`${installer.id}-preview-${photoIndex}`}
-                                  src={photo}
-                                />
-                              ))}
-                            </div>
-                          ) : null}
-                        </div>
                       </div>
 
-                      <div className="directory-installer-actions flex flex-wrap gap-2">
-                        {installer.whatsapp_link ? (
-                          <a className="ghost-button" href={installer.whatsapp_link} rel="noreferrer" target="_blank">
-                            Contatar no WhatsApp
-                          </a>
-                        ) : null}
-                        <Link className="gold-button" to={`/installers/${installer.id}`}>
-                          Ver perfil completo
-                        </Link>
-                        {isOwnInstallerProfile ? (
-                          <span className="status-pill" data-tone="info">
-                            Este perfil é seu
-                          </span>
-                        ) : (
+                      <div className="client-app-installer-content">
+                        <div className="client-app-installer-head">
+                          <div>
+                            <h3>{installer.display_name}</h3>
+                            <p>{getRegionLabel(installer)}</p>
+                          </div>
                           <button
-                            className="ghost-button"
-                            onClick={() =>
-                              setActiveReviewInstaller((current) => (current === installer.id ? null : installer.id))
-                            }
+                            className={`client-app-favorite-button ${favorites[installer.id] ? 'is-active' : ''}`}
+                            onClick={() => toggleFavorite(installer.id)}
                             type="button"
                           >
-                            Avaliar
+                            <AppIcon name="heart" />
                           </button>
-                        )}
+                        </div>
+
+                        <div className="client-app-rating-line">
+                          <AppIcon name="star" />
+                          <strong>{Number(installer.average_rating || 0).toFixed(1)}</strong>
+                          <span>({installer.review_count || 0} avaliacoes)</span>
+                        </div>
+
+                        <div className="client-app-tag-row">
+                          {tags.map((tag) => (
+                            <span className="client-app-tag" key={`${installer.id}-${tag}`}>
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="client-app-detail-line">
+                          <AppIcon name="shield" />
+                          <span>{isVerified ? 'Perfil verificado' : 'Contato direto com o profissional'}</span>
+                          <span className="client-app-dot">•</span>
+                          <span>{(installer.available_dates || []).length > 0 ? 'Datas disponiveis' : 'Perfil completo'}</span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="directory-inline-panel">
-                      <p className="text-xs uppercase tracking-[0.14em] text-[var(--gold-strong)]">Próximas datas</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {installer.available_dates?.length ? (
-                          installer.available_dates.map((date) => (
-                            <span className="status-pill" data-tone="scheduled" key={date}>
-                              {formatLongDate(date)}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-sm text-[var(--muted)]">Datas ainda não informadas.</span>
-                        )}
-                      </div>
+                    <div className="client-app-installer-footer">
+                      <Link className="client-app-primary-link" to={`/installers/${installer.id}`}>
+                        Ver perfil
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
-                      <p className="mt-4 text-xs uppercase tracking-[0.14em] text-[var(--gold-strong)]">
-                        Horários vagos
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {installer.availability_slots?.length ? (
-                          installer.availability_slots.slice(0, 4).map((slot) => (
-                            <span className="status-pill" data-tone="active" key={slot.id}>
-                              {formatAvailabilitySlotLabel(slot)}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-sm text-[var(--muted)]">Abra o perfil completo para ver detalhes.</span>
-                        )}
-                      </div>
+        {!loading && filteredInstallers.length > 0 ? (
+          <section className="client-app-results-list fade-up">
+            {paginatedInstallers.map((installer) => {
+              const availability = getAvailabilityState(installer);
+              const tags = deriveInstallerTags(installer);
+              const isVerified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
+
+              return (
+                <article className="client-app-installer-card" key={installer.id}>
+                  <div className="client-app-status-badge" data-tone={availability.tone}>
+                    <span />
+                    {availability.label}
+                  </div>
+
+                  <div className="client-app-installer-main">
+                    <div className="client-app-installer-media">
+                      {installer.installer_photo ? (
+                        <img alt={`Foto de ${installer.display_name}`} src={installer.installer_photo} />
+                      ) : installer.logo ? (
+                        <img alt={`Logo de ${installer.display_name}`} src={installer.logo} />
+                      ) : (
+                        <div className="client-app-avatar-fallback">{getInitials(installer.display_name)}</div>
+                      )}
                     </div>
 
-                    {isReviewOpen ? (
-                      <div className="directory-inline-panel">
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <label className="block">
-                            <span className="field-label">Seu nome</span>
-                            <input
-                              className="field-input"
-                              onChange={(event) => updateReviewDraft(installer.id, 'reviewer_name', event.target.value)}
-                              placeholder="Como você quer aparecer"
-                              value={reviewDraft.reviewer_name}
-                            />
-                          </label>
-
-                          <label className="block">
-                            <span className="field-label">Sua região</span>
-                            <input
-                              className="field-input"
-                              onChange={(event) => updateReviewDraft(installer.id, 'reviewer_region', event.target.value)}
-                              placeholder="Cidade ou bairro"
-                              value={reviewDraft.reviewer_region}
-                            />
-                          </label>
+                    <div className="client-app-installer-content">
+                      <div className="client-app-installer-head">
+                        <div>
+                          <h3>
+                            {installer.display_name}
+                            {isVerified ? (
+                              <span className="client-app-verified-mark">
+                                <AppIcon name="check-badge" />
+                              </span>
+                            ) : null}
+                          </h3>
+                          <p>{getRegionLabel(installer)}</p>
                         </div>
 
-                        <label className="mt-3 block">
-                          <span className="field-label">Nota</span>
-                          <select
-                            className="field-select"
-                            onChange={(event) => updateReviewDraft(installer.id, 'rating', Number(event.target.value))}
-                            value={reviewDraft.rating}
-                          >
-                            <option value={5}>5 estrelas</option>
-                            <option value={4}>4 estrelas</option>
-                            <option value={3}>3 estrelas</option>
-                            <option value={2}>2 estrelas</option>
-                            <option value={1}>1 estrela</option>
-                          </select>
-                        </label>
-
-                        <label className="mt-3 block">
-                          <span className="field-label">Comentário</span>
-                          <textarea
-                            className="field-textarea"
-                            onChange={(event) => updateReviewDraft(installer.id, 'comment', event.target.value)}
-                            placeholder="Conte como foi seu atendimento"
-                            rows="3"
-                            value={reviewDraft.comment}
-                          />
-                        </label>
-
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <button className="gold-button" onClick={() => submitReview(installer.id)} type="button">
-                            Enviar avaliação
-                          </button>
-                          <button className="ghost-button" onClick={() => setActiveReviewInstaller(null)} type="button">
-                            Fechar
-                          </button>
-                        </div>
+                        <button
+                          className={`client-app-favorite-button ${favorites[installer.id] ? 'is-active' : ''}`}
+                          onClick={() => toggleFavorite(installer.id)}
+                          type="button"
+                        >
+                          <AppIcon name="heart" />
+                        </button>
                       </div>
-                    ) : null}
+
+                      <div className="client-app-rating-line">
+                        <AppIcon name="star" />
+                        <strong>{Number(installer.average_rating || 0).toFixed(1)}</strong>
+                        <span>({installer.review_count || 0} avaliacoes)</span>
+                      </div>
+
+                      <div className="client-app-tag-row">
+                        {tags.map((tag) => (
+                          <span className="client-app-tag" key={`${installer.id}-${tag}`}>
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="client-app-detail-line">
+                        <AppIcon name="shield" />
+                        <span>{isVerified ? 'Profissional verificado' : 'Contato direto disponivel'}</span>
+                        <span className="client-app-dot">•</span>
+                        <span>
+                          {(installer.availability_slots || []).length > 0 || (installer.available_dates || []).length > 0
+                            ? 'Horarios disponiveis'
+                            : 'Agenda a confirmar'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="client-app-installer-footer">
+                    <Link className="client-app-primary-link" to={`/installers/${installer.id}`}>
+                      Ver perfil
+                    </Link>
                   </div>
                 </article>
               );
             })}
+          </section>
+        ) : null}
 
-            {!loading && directory.installers.length > 0 ? (
-              <PaginationControls
-                currentPage={normalizedInstallersPage}
-                onPageChange={setInstallersPage}
-                totalPages={totalInstallersPages}
-              />
-            ) : null}
-          </div>
+        {!loading && filteredInstallers.length > 0 ? (
+          <PaginationControls
+            currentPage={normalizedInstallersPage}
+            onPageChange={setInstallersPage}
+            totalPages={totalInstallersPages}
+          />
+        ) : null}
 
-          <aside className="grid gap-5">
-            <section className="directory-side-section lux-panel fade-up p-5">
-              <p className="eyebrow">Ranking de instaladores</p>
-              <h2 className="mt-2 text-xl font-semibold text-[var(--text)]">Mais bem avaliados</h2>
-
-              <div className="mt-4 grid gap-2">
-                {directory.ranking.length ? (
-                  directory.ranking.map((item) => (
-                    <article className="directory-rank-item" key={item.id}>
-                      <p className="truncate text-sm font-semibold text-[var(--text)]">
-                        #{item.ranking_position} {item.display_name}
-                      </p>
-                      <p className="mt-1 text-xs text-[var(--muted)]">
-                        {Number(item.average_rating || 0).toFixed(1)} • {item.review_count} avaliações
-                      </p>
-                    </article>
-                  ))
-                ) : (
-                  <div className="empty-state !p-4 text-sm">O ranking aparece quando houver avaliações suficientes.</div>
-                )}
-              </div>
-            </section>
-
-            <section className="directory-side-section lux-panel-soft fade-up rounded-[22px] p-5" style={{ animationDelay: '0.08s' }}>
-              <p className="eyebrow">Avaliações recentes</p>
-              <div className="mt-3 grid gap-3">
-                {directory.reviews.length ? (
-                  directory.reviews.map((review) => (
-                    <article className="directory-review-item" key={review.id}>
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-sm font-semibold text-[var(--text)]">{review.reviewer_name}</p>
-                        <span className="status-pill" data-tone="success">
-                          {review.rating}/5
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-[var(--gold-strong)]">{review.installer_name}</p>
-                      <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                        {review.comment || 'Avaliação enviada sem comentário adicional.'}
-                      </p>
-                    </article>
-                  ))
-                ) : (
-                  <div className="empty-state !p-4 text-sm">Ainda não há avaliações recentes.</div>
-                )}
-              </div>
-            </section>
-
-            <section className="directory-store-section lux-panel-soft fade-up rounded-[22px] p-5" style={{ animationDelay: '0.1s' }}>
-              <p className="eyebrow">Loja recomendada</p>
-              <h2 className="mt-2 text-xl font-semibold text-[var(--text)]">{marketplace.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-                {marketplace.description}
-              </p>
-              <div className="mt-3 text-xs uppercase tracking-[0.14em] text-[var(--gold-strong)]">
-                beminstalado.com.br
-              </div>
-
-              <div className="directory-highlight-tags mt-4 flex flex-wrap gap-2">
-                {(marketplace.highlights || []).map((highlight) => (
-                  <span className="status-pill" data-tone="scheduled" key={highlight}>
-                    {highlight}
-                  </span>
-                ))}
-              </div>
-
-              <div className="mt-4 grid gap-2">
-                <a className="gold-button w-full justify-center" href={marketplace.url} rel="noreferrer" target="_blank">
-                  {marketplace.cta_label || 'Visitar loja oficial'}
-                </a>
-                {marketplace.whatsapp_url ? (
-                  <a className="ghost-button w-full justify-center" href={marketplace.whatsapp_url} rel="noreferrer" target="_blank">
-                    Falar com a loja no WhatsApp
-                  </a>
-                ) : null}
-              </div>
-
-              <p className="mt-3 text-sm text-[var(--muted)]">
-                {marketplace.contact_phone ? `Contato: ${marketplace.contact_phone}` : ''}
-                {marketplace.contact_phone && marketplace.contact_email ? ' • ' : ''}
-                {marketplace.contact_email || ''}
-              </p>
-            </section>
-          </aside>
+        <section className="client-app-trust-strip fade-up">
+          <article>
+            <AppIcon name="shield" />
+            <div>
+              <strong>Profissionais verificados</strong>
+              <span>Todos passam por analise</span>
+            </div>
+          </article>
+          <article>
+            <AppIcon name="star" />
+            <div>
+              <strong>Avaliacoes reais</strong>
+              <span>Baseadas em clientes</span>
+            </div>
+          </article>
+          <article>
+            <AppIcon name="shield" />
+            <div>
+              <strong>Contato direto</strong>
+              <span>Fale com quem vai atender</span>
+            </div>
+          </article>
         </section>
       </div>
+
+      <nav className="client-app-mobile-dock">
+        <a href="#top">
+          <AppIcon name="home" />
+          <span>Inicio</span>
+        </a>
+        <a href="#busca">
+          <AppIcon name="search" />
+          <span>Buscar</span>
+        </a>
+        <a href="#favoritos">
+          <AppIcon name="heart" />
+          <span>Favoritos</span>
+        </a>
+        <a href="https://api.whatsapp.com/send?phone=5548999816000" rel="noreferrer" target="_blank">
+          <AppIcon name="message" />
+          <span>Mensagens</span>
+        </a>
+        {user ? (
+          <Link to="/dashboard">
+            <AppIcon name="profile" />
+            <span>Perfil</span>
+          </Link>
+        ) : (
+          <Link to="/instalador/entrar">
+            <AppIcon name="profile" />
+            <span>Perfil</span>
+          </Link>
+        )}
+      </nav>
     </div>
   );
 }
