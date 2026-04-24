@@ -9785,3 +9785,789 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.agenda-modern-shell {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.agenda-modern-hero,
+.agenda-modern-calendar-card,
+.agenda-modern-day-panel,
+.agenda-modern-summary-card {
+  border: 1px solid rgba(205, 163, 73, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
+    rgba(12, 10, 9, 0.96);
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(205, 163, 73, 0.05) inset;
+}
+
+.agenda-modern-hero {
+  border-radius: 30px;
+  padding: 1.35rem 1.4rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.agenda-modern-eyebrow,
+.agenda-modern-section-label {
+  margin: 0;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--gold-strong);
+}
+
+.agenda-modern-hero-copy h1 {
+  margin: 0.55rem 0 0;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: clamp(2rem, 3.1vw, 3.45rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: #fff9ef;
+  max-width: 12ch;
+}
+
+.agenda-modern-hero-copy p {
+  margin: 0.9rem 0 0;
+  max-width: 58ch;
+  line-height: 1.6;
+  color: rgba(255, 245, 230, 0.72);
+}
+
+.agenda-modern-hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.agenda-modern-hero-metrics article {
+  min-height: 7.1rem;
+  border-radius: 22px;
+  border: 1px solid rgba(205, 163, 73, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 1rem;
+  display: grid;
+  align-content: space-between;
+}
+
+.agenda-modern-hero-metrics span {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: rgba(255, 245, 230, 0.62);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.agenda-modern-hero-metrics strong {
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.agenda-modern-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.agenda-modern-calendar-card,
+.agenda-modern-day-panel {
+  border-radius: 30px;
+  padding: 1.35rem 1.35rem 1.4rem;
+}
+
+.agenda-modern-panel-head,
+.agenda-modern-day-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.agenda-modern-panel-head h2,
+.agenda-modern-day-head h2 {
+  margin: 0.45rem 0 0;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: clamp(1.5rem, 3vw, 2.35rem);
+  line-height: 1.06;
+  color: #fff8ee;
+}
+
+.agenda-modern-day-head {
+  flex-wrap: wrap;
+}
+
+.agenda-modern-day-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.agenda-modern-count-pill {
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(205, 163, 73, 0.12);
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.agenda-modern-day-copy {
+  margin: 0.55rem 0 0;
+  color: rgba(255, 245, 230, 0.68);
+  line-height: 1.55;
+}
+
+.agenda-modern-calendar-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.agenda-modern-icon-button,
+.agenda-modern-chip-button,
+.agenda-modern-primary-button,
+.agenda-modern-summary-link,
+.agenda-modern-menu-button,
+.agenda-modern-action {
+  border: 1px solid rgba(205, 163, 73, 0.2);
+  border-radius: 18px;
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    background 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.agenda-modern-icon-button,
+.agenda-modern-menu-button {
+  width: 3rem;
+  height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.025);
+  color: #fff5de;
+}
+
+.agenda-modern-chip-button {
+  min-height: 3rem;
+  padding: 0 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.025);
+  color: #fff6e1;
+  font-weight: 600;
+}
+
+.agenda-modern-primary-button,
+.agenda-modern-summary-link {
+  min-height: 3.3rem;
+  padding: 0 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #d9a146, #bf8134);
+  color: #140e08;
+  font-weight: 700;
+  box-shadow: 0 18px 32px rgba(191, 129, 52, 0.18);
+}
+
+.agenda-modern-summary-link {
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--gold);
+  box-shadow: none;
+}
+
+.agenda-modern-icon-button:hover,
+.agenda-modern-chip-button:hover,
+.agenda-modern-primary-button:hover,
+.agenda-modern-summary-link:hover,
+.agenda-modern-menu-button:hover,
+.agenda-modern-action:hover {
+  transform: translateY(-1px);
+  border-color: rgba(205, 163, 73, 0.36);
+}
+
+.agenda-modern-legend {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.35rem;
+  color: rgba(255, 245, 230, 0.74);
+  font-size: 0.9rem;
+}
+
+.agenda-modern-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.agenda-modern-legend i {
+  width: 0.78rem;
+  height: 0.78rem;
+  border-radius: 999px;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.agenda-modern-legend .has-events {
+  background: var(--gold);
+}
+
+.agenda-modern-legend .selected-day {
+  background: rgba(205, 163, 73, 0.24);
+  border: 1px solid rgba(205, 163, 73, 0.5);
+}
+
+.agenda-modern-legend .today-day {
+  background: #fff3d2;
+}
+
+.agenda-modern-weekdays {
+  margin-top: 1.35rem;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.agenda-modern-weekdays span {
+  text-align: center;
+  font-size: 0.82rem;
+  color: rgba(255, 245, 230, 0.66);
+  font-weight: 600;
+}
+
+.agenda-modern-calendar-grid {
+  margin-top: 0.8rem;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.agenda-modern-day {
+  min-height: 5.6rem;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: #fff9ef;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.3rem;
+  transition:
+    transform 220ms ease,
+    background 220ms ease,
+    border-color 220ms ease;
+}
+
+.agenda-modern-day:hover {
+  transform: translateY(-1px);
+}
+
+.agenda-modern-day[data-selected='true'] {
+  background: rgba(205, 163, 73, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(205, 163, 73, 0.25);
+}
+
+.agenda-modern-day[data-today='true'] .agenda-modern-day-number {
+  color: var(--gold);
+}
+
+.agenda-modern-day[data-outside='true'] {
+  opacity: 0.26;
+}
+
+.agenda-modern-day-number {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.agenda-modern-day-marker {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--gold);
+}
+
+.agenda-modern-day[data-selected='true'] .agenda-modern-day-marker {
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+.agenda-modern-appointments {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.agenda-modern-empty-state {
+  border-radius: 22px;
+  border: 1px dashed rgba(205, 163, 73, 0.18);
+  background: rgba(255, 255, 255, 0.015);
+  padding: 1.1rem;
+  color: rgba(255, 245, 230, 0.7);
+  line-height: 1.55;
+}
+
+.agenda-modern-appointment {
+  border-radius: 24px;
+  border: 1px solid rgba(205, 163, 73, 0.14);
+  background: rgba(255, 255, 255, 0.018);
+  overflow: hidden;
+}
+
+.agenda-modern-appointment-main {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) auto;
+  gap: 0;
+  align-items: stretch;
+}
+
+.agenda-modern-time-block {
+  border-right: 1px solid rgba(205, 163, 73, 0.12);
+  padding: 1.1rem 0.85rem;
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  background: rgba(205, 163, 73, 0.05);
+}
+
+.agenda-modern-time-block strong {
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.agenda-modern-time-block span {
+  color: rgba(255, 245, 230, 0.56);
+  font-size: 0.82rem;
+}
+
+.agenda-modern-appointment-body {
+  padding: 1rem 1rem 0.95rem;
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.agenda-modern-appointment-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.agenda-modern-appointment-top h3 {
+  margin: 0;
+  color: #fff9ef;
+  font-size: 1.22rem;
+}
+
+.agenda-modern-appointment-top p {
+  margin: 0.24rem 0 0;
+  color: rgba(255, 245, 230, 0.66);
+  line-height: 1.45;
+}
+
+.agenda-modern-status {
+  min-height: 2rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.agenda-modern-status[data-tone='scheduled'] {
+  background: rgba(205, 163, 73, 0.16);
+  color: var(--gold);
+}
+
+.agenda-modern-status[data-tone='completed'] {
+  background: rgba(87, 181, 118, 0.16);
+  color: #8be29b;
+}
+
+.agenda-modern-status[data-tone='canceled'] {
+  background: rgba(211, 97, 97, 0.16);
+  color: #f2a1a1;
+}
+
+.agenda-modern-service-chip {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 1.9rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f2e2ba;
+  font-size: 0.82rem;
+}
+
+.agenda-modern-appointment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.agenda-modern-appointment-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(255, 245, 230, 0.6);
+  font-size: 0.86rem;
+}
+
+.agenda-modern-appointment-meta svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--gold);
+}
+
+.agenda-modern-menu-button {
+  align-self: start;
+  justify-self: end;
+  margin: 0.85rem 0.85rem 0 0;
+  background: transparent;
+  color: rgba(255, 245, 230, 0.72);
+}
+
+.agenda-modern-actions {
+  display: none;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0 1rem 1rem calc(86px + 1rem);
+}
+
+.agenda-modern-appointment.is-open .agenda-modern-actions {
+  display: flex;
+}
+
+.agenda-modern-action {
+  min-height: 2.7rem;
+  padding: 0 0.9rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff7e4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.agenda-modern-action svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.agenda-modern-action.is-success {
+  border-color: rgba(87, 181, 118, 0.24);
+  color: #9beaac;
+}
+
+.agenda-modern-action.is-warning {
+  border-color: rgba(205, 163, 73, 0.28);
+  color: var(--gold);
+}
+
+.agenda-modern-action.is-danger {
+  border-color: rgba(211, 97, 97, 0.24);
+  color: #f3a7a7;
+}
+
+.agenda-modern-summary-card {
+  border-radius: 26px;
+  padding: 1rem 1.1rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.agenda-modern-summary-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(205, 163, 73, 0.12);
+  color: var(--gold);
+}
+
+.agenda-modern-summary-icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.agenda-modern-summary-copy strong {
+  display: block;
+  color: #fff9ef;
+  font-size: 1.02rem;
+}
+
+.agenda-modern-summary-copy span {
+  display: block;
+  margin-top: 0.2rem;
+  color: rgba(255, 245, 230, 0.66);
+}
+
+@media (min-width: 961px) {
+  .agenda-modern-actions {
+    display: flex;
+  }
+
+  .agenda-modern-menu-button {
+    display: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .agenda-modern-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .agenda-modern-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .agenda-modern-hero-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .agenda-modern-shell {
+    gap: 0.9rem;
+  }
+
+  .agenda-modern-hero,
+  .agenda-modern-calendar-card,
+  .agenda-modern-day-panel,
+  .agenda-modern-summary-card {
+    border-radius: 24px;
+  }
+
+  .agenda-modern-hero {
+    padding: 1rem;
+  }
+
+  .agenda-modern-hero-copy h1 {
+    font-size: clamp(1.9rem, 10vw, 3rem);
+    max-width: 10.5ch;
+  }
+
+  .agenda-modern-hero-copy p {
+    font-size: 0.95rem;
+  }
+
+  .agenda-modern-hero-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .agenda-modern-hero-metrics article {
+    min-height: 5.8rem;
+    padding: 0.8rem;
+  }
+
+  .agenda-modern-hero-metrics span {
+    font-size: 0.68rem;
+  }
+
+  .agenda-modern-hero-metrics strong {
+    font-size: 1.45rem;
+  }
+
+  .agenda-modern-calendar-card,
+  .agenda-modern-day-panel {
+    padding: 1rem;
+  }
+
+  .agenda-modern-panel-head,
+  .agenda-modern-day-head {
+    gap: 0.8rem;
+  }
+
+  .agenda-modern-panel-head h2,
+  .agenda-modern-day-head h2 {
+    font-size: 1.25rem;
+  }
+
+  .agenda-modern-calendar-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .agenda-modern-chip-button {
+    flex: 1;
+  }
+
+  .agenda-modern-legend {
+    gap: 0.65rem 1rem;
+    font-size: 0.82rem;
+  }
+
+  .agenda-modern-weekdays {
+    margin-top: 1rem;
+    gap: 0.35rem;
+  }
+
+  .agenda-modern-weekdays span {
+    font-size: 0.76rem;
+  }
+
+  .agenda-modern-calendar-grid {
+    gap: 0.3rem;
+  }
+
+  .agenda-modern-day {
+    min-height: 3.9rem;
+    padding: 0.45rem 0.18rem;
+    border-radius: 18px;
+  }
+
+  .agenda-modern-day-number {
+    font-size: 1rem;
+  }
+
+  .agenda-modern-day-head {
+    align-items: stretch;
+  }
+
+  .agenda-modern-primary-button {
+    width: 100%;
+    min-height: 3rem;
+  }
+
+  .agenda-modern-appointment-main {
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+  }
+
+  .agenda-modern-time-block {
+    padding: 0.9rem 0.65rem;
+  }
+
+  .agenda-modern-time-block strong {
+    font-size: 1rem;
+  }
+
+  .agenda-modern-time-block span {
+    font-size: 0.72rem;
+  }
+
+  .agenda-modern-appointment-body {
+    padding: 0.9rem 0.85rem 0.85rem;
+    gap: 0.55rem;
+  }
+
+  .agenda-modern-appointment-top {
+    gap: 0.55rem;
+    align-items: flex-start;
+  }
+
+  .agenda-modern-appointment-top h3 {
+    font-size: 1.04rem;
+  }
+
+  .agenda-modern-appointment-top p {
+    font-size: 0.9rem;
+  }
+
+  .agenda-modern-status {
+    font-size: 0.74rem;
+    min-height: 1.8rem;
+    padding-inline: 0.6rem;
+  }
+
+  .agenda-modern-service-chip {
+    font-size: 0.74rem;
+  }
+
+  .agenda-modern-appointment-meta span {
+    font-size: 0.78rem;
+  }
+
+  .agenda-modern-menu-button {
+    width: 2.6rem;
+    height: 2.6rem;
+    margin: 0.7rem 0.7rem 0 0;
+  }
+
+  .agenda-modern-actions {
+    padding: 0 0.85rem 0.85rem;
+    display: none;
+  }
+
+  .agenda-modern-appointment.is-open .agenda-modern-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agenda-modern-action {
+    justify-content: center;
+    min-height: 2.55rem;
+    padding-inline: 0.7rem;
+    font-size: 0.8rem;
+  }
+
+  .agenda-modern-summary-card {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .agenda-modern-summary-link {
+    width: 100%;
+    min-height: 3rem;
+  }
+}
+
+@media (max-width: 460px) {
+  .agenda-modern-hero-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .agenda-modern-day-title-row {
+    align-items: center;
+  }
+
+  .agenda-modern-day-head {
+    flex-direction: column;
+  }
+
+  .agenda-modern-calendar-controls {
+    gap: 0.45rem;
+  }
+
+  .agenda-modern-icon-button {
+    width: 2.8rem;
+    height: 2.8rem;
+  }
+
+  .agenda-modern-day {
+    min-height: 3.35rem;
+  }
+}
