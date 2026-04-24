@@ -14,6 +14,33 @@ const CHART_WIDTH = 820;
 const CHART_HEIGHT = 280;
 const CHART_PADDING_X = 18;
 const CHART_PADDING_Y = 24;
+const CHART_VIEWS = ['weekly', 'monthly', 'yearly'];
+const CHART_VIEW_LABELS = {
+  weekly: 'Semanal',
+  monthly: 'Mensal',
+  yearly: 'Anual',
+};
+const MONTH_OPTIONS = [
+  { value: 0, label: 'Janeiro' },
+  { value: 1, label: 'Fevereiro' },
+  { value: 2, label: 'Março' },
+  { value: 3, label: 'Abril' },
+  { value: 4, label: 'Maio' },
+  { value: 5, label: 'Junho' },
+  { value: 6, label: 'Julho' },
+  { value: 7, label: 'Agosto' },
+  { value: 8, label: 'Setembro' },
+  { value: 9, label: 'Outubro' },
+  { value: 10, label: 'Novembro' },
+  { value: 11, label: 'Dezembro' },
+];
+const fullMonthFormatter = new Intl.DateTimeFormat('pt-BR', {
+  month: 'long',
+  year: 'numeric',
+});
+const shortMonthFormatter = new Intl.DateTimeFormat('pt-BR', {
+  month: 'short',
+});
 
 function DashboardIcon({ tone = 'blue', type = 'revenue' }) {
   const paths = {
@@ -80,55 +107,217 @@ function endOfMonth(date) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
 }
 
-function buildWeeklySeries(budgets, monthDate) {
-  const monthStart = startOfMonth(monthDate);
-  const monthEnd = endOfMonth(monthDate);
-  const buckets = [];
+function endOfDay(date) {
+  const next = new Date(date);
+  next.setHours(23, 59, 59, 999);
+  return next;
+}
 
-  for (let cursor = new Date(monthStart); cursor <= monthEnd; cursor.setDate(cursor.getDate() + 7)) {
-    const bucketStart = new Date(cursor);
-    const bucketEnd = new Date(cursor);
-    bucketEnd.setDate(bucketEnd.getDate() + 6);
+function startOfWeek(date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  const day = next.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  next.setDate(next.getDate() + diff);
+  return next;
+}
 
-    const value = budgets.reduce((total, budget) => {
-      const createdAt = new Date(budget.created_at || budget.updated_at || Date.now());
+function endOfWeek(date) {
+  const next = startOfWeek(date);
+  next.setDate(next.getDate() + 6);
+  next.setHours(23, 59, 59, 999);
+  return next;
+}
 
-      if (Number.isNaN(createdAt.getTime())) {
+function startOfYear(date) {
+  return new Date(date.getFullYear(), 0, 1);
+}
+
+function endOfYear(date) {
+  return new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
+}
+
+function addDays(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function addWeeks(date, weeks) {
+  return addDays(date, weeks * 7);
+}
+
+function addMonths(date, months) {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
+function addYears(date, years) {
+  return new Date(date.getFullYear() + years, date.getMonth(), 1);
+}
+
+function getDateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function getMonthKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function getIsoWeekInfo(date) {
+  const target = new Date(date);
+  target.setHours(0, 0, 0, 0);
+  target.setDate(target.getDate() + 4 - (target.getDay() || 7));
+  const yearStart = new Date(target.getFullYear(), 0, 1);
+  const weekNumber = Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+  return {
+    year: target.getFullYear(),
+    week: weekNumber,
+  };
+}
+
+function getWeekKey(date) {
+  const { year, week } = getIsoWeekInfo(date);
+  return `${year}-W${String(week).padStart(2, '0')}`;
+}
+
+function parseWeekKey(value) {
+  const match = /^(\d{4})-W(\d{2})$/.exec(value || '');
+  if (!match) {
+    return new Date();
+  }
+
+  const year = Number(match[1]);
+  const week = Number(match[2]);
+  const jan4 = new Date(year, 0, 4);
+  const firstWeekStart = startOfWeek(jan4);
+  return addWeeks(firstWeekStart, week - 1);
+}
+
+function getWeekRangeLabel(date) {
+  const start = startOfWeek(date);
+  const end = endOfWeek(date);
+  return `${formatShortDate(start)} - ${formatShortDate(end)}`;
+}
+
+function getChartPeriodStart(view, date) {
+  if (view === 'weekly') return startOfWeek(date);
+  if (view === 'yearly') return startOfYear(date);
+  return startOfMonth(date);
+}
+
+function shiftChartDate(view, date, amount) {
+  if (view === 'weekly') return addWeeks(date, amount);
+  if (view === 'yearly') return addYears(date, amount);
+  return addMonths(date, amount);
+}
+
+function buildChartSeries(budgets, view, anchorDate) {
+  const parsedBudgets = budgets
+    .map((budget) => ({
+      ...budget,
+      _date: new Date(budget.created_at || budget.updated_at || Date.now()),
+    }))
+    .filter((budget) => !Number.isNaN(budget._date.getTime()));
+
+  if (view === 'weekly') {
+    const weekStart = startOfWeek(anchorDate);
+    const weekEnd = endOfWeek(anchorDate);
+    const series = Array.from({ length: 7 }, (_, index) => {
+      const dayStart = addDays(weekStart, index);
+      const dayEnd = endOfDay(dayStart);
+      const value = parsedBudgets.reduce((total, budget) => {
+        if (budget._date >= dayStart && budget._date <= dayEnd) {
+          return total + Number(budget.total_amount || 0);
+        }
         return total;
-      }
+      }, 0);
 
-      if (createdAt >= bucketStart && createdAt <= bucketEnd) {
+      return {
+        label: formatShortDate(dayStart),
+        value,
+      };
+    });
+
+    return {
+      series,
+      description: 'Evolução diária da semana selecionada.',
+      periodLabel: getWeekRangeLabel(anchorDate),
+      periodStart: weekStart,
+      periodEnd: weekEnd,
+    };
+  }
+
+  if (view === 'yearly') {
+    const yearStart = startOfYear(anchorDate);
+    const yearEnd = endOfYear(anchorDate);
+    const series = Array.from({ length: 12 }, (_, index) => {
+      const monthStart = new Date(anchorDate.getFullYear(), index, 1);
+      const monthEnd = endOfMonth(monthStart);
+      const value = parsedBudgets.reduce((total, budget) => {
+        if (budget._date >= monthStart && budget._date <= monthEnd) {
+          return total + Number(budget.total_amount || 0);
+        }
+        return total;
+      }, 0);
+
+      return {
+        label: shortMonthFormatter.format(monthStart).replace('.', ''),
+        value,
+      };
+    });
+
+    return {
+      series,
+      description: 'Evolução mensal ao longo do ano selecionado.',
+      periodLabel: `${anchorDate.getFullYear()}`,
+      periodStart: yearStart,
+      periodEnd: yearEnd,
+    };
+  }
+
+  const monthStart = startOfMonth(anchorDate);
+  const monthEnd = endOfMonth(anchorDate);
+  const series = [];
+
+  for (let cursor = new Date(monthStart); cursor <= monthEnd; cursor = addWeeks(cursor, 1)) {
+    const bucketStart = new Date(cursor);
+    const bucketEnd = endOfWeek(bucketStart);
+    const safeEnd = bucketEnd > monthEnd ? monthEnd : bucketEnd;
+
+    const value = parsedBudgets.reduce((total, budget) => {
+      if (budget._date >= bucketStart && budget._date <= safeEnd) {
         return total + Number(budget.total_amount || 0);
       }
-
       return total;
     }, 0);
 
-    buckets.push({
+    series.push({
       label: formatShortDate(bucketStart),
       value,
     });
   }
 
-  if (buckets.every((bucket) => bucket.value === 0)) {
-    return [36, 42, 40, 58, 54, 68, 72, 81].map((value, index) => ({
-      label: `${String(index + 1).padStart(2, '0')}/${String(monthDate.getMonth() + 1).padStart(2, '0')}`,
-      value: value * 1000,
-    }));
-  }
-
-  return buckets;
+  return {
+    series,
+    description: 'Evolução semanal do mês selecionado.',
+    periodLabel: fullMonthFormatter.format(anchorDate),
+    periodStart: monthStart,
+    periodEnd: monthEnd,
+  };
 }
 
 function buildLineGeometry(series) {
   const values = series.map((item) => Number(item.value || 0));
-  const maxValue = Math.max(...values, 1);
+  const hasValues = values.some((value) => value > 0);
+  const maxValue = hasValues ? Math.max(...values, 1) : 1;
   const innerWidth = CHART_WIDTH - CHART_PADDING_X * 2;
   const innerHeight = CHART_HEIGHT - CHART_PADDING_Y * 2;
 
   const points = series.map((item, index) => {
     const x = CHART_PADDING_X + (innerWidth / Math.max(series.length - 1, 1)) * index;
-    const y = CHART_PADDING_Y + innerHeight - (innerHeight * Number(item.value || 0)) / maxValue;
+    const y = hasValues
+      ? CHART_PADDING_Y + innerHeight - (innerHeight * Number(item.value || 0)) / maxValue
+      : CHART_HEIGHT - CHART_PADDING_Y;
     return {
       ...item,
       x,
@@ -145,14 +334,14 @@ function buildLineGeometry(series) {
   const ticks = Array.from({ length: 5 }, (_, index) => {
     const ratio = 1 - index / 4;
     const y = CHART_PADDING_Y + innerHeight * index / 4;
-    const value = maxValue * ratio;
+    const value = hasValues ? maxValue * ratio : 0;
     return {
       y,
       label: compactCurrency(value),
     };
   });
 
-  return { points, linePath, areaPath, ticks };
+  return { points, linePath, areaPath, ticks, hasValues };
 }
 
 function buildStatusSegments(budgets) {
@@ -213,7 +402,7 @@ function buildStatusSegments(budgets) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const currentMonth = useMemo(() => new Date(), []);
+  const today = useMemo(() => new Date(), []);
   const [data, setData] = useState({
     metrics: {
       monthly_revenue: 0,
@@ -236,6 +425,8 @@ export default function Dashboard() {
   const [budgets, setBudgets] = useState([]);
   const [clients, setClients] = useState([]);
   const [search, setSearch] = useState('');
+  const [chartView, setChartView] = useState('monthly');
+  const [chartDate, setChartDate] = useState(() => new Date());
 
   useEffect(() => {
     Promise.all([
@@ -255,17 +446,17 @@ export default function Dashboard() {
 
   const { metrics, ranking } = data;
   const firstName = user?.name?.split(' ')[0] || 'Instalador';
-  const periodRangeLabel = `01/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()} - ${String(endOfMonth(currentMonth).getDate()).padStart(2, '0')}/${String(currentMonth.getMonth() + 1).padStart(2, '0')}/${currentMonth.getFullYear()}`;
+  const periodRangeLabel = `01/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()} - ${String(endOfMonth(today).getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
   const clientsWithEmail = clients.filter((client) => Boolean(client.email)).length;
   const budgetsThisMonth = useMemo(() => {
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(currentMonth);
+    const monthStart = startOfMonth(today);
+    const monthEnd = endOfMonth(today);
 
     return budgets.filter((budget) => {
       const createdAt = new Date(budget.created_at || budget.updated_at || Date.now());
       return !Number.isNaN(createdAt.getTime()) && createdAt >= monthStart && createdAt <= monthEnd;
     });
-  }, [budgets]);
+  }, [budgets, today]);
 
   const approvedBudgetsThisMonth = budgetsThisMonth.filter((budget) => budget.status === 'approved').length;
   const averageTicket = approvedBudgetsThisMonth
@@ -274,9 +465,65 @@ export default function Dashboard() {
       ? budgetsThisMonth.reduce((sum, budget) => sum + Number(budget.total_amount || 0), 0) / budgetsThisMonth.length
       : 0;
 
-  const chartSeries = useMemo(() => buildWeeklySeries(budgetsThisMonth, currentMonth), [budgetsThisMonth, currentMonth]);
+  const chartData = useMemo(() => buildChartSeries(budgets, chartView, chartDate), [budgets, chartView, chartDate]);
+  const chartSeries = useMemo(() => chartData.series, [chartData]);
   const chartGeometry = useMemo(() => buildLineGeometry(chartSeries), [chartSeries]);
   const segmentData = useMemo(() => buildStatusSegments(budgetsThisMonth), [budgetsThisMonth]);
+  const currentPeriodStart = useMemo(() => getChartPeriodStart(chartView, today), [chartView, today]);
+  const selectedPeriodStart = useMemo(() => getChartPeriodStart(chartView, chartDate), [chartView, chartDate]);
+  const canAdvanceChart = selectedPeriodStart.getTime() < currentPeriodStart.getTime();
+
+  const chartYears = useMemo(() => {
+    const budgetYears = budgets
+      .map((budget) => new Date(budget.created_at || budget.updated_at || Date.now()))
+      .filter((date) => !Number.isNaN(date.getTime()))
+      .map((date) => date.getFullYear());
+
+    const currentYear = today.getFullYear();
+    const minYear = Math.min(currentYear - 2, ...(budgetYears.length ? budgetYears : [currentYear]));
+    const maxYear = Math.max(currentYear, ...(budgetYears.length ? budgetYears : [currentYear]));
+
+    return Array.from({ length: maxYear - minYear + 1 }, (_, index) => maxYear - index);
+  }, [budgets, today]);
+
+  const chartWeekOptions = useMemo(() => {
+    const budgetDates = budgets
+      .map((budget) => new Date(budget.created_at || budget.updated_at || Date.now()))
+      .filter((date) => !Number.isNaN(date.getTime()));
+
+    const latestWeek = startOfWeek(today);
+    const earliestBudgetWeek = budgetDates.length
+      ? startOfWeek(new Date(Math.min(...budgetDates.map((date) => date.getTime()))))
+      : addWeeks(latestWeek, -24);
+    const fallbackWeek = addWeeks(latestWeek, -24);
+    const firstWeek = earliestBudgetWeek < fallbackWeek ? earliestBudgetWeek : fallbackWeek;
+    const options = [];
+
+    for (let cursor = new Date(latestWeek); cursor >= firstWeek; cursor = addWeeks(cursor, -1)) {
+      options.push({
+        value: getWeekKey(cursor),
+        label: `Semana ${getIsoWeekInfo(cursor).week} · ${getWeekRangeLabel(cursor)}`,
+      });
+    }
+
+    const selectedWeekValue = getWeekKey(chartDate);
+    if (!options.some((option) => option.value === selectedWeekValue)) {
+      options.unshift({
+        value: selectedWeekValue,
+        label: `Semana ${getIsoWeekInfo(chartDate).week} · ${getWeekRangeLabel(chartDate)}`,
+      });
+    }
+
+    return options;
+  }, [budgets, chartDate, today]);
+
+  const mobileChartTicks = useMemo(() => {
+    if (!chartGeometry.ticks.length) {
+      return [];
+    }
+
+    return chartGeometry.ticks.filter((_, index) => index === 0 || index === 2 || index === 4);
+  }, [chartGeometry]);
 
   const filteredRecentBudgets = useMemo(() => {
     const normalizedQuery = search.trim().toLowerCase();
@@ -353,6 +600,37 @@ export default function Dashboard() {
     },
   ];
 
+  const handleChartShift = (direction) => {
+    setChartDate((current) => shiftChartDate(chartView, current, direction));
+  };
+
+  const handleChartViewChange = (nextView) => {
+    if (!CHART_VIEWS.includes(nextView)) {
+      return;
+    }
+
+    setChartView(nextView);
+    setChartDate((current) => getChartPeriodStart(nextView, current));
+  };
+
+  const handleChartYearChange = (yearValue) => {
+    const nextYear = Number(yearValue);
+    if (!Number.isFinite(nextYear)) {
+      return;
+    }
+
+    setChartDate((current) => new Date(nextYear, current.getMonth(), 1));
+  };
+
+  const handleChartMonthChange = (monthValue) => {
+    const nextMonth = Number(monthValue);
+    if (!Number.isFinite(nextMonth)) {
+      return;
+    }
+
+    setChartDate((current) => new Date(current.getFullYear(), nextMonth, 1));
+  };
+
   return (
     <section className="dashboard-neo-shell">
       <div className="dashboard-neo-toolbar fade-up">
@@ -425,9 +703,107 @@ export default function Dashboard() {
             <div className="dashboard-neo-panel-head">
               <div>
                 <h3>Visao geral de vendas</h3>
-                <p>Evolucao semanal das propostas e do volume comercial do mes.</p>
+                <p>{chartData.description}</p>
               </div>
-              <span className="dashboard-neo-filter">Mensal</span>
+              <div className="dashboard-neo-panel-tools">
+                <div className="dashboard-neo-view-switch" role="tablist" aria-label="Periodo do grafico">
+                  {CHART_VIEWS.map((view) => (
+                    <button
+                      aria-selected={chartView === view}
+                      className={`dashboard-neo-view-tab ${chartView === view ? 'is-active' : ''}`}
+                      key={view}
+                      onClick={() => handleChartViewChange(view)}
+                      type="button"
+                    >
+                      {CHART_VIEW_LABELS[view]}
+                    </button>
+                  ))}
+                </div>
+
+                <div className={`dashboard-neo-period-controls ${chartView === 'monthly' ? '' : 'is-single'}`.trim()}>
+                  <button
+                    aria-label="Periodo anterior"
+                    className="dashboard-neo-nav"
+                    onClick={() => handleChartShift(-1)}
+                    type="button"
+                  >
+                    ‹
+                  </button>
+
+                  {chartView === 'weekly' ? (
+                    <select
+                      className="dashboard-neo-select"
+                      onChange={(event) => setChartDate(parseWeekKey(event.target.value))}
+                      value={getWeekKey(chartDate)}
+                    >
+                      {chartWeekOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+
+                  {chartView === 'monthly' ? (
+                    <>
+                      <select
+                        className="dashboard-neo-select dashboard-neo-select--compact"
+                        onChange={(event) => handleChartMonthChange(event.target.value)}
+                        value={chartDate.getMonth()}
+                      >
+                        {MONTH_OPTIONS.map((month) => (
+                          <option key={month.value} value={month.value}>
+                            {month.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        className="dashboard-neo-select dashboard-neo-select--year"
+                        onChange={(event) => handleChartYearChange(event.target.value)}
+                        value={chartDate.getFullYear()}
+                      >
+                        {chartYears.map((year) => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  ) : null}
+
+                  {chartView === 'yearly' ? (
+                    <select
+                      className="dashboard-neo-select dashboard-neo-select--year"
+                      onChange={(event) => handleChartYearChange(event.target.value)}
+                      value={chartDate.getFullYear()}
+                    >
+                      {chartYears.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+
+                  <button
+                    aria-label="Proximo periodo"
+                    className="dashboard-neo-nav"
+                    disabled={!canAdvanceChart}
+                    onClick={() => handleChartShift(1)}
+                    type="button"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="dashboard-neo-chart-meta">
+              <span className="dashboard-neo-filter">{chartData.periodLabel}</span>
+              {!chartGeometry.hasValues ? (
+                <span className="dashboard-neo-chart-empty">Sem valores registrados neste periodo.</span>
+              ) : null}
             </div>
 
             <div className="dashboard-neo-chart">
@@ -438,6 +814,12 @@ export default function Dashboard() {
               </div>
 
               <div className="dashboard-neo-chart-main">
+                <div className="dashboard-neo-chart-scale-mobile">
+                  {mobileChartTicks.map((tick) => (
+                    <span key={`mobile-${tick.label}-${tick.y}`}>{tick.label}</span>
+                  ))}
+                </div>
+
                 <svg aria-hidden="true" className="dashboard-neo-chart-svg" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}>
                   {chartGeometry.ticks.map((tick) => (
                     <line
