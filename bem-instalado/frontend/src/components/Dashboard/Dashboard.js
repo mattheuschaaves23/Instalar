@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -83,6 +83,72 @@ function DashboardIcon({ tone = 'blue', type = 'revenue' }) {
     </span>
   );
 }
+
+function DashboardDockIcon({ type }) {
+  const sharedProps = {
+    width: 20,
+    height: 20,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': 'true',
+  };
+
+  switch (type) {
+    case 'home':
+      return (
+        <svg {...sharedProps}>
+          <path d="M4 11.5 12 5l8 6.5" />
+          <path d="M6.5 10.5V19h11v-8.5" />
+        </svg>
+      );
+    case 'budgets':
+      return (
+        <svg {...sharedProps}>
+          <path d="M4 7h2l1.8 8.2a1 1 0 0 0 1 .8h7.7a1 1 0 0 0 1-.8L19 9H8.2" />
+          <circle cx="10" cy="19" r="1.3" />
+          <circle cx="17" cy="19" r="1.3" />
+        </svg>
+      );
+    case 'clients':
+      return (
+        <svg {...sharedProps}>
+          <circle cx="9" cy="10" r="2.5" />
+          <circle cx="16.5" cy="9" r="2" />
+          <path d="M4.8 17.2c.9-2.5 2.8-3.8 5.1-3.8 2.3 0 4.2 1.3 5.1 3.8" />
+          <path d="M14 14.1c1.5.2 2.8 1.1 3.5 3.1" />
+        </svg>
+      );
+    case 'agenda':
+      return (
+        <svg {...sharedProps}>
+          <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+          <path d="M8 3v4M16 3v4M3.5 10h17" />
+          <path d="M8 13h3M8 16h6" />
+        </svg>
+      );
+    case 'profile':
+      return (
+        <svg {...sharedProps}>
+          <circle cx="12" cy="8" r="3.2" />
+          <path d="M5.5 19c1.6-3 4.2-4.5 6.5-4.5S16.9 16 18.5 19" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+const MOBILE_DOCK_ITEMS = [
+  { to: '/dashboard', label: 'Dashboard', icon: 'home' },
+  { to: '/budgets', label: 'Orçamentos', icon: 'budgets' },
+  { to: '/clients', label: 'Clientes', icon: 'clients' },
+  { to: '/agenda', label: 'Agenda', icon: 'agenda' },
+  { to: '/profile', label: 'Perfil', icon: 'profile' },
+];
 
 function compactCurrency(value) {
   const amount = Number(value || 0);
@@ -671,6 +737,15 @@ export default function Dashboard() {
               Bem-vindo de volta, {firstName}. Acompanhe receita, propostas, clientes e agenda
               em uma leitura mais clara e organizada.
             </p>
+            <div className="dashboard-neo-mobile-range">
+              <div className="dashboard-neo-range dashboard-neo-range--mobile">
+                <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="18">
+                  <rect height="15" rx="2" width="18" x="3" y="5" />
+                  <path d="M8 3v4M16 3v4M3 10h18" />
+                </svg>
+                <span>{periodRangeLabel}</span>
+              </div>
+            </div>
           </div>
 
           <div className="dashboard-neo-heading-actions">
@@ -989,6 +1064,19 @@ export default function Dashboard() {
           </article>
         </div>
       </div>
+
+      <nav aria-label="Atalhos do dashboard" className="dashboard-neo-mobile-dock">
+        {MOBILE_DOCK_ITEMS.map((item) => (
+          <NavLink
+            className={({ isActive }) => `dashboard-neo-mobile-tab ${isActive ? 'is-active' : ''}`}
+            key={item.to}
+            to={item.to}
+          >
+            <DashboardDockIcon type={item.icon} />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
     </section>
   );
 }
