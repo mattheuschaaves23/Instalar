@@ -124,6 +124,27 @@ const DESKTOP_HERO_METRICS = [
   },
 ];
 
+const DESKTOP_WHY_POINTS = [
+  { icon: 'shield', text: 'Instaladores de papel de parede especializados' },
+  { icon: 'search', text: 'Comparação simples entre opções' },
+  { icon: 'whatsapp', text: 'Contato direto sem intermediários' },
+  { icon: 'camera', text: 'Fotos para validar o acabamento' },
+];
+
+const DESKTOP_PLATFORM_METRICS = [
+  { icon: 'users', value: '+8.000', title: 'Instaladores cadastrados' },
+  { icon: 'award', value: '4,9/5', title: 'Avaliação média dos clientes' },
+  { icon: 'brazil', value: 'Todos os estados', title: 'Presença em todo o Brasil' },
+  { icon: 'shield', value: 'Segurança garantida', title: 'Profissionais verificados e avaliados' },
+];
+
+const STORE_RATING_FALLBACKS = {
+  'Leroy Merlin': '4,8',
+  'Novo Ambiente': '4,7',
+  'Papel & Cia': '4,9',
+  'Casa do Papel': '4,8',
+};
+
 const moneyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
@@ -210,7 +231,11 @@ function getStoreCardsPerView() {
     return 2;
   }
 
-  return 3;
+  if (window.innerWidth <= 1380) {
+    return 3;
+  }
+
+  return 4;
 }
 
 function getInstallerCardsPerView() {
@@ -331,6 +356,27 @@ function ReferenceHeroIcon({ name }) {
           <circle cx="15.7" cy="9.6" r="1.9" {...common} />
           <path d="M4.2 17.4c.8-2.1 2.3-3.4 4.3-3.4 2 0 3.5 1.3 4.3 3.4" {...common} />
           <path d="M13.6 16.6c.6-1.4 1.6-2.3 3-2.3 1.1 0 2 .5 2.8 1.5" {...common} />
+        </svg>
+      );
+    case 'search':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="10.5" cy="10.5" r="5.7" {...common} />
+          <path d="m15 15 4.7 4.7" {...common} />
+        </svg>
+      );
+    case 'whatsapp':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M20 11.4a8 8 0 0 1-11.8 7l-3.4 1 1.1-3.2A8 8 0 1 1 20 11.4Z" {...common} />
+          <path d="M9.4 8.6c.2-.4.4-.5.7-.5h.6c.2 0 .4 0 .5.4l.6 1.4c.1.3.1.4-.1.7l-.4.5c-.2.2-.1.4 0 .6.5 1 1.3 1.9 2.3 2.4.2.1.4.1.6 0l.6-.4c.2-.2.4-.2.7-.1l1.3.6c.3.1.4.3.4.5v.6c0 .3-.2.5-.5.7-.4.2-1 .3-1.6.1-2.8-.9-5.3-3.4-6.2-6.2-.2-.6-.1-1.2.1-1.6Z" {...common} />
+        </svg>
+      );
+    case 'camera':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M4.8 7.8h3l1.2-1.8h6l1.2 1.8h3a1.8 1.8 0 0 1 1.8 1.8v7.6A1.8 1.8 0 0 1 19.2 19H4.8A1.8 1.8 0 0 1 3 17.2V9.6a1.8 1.8 0 0 1 1.8-1.8Z" {...common} />
+          <circle cx="12" cy="13" r="3.3" {...common} />
         </svg>
       );
     default:
@@ -496,6 +542,7 @@ export default function ClientLanding() {
   const storyPoints = STORY_POINTS;
   const howItWorksItems = isMobileLayout ? HOW_IT_WORKS_MOBILE : HOW_IT_WORKS;
   const visibleMobileTrustItems = MOBILE_TRUST_ITEMS.slice(0, 3);
+  const desktopFeaturedInstallers = useMemo(() => topInstallers.slice(0, 2), [topInstallers]);
 
   useEffect(() => {
     if (maxStoreIndex <= 0) {
@@ -758,15 +805,253 @@ export default function ClientLanding() {
           </>
         )}
 
-        <section className="clean-mobile-trust clean-priority-trust fade-up" style={{ animationDelay: '0.06s' }}>
-          {visibleMobileTrustItems.map((item) => (
-            <article className="clean-mobile-trust-item" key={item}>
-              <span />
-              <strong>{item}</strong>
-            </article>
-          ))}
-        </section>
+        {isMobileLayout ? (
+          <section className="clean-mobile-trust clean-priority-trust fade-up" style={{ animationDelay: '0.06s' }}>
+            {visibleMobileTrustItems.map((item) => (
+              <article className="clean-mobile-trust-item" key={item}>
+                <span />
+                <strong>{item}</strong>
+              </article>
+            ))}
+          </section>
+        ) : (
+          <section className="clean-reference-showcase fade-up" style={{ animationDelay: '0.07s' }}>
+            <div className="clean-reference-showcase-top">
+              <section className="clean-reference-store-panel" id="stores">
+                <div className="clean-reference-panel-head">
+                  <p className="eyebrow">Lojas recomendadas</p>
+                  <h2 className="clean-reference-feature-heading">
+                    <span className="is-light">Onde comprar com segurança</span>
+                    <span className="is-gold">para sua instalação</span>
+                  </h2>
+                  <p>Seleção atualizada pelo administrador da plataforma com as melhores opções do momento.</p>
+                </div>
 
+                {activeStores.length > 0 ? (
+                  <div className="clean-reference-store-shell">
+                    {maxStoreIndex > 0 ? (
+                      <button
+                        aria-label="Ver lojas anteriores"
+                        className="clean-reference-arrow is-left"
+                        onClick={goToPreviousStore}
+                        type="button"
+                      >
+                        ‹
+                      </button>
+                    ) : null}
+
+                    <div className="clean-reference-store-window">
+                      <div
+                        className="clean-reference-store-track"
+                        style={{ transform: `translateX(-${activeStoreIndex * storeCardWidth}%)` }}
+                      >
+                        {activeStores.map((store, index) => {
+                          const rating = STORE_RATING_FALLBACKS[store.name] || '4,8';
+                          return (
+                            <article
+                              className="clean-reference-store-slide"
+                              key={store.id || `${store.name}-${index}`}
+                              style={{ flex: `0 0 ${storeCardWidth}%` }}
+                            >
+                              <div className="clean-reference-store-card">
+                                <div className="clean-reference-store-logo">
+                                  {store.image_url ? (
+                                    <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
+                                  ) : (
+                                    <div className="clean-reference-store-fallback">{getInitials(store.name || 'Loja')}</div>
+                                  )}
+                                </div>
+
+                                <h3>{store.name}</h3>
+                                <div className="clean-reference-store-rating">
+                                  <span className="clean-reference-stars">★★★★★</span>
+                                  <strong>{rating}</strong>
+                                </div>
+
+                                {store.link_url ? (
+                                  <a
+                                    className="clean-reference-store-link"
+                                    href={store.link_url}
+                                    rel="noopener noreferrer"
+                                    target="_blank"
+                                  >
+                                    Ver loja
+                                  </a>
+                                ) : (
+                                  <span className="clean-reference-store-link is-disabled">Ver loja</span>
+                                )}
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {maxStoreIndex > 0 ? (
+                      <button
+                        aria-label="Ver próximas lojas"
+                        className="clean-reference-arrow is-right"
+                        onClick={goToNextStore}
+                        type="button"
+                      >
+                        ›
+                      </button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="empty-state !p-4 text-sm">As lojas recomendadas aparecerão aqui automaticamente.</div>
+                )}
+
+                {maxStoreIndex > 0 ? (
+                  <div className="clean-reference-pager">
+                    {storeSlidePositions.map((index) => (
+                      <button
+                        aria-label={`Mostrar grupo ${index + 1} de lojas recomendadas`}
+                        className={index === activeStoreIndex ? 'is-active' : ''}
+                        key={`desktop-store-dot-${index}`}
+                        onClick={() => setActiveStoreIndex(index)}
+                        type="button"
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </section>
+
+              <section className="clean-reference-why-panel" id="sobre-nos">
+                <div className="clean-reference-why-copy">
+                  <p className="eyebrow">Por que escolher</p>
+                  <h2 className="clean-reference-feature-heading">
+                    <span className="is-light">Mais clareza para decidir,</span>
+                    <span className="is-gold">mais segurança</span>
+                    <span className="is-gold">para contratar.</span>
+                  </h2>
+                  <p>
+                    A plataforma foi feita para ser objetiva: você encontra os melhores profissionais, compara rápido e conversa direto com quem vai fazer a instalação.
+                  </p>
+
+                  <ul className="clean-reference-why-list">
+                    {DESKTOP_WHY_POINTS.map((item) => (
+                      <li key={item.text}>
+                        <span className="clean-reference-why-icon">
+                          <ReferenceHeroIcon name={item.icon} />
+                        </span>
+                        <span>{item.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="clean-reference-why-photo">
+                  <img alt="Equipe de instaladores profissionais" src={STORY_IMAGE_URL} />
+                </div>
+              </section>
+            </div>
+
+            <div className="clean-reference-showcase-bottom">
+              <section className="clean-reference-installers-panel" id="landing-installers">
+                <div className="clean-reference-panel-head">
+                  <p className="eyebrow">Em destaque</p>
+                  <h2 className="clean-reference-feature-heading">
+                    <span className="is-gold">Melhores</span>
+                    <span className="is-light">instaladores de papel de parede da plataforma</span>
+                  </h2>
+                  <p>Perfis organizados com nota, cidade, portfólio e contato direto.</p>
+                </div>
+
+                <div className="clean-reference-installers-grid">
+                  {desktopFeaturedInstallers.length > 0 ? (
+                    desktopFeaturedInstallers.map((installer) => (
+                      <article className="clean-reference-installer-card" key={installer.id}>
+                        <div className="clean-reference-installer-top">
+                          <div className="clean-reference-installer-head">
+                            {installer.installer_photo ? (
+                              <img
+                                alt={`Foto de ${installer.display_name}`}
+                                className="clean-reference-installer-avatar"
+                                src={installer.installer_photo}
+                              />
+                            ) : installer.logo ? (
+                              <img alt={`Logo de ${installer.display_name}`} className="clean-reference-installer-avatar" src={installer.logo} />
+                            ) : (
+                              <div className="clean-reference-installer-avatar clean-reference-installer-fallback">{getInitials(installer.display_name)}</div>
+                            )}
+
+                            <div>
+                              <div className="clean-reference-installer-title-row">
+                                <h3>{installer.display_name}</h3>
+                                <span className="clean-reference-installer-badge">Destaque</span>
+                              </div>
+                              <p>{[installer.city, installer.state].filter(Boolean).join(', ') || 'Região não informada'}</p>
+                            </div>
+                          </div>
+
+                          <div className="clean-reference-installer-rating">
+                            <span className="clean-reference-stars">★★★★★</span>
+                            <strong>
+                              {Number(installer.average_rating || 0).toFixed(1)} ({installer.review_count} avaliações)
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className="clean-reference-installer-facts">
+                          <div>
+                            <span className="clean-reference-mini-icon">
+                              <ReferenceHeroIcon name="shield" />
+                            </span>
+                            <p>
+                              <strong>Especialista</strong>
+                              <span>Papel de parede</span>
+                            </p>
+                          </div>
+                          <div>
+                            <span className="clean-reference-mini-icon">
+                              <ReferenceHeroIcon name="users" />
+                            </span>
+                            <p>
+                              <strong>+{Number(installer.completed_jobs || installer.approved_jobs || 0)}</strong>
+                              <span>projetos concluídos</span>
+                            </p>
+                          </div>
+                          <div>
+                            <span className="clean-reference-mini-icon">
+                              <ReferenceHeroIcon name="whatsapp" />
+                            </span>
+                            <p>
+                              <strong>Resposta rápida</strong>
+                              <span>via WhatsApp</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <Link className="clean-reference-installer-link" to="/cliente">
+                          Ver perfil completo
+                        </Link>
+                      </article>
+                    ))
+                  ) : (
+                    <div className="empty-state !p-4 text-sm">Ainda não há instaladores públicos disponíveis no momento.</div>
+                  )}
+                </div>
+              </section>
+
+              <aside className="clean-reference-stat-grid">
+                {DESKTOP_PLATFORM_METRICS.map((item) => (
+                  <article className="clean-reference-stat-card" key={item.title}>
+                    <span className="clean-reference-stat-icon">
+                      <ReferenceHeroIcon name={item.icon} />
+                    </span>
+                    <div>
+                      <strong>{item.value}</strong>
+                      <span>{item.title}</span>
+                    </div>
+                  </article>
+                ))}
+              </aside>
+            </div>
+          </section>
+        )}
+
+        {isMobileLayout ? (
         <section className="clean-stores clean-priority-stores fade-up" style={{ animationDelay: '0.07s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Lojas recomendadas</p>
@@ -859,7 +1144,9 @@ export default function ClientLanding() {
             <div className="empty-state !p-4 text-sm">As lojas recomendadas aparecerão aqui automaticamente.</div>
           )}
         </section>
+        ) : null}
 
+        {isMobileLayout ? (
         <section className="clean-story clean-priority-story fade-up" style={{ animationDelay: '0.08s' }}>
           <div className="clean-story-text">
             <p className="eyebrow">Por que escolher</p>
@@ -880,7 +1167,9 @@ export default function ClientLanding() {
             <img alt="Instaladores de papel de parede profissionais" src={STORY_IMAGE_URL} />
           </div>
         </section>
+        ) : null}
 
+        {isMobileLayout ? (
         <section className="clean-installers clean-priority-installers fade-up" id="landing-installers" style={{ animationDelay: '0.14s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Em destaque</p>
@@ -981,6 +1270,7 @@ export default function ClientLanding() {
             )}
           </div>
         </section>
+        ) : null}
 
         <section className="clean-reviews clean-priority-reviews fade-up" id="landing-reviews" style={{ animationDelay: '0.17s' }}>
           <div className="clean-section-head">
