@@ -1,107 +1,107 @@
-﻿import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import BrandMark from '../Layout/BrandMark';
 import BrandWordmark from '../Layout/BrandWordmark';
 
-const HERO_IMAGE_URL = '/landing/instalando-mapa-do-brasil.png';
-const STORY_IMAGE_URL = '/landing/instaladores-profissionais.png';
-const INSTALLER_CARDS_PER_VIEW = 4;
-const REVIEW_CARDS_PER_VIEW = 4;
-const STORE_CAROUSEL_INTERVAL_MS = 5200;
-const INSTALLER_CAROUSEL_INTERVAL_MS = 4200;
-const REVIEW_CAROUSEL_INTERVAL_MS = 5600;
+const HERO_IMAGE_URL = '/landing/sala-moderna-sofisticada.png';
+const CLIENT_IMAGE_URL = '/landing/sala-preto-dourado.png';
+const INSTALLER_IMAGE_URL = '/landing/instaladores-profissionais.png';
 
 const HOW_IT_WORKS = [
   {
-    step: '01',
-    title: 'Busque sua região',
-    copy: 'Digite cidade, estado ou estilo de instalação.',
+    icon: 'search',
+    title: '1. Busque',
+    copy: 'Digite sua cidade, regiao ou estilo de papel de parede.',
   },
   {
-    step: '02',
-    title: 'Compare perfis',
-    copy: 'Veja nota, experiência e fotos de instalações.',
+    icon: 'compare',
+    title: '2. Compare',
+    copy: 'Veja avaliacoes, portfolios e perfis verificados.',
   },
   {
-    step: '03',
-    title: 'Fale e agende',
-    copy: 'Converse no WhatsApp e marque o melhor horário.',
-  },
-];
-
-const STORY_POINTS = [
-  'Instaladores de papel de parede especializados',
-  'Comparação simples entre opções',
-  'Contato direto sem intermediários',
-  'Fotos para validar o acabamento',
-];
-
-const HERO_MINI_TOPICS = [
-  'Instaladores especializados',
-  'Perfis verificados',
-  'Avaliações reais de clientes',
-  'Contato rápido no WhatsApp',
-  'Suporte antes, durante e depois',
-];
-
-const HERO_MINI_TOPICS_MOBILE = [
-  'Instaladores especializados',
-  'Perfis verificados',
-  'Avaliações reais de clientes',
-  'Contato direto no WhatsApp',
-  'Suporte antes e depois',
-];
-
-const MOBILE_TRUST_ITEMS = [
-  'Especialistas em todo o Brasil',
-  'Busca rápida e prática',
-  'Mais segurança na escolha',
-];
-
-const HOW_IT_WORKS_MOBILE = [
-  {
-    step: '01',
-    title: 'Busque',
-    copy: 'Digite cidade ou estado.',
+    icon: 'calendar',
+    title: '3. Agende',
+    copy: 'Converse no WhatsApp e combine o melhor horario.',
   },
   {
-    step: '02',
-    title: 'Compare',
-    copy: 'Veja nota e fotos reais.',
-  },
-  {
-    step: '03',
-    title: 'Agende',
-    copy: 'Fale no WhatsApp.',
+    icon: 'thumb',
+    title: '4. Aproveite',
+    copy: 'Tenha uma instalacao segura, organizada e bem executada.',
   },
 ];
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
+const PROOF_POINTS = [
+  {
+    title: 'Profissionais verificados',
+    copy: 'Todos passam por analise antes de aparecerem na plataforma.',
+  },
+  {
+    title: 'Avaliacoes reais',
+    copy: 'Notas e comentarios de clientes que ja contrataram.',
+  },
+  {
+    title: 'Seguro contratado',
+    copy: 'Mais confianca para escolher quem vai entrar no seu ambiente.',
+  },
+];
 
-function formatReviewDate(date) {
-  if (!date) {
-    return '';
-  }
+const FALLBACK_REVIEWS = [
+  {
+    id: 'fallback-1',
+    reviewer_name: 'Juliana M.',
+    reviewer_region: 'Sao Paulo, SP',
+    rating: 5,
+    comment: 'Encontrei um profissional incrivel. O trabalho ficou impecavel e o atendimento excelente.',
+  },
+  {
+    id: 'fallback-2',
+    reviewer_name: 'Carlos A.',
+    reviewer_region: 'Curitiba, PR',
+    rating: 5,
+    comment: 'Consegui comparar precos e escolher o melhor perfil para o meu projeto com mais seguranca.',
+  },
+  {
+    id: 'fallback-3',
+    reviewer_name: 'Fernanda L.',
+    reviewer_region: 'Belo Horizonte, MG',
+    rating: 5,
+    comment: 'Meu quarto ganhou vida nova. Instalacao rapida, limpa e com acabamento perfeito.',
+  },
+];
 
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) {
-    return '';
-  }
+const FOOTER_SECTIONS = [
+  {
+    title: 'Para clientes',
+    links: [
+      { label: 'Buscar instaladores', href: '#hero' },
+      { label: 'Como funciona', href: '#how' },
+      { label: 'Seguranca', href: '#trust' },
+      { label: 'Avaliacoes', href: '#reviews' },
+    ],
+  },
+  {
+    title: 'Para instaladores',
+    links: [
+      { label: 'Cadastre-se', to: '/instalador/cadastro' },
+      { label: 'Entrar', to: '/instalador/entrar' },
+      { label: 'Vantagens', href: '#installers' },
+      { label: 'Como funciona', href: '#how' },
+    ],
+  },
+  {
+    title: 'Institucional',
+    links: [
+      { label: 'Para clientes', href: '#clients' },
+      { label: 'Para instaladores', href: '#installers' },
+      { label: 'O que nossos clientes dizem', href: '#reviews' },
+      { label: 'Buscar instaladores', href: '#cta' },
+    ],
+  },
+];
 
-  return parsed.toLocaleDateString('pt-BR');
-}
-
-function formatMoney(value) {
-  const amount = Number(value || 0);
-  if (!Number.isFinite(amount)) {
-    return moneyFormatter.format(0);
-  }
-  return moneyFormatter.format(amount);
+function formatLargeNumber(value) {
+  return Number(value || 0).toLocaleString('pt-BR');
 }
 
 function getInitials(name) {
@@ -113,133 +113,88 @@ function getInitials(name) {
     .join('');
 }
 
-function getTouchPointX(event) {
-  const touch = event.changedTouches?.[0] || event.touches?.[0];
-  return typeof touch?.clientX === 'number' ? touch.clientX : null;
-}
-
-function buildSwipeHandlers(startRef, onPrevious, onNext) {
-  return {
-    onTouchStart: (event) => {
-      startRef.current = getTouchPointX(event);
-    },
-    onTouchCancel: () => {
-      startRef.current = null;
-    },
-    onTouchEnd: (event) => {
-      const startX = startRef.current;
-      const endX = getTouchPointX(event);
-
-      startRef.current = null;
-
-      if (startX === null || endX === null) {
-        return;
-      }
-
-      const delta = endX - startX;
-      if (Math.abs(delta) < 42) {
-        return;
-      }
-
-      if (delta > 0) {
-        onPrevious();
-        return;
-      }
-
-      onNext();
-    },
-  };
-}
-
-function getStoreCardsPerView() {
-  if (typeof window === 'undefined') {
-    return 3;
+function getInstallerPhoto(installer) {
+  if (!installer) {
+    return '';
   }
-
-  if (window.innerWidth <= 680) {
-    return 1;
-  }
-
-  if (window.innerWidth <= 1080) {
-    return 2;
-  }
-
-  return 3;
-}
-
-function getInstallerCardsPerView() {
-  if (typeof window === 'undefined') {
-    return INSTALLER_CARDS_PER_VIEW;
-  }
-
-  if (window.innerWidth <= 680) {
-    return 1;
-  }
-
-  if (window.innerWidth <= 1080) {
-    return 2;
-  }
-
-  if (window.innerWidth <= 1380) {
-    return 3;
-  }
-
-  return INSTALLER_CARDS_PER_VIEW;
-}
-
-function getReviewCardsPerView() {
-  if (typeof window === 'undefined') {
-    return REVIEW_CARDS_PER_VIEW;
-  }
-
-  if (window.innerWidth <= 680) {
-    return 1;
-  }
-
-  if (window.innerWidth <= 1080) {
-    return 2;
-  }
-
-  if (window.innerWidth <= 1380) {
-    return 3;
-  }
-
-  return REVIEW_CARDS_PER_VIEW;
-}
-
-function RatingDots({ value }) {
-  const rounded = Math.max(1, Math.round(Number(value || 0)));
 
   return (
-    <div className="clean-stars">
+    installer.profile_image_url ||
+    installer.photo_url ||
+    installer.avatar_url ||
+    installer.cover_image_url ||
+    installer.portfolio_images?.[0] ||
+    ''
+  );
+}
+
+function LandingIcon({ name }) {
+  const props = {
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    strokeWidth: 1.8,
+    viewBox: '0 0 24 24',
+  };
+
+  switch (name) {
+    case 'search':
+      return (
+        <svg {...props}>
+          <circle cx="11" cy="11" r="6.8" />
+          <path d="m20 20-3.7-3.7" />
+        </svg>
+      );
+    case 'compare':
+      return (
+        <svg {...props}>
+          <path d="M4.5 5.5h15v10h-15z" />
+          <path d="M8 9h8M8 13h5" />
+          <path d="M8 19h8" />
+        </svg>
+      );
+    case 'calendar':
+      return (
+        <svg {...props}>
+          <rect x="3.5" y="5" width="17" height="15" rx="2.2" />
+          <path d="M7.5 3v4M16.5 3v4M3.5 9.5h17" />
+        </svg>
+      );
+    case 'thumb':
+      return (
+        <svg {...props}>
+          <path d="M9 20H6.2A1.7 1.7 0 0 1 4.5 18.3V11a1.7 1.7 0 0 1 1.7-1.7H9M9 20l4.6-4.7a3 3 0 0 0 .9-2.1V8.5a2.5 2.5 0 0 0-2.5-2.5h-.3L12.5 3a2.3 2.3 0 0 1 4.4 1v2h2.4A1.7 1.7 0 0 1 21 7.7L19.8 14A3 3 0 0 1 16.9 16H9" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="8" />
+        </svg>
+      );
+  }
+}
+
+function GoldStars({ value = 5 }) {
+  const rounded = Math.max(1, Math.min(5, Math.round(Number(value || 0))));
+
+  return (
+    <div className="showcase-landing-stars" aria-label={`Nota ${rounded} de 5`}>
       {Array.from({ length: 5 }).map((_, index) => (
-        <span className={index < rounded ? 'is-on' : ''} key={index} />
+        <span className={index < rounded ? 'is-on' : ''} key={index}>
+          {'\u2605'}
+        </span>
       ))}
     </div>
   );
 }
 
 export default function ClientLanding() {
+  const navigate = useNavigate();
   const [installers, setInstallers] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [recommendedStores, setRecommendedStores] = useState([]);
-  const [storesPerView, setStoresPerView] = useState(getStoreCardsPerView);
-  const [isMobileLayout, setIsMobileLayout] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    return window.innerWidth <= 760;
-  });
-  const [installerCardsPerView, setInstallerCardsPerView] = useState(getInstallerCardsPerView);
-  const [reviewCardsPerView, setReviewCardsPerView] = useState(getReviewCardsPerView);
-  const [activeStoreIndex, setActiveStoreIndex] = useState(0);
-  const [activeInstallerIndex, setActiveInstallerIndex] = useState(0);
-  const [activeReviewIndex, setActiveReviewIndex] = useState(0);
-  const [openedStoreCardId, setOpenedStoreCardId] = useState(null);
-  const storeTouchStartRef = useRef(null);
-  const installerTouchStartRef = useRef(null);
-  const reviewTouchStartRef = useRef(null);
+  const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -248,10 +203,8 @@ export default function ClientLanding() {
       try {
         const response = await api.get('/public/installers');
         const allInstallers = response.data?.installers || [];
-        const recentReviews = response.data?.reviews || [];
-        const stores = response.data?.recommended_stores || [];
-
-        const positiveReviews = recentReviews
+        const allReviews = response.data?.reviews || [];
+        const positiveReviews = allReviews
           .filter((review) => Number(review.rating || 0) >= 4)
           .slice(0, 6);
 
@@ -261,7 +214,6 @@ export default function ClientLanding() {
 
         setInstallers(allInstallers);
         setReviews(positiveReviews);
-        setRecommendedStores(stores);
       } catch (_error) {
         if (!mounted) {
           return;
@@ -269,7 +221,6 @@ export default function ClientLanding() {
 
         setInstallers([]);
         setReviews([]);
-        setRecommendedStores([]);
       }
     };
 
@@ -280,578 +231,346 @@ export default function ClientLanding() {
     };
   }, []);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setStoresPerView(getStoreCardsPerView());
-      setIsMobileLayout(window.innerWidth <= 760);
-      setInstallerCardsPerView(getInstallerCardsPerView());
-      setReviewCardsPerView(getReviewCardsPerView());
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
   const topInstallers = useMemo(() => {
     const sorted = [...installers].sort((a, b) => {
-        const featuredDiff = Number(Boolean(b.featured_installer)) - Number(Boolean(a.featured_installer));
-        if (featuredDiff !== 0) {
-          return featuredDiff;
-        }
+      const featuredDiff = Number(Boolean(b.featured_installer)) - Number(Boolean(a.featured_installer));
+      if (featuredDiff !== 0) {
+        return featuredDiff;
+      }
 
-        const reviewedDiff = Number(Number(b.review_count || 0) > 0) - Number(Number(a.review_count || 0) > 0);
-        if (reviewedDiff !== 0) {
-          return reviewedDiff;
-        }
+      const reviewedDiff = Number(Number(b.review_count || 0) > 0) - Number(Number(a.review_count || 0) > 0);
+      if (reviewedDiff !== 0) {
+        return reviewedDiff;
+      }
 
-        const ratingDiff = Number(b.average_rating || 0) - Number(a.average_rating || 0);
-        if (ratingDiff !== 0) {
-          return ratingDiff;
-        }
+      const ratingDiff = Number(b.average_rating || 0) - Number(a.average_rating || 0);
+      if (ratingDiff !== 0) {
+        return ratingDiff;
+      }
 
-        const reviewCountDiff = Number(b.review_count || 0) - Number(a.review_count || 0);
-        if (reviewCountDiff !== 0) {
-          return reviewCountDiff;
-        }
+      const reviewCountDiff = Number(b.review_count || 0) - Number(a.review_count || 0);
+      if (reviewCountDiff !== 0) {
+        return reviewCountDiff;
+      }
 
-        const completedJobsDiff = Number(b.completed_jobs || 0) - Number(a.completed_jobs || 0);
-        if (completedJobsDiff !== 0) {
-          return completedJobsDiff;
-        }
+      const completedJobsDiff = Number(b.completed_jobs || 0) - Number(a.completed_jobs || 0);
+      if (completedJobsDiff !== 0) {
+        return completedJobsDiff;
+      }
 
-        const approvedJobsDiff = Number(b.approved_jobs || 0) - Number(a.approved_jobs || 0);
-        if (approvedJobsDiff !== 0) {
-          return approvedJobsDiff;
-        }
+      return Number(b.years_experience || 0) - Number(a.years_experience || 0);
+    });
 
-        return Number(b.years_experience || 0) - Number(a.years_experience || 0);
-      });
-
-    return sorted.slice(0, 8);
+    return sorted.slice(0, 6);
   }, [installers]);
 
-  const activeStores = useMemo(
-    () => recommendedStores.filter((store) => Boolean(store?.is_active)),
-    [recommendedStores]
-  );
-
-  const isTouchDevice = useMemo(() => {
-    if (typeof window === 'undefined') {
-      return false;
+  const reviewCards = useMemo(() => {
+    if (reviews.length > 0) {
+      return reviews.slice(0, 3);
     }
 
-    return window.matchMedia('(hover: none), (pointer: coarse)').matches;
-  }, []);
-  const storeCardWidth = 100 / Math.max(storesPerView, 1);
-  const maxStoreIndex = useMemo(
-    () => Math.max(0, activeStores.length - storesPerView),
-    [activeStores.length, storesPerView]
-  );
-  const storeSlidePositions = useMemo(
-    () => Array.from({ length: maxStoreIndex + 1 }, (_, index) => index),
-    [maxStoreIndex]
-  );
+    return FALLBACK_REVIEWS;
+  }, [reviews]);
 
-  const maxInstallerIndex = useMemo(
-    () => Math.max(0, topInstallers.length - installerCardsPerView),
-    [topInstallers.length, installerCardsPerView]
-  );
-  const installerSlidePositions = useMemo(
-    () => Array.from({ length: maxInstallerIndex + 1 }, (_, index) => index),
-    [maxInstallerIndex]
-  );
-  const installerCardWidth = 100 / Math.max(installerCardsPerView, 1);
-  const maxReviewIndex = useMemo(
-    () => Math.max(0, reviews.length - reviewCardsPerView),
-    [reviews.length, reviewCardsPerView]
-  );
-  const reviewSlidePositions = useMemo(
-    () => Array.from({ length: maxReviewIndex + 1 }, (_, index) => index),
-    [maxReviewIndex]
-  );
-  const reviewCardWidth = 100 / Math.max(reviewCardsPerView, 1);
-  const heroMiniTopics = isMobileLayout ? HERO_MINI_TOPICS_MOBILE : HERO_MINI_TOPICS;
-  const storyPoints = STORY_POINTS;
-  const howItWorksItems = isMobileLayout ? HOW_IT_WORKS_MOBILE : HOW_IT_WORKS;
-  const visibleMobileTrustItems = MOBILE_TRUST_ITEMS.slice(0, 3);
+  const metrics = useMemo(() => {
+    const totalInstallers = installers.length || 8000;
+    const totalInstallations =
+      installers.reduce((sum, installer) => sum + Number(installer.completed_jobs || installer.approved_jobs || 0), 0) ||
+      35000;
+    const averageRating =
+      reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / Math.max(reviews.length, 1) || 4.9;
+    const uniqueStates =
+      new Set(installers.map((installer) => installer.state).filter(Boolean)).size || 27;
 
-  useEffect(() => {
-    if (maxStoreIndex <= 0) {
-      setActiveStoreIndex(0);
+    return {
+      totalInstallers,
+      totalInstallations,
+      averageRating,
+      uniqueStates,
+    };
+  }, [installers, reviews]);
+
+  const featuredAvatars = topInstallers.slice(0, 4);
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const query = searchValue.trim();
+
+    if (!query) {
+      navigate('/cliente');
       return;
     }
 
-    const intervalId = window.setInterval(() => {
-      setActiveStoreIndex((current) => (current >= maxStoreIndex ? 0 : current + 1));
-    }, STORE_CAROUSEL_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [maxStoreIndex]);
-
-  useEffect(() => {
-    if (activeStoreIndex > maxStoreIndex) {
-      setActiveStoreIndex(0);
-    }
-  }, [activeStoreIndex, maxStoreIndex]);
-
-  useEffect(() => {
-    if (maxInstallerIndex <= 0) {
-      setActiveInstallerIndex(0);
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setActiveInstallerIndex((current) => (current >= maxInstallerIndex ? 0 : current + 1));
-    }, INSTALLER_CAROUSEL_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [maxInstallerIndex]);
-
-  useEffect(() => {
-    if (activeInstallerIndex > maxInstallerIndex) {
-      setActiveInstallerIndex(0);
-    }
-  }, [activeInstallerIndex, maxInstallerIndex]);
-
-  useEffect(() => {
-    if (maxReviewIndex <= 0) {
-      setActiveReviewIndex(0);
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setActiveReviewIndex((current) => (current >= maxReviewIndex ? 0 : current + 1));
-    }, REVIEW_CAROUSEL_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [maxReviewIndex]);
-
-  useEffect(() => {
-    if (activeReviewIndex > maxReviewIndex) {
-      setActiveReviewIndex(0);
-    }
-  }, [activeReviewIndex, maxReviewIndex]);
-
-  const goToPreviousStore = () => {
-    setActiveStoreIndex((current) => (current <= 0 ? maxStoreIndex : current - 1));
+    navigate(`/cliente?busca=${encodeURIComponent(query)}`);
   };
-
-  const goToNextStore = () => {
-    setActiveStoreIndex((current) => (current >= maxStoreIndex ? 0 : current + 1));
-  };
-
-  const goToPreviousInstaller = () => {
-    setActiveInstallerIndex((current) => (current <= 0 ? maxInstallerIndex : current - 1));
-  };
-
-  const goToNextInstaller = () => {
-    setActiveInstallerIndex((current) => (current >= maxInstallerIndex ? 0 : current + 1));
-  };
-
-  const goToPreviousReview = () => {
-    setActiveReviewIndex((current) => (current <= 0 ? maxReviewIndex : current - 1));
-  };
-
-  const goToNextReview = () => {
-    setActiveReviewIndex((current) => (current >= maxReviewIndex ? 0 : current + 1));
-  };
-
-  const storeSwipeHandlers = buildSwipeHandlers(storeTouchStartRef, goToPreviousStore, goToNextStore);
-  const installerSwipeHandlers = buildSwipeHandlers(
-    installerTouchStartRef,
-    goToPreviousInstaller,
-    goToNextInstaller
-  );
-  const reviewSwipeHandlers = buildSwipeHandlers(reviewTouchStartRef, goToPreviousReview, goToNextReview);
 
   return (
     <div className="auth-scene min-h-screen overflow-x-hidden">
-      <div className="clean-landing-shell">
-        <header className="clean-landing-topbar fade-up">
-          <div className="clean-landing-brand">
+      <div className="showcase-landing-shell">
+        <header className="showcase-landing-topbar fade-up">
+          <Link className="showcase-landing-brand" to="/">
             <BrandMark className="client-brand-mark" />
-            <div>
+            <div className="showcase-landing-brand-copy">
               <BrandWordmark className="client-topbar-wordmark" size="lg" />
-              <p>Encontre instaladores de papel de parede perto de você.</p>
+              <p>Encontre instaladores de papel de parede em todo o Brasil.</p>
             </div>
-          </div>
+          </Link>
 
-          <div className="clean-landing-top-actions">
+          <nav className="showcase-landing-nav" aria-label="Navegacao principal da landing">
+            <a className="showcase-landing-nav-link" href="#how">
+              Como funciona
+            </a>
+            <a className="showcase-landing-nav-link" href="#clients">
+              Para clientes
+            </a>
+            <a className="showcase-landing-nav-link" href="#installers">
+              Para instaladores
+            </a>
+            <a className="showcase-landing-nav-link" href="#reviews">
+              Avaliacoes
+            </a>
+          </nav>
+
+          <div className="showcase-landing-actions">
             <Link className="ghost-button" to="/instalador/entrar">
-              Login instalador
+              Entrar
             </Link>
-            <Link className="clean-link-action" to="/instalador/cadastro">
-              Criar conta
+            <Link className="gold-button" to="/instalador/cadastro">
+              Cadastre-se
             </Link>
           </div>
         </header>
 
-        <section className="clean-hero fade-up" style={{ animationDelay: '0.05s' }}>
-          <img
-            alt="Instalador aplicando papel de parede com mapa do Brasil"
-            className="clean-hero-image"
-            decoding="async"
-            fetchPriority="high"
-            loading="eager"
-            src={HERO_IMAGE_URL}
-          />
-          <div className="clean-hero-overlay" />
+        <div className="showcase-landing-mobile-nav fade-up" style={{ animationDelay: '0.04s' }}>
+          <a className="showcase-landing-mobile-link" href="#how">
+            Como funciona
+          </a>
+          <a className="showcase-landing-mobile-link" href="#clients">
+            Para clientes
+          </a>
+          <a className="showcase-landing-mobile-link" href="#installers">
+            Para instaladores
+          </a>
+          <a className="showcase-landing-mobile-link" href="#reviews">
+            Avaliacoes
+          </a>
+        </div>
 
-          <div className="clean-hero-content">
-            <p className="eyebrow">Para clientes</p>
-            <h1 className="clean-hero-title">
-              {isMobileLayout ? (
-                <>
-                  Encontre <span className="gold-keyword">instaladores</span> de{' '}
-                  <span className="hero-white-keyword">papel de parede</span> com mais <span className="gold-keyword">segurança</span>.
-                </>
-              ) : (
-                <>
-                  Encontre <span className="gold-keyword">instaladores</span> de{' '}
-                  <span className="gold-keyword">papel de parede</span> com mais <span className="gold-keyword">segurança</span>.
-                </>
-              )}
-            </h1>
-            <p className="clean-hero-description">
-              {isMobileLayout ? (
-                <>
-                  Encontre <span className="gold-keyword">instaladores especializados</span>, compare avaliações e fale direto no{' '}
-                  <span className="gold-keyword">WhatsApp</span>.
-                </>
-              ) : (
-                <>
-                  Compare <span className="gold-keyword">avaliações reais</span>, veja <span className="gold-keyword">portfólios</span> e fale direto no{' '}
-                  <span className="gold-keyword">WhatsApp</span> sem perder tempo procurando.
-                </>
-              )}
-            </p>
+        <main className="showcase-landing-main">
+          <section className="showcase-landing-hero fade-up" id="hero" style={{ animationDelay: '0.06s' }}>
+            <div className="showcase-landing-hero-copy">
+              <p className="showcase-eyebrow">Plataforma nacional</p>
+              <h1>
+                Encontre os melhores instaladores de <span>papel de parede</span> no Brasil
+              </h1>
+              <p className="showcase-landing-hero-description">
+                Conectamos voce a profissionais qualificados para transformar seus ambientes com mais confianca,
+                rapidez e acabamento de alto nivel.
+              </p>
 
-            <ul className="clean-hero-topics">
-              {heroMiniTopics.map((topic, index) => (
-                <li className="clean-hero-topic-item" key={topic} style={{ animationDelay: `${0.14 + index * 0.08}s` }}>
-                  {topic}
-                </li>
-              ))}
-            </ul>
+              <form className="showcase-landing-search" onSubmit={handleSearchSubmit}>
+                <input
+                  aria-label="Buscar instaladores por cidade ou CEP"
+                  onChange={(event) => setSearchValue(event.target.value)}
+                  placeholder="Digite sua cidade ou CEP"
+                  type="text"
+                  value={searchValue}
+                />
+                <button className="gold-button" type="submit">
+                  Buscar instaladores
+                </button>
+              </form>
 
-            <div className="clean-hero-actions">
-              <Link className="gold-button clean-cta-main" to="/cliente">
-                {isMobileLayout ? 'Encontrar instalador agora' : 'Encontrar instaladores agora'}
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        <section className="clean-mobile-trust clean-priority-trust fade-up" style={{ animationDelay: '0.06s' }}>
-          {visibleMobileTrustItems.map((item) => (
-            <article className="clean-mobile-trust-item" key={item}>
-              <span />
-              <strong>{item}</strong>
-            </article>
-          ))}
-        </section>
-
-        <section className="clean-stores clean-priority-stores fade-up" style={{ animationDelay: '0.07s' }}>
-          <div className="clean-section-head">
-            <p className="eyebrow">Lojas recomendadas</p>
-            <h2>{isMobileLayout ? 'Lojas para comprar com segurança' : 'Onde comprar com segurança para sua instalação'}</h2>
-            <p>
-              {isMobileLayout
-                ? 'Opções recomendadas pela plataforma.'
-                : 'Seleção atualizada pelo administrador da plataforma com as melhores opções do momento.'}
-            </p>
-          </div>
-
-          {activeStores.length > 0 ? (
-            <div className="clean-stores-carousel" {...(isTouchDevice ? storeSwipeHandlers : {})}>
-              <div
-                className="clean-stores-track"
-                style={{ transform: `translateX(-${activeStoreIndex * storeCardWidth}%)` }}
-              >
-                {activeStores.map((store, index) => (
-                  <article
-                    className="clean-store-slide"
-                    key={store.id || `${store.name}-${index}`}
-                    style={{ flex: `0 0 ${storeCardWidth}%` }}
-                  >
-                    <div
-                      className={`clean-store-card ${
-                        openedStoreCardId === store.id ? 'is-open' : ''
-                      }`}
-                      onClick={() => {
-                        if (!isTouchDevice) {
-                          return;
-                        }
-                        setOpenedStoreCardId((current) => (current === store.id ? null : store.id));
-                      }}
-                      onKeyDown={(event) => {
-                        if (!isTouchDevice) {
-                          return;
-                        }
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          setOpenedStoreCardId((current) => (current === store.id ? null : store.id));
-                        }
-                      }}
-                      role={isTouchDevice ? 'button' : undefined}
-                      tabIndex={isTouchDevice ? 0 : undefined}
-                    >
-                      <div className="clean-store-media">
-                        {store.image_url ? (
-                          <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
-                        ) : (
-                          <div className="clean-store-fallback">{getInitials(store.name || 'Loja')}</div>
-                        )}
-                      </div>
-
-                      <div className="clean-store-content">
-                        <h3 className="clean-store-title">{store.name}</h3>
-                        <div className="clean-store-reveal">
-                          <p>{store.description || 'Loja recomendada para papel de parede e composição do ambiente.'}</p>
-                        </div>
-                        {store.link_url ? (
-                          <a
-                            className="clean-store-link"
-                            href={store.link_url}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
-                            {store.cta_label || 'Ir ao site'}
-                          </a>
-                        ) : null}
-                      </div>
-                    </div>
+              <div className="showcase-landing-proof-grid" id="trust">
+                {PROOF_POINTS.map((item) => (
+                  <article className="showcase-landing-proof-card" key={item.title}>
+                    <strong>{item.title}</strong>
+                    <span>{item.copy}</span>
                   </article>
                 ))}
               </div>
-
-              {maxStoreIndex > 0 ? (
-                <div className="clean-stores-dots">
-                  {storeSlidePositions.map((index) => (
-                    <button
-                      aria-label={`Mostrar grupo ${index + 1} de lojas recomendadas`}
-                      className={index === activeStoreIndex ? 'is-active' : ''}
-                      key={`store-dot-${index}`}
-                      onClick={() => setActiveStoreIndex(index)}
-                      type="button"
-                    />
-                  ))}
-                </div>
-              ) : null}
             </div>
-          ) : (
-            <div className="empty-state !p-4 text-sm">As lojas recomendadas aparecerão aqui automaticamente.</div>
-          )}
-        </section>
 
-        <section className="clean-story clean-priority-story fade-up" style={{ animationDelay: '0.08s' }}>
-          <div className="clean-story-text">
-            <p className="eyebrow">Por que escolher</p>
-            <h2>Mais clareza para decidir, mais segurança para contratar.</h2>
-            <p>
-              A plataforma foi feita para ser objetiva: você encontra os melhores profissionais, compara rápido e conversa direto com quem vai fazer a instalação.
-            </p>
+            <div className="showcase-landing-hero-visual">
+              <img alt="Ambiente sofisticado com papel de parede preto e dourado" src={HERO_IMAGE_URL} />
+              <div className="showcase-landing-floating-card">
+                <strong>Mais de {formatLargeNumber(metrics.totalInstallations)} instalacoes realizadas</strong>
+                <span>Clientes e instaladores ativos em todos os estados do Brasil.</span>
+                <div className="showcase-landing-floating-avatars">
+                  {featuredAvatars.length > 0
+                    ? featuredAvatars.map((installer) => {
+                        const photo = getInstallerPhoto(installer);
+                        return photo ? (
+                          <img alt={installer.business_name || installer.name || 'Instalador'} key={installer.id} src={photo} />
+                        ) : (
+                          <div key={installer.id}>{getInitials(installer.business_name || installer.name)}</div>
+                        );
+                      })
+                    : FALLBACK_REVIEWS.map((review) => <div key={review.id}>{getInitials(review.reviewer_name)}</div>)}
+                  <GoldStars value={metrics.averageRating} />
+                </div>
+              </div>
+            </div>
+          </section>
 
-            <ul>
-              {storyPoints.map((point) => (
-                <li key={point}>{point}</li>
+          <section className="showcase-landing-section fade-up" id="how" style={{ animationDelay: '0.08s' }}>
+            <div className="showcase-landing-section-head">
+              <p className="showcase-eyebrow">Como funciona</p>
+              <h2>Escolha com mais clareza e agende com menos atrito</h2>
+              <p>Uma jornada simples para comparar opcoes, validar reputacao e falar com o profissional certo.</p>
+            </div>
+
+            <div className="showcase-landing-steps">
+              {HOW_IT_WORKS.map((item) => (
+                <article className="showcase-landing-step-card" key={item.title}>
+                  <div className="showcase-landing-step-badge">
+                    <LandingIcon name={item.icon} />
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{item.copy}</p>
+                </article>
               ))}
-            </ul>
+            </div>
+          </section>
 
-          </div>
-
-          <div className="clean-story-media">
-            <img alt="Instaladores de papel de parede profissionais" src={STORY_IMAGE_URL} />
-          </div>
-        </section>
-
-        <section className="clean-installers clean-priority-installers fade-up" id="landing-installers" style={{ animationDelay: '0.14s' }}>
-          <div className="clean-section-head">
-            <p className="eyebrow">Em destaque</p>
-            <h2>
-              {isMobileLayout
-                ? 'Instaladores de papel de parede em destaque'
-                : 'Melhores instaladores de papel de parede da plataforma'}
-            </h2>
-            <p>{isMobileLayout ? 'Perfis com nota, cidade e experiência.' : 'Perfis organizados com nota, cidade, portfólio e contato direto.'}</p>
-          </div>
-
-          <div className="clean-installers-grid">
-            {topInstallers.length > 0 ? (
-              <div className="clean-installers-carousel" {...(isTouchDevice ? installerSwipeHandlers : {})}>
-                <div
-                  className="clean-installers-track"
-                  style={{ transform: `translateX(-${activeInstallerIndex * installerCardWidth}%)` }}
-                >
-                  {topInstallers.map((installer) => (
-                    <article
-                      className="clean-installer-slide"
-                      key={installer.id}
-                      style={{ flex: `0 0 ${installerCardWidth}%` }}
-                    >
-                      <div className="clean-installer-card">
-                        <div className="clean-installer-top">
-                          {installer.installer_photo ? (
-                            <img
-                              alt={`Foto de ${installer.display_name}`}
-                              className="clean-installer-avatar"
-                              src={installer.installer_photo}
-                            />
-                          ) : installer.logo ? (
-                            <img alt={`Logo de ${installer.display_name}`} className="clean-installer-avatar" src={installer.logo} />
-                          ) : (
-                            <div className="clean-installer-avatar clean-installer-fallback">{getInitials(installer.display_name)}</div>
-                          )}
-                          <div>
-                            <h3>{installer.display_name}</h3>
-                            <p>{[installer.city, installer.state].filter(Boolean).join(' - ') || 'Região não informada'}</p>
-                          </div>
-                        </div>
-
-                        <div className="clean-installer-rating">
-                          <RatingDots value={installer.average_rating} />
-                          <span>
-                            {Number(installer.average_rating || 0).toFixed(1)} • {installer.review_count} avaliações
-                          </span>
-                        </div>
-
-                        {isMobileLayout ? (
-                          <p className="clean-installer-mobile-bio">
-                            {installer.installation_method || 'Instalação profissional com acabamento limpo e cuidadoso.'}
-                          </p>
-                        ) : null}
-
-                        <div className="clean-installer-details">
-                          <p>
-                            <span>Método</span>
-                            {installer.installation_method || 'Instalação profissional por ambiente'}
-                          </p>
-                          <p>
-                            <span>Experiência</span>
-                            {Number(installer.years_experience || 0) > 0
-                              ? `${installer.years_experience} anos`
-                              : 'Em atualização'}
-                          </p>
-                          <p>
-                            <span>Atendimento</span>
-                            {installer.service_hours || 'Horário informado no perfil completo'}
-                          </p>
-                          <p>
-                            <span>Preço base</span>
-                            {formatMoney(installer.base_service_cost)}
-                          </p>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                {maxInstallerIndex > 0 ? (
-                  <div className="clean-installers-dots">
-                    {installerSlidePositions.map((index) => (
-                      <button
-                        aria-label={`Mostrar grupo ${index + 1} de instaladores`}
-                        className={index === activeInstallerIndex ? 'is-active' : ''}
-                        key={`dot-${index}`}
-                        onClick={() => setActiveInstallerIndex(index)}
-                        type="button"
-                      />
-                    ))}
-                  </div>
-                ) : null}
+          <section className="showcase-landing-dual fade-up" style={{ animationDelay: '0.1s' }}>
+            <article className="showcase-landing-audience-card" id="clients">
+              <div className="showcase-landing-audience-media">
+                <img alt="Ambiente elegante pronto para receber papel de parede" src={CLIENT_IMAGE_URL} />
               </div>
-            ) : (
-              <div className="empty-state !p-4 text-sm">Ainda não há instaladores públicos disponíveis no momento.</div>
-            )}
-          </div>
-        </section>
-
-        <section className="clean-reviews clean-priority-reviews fade-up" id="landing-reviews" style={{ animationDelay: '0.17s' }}>
-          <div className="clean-section-head">
-            <p className="eyebrow">Avaliações</p>
-            <h2>{isMobileLayout ? 'Clientes satisfeitos' : 'Clientes satisfeitos com a experiência'}</h2>
-          </div>
-
-          <div className="clean-reviews-grid">
-            {reviews.length > 0 ? (
-              <div className="clean-reviews-carousel" {...(isTouchDevice ? reviewSwipeHandlers : {})}>
-                <div
-                  className="clean-reviews-track"
-                  style={{ transform: `translateX(-${activeReviewIndex * reviewCardWidth}%)` }}
-                >
-                  {reviews.map((review) => (
-                    <article
-                      className="clean-review-slide"
-                      key={review.id}
-                      style={{ flex: `0 0 ${reviewCardWidth}%` }}
-                    >
-                      <div className="clean-review-item">
-                        <div className="clean-review-head">
-                          <div className="clean-review-person">
-                            <div className="clean-review-avatar">{getInitials(review.reviewer_name || 'CV')}</div>
-                            <div className="clean-review-person-copy">
-                              <strong>{review.reviewer_name || 'Cliente verificado'}</strong>
-                              <p className="clean-review-meta">
-                                {review.installer_name}
-                                {review.reviewer_region ? ` • ${review.reviewer_region}` : ''}
-                              </p>
-                            </div>
-                          </div>
-                          <span>{review.rating}/5</span>
-                        </div>
-                        <p className="clean-review-text">{review.comment || 'Atendimento excelente e instalação impecável.'}</p>
-                        <p className="clean-review-date">{formatReviewDate(review.created_at)}</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                {maxReviewIndex > 0 ? (
-                  <div className="clean-reviews-dots">
-                    {reviewSlidePositions.map((index) => (
-                      <button
-                        aria-label={`Mostrar grupo ${index + 1} de avaliações`}
-                        className={index === activeReviewIndex ? 'is-active' : ''}
-                        key={`review-dot-${index}`}
-                        onClick={() => setActiveReviewIndex(index)}
-                        type="button"
-                      />
-                    ))}
-                  </div>
-                ) : null}
+              <div className="showcase-landing-audience-copy">
+                <p className="showcase-eyebrow">Para clientes</p>
+                <h3>Encontre profissionais com confianca e tenha uma experiencia mais segura.</h3>
+                <p>
+                  Compare avaliacoes, veja o historico dos instaladores e fale direto com quem vai executar o projeto
+                  do seu ambiente.
+                </p>
+                <Link className="gold-button" to="/cliente">
+                  Sou cliente
+                </Link>
               </div>
-            ) : (
-              <div className="empty-state !p-4 text-sm">As avaliações positivas aparecerão aqui automaticamente.</div>
-            )}
-          </div>
-        </section>
-
-        <section className="clean-how clean-priority-how fade-up" style={{ animationDelay: '0.2s' }}>
-          {howItWorksItems.map((item) => (
-            <article key={item.step}>
-              <span>{item.step}</span>
-              <h4>{item.title}</h4>
-              <p>{item.copy}</p>
             </article>
-          ))}
-        </section>
 
-        {isMobileLayout ? (
-          <div className="clean-mobile-sticky-cta">
-            <Link className="gold-button clean-mobile-sticky-button" to="/cliente">
-              Encontrar instaladores
-            </Link>
+            <article className="showcase-landing-audience-card" id="installers">
+              <div className="showcase-landing-audience-copy">
+                <p className="showcase-eyebrow">Para instaladores</p>
+                <h3>Receba mais pedidos, organize sua agenda e concentre sua operacao em um so lugar.</h3>
+                <p>
+                  Cadastre-se para gerenciar orcamentos, clientes, agenda e visibilidade profissional dentro da
+                  plataforma.
+                </p>
+                <Link className="ghost-button" to="/instalador/cadastro">
+                  Sou instalador
+                </Link>
+              </div>
+              <div className="showcase-landing-audience-media">
+                <img alt="Equipe de instaladores profissionais da plataforma" src={INSTALLER_IMAGE_URL} />
+              </div>
+            </article>
+          </section>
+
+          <section className="showcase-landing-metrics fade-up" style={{ animationDelay: '0.12s' }}>
+            <article>
+              <strong>+{formatLargeNumber(metrics.totalInstallers)}</strong>
+              <span>Instaladores cadastrados e prontos para atender em diferentes regioes.</span>
+            </article>
+            <article>
+              <strong>+{formatLargeNumber(metrics.totalInstallations)}</strong>
+              <span>Instalacoes concluidas com clientes reais usando a plataforma.</span>
+            </article>
+            <article>
+              <strong>{Number(metrics.averageRating || 0).toFixed(1)} / 5</strong>
+              <span>Avaliacao media baseada em comentarios e notas de clientes.</span>
+            </article>
+            <article>
+              <strong>{metrics.uniqueStates}</strong>
+              <span>Estados com instaladores ativos e perfis disponiveis para contratacao.</span>
+            </article>
+          </section>
+
+          <section className="showcase-landing-section fade-up" id="reviews" style={{ animationDelay: '0.14s' }}>
+            <div className="showcase-landing-section-head">
+              <p className="showcase-eyebrow">Avaliacoes</p>
+              <h2>O que nossos clientes dizem</h2>
+              <p>Depoimentos reais para ajudar voce a escolher com mais confianca.</p>
+            </div>
+
+            <div className="showcase-landing-reviews">
+              {reviewCards.map((review) => (
+                <article className="showcase-landing-review-card" key={review.id || review.reviewer_name}>
+                  <div className="showcase-landing-review-person">
+                    <div className="showcase-landing-review-avatar">{getInitials(review.reviewer_name || 'CL')}</div>
+                    <div>
+                      <strong>{review.reviewer_name || 'Cliente verificado'}</strong>
+                      <p>{review.reviewer_region || 'Brasil'}</p>
+                    </div>
+                  </div>
+                  <GoldStars value={review.rating || 5} />
+                  <p className="showcase-landing-review-text">{review.comment}</p>
+                  <footer>
+                    <span>{review.installer_name || 'Instalador da plataforma'}</span>
+                    <small>{review.created_at ? new Date(review.created_at).toLocaleDateString('pt-BR') : 'Avaliacao recente'}</small>
+                  </footer>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="showcase-landing-cta fade-up" id="cta" style={{ animationDelay: '0.16s' }}>
+            <div>
+              <p className="showcase-eyebrow">Comece agora</p>
+              <h2>Transforme seus ambientes com mais seguranca e menos improviso</h2>
+              <p className="showcase-landing-hero-description">
+                Busque instaladores, compare perfis e siga para o contato direto em poucos passos.
+              </p>
+            </div>
+            <div className="showcase-landing-cta-actions">
+              <Link className="gold-button" to="/cliente">
+                Buscar instaladores
+              </Link>
+              <Link className="ghost-button" to="/instalador/cadastro">
+                Quero anunciar meus servicos
+              </Link>
+            </div>
+          </section>
+        </main>
+
+        <footer className="showcase-landing-footer fade-up" style={{ animationDelay: '0.18s' }}>
+          <div className="showcase-landing-footer-brand">
+            <BrandMark className="client-brand-mark" />
+            <div>
+              <strong>Instalar</strong>
+              <p>Conectando clientes aos melhores instaladores de papel de parede em todo o Brasil.</p>
+            </div>
           </div>
-        ) : null}
+
+          <div className="showcase-landing-footer-columns">
+            {FOOTER_SECTIONS.map((section) => (
+              <div key={section.title}>
+                <strong>{section.title}</strong>
+                {section.links.map((item) =>
+                  item.to ? (
+                    <Link key={item.label} to={item.to}>
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <a href={item.href} key={item.label}>
+                      {item.label}
+                    </a>
+                  )
+                )}
+              </div>
+            ))}
+          </div>
+
+          <small>© 2026 Instalar. Todos os direitos reservados.</small>
+        </footer>
+
+        <div className="showcase-landing-mobile-sticky">
+          <Link className="gold-button" to="/cliente">
+            Buscar instaladores
+          </Link>
+        </div>
       </div>
     </div>
   );

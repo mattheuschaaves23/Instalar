@@ -12334,6 +12334,11 @@ body {
   font-weight: 700;
 }
 
+.showcase-landing-step-badge svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
 .showcase-landing-step-card h3,
 .showcase-landing-audience-copy h3,
 .showcase-landing-installer-card h3,
@@ -12542,6 +12547,13 @@ body {
 .showcase-landing-footer {
   display: grid;
   gap: 1.15rem;
+}
+
+.showcase-landing-footer > small {
+  color: rgba(255, 244, 226, 0.52);
+  text-align: center;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(205, 163, 73, 0.12);
 }
 
 .showcase-landing-footer-brand {
