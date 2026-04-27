@@ -12907,16 +12907,18 @@ body {
 }
 
 .showcase-landing-hero {
+  grid-template-columns: 1fr;
   padding: 1.45rem;
   display: grid;
   gap: 1.2rem;
+  align-items: initial;
 }
 
 .showcase-landing-hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.98fr) minmax(460px, 1.02fr);
-  gap: 1.25rem;
-  align-items: stretch;
+  grid-template-columns: minmax(0, 0.94fr) minmax(540px, 1.06fr);
+  gap: 1.6rem;
+  align-items: center;
 }
 
 .showcase-landing-badge {
@@ -12944,13 +12946,13 @@ body {
 }
 
 .showcase-landing-hero-copy {
-  padding: 0.4rem 0.1rem;
+  padding: 0.65rem 0.1rem;
 }
 
 .showcase-landing-hero-copy h1 {
-  max-width: 10.5ch;
+  max-width: 11.2ch;
   font-family: 'Public Sans', 'Segoe UI', sans-serif;
-  font-size: clamp(3rem, 5vw, 4.8rem);
+  font-size: clamp(3rem, 4.6vw, 4.5rem);
   font-weight: 800;
   letter-spacing: -0.05em;
   line-height: 1.06;
@@ -12962,11 +12964,12 @@ body {
 
 .showcase-landing-hero-description {
   max-width: 34rem;
-  font-size: 1.32rem;
+  font-size: 1.22rem;
 }
 
 .showcase-landing-search {
   align-items: stretch;
+  max-width: 40rem;
 }
 
 .showcase-landing-search-field {
@@ -12989,7 +12992,7 @@ body {
 }
 
 .showcase-landing-hero-visual {
-  min-height: 31rem;
+  min-height: 33rem;
   border-radius: 32px;
 }
 
@@ -13044,6 +13047,9 @@ body {
 }
 
 .showcase-landing-proof-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -13052,14 +13058,18 @@ body {
   grid-template-columns: auto 1fr;
   gap: 0.8rem;
   align-items: center;
-  padding: 1rem 1.05rem;
+  padding: 0.2rem 0.1rem;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .showcase-landing-proof-icon {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 18px;
-  background: rgba(205, 163, 73, 0.09);
+  width: 2.85rem;
+  height: 2.85rem;
+  border-radius: 999px;
+  background: rgba(205, 163, 73, 0.08);
   color: var(--gold);
   display: inline-flex;
   align-items: center;
@@ -13068,7 +13078,13 @@ body {
 
 .showcase-landing-proof-card strong {
   display: block;
-  margin-bottom: 0.12rem;
+  margin-bottom: 0.16rem;
+  font-size: 1.02rem;
+}
+
+.showcase-landing-proof-card span {
+  color: rgba(255, 244, 226, 0.64);
+  line-height: 1.55;
 }
 
 .showcase-landing-section-head-centered {
@@ -13458,7 +13474,7 @@ body {
   color: rgba(255, 244, 226, 0.4);
 }
 
-@media (max-width: 1360px) {
+@media (max-width: 1240px) {
   .showcase-landing-hero-grid {
     grid-template-columns: 1fr;
   }
@@ -13559,7 +13575,7 @@ body {
     grid-template-columns: 1fr;
     text-align: left;
     align-items: start;
-    padding: 0.85rem;
+    padding: 0.2rem 0;
   }
 
   .showcase-landing-proof-icon {
