@@ -12008,3 +12008,812 @@ body {
     font-size: 0.68rem;
   }
 }
+
+.showcase-landing-shell {
+  width: min(100%, 1480px);
+  margin: 0 auto;
+  padding: 1.15rem 1rem 6rem;
+  color: #fff8ee;
+  display: grid;
+  gap: 1rem;
+}
+
+.showcase-landing-topbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-radius: 30px;
+  border: 1px solid rgba(205, 163, 73, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+    rgba(10, 9, 8, 0.96);
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.22);
+}
+
+.showcase-landing-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.showcase-landing-brand-copy {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.showcase-landing-brand-copy p {
+  margin: 0;
+  color: rgba(255, 244, 226, 0.64);
+  font-size: 0.9rem;
+}
+
+.showcase-landing-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  flex-wrap: wrap;
+}
+
+.showcase-landing-nav-link,
+.showcase-landing-footer-columns a {
+  color: rgba(255, 244, 226, 0.82);
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+
+.showcase-landing-nav-link:hover,
+.showcase-landing-footer-columns a:hover {
+  color: var(--gold);
+}
+
+.showcase-landing-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.showcase-landing-actions .ghost-button,
+.showcase-landing-actions .gold-button {
+  min-height: 3rem;
+}
+
+.showcase-landing-mobile-nav {
+  display: none;
+}
+
+.showcase-landing-main {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.showcase-landing-hero,
+.showcase-landing-section,
+.showcase-landing-dual,
+.showcase-landing-metrics,
+.showcase-landing-cta,
+.showcase-landing-footer {
+  border-radius: 34px;
+  border: 1px solid rgba(205, 163, 73, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02)),
+    rgba(11, 10, 9, 0.97);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+}
+
+.showcase-landing-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(420px, 0.98fr);
+  gap: 1.2rem;
+  padding: 1.35rem;
+  align-items: stretch;
+}
+
+.showcase-landing-hero-copy {
+  display: grid;
+  align-content: center;
+  gap: 1rem;
+  padding: 0.4rem 0.25rem;
+}
+
+.showcase-eyebrow {
+  margin: 0;
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.showcase-landing-hero-copy h1,
+.showcase-landing-section-head h2,
+.showcase-landing-cta h2 {
+  margin: 0;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  line-height: 1.05;
+}
+
+.showcase-landing-hero-copy h1 {
+  font-size: clamp(2.7rem, 5vw, 4.45rem);
+  letter-spacing: -0.04em;
+  color: #fff8ef;
+}
+
+.showcase-landing-hero-copy h1 span {
+  color: var(--gold);
+}
+
+.showcase-landing-hero-description,
+.showcase-landing-step-card p,
+.showcase-landing-audience-copy p,
+.showcase-landing-section-head p,
+.showcase-landing-footer-brand p,
+.showcase-landing-floating-card span {
+  margin: 0;
+  color: rgba(255, 244, 226, 0.7);
+  line-height: 1.65;
+}
+
+.showcase-landing-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+}
+
+.showcase-landing-search input {
+  width: 100%;
+  min-height: 3.55rem;
+  border-radius: 20px;
+  border: 1px solid rgba(205, 163, 73, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff8ef;
+  padding: 0 1rem;
+  outline: 0;
+}
+
+.showcase-landing-search input::placeholder {
+  color: rgba(255, 244, 226, 0.36);
+}
+
+.showcase-landing-search input:focus {
+  border-color: rgba(205, 163, 73, 0.4);
+  box-shadow: 0 0 0 4px rgba(205, 163, 73, 0.08);
+}
+
+.showcase-landing-search .gold-button {
+  min-height: 3.55rem;
+  padding-left: 1.35rem;
+  padding-right: 1.35rem;
+}
+
+.showcase-landing-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.showcase-landing-proof-card {
+  border-radius: 22px;
+  border: 1px solid rgba(205, 163, 73, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.95rem 1rem;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.showcase-landing-proof-card strong {
+  color: #fff8ef;
+  font-size: 0.94rem;
+}
+
+.showcase-landing-proof-card span {
+  color: rgba(255, 244, 226, 0.58);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.showcase-landing-hero-visual {
+  position: relative;
+  min-height: 100%;
+  overflow: hidden;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.showcase-landing-hero-visual img,
+.showcase-landing-audience-media img,
+.showcase-landing-installer-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.showcase-landing-hero-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(9, 8, 7, 0.08), rgba(9, 8, 7, 0.34)),
+    radial-gradient(circle at 20% 18%, rgba(212, 171, 94, 0.2), transparent 34%);
+}
+
+.showcase-landing-floating-card {
+  position: absolute;
+  right: 1.1rem;
+  bottom: 1.1rem;
+  z-index: 2;
+  max-width: 19rem;
+  padding: 1rem 1.05rem;
+  border-radius: 24px;
+  border: 1px solid rgba(205, 163, 73, 0.16);
+  background: rgba(13, 12, 10, 0.88);
+  box-shadow: 0 24px 40px rgba(0, 0, 0, 0.22);
+  display: grid;
+  gap: 0.55rem;
+}
+
+.showcase-landing-floating-card strong {
+  color: #fff9ef;
+  font-size: 1.1rem;
+}
+
+.showcase-landing-floating-avatars {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.showcase-landing-floating-avatars img,
+.showcase-landing-floating-avatars div {
+  width: 2.45rem;
+  height: 2.45rem;
+  border-radius: 50%;
+  border: 2px solid rgba(205, 163, 73, 0.26);
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(205, 163, 73, 0.12);
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.showcase-landing-section,
+.showcase-landing-footer {
+  padding: 1.3rem;
+}
+
+.showcase-landing-section-head {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.showcase-landing-section-head h2,
+.showcase-landing-cta h2 {
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  color: #fff8ef;
+}
+
+.showcase-landing-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.showcase-landing-step-card,
+.showcase-landing-installer-card,
+.showcase-landing-review-card,
+.showcase-landing-audience-card {
+  border-radius: 24px;
+  border: 1px solid rgba(205, 163, 73, 0.12);
+  background: rgba(255, 255, 255, 0.022);
+}
+
+.showcase-landing-step-card {
+  padding: 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.showcase-landing-step-badge {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 18px;
+  background: rgba(205, 163, 73, 0.12);
+  color: var(--gold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-weight: 700;
+}
+
+.showcase-landing-step-card h3,
+.showcase-landing-audience-copy h3,
+.showcase-landing-installer-card h3,
+.showcase-landing-review-card strong {
+  margin: 0;
+  color: #fff9ef;
+}
+
+.showcase-landing-dual {
+  padding: 1.2rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.showcase-landing-audience-card {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.42fr) minmax(0, 0.58fr);
+  overflow: hidden;
+}
+
+.showcase-landing-audience-card:last-child {
+  grid-template-columns: minmax(0, 0.58fr) minmax(160px, 0.42fr);
+}
+
+.showcase-landing-audience-media {
+  min-height: 100%;
+}
+
+.showcase-landing-audience-copy {
+  padding: 1.15rem;
+  display: grid;
+  align-content: center;
+  gap: 0.65rem;
+}
+
+.showcase-landing-audience-copy .gold-button,
+.showcase-landing-audience-copy .ghost-button {
+  width: fit-content;
+  min-height: 2.95rem;
+}
+
+.showcase-landing-metrics {
+  padding: 1rem 1.15rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.showcase-landing-metrics article {
+  padding: 0.9rem 0.95rem;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(205, 163, 73, 0.1);
+  display: grid;
+  gap: 0.18rem;
+}
+
+.showcase-landing-metrics strong {
+  color: var(--gold);
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 1.5rem;
+}
+
+.showcase-landing-metrics span {
+  color: rgba(255, 244, 226, 0.62);
+  line-height: 1.45;
+}
+
+.showcase-landing-installers,
+.showcase-landing-reviews {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.95rem;
+}
+
+.showcase-landing-installer-card {
+  padding: 1rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.showcase-landing-installer-top {
+  display: grid;
+  grid-template-columns: 4.25rem minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.showcase-landing-installer-avatar {
+  width: 4.25rem;
+  height: 4.25rem;
+  border-radius: 20px;
+}
+
+.showcase-landing-installer-fallback,
+.showcase-landing-review-avatar {
+  background: rgba(205, 163, 73, 0.12);
+  color: var(--gold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border: 1px solid rgba(205, 163, 73, 0.16);
+}
+
+.showcase-landing-installer-top p,
+.showcase-landing-review-person p,
+.showcase-landing-installer-copy,
+.showcase-landing-installer-meta span,
+.showcase-landing-review-text,
+.showcase-landing-review-card footer,
+.showcase-landing-footer-columns strong,
+.showcase-landing-footer-columns a {
+  margin: 0;
+}
+
+.showcase-landing-installer-top p,
+.showcase-landing-installer-copy,
+.showcase-landing-installer-meta span,
+.showcase-landing-review-person p,
+.showcase-landing-review-text,
+.showcase-landing-review-card footer,
+.showcase-landing-footer-columns a {
+  color: rgba(255, 244, 226, 0.66);
+  line-height: 1.55;
+}
+
+.showcase-landing-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  color: rgba(205, 163, 73, 0.3);
+}
+
+.showcase-landing-stars .is-on {
+  color: var(--gold);
+}
+
+.showcase-landing-installer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.9rem;
+  font-size: 0.88rem;
+}
+
+.showcase-landing-installer-card .ghost-button {
+  width: fit-content;
+  min-height: 2.8rem;
+}
+
+.showcase-landing-review-card {
+  padding: 1rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.showcase-landing-review-person {
+  display: grid;
+  grid-template-columns: 3.2rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.showcase-landing-review-avatar {
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  font-size: 0.95rem;
+}
+
+.showcase-landing-review-text {
+  font-size: 0.97rem;
+}
+
+.showcase-landing-review-card footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.showcase-landing-review-card small {
+  color: rgba(255, 244, 226, 0.46);
+}
+
+.showcase-landing-cta {
+  padding: 1.2rem 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.showcase-landing-cta-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.showcase-landing-cta-actions .gold-button,
+.showcase-landing-cta-actions .ghost-button {
+  min-height: 3rem;
+}
+
+.showcase-landing-footer {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.showcase-landing-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.showcase-landing-footer-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.showcase-landing-footer-columns div {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.showcase-landing-footer-columns strong {
+  color: #fff8ef;
+}
+
+.showcase-landing-mobile-sticky {
+  display: none;
+}
+
+@media (max-width: 1240px) {
+  .showcase-landing-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .showcase-landing-steps,
+  .showcase-landing-installers,
+  .showcase-landing-reviews,
+  .showcase-landing-metrics,
+  .showcase-landing-footer-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .showcase-landing-dual {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 980px) {
+  .showcase-landing-topbar {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .showcase-landing-nav {
+    display: none;
+  }
+
+  .showcase-landing-mobile-nav {
+    display: flex;
+    gap: 0.6rem;
+    overflow-x: auto;
+    padding: 0 0.1rem;
+    scrollbar-width: none;
+  }
+
+  .showcase-landing-mobile-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .showcase-landing-mobile-link {
+    flex: 0 0 auto;
+    min-height: 2.55rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(205, 163, 73, 0.14);
+    background: rgba(255, 255, 255, 0.02);
+    color: rgba(255, 244, 226, 0.82);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .showcase-landing-actions .ghost-button,
+  .showcase-landing-actions .gold-button {
+    min-height: 2.85rem;
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .showcase-landing-shell {
+    padding: 0.75rem 0.75rem 6.8rem;
+    gap: 0.8rem;
+  }
+
+  .showcase-landing-topbar {
+    padding: 0.95rem;
+    border-radius: 26px;
+  }
+
+  .showcase-landing-brand-copy p,
+  .showcase-landing-actions .ghost-button {
+    display: none;
+  }
+
+  .showcase-landing-actions .gold-button {
+    min-height: 2.8rem;
+  }
+
+  .showcase-landing-hero,
+  .showcase-landing-section,
+  .showcase-landing-dual,
+  .showcase-landing-metrics,
+  .showcase-landing-cta,
+  .showcase-landing-footer {
+    border-radius: 28px;
+  }
+
+  .showcase-landing-hero,
+  .showcase-landing-section,
+  .showcase-landing-footer {
+    padding: 1rem;
+  }
+
+  .showcase-landing-hero-copy h1 {
+    font-size: clamp(2rem, 11vw, 3rem);
+  }
+
+  .showcase-landing-search,
+  .showcase-landing-cta,
+  .showcase-landing-cta-actions {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .showcase-landing-search .gold-button,
+  .showcase-landing-cta-actions .gold-button,
+  .showcase-landing-cta-actions .ghost-button {
+    width: 100%;
+  }
+
+  .showcase-landing-proof-grid,
+  .showcase-landing-steps,
+  .showcase-landing-installers,
+  .showcase-landing-reviews,
+  .showcase-landing-metrics,
+  .showcase-landing-footer-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .showcase-landing-proof-card,
+  .showcase-landing-step-card,
+  .showcase-landing-installer-card,
+  .showcase-landing-review-card,
+  .showcase-landing-metrics article {
+    border-radius: 22px;
+  }
+
+  .showcase-landing-hero-visual {
+    min-height: 22rem;
+  }
+
+  .showcase-landing-floating-card {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    max-width: none;
+  }
+
+  .showcase-landing-audience-card,
+  .showcase-landing-audience-card:last-child {
+    grid-template-columns: 1fr;
+  }
+
+  .showcase-landing-audience-media {
+    min-height: 12rem;
+  }
+
+  .showcase-landing-footer-brand {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .showcase-landing-footer-columns div {
+    padding-top: 0.2rem;
+  }
+
+  .showcase-landing-mobile-sticky {
+    position: fixed;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 1rem;
+    z-index: 20;
+    display: block;
+  }
+
+  .showcase-landing-mobile-sticky .gold-button {
+    width: 100%;
+    min-height: 3.3rem;
+    box-shadow: 0 20px 34px rgba(205, 163, 73, 0.22);
+  }
+}
+
+@media (max-width: 460px) {
+  .showcase-landing-topbar {
+    grid-template-columns: 1fr auto;
+    gap: 0.7rem;
+  }
+
+  .showcase-landing-actions {
+    gap: 0.45rem;
+  }
+
+  .showcase-landing-actions .gold-button {
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+  }
+
+  .showcase-landing-brand {
+    gap: 0.7rem;
+  }
+
+  .showcase-landing-brand .client-brand-mark {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .showcase-landing-hero {
+    padding: 0.9rem;
+  }
+
+  .showcase-landing-hero-copy {
+    gap: 0.8rem;
+  }
+
+  .showcase-landing-hero-description,
+  .showcase-landing-step-card p,
+  .showcase-landing-audience-copy p,
+  .showcase-landing-section-head p,
+  .showcase-landing-proof-card span {
+    font-size: 0.92rem;
+  }
+
+  .showcase-landing-hero-visual {
+    min-height: 18rem;
+  }
+
+  .showcase-landing-floating-card {
+    padding: 0.9rem;
+  }
+
+  .showcase-landing-floating-card strong {
+    font-size: 1rem;
+  }
+
+  .showcase-landing-section-head h2,
+  .showcase-landing-cta h2 {
+    font-size: 1.75rem;
+  }
+
+  .showcase-landing-installer-top,
+  .showcase-landing-review-person {
+    grid-template-columns: 1fr;
+  }
+
+  .showcase-landing-installer-avatar,
+  .showcase-landing-review-avatar {
+    width: 3.4rem;
+    height: 3.4rem;
+  }
+
+  .showcase-landing-review-card footer {
+    display: grid;
+    justify-content: flex-start;
+  }
+}
