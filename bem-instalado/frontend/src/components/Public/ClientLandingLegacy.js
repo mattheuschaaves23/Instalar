@@ -978,196 +978,6 @@ export default function ClientLanding() {
           </>
         )}
 
-        {!isMobileLayout && (
-          <section className="clean-reference-showcase fade-up" style={{ animationDelay: '0.07s' }}>
-            <div className="clean-reference-showcase-top">
-              <section className="clean-reference-store-panel" id="stores">
-                <div className="clean-reference-panel-head">
-                  <p className="eyebrow">Lojas recomendadas</p>
-                  <h2 className="clean-reference-feature-heading">
-                    <span className="is-light">Onde comprar com segurança</span>
-                    <span className="is-gold">para sua instalação</span>
-                  </h2>
-                  <p>Seleção atualizada pelo administrador da plataforma com as melhores opções do momento.</p>
-                </div>
-
-                <div className="clean-reference-store-shell is-static no-nav">
-                  {desktopShowcaseStores.length > 0 ? (
-                    <div className="clean-reference-store-grid" style={{ '--store-columns': desktopStoreColumns }}>
-                      {desktopShowcaseStores.map((store, index) => (
-                        <article className="clean-reference-store-card" key={store.id || `${store.name}-${index}`}>
-                          <div className="clean-reference-store-logo">
-                            {store.image_url ? (
-                              <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
-                            ) : store.logo_variant ? (
-                              <div className={`clean-reference-brand-logo is-${store.logo_variant}`}>
-                                <span>{store.name}</span>
-                              </div>
-                            ) : (
-                              <div className="clean-reference-store-fallback">{getInitials(store.name || 'Loja')}</div>
-                            )}
-                          </div>
-
-                          <h3>{store.name}</h3>
-                          <div className="clean-reference-store-rating">
-                            <span className="clean-reference-stars">★★★★★</span>
-                            <strong>{store.rating || STORE_RATING_FALLBACKS[store.name] || '4,8'}</strong>
-                          </div>
-
-                          {store.link_url ? (
-                            <a className="clean-reference-store-link" href={store.link_url} rel="noopener noreferrer" target="_blank">
-                              Ver loja
-                            </a>
-                          ) : (
-                            <span className="clean-reference-store-link is-disabled">Ver loja</span>
-                          )}
-                        </article>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="clean-reference-empty-state">
-                      <strong>Nenhuma loja recomendada publicada ainda.</strong>
-                      <p>As lojas configuradas e ativadas no painel do administrador aparecerão aqui automaticamente.</p>
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              <section className="clean-reference-why-panel" id="sobre-nos">
-                <div className="clean-reference-why-copy">
-                  <p className="eyebrow">Por que escolher</p>
-                  <h2 className="clean-reference-feature-heading">
-                    <span className="is-light">Mais clareza para decidir,</span>
-                    <span className="is-gold">mais segurança</span>
-                    <span className="is-gold">para contratar.</span>
-                  </h2>
-                  <p>
-                    A plataforma foi feita para ser objetiva: você encontra os melhores profissionais, compara rápido e conversa direto com quem vai fazer a instalação.
-                  </p>
-
-                  <ul className="clean-reference-why-list">
-                    {DESKTOP_WHY_POINTS.map((item) => (
-                      <li key={item.text}>
-                        <span className="clean-reference-why-icon">
-                          <ReferenceHeroIcon name={item.icon} />
-                        </span>
-                        <span>{item.text}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="clean-reference-why-photo">
-                  <img alt="Equipe de instaladores profissionais" src={STORY_IMAGE_URL} />
-                </div>
-              </section>
-            </div>
-
-            <div className="clean-reference-showcase-bottom">
-              <section className="clean-reference-installers-panel" id="landing-installers">
-                <div className="clean-reference-panel-head">
-                  <p className="eyebrow">Em destaque</p>
-                  <h2 className="clean-reference-feature-heading">
-                    <span className="is-gold">Melhores</span>
-                    <span className="is-light">instaladores de papel de parede da plataforma</span>
-                  </h2>
-                  <p>Perfis organizados com nota, cidade, portfólio e contato direto.</p>
-                </div>
-
-                <div className="clean-reference-installers-grid">
-                  {desktopShowcaseInstallers.length > 0 ? (
-                    desktopShowcaseInstallers.map((installer) => (
-                      <article className="clean-reference-installer-card" key={installer.id}>
-                        <div className="clean-reference-installer-top">
-                          <div className="clean-reference-installer-head">
-                            {installer.installer_photo ? (
-                              <img
-                                alt={`Foto de ${installer.display_name}`}
-                                className="clean-reference-installer-avatar"
-                                src={installer.installer_photo}
-                              />
-                            ) : installer.logo ? (
-                              <img alt={`Logo de ${installer.display_name}`} className="clean-reference-installer-avatar" src={installer.logo} />
-                            ) : (
-                              <div className="clean-reference-installer-avatar clean-reference-installer-fallback">{getInitials(installer.display_name)}</div>
-                            )}
-
-                            <div>
-                              <div className="clean-reference-installer-title-row">
-                                <h3>{installer.display_name}</h3>
-                                <span className="clean-reference-installer-badge">Destaque</span>
-                              </div>
-                              <p>{[installer.city, installer.state].filter(Boolean).join(', ') || 'Região não informada'}</p>
-                            </div>
-                          </div>
-
-                          <div className="clean-reference-installer-rating">
-                            <span className="clean-reference-stars">★★★★★</span>
-                            <strong>
-                              {formatRating(installer.average_rating)} ({installer.review_count} avaliações)
-                            </strong>
-                          </div>
-                        </div>
-
-                        <div className="clean-reference-installer-facts">
-                          <div>
-                            <span className="clean-reference-mini-icon">
-                              <ReferenceHeroIcon name="shield" />
-                            </span>
-                            <p>
-                              <strong>Especialista</strong>
-                              <span>Papel de parede</span>
-                            </p>
-                          </div>
-                          <div>
-                            <span className="clean-reference-mini-icon">
-                              <ReferenceHeroIcon name="users" />
-                            </span>
-                            <p>
-                              <strong>+{Number(installer.completed_jobs || installer.approved_jobs || 0)}</strong>
-                              <span>projetos concluídos</span>
-                            </p>
-                          </div>
-                          <div>
-                            <span className="clean-reference-mini-icon">
-                              <ReferenceHeroIcon name="whatsapp" />
-                            </span>
-                            <p>
-                              <strong>Resposta rápida</strong>
-                              <span>via WhatsApp</span>
-                            </p>
-                          </div>
-                        </div>
-
-                        <Link className="clean-reference-installer-link" to="/cliente">
-                          Ver perfil completo
-                        </Link>
-                      </article>
-                    ))
-                  ) : (
-                    <div className="empty-state !p-4 text-sm">Ainda não há instaladores públicos disponíveis no momento.</div>
-                  )}
-                </div>
-              </section>
-
-              <aside className="clean-reference-stat-grid">
-                {DESKTOP_PLATFORM_METRICS.map((item) => (
-                  <article className="clean-reference-stat-card" key={item.title}>
-                    <span className="clean-reference-stat-icon">
-                      <ReferenceHeroIcon name={item.icon} />
-                    </span>
-                    <div>
-                      <strong>{item.value}</strong>
-                      <span>{item.title}</span>
-                    </div>
-                  </article>
-                ))}
-              </aside>
-            </div>
-          </section>
-        )}
-
-        {isMobileLayout && (
         <section className="clean-stores clean-priority-stores fade-up" style={{ animationDelay: '0.07s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Lojas recomendadas</p>
@@ -1260,9 +1070,7 @@ export default function ClientLanding() {
             <div className="empty-state !p-4 text-sm">As lojas recomendadas aparecerão aqui automaticamente.</div>
           )}
         </section>
-        )}
 
-        {isMobileLayout && (
         <section className="clean-story clean-priority-story fade-up" style={{ animationDelay: '0.08s' }}>
           <div className="clean-story-text">
             <p className="eyebrow">Por que escolher</p>
@@ -1283,9 +1091,7 @@ export default function ClientLanding() {
             <img alt="Instaladores de papel de parede profissionais" src={STORY_IMAGE_URL} />
           </div>
         </section>
-        )}
 
-        {isMobileLayout && (
         <section className="clean-installers clean-priority-installers fade-up" id="landing-installers" style={{ animationDelay: '0.14s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Em destaque</p>
@@ -1386,7 +1192,6 @@ export default function ClientLanding() {
             )}
           </div>
         </section>
-        )}
 
         <section className="clean-reviews clean-priority-reviews fade-up" id="landing-reviews" style={{ animationDelay: '0.17s' }}>
           <div className="clean-section-head">
