@@ -6280,12 +6280,12 @@ body {
 }
 
 .clean-reference-showcase-top {
-  grid-template-columns: minmax(0, 1.14fr) minmax(0, 0.98fr);
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1.08fr);
   align-items: start;
 }
 
 .clean-reference-showcase-bottom {
-  grid-template-columns: minmax(0, 1.6fr) minmax(350px, 0.82fr);
+  grid-template-columns: minmax(0, 1.38fr) minmax(390px, 1fr);
   align-items: start;
   padding-top: 1.85rem;
   border-top: 1px solid rgba(205, 163, 73, 0.18);
@@ -6381,10 +6381,14 @@ body {
   grid-template-columns: 3rem minmax(0, 1fr) 3rem;
 }
 
+.clean-reference-store-shell.is-static.no-nav {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .clean-reference-store-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.92rem;
+  grid-template-columns: repeat(var(--store-columns, 4), minmax(0, 1fr));
+  gap: 1rem;
   align-items: stretch;
 }
 
@@ -6481,9 +6485,12 @@ body {
 }
 
 .clean-reference-store-card {
+  width: 100%;
+  max-width: 15rem;
+  justify-self: center;
   height: 100%;
-  min-height: 13.1rem;
-  padding: 1.05rem 0.95rem 0.9rem;
+  min-height: 13.6rem;
+  padding: 1.05rem 0.95rem 0.95rem;
   display: grid;
   align-content: start;
   gap: 0.75rem;
@@ -6525,6 +6532,7 @@ body {
 
 .clean-reference-store-card h3 {
   margin: 0;
+  min-height: 2.7rem;
   color: #fff8ea;
   font-family: 'Poppins', 'Segoe UI', sans-serif;
   font-size: 1.05rem;
@@ -6570,6 +6578,37 @@ body {
   pointer-events: none;
 }
 
+.clean-reference-empty-state {
+  min-height: 14rem;
+  padding: 2rem;
+  display: grid;
+  place-items: center;
+  gap: 0.6rem;
+  border: 1px dashed rgba(205, 163, 73, 0.28);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top, rgba(205, 163, 73, 0.08), transparent 56%),
+    rgba(255, 255, 255, 0.018);
+  text-align: center;
+}
+
+.clean-reference-empty-state strong {
+  color: #fff8ea;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.clean-reference-empty-state p {
+  max-width: 34rem;
+  margin: 0;
+  color: rgba(244, 229, 191, 0.76);
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
 .clean-reference-pager {
   display: flex;
   align-items: center;
@@ -6594,9 +6633,9 @@ body {
 
 .clean-reference-why-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(18rem, 0.86fr);
+  grid-template-columns: minmax(0, 1.14fr) minmax(20rem, 0.96fr);
   align-items: start;
-  gap: 1.45rem;
+  gap: 1.7rem;
 }
 
 .clean-reference-why-copy {
@@ -6606,7 +6645,7 @@ body {
 }
 
 .clean-reference-why-copy .clean-reference-feature-heading {
-  max-width: 8.6ch;
+  max-width: 11ch;
 }
 
 .clean-reference-why-list {
@@ -6654,7 +6693,7 @@ body {
 
 .clean-reference-why-photo {
   position: relative;
-  min-height: 27.5rem;
+  min-height: 28.5rem;
   overflow: hidden;
   border: 1px solid rgba(205, 163, 73, 0.44);
   border-radius: 26px;
@@ -6692,7 +6731,7 @@ body {
 .clean-reference-installers-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.1rem;
 }
 
 .clean-reference-installer-card {
@@ -6849,13 +6888,13 @@ body {
 .clean-reference-stat-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.1rem;
   align-self: stretch;
 }
 
 .clean-reference-stat-card {
-  min-height: 10.8rem;
-  padding: 1.28rem 1.2rem;
+  min-height: 11.2rem;
+  padding: 1.45rem 1.3rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
@@ -6871,9 +6910,9 @@ body {
   display: block;
   color: #fff8ea;
   font-family: 'Fraunces', Georgia, serif;
-  font-size: clamp(1.5rem, 1.7vw, 2rem);
+  font-size: clamp(1.36rem, 1.6vw, 1.92rem);
   font-weight: 600;
-  line-height: 1.02;
+  line-height: 1.06;
   letter-spacing: -0.03em;
 }
 
@@ -6904,11 +6943,11 @@ body {
   }
 
   .clean-reference-showcase-top {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.95fr);
+    grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.98fr);
   }
 
   .clean-reference-showcase-bottom {
-    grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.92fr);
+    grid-template-columns: minmax(0, 1.28fr) minmax(320px, 1fr);
   }
 
   .clean-reference-installers-grid {

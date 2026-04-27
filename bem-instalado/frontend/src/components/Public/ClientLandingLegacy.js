@@ -145,37 +145,6 @@ const STORE_RATING_FALLBACKS = {
   'Casa do Papel': '4,8',
 };
 
-const DESKTOP_SHOWCASE_STORES = [
-  {
-    id: 'store-leroy',
-    name: 'Leroy Merlin',
-    rating: '4,8',
-    link_url: 'https://www.leroymerlin.com.br/',
-    logo_variant: 'leroy',
-  },
-  {
-    id: 'store-novo-ambiente',
-    name: 'Novo Ambiente',
-    rating: '4,7',
-    link_url: '#',
-    logo_variant: 'novo-ambiente',
-  },
-  {
-    id: 'store-papel-cia',
-    name: 'Papel & Cia',
-    rating: '4,9',
-    link_url: '#',
-    logo_variant: 'papel-cia',
-  },
-  {
-    id: 'store-casa-papel',
-    name: 'Casa do Papel',
-    rating: '4,8',
-    link_url: '#',
-    logo_variant: 'casa-papel',
-  },
-];
-
 const DESKTOP_SHOWCASE_INSTALLERS = [
   {
     id: 'desktop-installer-1',
@@ -608,7 +577,19 @@ export default function ClientLanding() {
   const storyPoints = STORY_POINTS;
   const howItWorksItems = isMobileLayout ? HOW_IT_WORKS_MOBILE : HOW_IT_WORKS;
   const visibleMobileTrustItems = MOBILE_TRUST_ITEMS.slice(0, 3);
-  const desktopShowcaseStores = DESKTOP_SHOWCASE_STORES;
+  const desktopShowcaseStores = useMemo(
+    () =>
+      activeStores.slice(0, 4).map((store, index) => ({
+        ...store,
+        id: store.id || `desktop-store-${index}`,
+        rating:
+          typeof store.rating === 'string' || typeof store.rating === 'number'
+            ? String(store.rating).replace('.', ',')
+            : STORE_RATING_FALLBACKS[store.name] || '4,8',
+      })),
+    [activeStores]
+  );
+  const desktopStoreColumns = Math.min(Math.max(desktopShowcaseStores.length, 1), 4);
   const desktopShowcaseInstallers = DESKTOP_SHOWCASE_INSTALLERS;
 
   useEffect(() => {
@@ -894,52 +875,45 @@ export default function ClientLanding() {
                   <p>Seleção atualizada pelo administrador da plataforma com as melhores opções do momento.</p>
                 </div>
 
-                <div className="clean-reference-store-shell is-static">
-                  <button aria-label="Ver lojas anteriores" className="clean-reference-arrow is-left" type="button">
-                    ‹
-                  </button>
+                <div className="clean-reference-store-shell is-static no-nav">
+                  {desktopShowcaseStores.length > 0 ? (
+                    <div className="clean-reference-store-grid" style={{ '--store-columns': desktopStoreColumns }}>
+                      {desktopShowcaseStores.map((store, index) => (
+                        <article className="clean-reference-store-card" key={store.id || `${store.name}-${index}`}>
+                          <div className="clean-reference-store-logo">
+                            {store.image_url ? (
+                              <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
+                            ) : store.logo_variant ? (
+                              <div className={`clean-reference-brand-logo is-${store.logo_variant}`}>
+                                <span>{store.name}</span>
+                              </div>
+                            ) : (
+                              <div className="clean-reference-store-fallback">{getInitials(store.name || 'Loja')}</div>
+                            )}
+                          </div>
 
-                  <div className="clean-reference-store-grid">
-                    {desktopShowcaseStores.map((store, index) => (
-                      <article className="clean-reference-store-card" key={store.id || `${store.name}-${index}`}>
-                        <div className="clean-reference-store-logo">
-                          {store.image_url ? (
-                            <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
-                          ) : store.logo_variant ? (
-                            <div className={`clean-reference-brand-logo is-${store.logo_variant}`}>
-                              <span>{store.name}</span>
-                            </div>
+                          <h3>{store.name}</h3>
+                          <div className="clean-reference-store-rating">
+                            <span className="clean-reference-stars">★★★★★</span>
+                            <strong>{store.rating || STORE_RATING_FALLBACKS[store.name] || '4,8'}</strong>
+                          </div>
+
+                          {store.link_url ? (
+                            <a className="clean-reference-store-link" href={store.link_url} rel="noopener noreferrer" target="_blank">
+                              Ver loja
+                            </a>
                           ) : (
-                            <div className="clean-reference-store-fallback">{getInitials(store.name || 'Loja')}</div>
+                            <span className="clean-reference-store-link is-disabled">Ver loja</span>
                           )}
-                        </div>
-
-                        <h3>{store.name}</h3>
-                        <div className="clean-reference-store-rating">
-                          <span className="clean-reference-stars">★★★★★</span>
-                          <strong>{store.rating || STORE_RATING_FALLBACKS[store.name] || '4,8'}</strong>
-                        </div>
-
-                        {store.link_url ? (
-                          <a className="clean-reference-store-link" href={store.link_url} rel="noopener noreferrer" target="_blank">
-                            Ver loja
-                          </a>
-                        ) : (
-                          <span className="clean-reference-store-link is-disabled">Ver loja</span>
-                        )}
-                      </article>
-                    ))}
-                  </div>
-
-                  <button aria-label="Ver próximas lojas" className="clean-reference-arrow is-right" type="button">
-                    ›
-                  </button>
-                </div>
-
-                <div className="clean-reference-pager">
-                  <button className="is-active" type="button" aria-label="Página 1 de lojas recomendadas" />
-                  <button type="button" aria-label="Página 2 de lojas recomendadas" />
-                  <button type="button" aria-label="Página 3 de lojas recomendadas" />
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="clean-reference-empty-state">
+                      <strong>Nenhuma loja recomendada publicada ainda.</strong>
+                      <p>As lojas configuradas e ativadas no painel do administrador aparecerão aqui automaticamente.</p>
+                    </div>
+                  )}
                 </div>
               </section>
 
