@@ -5943,19 +5943,12 @@ body {
   margin-inline: calc(50% - 50vw);
   margin-top: 0;
   padding: clamp(2rem, 3.2vw, 3rem) clamp(1.5rem, 3.4vw, 3rem) clamp(1.5rem, 2.6vw, 2.2rem);
-  display: grid;
-  grid-template-columns: minmax(0, 48%) minmax(0, 52%);
-  grid-template-areas:
-    'copy media'
-    'metrics media';
-  align-items: end;
-  gap: 1.4rem clamp(1rem, 2vw, 2rem);
+  display: block;
   overflow: hidden;
   border-bottom: 1px solid rgba(205, 163, 73, 0.28);
-  background:
-    radial-gradient(circle at 56% 24%, rgba(205, 163, 73, 0.32), transparent 24%),
-    radial-gradient(circle at 44% 66%, rgba(205, 163, 73, 0.14), transparent 32%),
-    linear-gradient(96deg, rgba(6, 6, 6, 0.99) 0%, rgba(8, 8, 8, 0.97) 40%, rgba(15, 12, 8, 0.92) 67%, rgba(10, 10, 10, 0.93) 100%);
+  background: rgba(7, 7, 7, 0.98);
+  isolation: isolate;
+  min-height: clamp(46rem, 54vw, 56rem);
 }
 
 .clean-reference-hero::before {
@@ -5963,9 +5956,20 @@ body {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0%, transparent 30%),
-    radial-gradient(circle at 68% 42%, rgba(255, 214, 115, 0.16), transparent 22%);
+    linear-gradient(
+      90deg,
+      rgba(4, 4, 4, 0.99) 0%,
+      rgba(4, 4, 4, 0.98) 18%,
+      rgba(5, 5, 5, 0.93) 32%,
+      rgba(7, 6, 5, 0.76) 46%,
+      rgba(10, 8, 6, 0.48) 61%,
+      rgba(12, 10, 8, 0.2) 79%,
+      rgba(12, 10, 8, 0.04) 100%
+    ),
+    radial-gradient(circle at 64% 34%, rgba(205, 163, 73, 0.28), transparent 18%),
+    radial-gradient(circle at 55% 56%, rgba(205, 163, 73, 0.18), transparent 24%);
   pointer-events: none;
+  z-index: 1;
 }
 
 .clean-reference-hero::after {
@@ -5984,12 +5988,12 @@ body {
 }
 
 .clean-reference-hero-copy {
-  grid-area: copy;
   position: relative;
   z-index: 2;
   max-width: 42rem;
   padding-top: 1.2rem;
   margin-left: clamp(0.5rem, 1.4vw, 1.6rem);
+  min-height: clamp(31rem, 42vw, 39rem);
 }
 
 .clean-reference-badge {
@@ -6156,11 +6160,9 @@ body {
 }
 
 .clean-reference-hero-media {
-  grid-area: media;
-  position: relative;
-  align-self: stretch;
-  min-height: 100%;
-  z-index: 1;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
 }
 
 .clean-reference-hero-image {
@@ -6169,20 +6171,22 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 74% 42%;
-  filter: saturate(1.03) contrast(1.02);
+  object-position: center center;
+  filter: saturate(1.04) contrast(1.03);
+  transform: scale(1.01);
 }
 
 .clean-reference-hero-glow {
   position: absolute;
-  inset: 10% 8% 12% 14%;
-  background: radial-gradient(circle, rgba(255, 210, 92, 0.26), transparent 56%);
-  filter: blur(18px);
+  inset: 8% 4% 10% 36%;
+  background:
+    radial-gradient(circle at 34% 42%, rgba(255, 213, 102, 0.24), transparent 24%),
+    radial-gradient(circle at 56% 50%, rgba(255, 213, 102, 0.14), transparent 32%);
+  filter: blur(28px);
   pointer-events: none;
 }
 
 .clean-reference-metrics-row {
-  grid-area: metrics;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.2rem;
@@ -6190,6 +6194,7 @@ body {
   z-index: 2;
   margin-left: clamp(0.5rem, 1.4vw, 1.6rem);
   margin-top: 0.2rem;
+  max-width: min(100%, 54rem);
 }
 
 .clean-reference-metric-card {
@@ -6276,11 +6281,6 @@ body {
   }
 
   .clean-reference-hero {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'copy'
-      'media'
-      'metrics';
     padding-bottom: 1.6rem;
   }
 
