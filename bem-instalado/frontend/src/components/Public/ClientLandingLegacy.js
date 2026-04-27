@@ -78,6 +78,52 @@ const HOW_IT_WORKS_MOBILE = [
   },
 ];
 
+const DESKTOP_NAV_ITEMS = [
+  { label: 'Como funciona', href: '#como-funciona' },
+  { label: 'Para clientes', href: '#para-clientes' },
+  { label: 'Para instaladores', href: '#para-instaladores' },
+  { label: 'Lojas recomendadas', href: '#stores' },
+  { label: 'Blog', href: '#blog' },
+  { label: 'Sobre nós', href: '#sobre-nos' },
+  { label: 'Contato', href: '#contato' },
+];
+
+const DESKTOP_TRUST_ITEMS = [
+  {
+    icon: 'shield',
+    title: 'Profissionais verificados',
+    copy: 'Todos passam por análise',
+  },
+  {
+    icon: 'star',
+    title: 'Avaliações reais',
+    copy: 'Baseadas em clientes',
+  },
+  {
+    icon: 'pin',
+    title: 'Atendimento em',
+    copy: 'todo o Brasil',
+  },
+];
+
+const DESKTOP_HERO_METRICS = [
+  {
+    icon: 'users',
+    value: '+8.000',
+    title: 'instaladores cadastrados',
+  },
+  {
+    icon: 'award',
+    value: '4,9/5',
+    title: 'avaliação média dos clientes',
+  },
+  {
+    icon: 'brazil',
+    value: 'Todos os estados',
+    title: 'do Brasil',
+  },
+];
+
 const moneyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
@@ -217,6 +263,79 @@ function RatingDots({ value }) {
       ))}
     </div>
   );
+}
+
+function ReferenceHeroIcon({ name }) {
+  const common = {
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    strokeWidth: '1.8',
+  };
+
+  switch (name) {
+    case 'play':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" {...common} />
+          <path d="M10 8.8 16 12l-6 3.2Z" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case 'shield':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M12 3.5 18.5 6v5.9c0 4.1-2.7 7.2-6.5 8.6-3.8-1.4-6.5-4.5-6.5-8.6V6z" {...common} />
+        </svg>
+      );
+    case 'star':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m12 3.9 2.5 5.1 5.7.8-4.1 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4.1-4 5.7-.8z" {...common} />
+        </svg>
+      );
+    case 'pin':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M12 20s6-5.6 6-10.2a6 6 0 1 0-12 0C6 14.4 12 20 12 20Z" {...common} />
+          <circle cx="12" cy="9.5" r="2.1" {...common} />
+        </svg>
+      );
+    case 'users':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="9" cy="9" r="3.2" {...common} />
+          <path d="M3.8 18c1.1-2.7 3-4 5.2-4s4.1 1.3 5.2 4" {...common} />
+          <circle cx="17.2" cy="8.3" r="2.4" {...common} />
+          <path d="M15.2 16.2c1.2.2 2.3.8 3.4 1.8" {...common} />
+        </svg>
+      );
+    case 'award':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="12" cy="10" r="4.6" {...common} />
+          <path d="m9.4 14 1.1 5.1L12 18l1.5 1.1 1.1-5.1" {...common} />
+          <path d="m12 7.7.8 1.6 1.8.3-1.3 1.2.3 1.8-1.6-.9-1.6.9.3-1.8-1.3-1.2 1.8-.3z" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case 'brazil':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m7.1 4.3 2.8.6 1.4-.8 2.2.7 1.7 1.6 2.4.5.4 1.6-.6 1.3.4 1.3-.9 1.3.5 1.4-1.2 1.6-1.4.5-.6 1.9-1.7.6-1.3-.9-1.5.7-1.1-1-1.8-.2-.7-1.4-1.5-.6-.4-1.6 1.1-1 .2-1.7 1.3-1.3-.4-1.6Z" {...common} />
+        </svg>
+      );
+    case 'group':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="8.5" cy="9" r="2.2" {...common} />
+          <circle cx="15.7" cy="9.6" r="1.9" {...common} />
+          <path d="M4.2 17.4c.8-2.1 2.3-3.4 4.3-3.4 2 0 3.5 1.3 4.3 3.4" {...common} />
+          <path d="M13.6 16.6c.6-1.4 1.6-2.3 3-2.3 1.1 0 2 .5 2.8 1.5" {...common} />
+        </svg>
+      );
+    default:
+      return null;
+  }
 }
 
 export default function ClientLanding() {
@@ -476,80 +595,168 @@ export default function ClientLanding() {
   return (
     <div className="auth-scene min-h-screen overflow-x-hidden">
       <div className="clean-landing-shell">
-        <header className="clean-landing-topbar fade-up">
-          <div className="clean-landing-brand">
-            <BrandMark className="client-brand-mark" />
-            <div>
-              <BrandWordmark className="client-topbar-wordmark" size="lg" />
-              <p>Encontre instaladores de papel de parede perto de você.</p>
-            </div>
-          </div>
+        {isMobileLayout ? (
+          <>
+            <header className="clean-landing-topbar fade-up">
+              <div className="clean-landing-brand">
+                <BrandMark className="client-brand-mark" />
+                <div>
+                  <BrandWordmark className="client-topbar-wordmark" size="lg" />
+                  <p>Encontre instaladores de papel de parede perto de você.</p>
+                </div>
+              </div>
 
-          <div className="clean-landing-top-actions">
-            <Link className="ghost-button" to="/instalador/entrar">
-              Login instalador
-            </Link>
-            <Link className="clean-link-action" to="/instalador/cadastro">
-              Criar conta
-            </Link>
-          </div>
-        </header>
+              <div className="clean-landing-top-actions">
+                <Link className="ghost-button" to="/instalador/entrar">
+                  Login instalador
+                </Link>
+                <Link className="clean-link-action" to="/instalador/cadastro">
+                  Criar conta
+                </Link>
+              </div>
+            </header>
 
-        <section className="clean-hero fade-up" style={{ animationDelay: '0.05s' }}>
-          <img
-            alt="Instalador aplicando papel de parede com mapa do Brasil"
-            className="clean-hero-image"
-            decoding="async"
-            fetchPriority="high"
-            loading="eager"
-            src={HERO_IMAGE_URL}
-          />
-          <div className="clean-hero-overlay" />
+            <section className="clean-hero fade-up" style={{ animationDelay: '0.05s' }}>
+              <img
+                alt="Instalador aplicando papel de parede com mapa do Brasil"
+                className="clean-hero-image"
+                decoding="async"
+                fetchPriority="high"
+                loading="eager"
+                src={HERO_IMAGE_URL}
+              />
+              <div className="clean-hero-overlay" />
 
-          <div className="clean-hero-content">
-            <p className="eyebrow">Para clientes</p>
-            <h1 className="clean-hero-title">
-              {isMobileLayout ? (
-                <>
-                  Encontre <span className="gold-keyword">instaladores</span> de{' '}
-                  <span className="hero-white-keyword">papel de parede</span> com mais <span className="gold-keyword">segurança</span>.
-                </>
-              ) : (
-                <>
-                  Encontre <span className="gold-keyword">instaladores</span> de{' '}
-                  <span className="gold-keyword">papel de parede</span> com mais <span className="gold-keyword">segurança</span>.
-                </>
-              )}
-            </h1>
-            <p className="clean-hero-description">
-              {isMobileLayout ? (
-                <>
-                  Encontre <span className="gold-keyword">instaladores especializados</span>, compare avaliações e fale direto no{' '}
-                  <span className="gold-keyword">WhatsApp</span>.
-                </>
-              ) : (
-                <>
-                  Compare <span className="gold-keyword">avaliações reais</span>, veja <span className="gold-keyword">portfólios</span> e fale direto no{' '}
-                  <span className="gold-keyword">WhatsApp</span> sem perder tempo procurando.
-                </>
-              )}
-            </p>
+              <div className="clean-hero-content">
+                <p className="eyebrow">Para clientes</p>
+                <h1 className="clean-hero-title">
+                  <>
+                    Encontre <span className="gold-keyword">instaladores</span> de{' '}
+                    <span className="hero-white-keyword">papel de parede</span> com mais <span className="gold-keyword">segurança</span>.
+                  </>
+                </h1>
+                <p className="clean-hero-description">
+                  <>
+                    Encontre <span className="gold-keyword">instaladores especializados</span>, compare avaliações e fale direto no{' '}
+                    <span className="gold-keyword">WhatsApp</span>.
+                  </>
+                </p>
 
-            <ul className="clean-hero-topics">
-              {heroMiniTopics.map((topic, index) => (
-                <li className="clean-hero-topic-item" key={topic} style={{ animationDelay: `${0.14 + index * 0.08}s` }}>
-                  {topic}
-                </li>
-              ))}
-            </ul>
+                <ul className="clean-hero-topics">
+                  {heroMiniTopics.map((topic, index) => (
+                    <li className="clean-hero-topic-item" key={topic} style={{ animationDelay: `${0.14 + index * 0.08}s` }}>
+                      {topic}
+                    </li>
+                  ))}
+                </ul>
 
-            <div className="clean-hero-actions">
-              <Link className="gold-button clean-cta-main" to="/cliente">
-                {isMobileLayout ? 'Encontrar instalador agora' : 'Encontrar instaladores agora'}
-              </Link>
-            </div>
-          </div>
-        </section>
+                <div className="clean-hero-actions">
+                  <Link className="gold-button clean-cta-main" to="/cliente">
+                    Encontrar instalador agora
+                  </Link>
+                </div>
+              </div>
+            </section>
+          </>
+        ) : (
+          <>
+            <header className="clean-landing-reference-topbar fade-up">
+              <div className="clean-reference-brand">
+                <BrandMark className="client-brand-mark clean-reference-brand-mark" />
+                <strong>Papel na Parede</strong>
+              </div>
+
+              <nav className="clean-reference-nav" aria-label="Navegação principal">
+                {DESKTOP_NAV_ITEMS.map((item) => (
+                  <a href={item.href} key={item.label}>
+                    {item.label}
+                  </a>
+                ))}
+              </nav>
+
+              <div className="clean-reference-actions">
+                <Link className="ghost-button clean-reference-ghost" to="/instalador/entrar">
+                  Entrar
+                </Link>
+                <Link className="gold-button clean-reference-gold" to="/instalador/cadastro">
+                  Cadastre-se
+                </Link>
+              </div>
+            </header>
+
+            <section className="clean-reference-hero fade-up" style={{ animationDelay: '0.05s' }}>
+              <div className="clean-reference-hero-copy">
+                <div className="clean-reference-badge">
+                  <ReferenceHeroIcon name="group" />
+                  <span>Para clientes</span>
+                </div>
+
+                <h1 className="clean-reference-title">
+                  <span className="is-light">Encontre</span>
+                  <span className="is-gold">instaladores</span>
+                  <span className="is-gold">de papel de parede</span>
+                  <span className="is-light">com mais</span>
+                  <span className="is-gold">segurança.</span>
+                </h1>
+
+                <p className="clean-reference-description">
+                  Compare avaliações reais, veja portfólios e fale direto no WhatsApp sem perder tempo procurando.
+                </p>
+
+                <div className="clean-reference-actions-row">
+                  <Link className="clean-reference-cta-primary" to="/cliente">
+                    <span>Encontrar instaladores agora</span>
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                  <a className="clean-reference-cta-secondary" href="#como-funciona">
+                    <ReferenceHeroIcon name="play" />
+                    <span>Como funciona</span>
+                  </a>
+                </div>
+
+                <div className="clean-reference-trust-row">
+                  {DESKTOP_TRUST_ITEMS.map((item) => (
+                    <article className="clean-reference-trust-item" key={item.title}>
+                      <div className="clean-reference-trust-icon">
+                        <ReferenceHeroIcon name={item.icon} />
+                      </div>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <span>{item.copy}</span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div className="clean-reference-hero-media">
+                <img
+                  alt="Instalador aplicando papel de parede com mapa do Brasil"
+                  className="clean-reference-hero-image"
+                  decoding="async"
+                  fetchPriority="high"
+                  loading="eager"
+                  src={HERO_IMAGE_URL}
+                />
+                <div className="clean-reference-hero-glow" />
+              </div>
+
+              <div className="clean-reference-metrics-row">
+                {DESKTOP_HERO_METRICS.map((item) => (
+                  <article className="clean-reference-metric-card" key={item.title}>
+                    <div className="clean-reference-metric-icon">
+                      <ReferenceHeroIcon name={item.icon} />
+                    </div>
+                    <div>
+                      <strong>{item.value}</strong>
+                      <span>{item.title}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
 
         <section className="clean-mobile-trust clean-priority-trust fade-up" style={{ animationDelay: '0.06s' }}>
           {visibleMobileTrustItems.map((item) => (
