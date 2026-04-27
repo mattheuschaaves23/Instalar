@@ -145,6 +145,60 @@ const STORE_RATING_FALLBACKS = {
   'Casa do Papel': '4,8',
 };
 
+const DESKTOP_SHOWCASE_STORES = [
+  {
+    id: 'store-leroy',
+    name: 'Leroy Merlin',
+    rating: '4,8',
+    link_url: 'https://www.leroymerlin.com.br/',
+    logo_variant: 'leroy',
+  },
+  {
+    id: 'store-novo-ambiente',
+    name: 'Novo Ambiente',
+    rating: '4,7',
+    link_url: '#',
+    logo_variant: 'novo-ambiente',
+  },
+  {
+    id: 'store-papel-cia',
+    name: 'Papel & Cia',
+    rating: '4,9',
+    link_url: '#',
+    logo_variant: 'papel-cia',
+  },
+  {
+    id: 'store-casa-papel',
+    name: 'Casa do Papel',
+    rating: '4,8',
+    link_url: '#',
+    logo_variant: 'casa-papel',
+  },
+];
+
+const DESKTOP_SHOWCASE_INSTALLERS = [
+  {
+    id: 'desktop-installer-1',
+    display_name: 'Teste',
+    city: 'São Paulo',
+    state: 'SP',
+    average_rating: 5,
+    review_count: 32,
+    completed_jobs: 80,
+    featured_installer: true,
+  },
+  {
+    id: 'desktop-installer-2',
+    display_name: 'Bem Instalado',
+    city: 'Curitiba',
+    state: 'PR',
+    average_rating: 4.9,
+    review_count: 27,
+    completed_jobs: 60,
+    featured_installer: true,
+  },
+];
+
 const moneyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
@@ -169,6 +223,18 @@ function formatMoney(value) {
     return moneyFormatter.format(0);
   }
   return moneyFormatter.format(amount);
+}
+
+function formatRating(value) {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount)) {
+    return '0,0';
+  }
+
+  return amount.toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
 }
 
 function getInitials(name) {
@@ -542,7 +608,8 @@ export default function ClientLanding() {
   const storyPoints = STORY_POINTS;
   const howItWorksItems = isMobileLayout ? HOW_IT_WORKS_MOBILE : HOW_IT_WORKS;
   const visibleMobileTrustItems = MOBILE_TRUST_ITEMS.slice(0, 3);
-  const desktopFeaturedInstallers = useMemo(() => topInstallers.slice(0, 2), [topInstallers]);
+  const desktopShowcaseStores = DESKTOP_SHOWCASE_STORES;
+  const desktopShowcaseInstallers = DESKTOP_SHOWCASE_INSTALLERS;
 
   useEffect(() => {
     if (maxStoreIndex <= 0) {
@@ -827,94 +894,53 @@ export default function ClientLanding() {
                   <p>Seleção atualizada pelo administrador da plataforma com as melhores opções do momento.</p>
                 </div>
 
-                {activeStores.length > 0 ? (
-                  <div className="clean-reference-store-shell">
-                    {maxStoreIndex > 0 ? (
-                      <button
-                        aria-label="Ver lojas anteriores"
-                        className="clean-reference-arrow is-left"
-                        onClick={goToPreviousStore}
-                        type="button"
-                      >
-                        ‹
-                      </button>
-                    ) : null}
+                <div className="clean-reference-store-shell is-static">
+                  <button aria-label="Ver lojas anteriores" className="clean-reference-arrow is-left" type="button">
+                    ‹
+                  </button>
 
-                    <div className="clean-reference-store-window">
-                      <div
-                        className="clean-reference-store-track"
-                        style={{ transform: `translateX(-${activeStoreIndex * storeCardWidth}%)` }}
-                      >
-                        {activeStores.map((store, index) => {
-                          const rating = STORE_RATING_FALLBACKS[store.name] || '4,8';
-                          return (
-                            <article
-                              className="clean-reference-store-slide"
-                              key={store.id || `${store.name}-${index}`}
-                              style={{ flex: `0 0 ${storeCardWidth}%` }}
-                            >
-                              <div className="clean-reference-store-card">
-                                <div className="clean-reference-store-logo">
-                                  {store.image_url ? (
-                                    <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
-                                  ) : (
-                                    <div className="clean-reference-store-fallback">{getInitials(store.name || 'Loja')}</div>
-                                  )}
-                                </div>
+                  <div className="clean-reference-store-grid">
+                    {desktopShowcaseStores.map((store, index) => (
+                      <article className="clean-reference-store-card" key={store.id || `${store.name}-${index}`}>
+                        <div className="clean-reference-store-logo">
+                          {store.image_url ? (
+                            <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
+                          ) : store.logo_variant ? (
+                            <div className={`clean-reference-brand-logo is-${store.logo_variant}`}>
+                              <span>{store.name}</span>
+                            </div>
+                          ) : (
+                            <div className="clean-reference-store-fallback">{getInitials(store.name || 'Loja')}</div>
+                          )}
+                        </div>
 
-                                <h3>{store.name}</h3>
-                                <div className="clean-reference-store-rating">
-                                  <span className="clean-reference-stars">★★★★★</span>
-                                  <strong>{rating}</strong>
-                                </div>
+                        <h3>{store.name}</h3>
+                        <div className="clean-reference-store-rating">
+                          <span className="clean-reference-stars">★★★★★</span>
+                          <strong>{store.rating || STORE_RATING_FALLBACKS[store.name] || '4,8'}</strong>
+                        </div>
 
-                                {store.link_url ? (
-                                  <a
-                                    className="clean-reference-store-link"
-                                    href={store.link_url}
-                                    rel="noopener noreferrer"
-                                    target="_blank"
-                                  >
-                                    Ver loja
-                                  </a>
-                                ) : (
-                                  <span className="clean-reference-store-link is-disabled">Ver loja</span>
-                                )}
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {maxStoreIndex > 0 ? (
-                      <button
-                        aria-label="Ver próximas lojas"
-                        className="clean-reference-arrow is-right"
-                        onClick={goToNextStore}
-                        type="button"
-                      >
-                        ›
-                      </button>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className="empty-state !p-4 text-sm">As lojas recomendadas aparecerão aqui automaticamente.</div>
-                )}
-
-                {maxStoreIndex > 0 ? (
-                  <div className="clean-reference-pager">
-                    {storeSlidePositions.map((index) => (
-                      <button
-                        aria-label={`Mostrar grupo ${index + 1} de lojas recomendadas`}
-                        className={index === activeStoreIndex ? 'is-active' : ''}
-                        key={`desktop-store-dot-${index}`}
-                        onClick={() => setActiveStoreIndex(index)}
-                        type="button"
-                      />
+                        {store.link_url ? (
+                          <a className="clean-reference-store-link" href={store.link_url} rel="noopener noreferrer" target="_blank">
+                            Ver loja
+                          </a>
+                        ) : (
+                          <span className="clean-reference-store-link is-disabled">Ver loja</span>
+                        )}
+                      </article>
                     ))}
                   </div>
-                ) : null}
+
+                  <button aria-label="Ver próximas lojas" className="clean-reference-arrow is-right" type="button">
+                    ›
+                  </button>
+                </div>
+
+                <div className="clean-reference-pager">
+                  <button className="is-active" type="button" aria-label="Página 1 de lojas recomendadas" />
+                  <button type="button" aria-label="Página 2 de lojas recomendadas" />
+                  <button type="button" aria-label="Página 3 de lojas recomendadas" />
+                </div>
               </section>
 
               <section className="clean-reference-why-panel" id="sobre-nos">
@@ -959,8 +985,8 @@ export default function ClientLanding() {
                 </div>
 
                 <div className="clean-reference-installers-grid">
-                  {desktopFeaturedInstallers.length > 0 ? (
-                    desktopFeaturedInstallers.map((installer) => (
+                  {desktopShowcaseInstallers.length > 0 ? (
+                    desktopShowcaseInstallers.map((installer) => (
                       <article className="clean-reference-installer-card" key={installer.id}>
                         <div className="clean-reference-installer-top">
                           <div className="clean-reference-installer-head">
@@ -988,7 +1014,7 @@ export default function ClientLanding() {
                           <div className="clean-reference-installer-rating">
                             <span className="clean-reference-stars">★★★★★</span>
                             <strong>
-                              {Number(installer.average_rating || 0).toFixed(1)} ({installer.review_count} avaliações)
+                              {formatRating(installer.average_rating)} ({installer.review_count} avaliações)
                             </strong>
                           </div>
                         </div>
@@ -1216,7 +1242,7 @@ export default function ClientLanding() {
                         <div className="clean-installer-rating">
                           <RatingDots value={installer.average_rating} />
                           <span>
-                            {Number(installer.average_rating || 0).toFixed(1)} • {installer.review_count} avaliações
+                            {formatRating(installer.average_rating)} • {installer.review_count} avaliações
                           </span>
                         </div>
 
