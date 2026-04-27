@@ -13820,3 +13820,88 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Final cleanup pass: reduce excessive boxed surfaces on landing */
+.showcase-landing-section {
+  padding: 0.95rem 0.15rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.showcase-landing-combo,
+.showcase-landing-market {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.showcase-landing-combo {
+  gap: 1.35rem;
+  padding: 0.1rem 0;
+}
+
+.showcase-landing-market-column {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.showcase-landing-step-card {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.showcase-landing-audience-card,
+.showcase-landing-installer-card,
+.showcase-landing-review-card,
+.showcase-landing-store-card,
+.showcase-landing-metrics {
+  border-color: rgba(205, 163, 73, 0.08);
+  background: rgba(255, 255, 255, 0.014);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.11);
+}
+
+.showcase-landing-audience-card {
+  backdrop-filter: blur(6px);
+}
+
+.showcase-landing-metrics {
+  padding: 0.2rem;
+}
+
+.showcase-landing-metrics article {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.showcase-landing-store-logo {
+  border-color: rgba(205, 163, 73, 0.08);
+  background: rgba(255, 255, 255, 0.022);
+}
+
+.showcase-landing-inline-head {
+  padding: 0 0.15rem;
+}
+
+.showcase-landing-footer {
+  box-shadow: none;
+}
+
+@media (max-width: 860px) {
+  .showcase-landing-section {
+    padding: 0.85rem 0;
+  }
+
+  .showcase-landing-combo,
+  .showcase-landing-market {
+    gap: 1rem;
+  }
+
+  .showcase-landing-market-column {
+    gap: 0.85rem;
+  }
+}
