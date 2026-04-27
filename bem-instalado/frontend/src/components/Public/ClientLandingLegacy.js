@@ -54,10 +54,55 @@ const HERO_MINI_TOPICS_MOBILE = [
   'Suporte antes e depois',
 ];
 
-const MOBILE_TRUST_ITEMS = [
-  'Especialistas em todo o Brasil',
-  'Busca rápida e prática',
-  'Mais segurança na escolha',
+const MOBILE_FEATURE_ITEMS = [
+  {
+    icon: 'shield',
+    title: 'Instaladores especializados',
+    copy: 'Profissionais avaliados e experientes',
+  },
+  {
+    icon: 'verified',
+    title: 'Perfis verificados',
+    copy: 'Segurança e confiança na contratação',
+  },
+  {
+    icon: 'star',
+    title: 'Avaliações reais de clientes',
+    copy: 'Decida com base em experiências reais',
+  },
+  {
+    icon: 'whatsapp',
+    title: 'Contato direto no WhatsApp',
+    copy: 'Fale com o instalador sem intermediários',
+  },
+  {
+    icon: 'headset',
+    title: 'Suporte antes e depois',
+    copy: 'Acompanhamento em todas as etapas',
+  },
+];
+
+const MOBILE_HERO_STATS = [
+  {
+    icon: 'users',
+    value: '+8.000',
+    title: 'Instaladores cadastrados',
+  },
+  {
+    icon: 'award',
+    value: '4,9/5',
+    title: 'Avaliação média dos clientes',
+  },
+  {
+    icon: 'pin',
+    value: 'Todo o Brasil',
+    title: 'Presença em todos os estados',
+  },
+  {
+    icon: 'shield',
+    value: '100% Seguro',
+    title: 'Profissionais verificados',
+  },
 ];
 
 const HOW_IT_WORKS_MOBILE = [
@@ -414,6 +459,22 @@ function ReferenceHeroIcon({ name }) {
           <circle cx="12" cy="13" r="3.3" {...common} />
         </svg>
       );
+    case 'verified':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M12 3.7 18 6.1v5.4c0 4-2.5 7.1-6 8.7-3.5-1.6-6-4.7-6-8.7V6.1Z" {...common} />
+          <path d="m8.8 11.9 2 2 4.4-4.4" {...common} />
+        </svg>
+      );
+    case 'headset':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M5.2 13.4v-1.1a6.8 6.8 0 1 1 13.6 0v1.1" {...common} />
+          <path d="M5.6 13h1.9a1.4 1.4 0 0 1 1.4 1.4v3.2A1.4 1.4 0 0 1 7.5 19H5.6A1.6 1.6 0 0 1 4 17.4v-2.8A1.6 1.6 0 0 1 5.6 13Z" {...common} />
+          <path d="M16.5 13h1.9a1.6 1.6 0 0 1 1.6 1.6v2.8a1.6 1.6 0 0 1-1.6 1.6h-1.9a1.4 1.4 0 0 1-1.4-1.4v-3.2a1.4 1.4 0 0 1 1.4-1.4Z" {...common} />
+          <path d="M9.5 19.2c.7.8 1.6 1.1 2.6 1.1h1.5" {...common} />
+        </svg>
+      );
     default:
       return null;
   }
@@ -437,6 +498,7 @@ export default function ClientLanding() {
   const [activeInstallerIndex, setActiveInstallerIndex] = useState(0);
   const [activeReviewIndex, setActiveReviewIndex] = useState(0);
   const [openedStoreCardId, setOpenedStoreCardId] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const storeTouchStartRef = useRef(null);
   const installerTouchStartRef = useRef(null);
   const reviewTouchStartRef = useRef(null);
@@ -486,6 +548,9 @@ export default function ClientLanding() {
       setIsMobileLayout(window.innerWidth <= 760);
       setInstallerCardsPerView(getInstallerCardsPerView());
       setReviewCardsPerView(getReviewCardsPerView());
+      if (window.innerWidth > 760) {
+        setIsMobileMenuOpen(false);
+      }
     };
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -576,7 +641,6 @@ export default function ClientLanding() {
   const heroMiniTopics = isMobileLayout ? HERO_MINI_TOPICS_MOBILE : HERO_MINI_TOPICS;
   const storyPoints = STORY_POINTS;
   const howItWorksItems = isMobileLayout ? HOW_IT_WORKS_MOBILE : HOW_IT_WORKS;
-  const visibleMobileTrustItems = MOBILE_TRUST_ITEMS.slice(0, 3);
   const desktopShowcaseStores = useMemo(
     () =>
       activeStores.slice(0, 4).map((store, index) => ({
@@ -693,22 +757,42 @@ export default function ClientLanding() {
         {isMobileLayout ? (
           <>
             <header className="clean-landing-topbar fade-up">
-              <div className="clean-landing-brand">
-                <BrandMark className="client-brand-mark" />
-                <div>
-                  <BrandWordmark className="client-topbar-wordmark" size="lg" />
-                  <p>Encontre instaladores de papel de parede perto de você.</p>
+              <div className="clean-mobile-ref-header">
+                <div className="clean-mobile-ref-brand">
+                  <BrandMark className="client-brand-mark clean-mobile-ref-mark" />
+                  <BrandWordmark className="client-topbar-wordmark clean-mobile-ref-wordmark" size="lg" />
                 </div>
+
+                <button
+                  aria-expanded={isMobileMenuOpen}
+                  aria-label="Abrir menu"
+                  className={`clean-mobile-ref-burger ${isMobileMenuOpen ? 'is-open' : ''}`}
+                  onClick={() => setIsMobileMenuOpen((current) => !current)}
+                  type="button"
+                >
+                  <span />
+                  <span />
+                  <span />
+                </button>
               </div>
 
-              <div className="clean-landing-top-actions">
-                <Link className="ghost-button" to="/instalador/entrar">
-                  Login instalador
-                </Link>
-                <Link className="clean-link-action" to="/instalador/cadastro">
-                  Criar conta
-                </Link>
-              </div>
+              {isMobileMenuOpen ? (
+                <nav className="clean-mobile-ref-menu">
+                  {DESKTOP_NAV_ITEMS.map((item) => (
+                    <a href={item.href} key={item.label} onClick={() => setIsMobileMenuOpen(false)}>
+                      {item.label}
+                    </a>
+                  ))}
+                  <div className="clean-mobile-ref-menu-actions">
+                    <Link className="ghost-button" onClick={() => setIsMobileMenuOpen(false)} to="/instalador/entrar">
+                      Entrar
+                    </Link>
+                    <Link className="gold-button" onClick={() => setIsMobileMenuOpen(false)} to="/instalador/cadastro">
+                      Cadastre-se
+                    </Link>
+                  </div>
+                </nav>
+              ) : null}
             </header>
 
             <section className="clean-hero fade-up" style={{ animationDelay: '0.05s' }}>
@@ -723,32 +807,73 @@ export default function ClientLanding() {
               <div className="clean-hero-overlay" />
 
               <div className="clean-hero-content">
-                <p className="eyebrow">Para clientes</p>
+                <div className="clean-mobile-ref-badge">
+                  <ReferenceHeroIcon name="group" />
+                  <span>Para clientes</span>
+                </div>
                 <h1 className="clean-hero-title">
-                  <>
-                    Encontre <span className="gold-keyword">instaladores</span> de{' '}
-                    <span className="hero-white-keyword">papel de parede</span> com mais <span className="gold-keyword">segurança</span>.
-                  </>
+                  <span className="clean-mobile-ref-title-line">Encontre</span>
+                  <span className="clean-mobile-ref-title-line gold-keyword">instaladores</span>
+                  <span className="clean-mobile-ref-title-line">de papel de</span>
+                  <span className="clean-mobile-ref-title-line">parede com</span>
+                  <span className="clean-mobile-ref-title-line gold-keyword">mais segurança.</span>
                 </h1>
                 <p className="clean-hero-description">
-                  <>
-                    Encontre <span className="gold-keyword">instaladores especializados</span>, compare avaliações e fale direto no{' '}
-                    <span className="gold-keyword">WhatsApp</span>.
-                  </>
+                  <span className="clean-mobile-ref-copy-line">
+                    Encontre <span className="gold-keyword">instaladores especializados</span>,
+                  </span>
+                  <span className="clean-mobile-ref-copy-line">compare avaliações e fale direto</span>
+                  <span className="clean-mobile-ref-copy-line">
+                    no <span className="gold-keyword">WhatsApp</span>.
+                  </span>
                 </p>
 
-                <ul className="clean-hero-topics">
-                  {heroMiniTopics.map((topic, index) => (
-                    <li className="clean-hero-topic-item" key={topic} style={{ animationDelay: `${0.14 + index * 0.08}s` }}>
-                      {topic}
+                <ul className="clean-mobile-ref-feature-list">
+                  {MOBILE_FEATURE_ITEMS.map((item, index) => (
+                    <li className="clean-mobile-ref-feature-item" key={item.title} style={{ animationDelay: `${0.14 + index * 0.07}s` }}>
+                      <span className="clean-mobile-ref-feature-icon">
+                        <ReferenceHeroIcon name={item.icon} />
+                      </span>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <span>{item.copy}</span>
+                      </div>
                     </li>
                   ))}
                 </ul>
 
-                <div className="clean-hero-actions">
-                  <Link className="gold-button clean-cta-main" to="/cliente">
-                    Encontrar instalador agora
+                <div className="clean-mobile-ref-actions">
+                  <Link className="clean-mobile-ref-primary-cta" to="/cliente">
+                    <span className="clean-mobile-ref-primary-icon">
+                      <ReferenceHeroIcon name="search" />
+                    </span>
+                    <span>Encontrar instalador agora</span>
                   </Link>
+
+                  <a className="clean-mobile-ref-secondary-cta" href="#landing-installers">
+                    <span className="clean-mobile-ref-secondary-icon">
+                      <ReferenceHeroIcon name="group" />
+                    </span>
+                    <span>Ver instaladores mais bem avaliados</span>
+                    <strong aria-hidden="true">›</strong>
+                  </a>
+                </div>
+
+                <div className="clean-mobile-ref-metrics-card">
+                  {MOBILE_HERO_STATS.map((item) => (
+                    <article className="clean-mobile-ref-metric" key={item.title}>
+                      <span className="clean-mobile-ref-metric-icon">
+                        <ReferenceHeroIcon name={item.icon} />
+                      </span>
+                      <strong>{item.value}</strong>
+                      <span>{item.title}</span>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="clean-mobile-ref-assurance">
+                  <ReferenceHeroIcon name="shield" />
+                  <span>Sua instalação com mais tranquilidade do início ao fim.</span>
                 </div>
               </div>
             </section>
@@ -853,16 +978,7 @@ export default function ClientLanding() {
           </>
         )}
 
-        {isMobileLayout ? (
-          <section className="clean-mobile-trust clean-priority-trust fade-up" style={{ animationDelay: '0.06s' }}>
-            {visibleMobileTrustItems.map((item) => (
-              <article className="clean-mobile-trust-item" key={item}>
-                <span />
-                <strong>{item}</strong>
-              </article>
-            ))}
-          </section>
-        ) : (
+        {!isMobileLayout && (
           <section className="clean-reference-showcase fade-up" style={{ animationDelay: '0.07s' }}>
             <div className="clean-reference-showcase-top">
               <section className="clean-reference-store-panel" id="stores">
@@ -1051,7 +1167,7 @@ export default function ClientLanding() {
           </section>
         )}
 
-        {isMobileLayout ? (
+        {isMobileLayout && (
         <section className="clean-stores clean-priority-stores fade-up" style={{ animationDelay: '0.07s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Lojas recomendadas</p>
@@ -1144,9 +1260,9 @@ export default function ClientLanding() {
             <div className="empty-state !p-4 text-sm">As lojas recomendadas aparecerão aqui automaticamente.</div>
           )}
         </section>
-        ) : null}
+        )}
 
-        {isMobileLayout ? (
+        {isMobileLayout && (
         <section className="clean-story clean-priority-story fade-up" style={{ animationDelay: '0.08s' }}>
           <div className="clean-story-text">
             <p className="eyebrow">Por que escolher</p>
@@ -1167,9 +1283,9 @@ export default function ClientLanding() {
             <img alt="Instaladores de papel de parede profissionais" src={STORY_IMAGE_URL} />
           </div>
         </section>
-        ) : null}
+        )}
 
-        {isMobileLayout ? (
+        {isMobileLayout && (
         <section className="clean-installers clean-priority-installers fade-up" id="landing-installers" style={{ animationDelay: '0.14s' }}>
           <div className="clean-section-head">
             <p className="eyebrow">Em destaque</p>
@@ -1270,7 +1386,7 @@ export default function ClientLanding() {
             )}
           </div>
         </section>
-        ) : null}
+        )}
 
         <section className="clean-reviews clean-priority-reviews fade-up" id="landing-reviews" style={{ animationDelay: '0.17s' }}>
           <div className="clean-section-head">
@@ -1342,13 +1458,7 @@ export default function ClientLanding() {
           ))}
         </section>
 
-        {isMobileLayout ? (
-          <div className="clean-mobile-sticky-cta">
-            <Link className="gold-button clean-mobile-sticky-button" to="/cliente">
-              Encontrar instaladores
-            </Link>
-          </div>
-        ) : null}
+        {null}
       </div>
     </div>
   );
