@@ -170,17 +170,45 @@ const DESKTOP_HERO_METRICS = [
 ];
 
 const DESKTOP_WHY_POINTS = [
-  { icon: 'shield', text: 'Instaladores de papel de parede especializados' },
-  { icon: 'search', text: 'Comparação simples entre opções' },
-  { icon: 'whatsapp', text: 'Contato direto sem intermediários' },
-  { icon: 'camera', text: 'Fotos para validar o acabamento' },
+  {
+    icon: 'verified',
+    title: 'Profissionais verificados',
+    copy: 'Todos os instaladores passam por uma análise completa.',
+  },
+  {
+    icon: 'star',
+    title: 'Avaliações reais de clientes',
+    copy: 'Decida com base na experiência de quem já contratou.',
+  },
+  {
+    icon: 'whatsapp',
+    title: 'Contato direto no WhatsApp',
+    copy: 'Fale direto com o instalador, sem intermediários.',
+  },
+  {
+    icon: 'image',
+    title: 'Fotos reais dos serviços',
+    copy: 'Veja acabamentos reais e tenha mais segurança na escolha.',
+  },
 ];
 
 const DESKTOP_PLATFORM_METRICS = [
-  { icon: 'users', value: '+8.000', title: 'Instaladores cadastrados' },
-  { icon: 'award', value: '4,9/5', title: 'Avaliação média dos clientes' },
-  { icon: 'brazil', value: 'Todos os estados', title: 'Presença em todo o Brasil' },
-  { icon: 'shield', value: 'Segurança garantida', title: 'Profissionais verificados e avaliados' },
+  {
+    icon: 'users',
+    value: '+8.000',
+    copyLines: ['instalações', 'realizadas'],
+  },
+  {
+    icon: 'star',
+    value: '4,9/5',
+    copyLines: ['avaliação média', 'dos clientes'],
+  },
+  {
+    icon: 'brazil',
+    value: 'Todo o Brasil',
+    copyLines: ['instaladores presentes', 'em todo o país'],
+    textOnly: true,
+  },
 ];
 
 const DESKTOP_STORE_FEATURES = [
@@ -507,6 +535,22 @@ function ReferenceHeroIcon({ name }) {
         <svg aria-hidden="true" viewBox="0 0 24 24">
           <path d="M4.8 7.8h3l1.2-1.8h6l1.2 1.8h3a1.8 1.8 0 0 1 1.8 1.8v7.6A1.8 1.8 0 0 1 19.2 19H4.8A1.8 1.8 0 0 1 3 17.2V9.6a1.8 1.8 0 0 1 1.8-1.8Z" {...common} />
           <circle cx="12" cy="13" r="3.3" {...common} />
+        </svg>
+      );
+    case 'image':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <rect x="4" y="5.5" width="16" height="13" rx="2.4" {...common} />
+          <circle cx="9" cy="10" r="1.2" {...common} />
+          <path d="m6.8 16 3.2-3.3 2.7 2.6 2.6-2.5 2.2 3.2" {...common} />
+        </svg>
+      );
+    case 'lock':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M7.6 10.2V8.4a4.4 4.4 0 1 1 8.8 0v1.8" {...common} />
+          <rect x="5.4" y="10.2" width="13.2" height="9.4" rx="2.2" {...common} />
+          <path d="M12 13.3v3.2" {...common} />
         </svg>
       );
     case 'verified':
@@ -1275,26 +1319,99 @@ export default function ClientLanding() {
           </section>
         )}
 
-        <section className="clean-story clean-priority-story fade-up" style={{ animationDelay: '0.08s' }}>
-          <div className="clean-story-text">
-            <p className="eyebrow">Por que escolher</p>
-            <h2>Mais clareza para decidir, mais segurança para contratar.</h2>
-            <p>
-              A plataforma foi feita para ser objetiva: você encontra os melhores profissionais, compara rápido e conversa direto com quem vai fazer a instalação.
-            </p>
+        {isMobileLayout ? (
+          <section className="clean-story clean-priority-story fade-up" style={{ animationDelay: '0.08s' }}>
+            <div className="clean-story-text">
+              <p className="eyebrow">Por que escolher</p>
+              <h2>Mais clareza para decidir, mais segurança para contratar.</h2>
+              <p>
+                A plataforma foi feita para ser objetiva: você encontra os melhores profissionais, compara rápido e conversa direto com quem vai fazer a instalação.
+              </p>
 
-            <ul>
-              {storyPoints.map((point) => (
-                <li key={point}>{point}</li>
-              ))}
-            </ul>
+              <ul>
+                {storyPoints.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            </div>
 
-          </div>
+            <div className="clean-story-media">
+              <img alt="Instaladores de papel de parede profissionais" src={STORY_IMAGE_URL} />
+            </div>
+          </section>
+        ) : (
+          <section className="clean-desktop-why-showcase fade-up" style={{ animationDelay: '0.08s' }}>
+            <div className="clean-desktop-why-copy">
+              <p className="clean-desktop-why-eyebrow">POR QUE ESCOLHER</p>
 
-          <div className="clean-story-media">
-            <img alt="Instaladores de papel de parede profissionais" src={STORY_IMAGE_URL} />
-          </div>
-        </section>
+              <h2 className="clean-desktop-why-title">
+                <span className="is-light">Mais </span>
+                <span className="is-gold">clareza</span>
+                <span className="is-light"> para decidir.</span>
+                <br />
+                <span className="is-light">Mais </span>
+                <span className="is-gold">segurança</span>
+                <span className="is-light"> para contratar.</span>
+              </h2>
+
+              <p className="clean-desktop-why-description">
+                Nossa plataforma conecta você aos melhores instaladores de papel de parede da sua região. Compare, converse e contrate sem intermediários.
+              </p>
+
+              <span className="clean-desktop-why-rule" />
+
+              <ul className="clean-desktop-why-list">
+                {DESKTOP_WHY_POINTS.map((point) => (
+                  <li key={point.title}>
+                    <span className="clean-desktop-why-icon">
+                      <ReferenceHeroIcon name={point.icon} />
+                    </span>
+
+                    <div className="clean-desktop-why-list-copy">
+                      <strong>{point.title}</strong>
+                      <p>{point.copy}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <Link className="clean-desktop-why-cta" to="/cliente">
+                <span>ENCONTRAR INSTALADOR</span>
+                <span className="clean-desktop-why-cta-arrow">→</span>
+              </Link>
+
+              <div className="clean-desktop-why-note">
+                <span className="clean-desktop-why-note-icon">
+                  <ReferenceHeroIcon name="lock" />
+                </span>
+                <span>Sua segurança é a nossa prioridade.</span>
+              </div>
+            </div>
+
+            <div className="clean-desktop-why-media-shell">
+              <div className="clean-desktop-why-photo">
+                <img alt="Equipe de instaladores de papel de parede" src={STORY_IMAGE_URL} />
+              </div>
+
+              <div className="clean-desktop-why-stats">
+                {DESKTOP_PLATFORM_METRICS.map((metric, index) => (
+                  <article className={`clean-desktop-why-stat${metric.textOnly ? ' is-text-heavy' : ''}`} key={metric.value}>
+                    <span className="clean-desktop-why-stat-icon">
+                      <ReferenceHeroIcon name={metric.icon} />
+                    </span>
+                    <strong>{metric.value}</strong>
+                    <p>
+                      {metric.copyLines.map((line) => (
+                        <span key={line}>{line}</span>
+                      ))}
+                    </p>
+                    {index < DESKTOP_PLATFORM_METRICS.length - 1 ? <span className="clean-desktop-why-stat-divider" /> : null}
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="clean-installers clean-priority-installers fade-up" id="landing-installers" style={{ animationDelay: '0.14s' }}>
           <div className="clean-section-head">

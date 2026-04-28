@@ -7188,6 +7188,325 @@ body {
   line-height: 1.52;
 }
 
+.clean-desktop-why-showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 0.84fr) minmax(0, 1.06fr);
+  align-items: start;
+  gap: 3.75rem;
+  margin: 0;
+}
+
+.clean-desktop-why-copy {
+  display: grid;
+  align-content: start;
+  gap: 1.7rem;
+  padding-top: 1.65rem;
+}
+
+.clean-desktop-why-eyebrow {
+  margin: 0;
+  color: var(--gold-strong);
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.clean-desktop-why-title {
+  margin: 0;
+  max-width: 10.8ch;
+  color: #fff8ec;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(3.7rem, 4.6vw, 5.35rem);
+  font-weight: 500;
+  line-height: 1.03;
+  letter-spacing: -0.04em;
+}
+
+.clean-desktop-why-title .is-gold {
+  color: var(--gold-strong);
+  text-shadow: 0 0 28px rgba(205, 163, 73, 0.16);
+}
+
+.clean-desktop-why-title .is-light {
+  color: #fff8ec;
+}
+
+.clean-desktop-why-description {
+  margin: 0;
+  max-width: 38rem;
+  color: rgba(243, 232, 207, 0.86);
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 1.12rem;
+  line-height: 1.7;
+}
+
+.clean-desktop-why-rule {
+  width: 4.8rem;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(215, 173, 70, 0.9), rgba(215, 173, 70, 0.18));
+}
+
+.clean-desktop-why-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid rgba(215, 173, 70, 0.22);
+}
+
+.clean-desktop-why-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1.35rem;
+  padding: 1.38rem 0 1.42rem;
+  border-bottom: 1px solid rgba(215, 173, 70, 0.22);
+}
+
+.clean-desktop-why-icon {
+  width: 4.3rem;
+  height: 4.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(215, 173, 70, 0.34);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(215, 173, 70, 0.18), transparent 62%),
+    rgba(20, 16, 12, 0.96);
+  color: var(--gold-strong);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.02),
+    0 0 28px rgba(215, 173, 70, 0.08);
+}
+
+.clean-desktop-why-icon svg {
+  width: 1.95rem;
+  height: 1.95rem;
+}
+
+.clean-desktop-why-list-copy strong {
+  display: block;
+  color: #fff8ea;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 1.08rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.clean-desktop-why-list-copy p {
+  margin: 0.35rem 0 0;
+  color: rgba(243, 232, 207, 0.72);
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.clean-desktop-why-cta {
+  width: min(100%, 33.25rem);
+  min-height: 4.95rem;
+  padding: 1.15rem 1.9rem 1.15rem 2.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  border: 1px solid rgba(255, 226, 149, 0.4);
+  border-radius: 1.1rem;
+  background: linear-gradient(135deg, #efcd66 0%, #d7ad46 100%);
+  color: #171006;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  box-shadow:
+    0 20px 34px rgba(205, 163, 73, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.clean-desktop-why-cta-arrow {
+  font-size: 2.15rem;
+  line-height: 1;
+  transform: translateY(-0.02em);
+}
+
+.clean-desktop-why-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--gold-strong);
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.clean-desktop-why-note-icon {
+  width: 1rem;
+  height: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-strong);
+}
+
+.clean-desktop-why-note-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.clean-desktop-why-media-shell {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  width: min(100%, 48rem);
+  min-height: 100%;
+  justify-self: end;
+  overflow: hidden;
+  border: 1px solid rgba(215, 173, 70, 0.62);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(215, 173, 70, 0.16), transparent 48%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 72%),
+    rgba(11, 9, 8, 0.98);
+  box-shadow:
+    0 0 0 1px rgba(215, 173, 70, 0.16),
+    0 0 40px rgba(215, 173, 70, 0.12);
+}
+
+.clean-desktop-why-photo {
+  position: relative;
+  min-height: 39rem;
+  overflow: hidden;
+}
+
+.clean-desktop-why-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(10, 9, 8, 0.03) 0%, rgba(10, 9, 8, 0.12) 100%),
+    radial-gradient(circle at 54% 18%, rgba(215, 173, 70, 0.24), transparent 44%);
+  pointer-events: none;
+}
+
+.clean-desktop-why-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.clean-desktop-why-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-height: 15rem;
+  padding: 0;
+  border-top: 1px solid rgba(215, 173, 70, 0.24);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(215, 173, 70, 0.08), transparent 54%),
+    rgba(16, 13, 11, 0.98);
+}
+
+.clean-desktop-why-stat {
+  position: relative;
+  padding: 1.9rem 1.4rem 2rem;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.95rem;
+  text-align: center;
+}
+
+.clean-desktop-why-stat + .clean-desktop-why-stat {
+  border-left: 1px solid rgba(215, 173, 70, 0.26);
+}
+
+.clean-desktop-why-stat-icon {
+  width: 5.25rem;
+  height: 5.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(215, 173, 70, 0.34);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(215, 173, 70, 0.18), transparent 62%),
+    rgba(23, 18, 14, 0.96);
+  color: var(--gold-strong);
+  box-shadow: 0 0 22px rgba(215, 173, 70, 0.08);
+}
+
+.clean-desktop-why-stat-icon svg {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.clean-desktop-why-stat strong {
+  display: block;
+  color: #fff8ec;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(2.55rem, 2.7vw, 3.2rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.clean-desktop-why-stat p {
+  margin: 0;
+  max-width: 11.5rem;
+  color: rgba(243, 232, 207, 0.88);
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 1rem;
+  line-height: 1.52;
+}
+
+.clean-desktop-why-stat p span {
+  display: block;
+}
+
+.clean-desktop-why-stat.is-text-heavy strong {
+  font-size: clamp(2rem, 2.2vw, 2.55rem);
+  line-height: 1.05;
+}
+
+.clean-desktop-why-stat.is-text-heavy p {
+  max-width: 12.4rem;
+}
+
+.clean-desktop-why-stat-divider {
+  display: none;
+}
+
+@media (max-width: 1320px) {
+  .clean-desktop-why-showcase {
+    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.02fr);
+    gap: 2.4rem;
+  }
+
+  .clean-desktop-why-title {
+    font-size: clamp(3.15rem, 4vw, 4.45rem);
+  }
+
+  .clean-desktop-why-photo {
+    min-height: 35rem;
+  }
+}
+
+@media (max-width: 1120px) {
+  .clean-desktop-why-showcase {
+    grid-template-columns: 1fr;
+  }
+
+  .clean-desktop-why-copy {
+    max-width: 44rem;
+  }
+
+  .clean-desktop-why-media-shell {
+    max-width: 54rem;
+  }
+}
+
 @media (max-width: 1320px) {
   .clean-reference-nav {
     gap: 1.05rem;
