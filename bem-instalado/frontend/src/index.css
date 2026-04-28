@@ -15657,3 +15657,161 @@ body {
     gap: 0.85rem;
   }
 }
+
+@media (max-width: 767px) {
+  .clean-hero-content {
+    padding: 1.15rem 1rem 1rem;
+  }
+
+  .clean-mobile-ref-badge {
+    min-height: 2.55rem;
+    padding: 0.48rem 0.82rem;
+    gap: 0.52rem;
+    font-size: 0.8rem;
+  }
+
+  .clean-mobile-ref-badge svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .clean-hero-content h1.clean-hero-title {
+    max-width: 8.95ch;
+    margin-top: 0.72rem;
+    font-size: clamp(2.62rem, 9.45vw, 3.72rem);
+    line-height: 0.9;
+    letter-spacing: -0.055em;
+  }
+
+  .clean-hero-content p.clean-hero-description {
+    max-width: 19.4rem;
+    margin-top: 0.82rem;
+    font-size: 0.94rem;
+    line-height: 1.4;
+  }
+
+  .clean-mobile-ref-feature-list {
+    margin-top: 1rem;
+  }
+
+  .clean-mobile-ref-feature-item {
+    grid-template-columns: 1.85rem minmax(0, 1fr);
+    gap: 0.78rem;
+    padding: 0.62rem 0;
+  }
+
+  .clean-mobile-ref-feature-icon {
+    width: 1.85rem;
+    height: 1.85rem;
+  }
+
+  .clean-mobile-ref-feature-icon svg {
+    width: 1.52rem;
+    height: 1.52rem;
+  }
+
+  .clean-mobile-ref-feature-item strong {
+    font-size: 0.97rem;
+    line-height: 1.18;
+  }
+
+  .clean-mobile-ref-feature-item span:last-child {
+    margin-top: 0.05rem;
+    font-size: 0.84rem;
+    line-height: 1.28;
+  }
+
+  .clean-mobile-ref-actions {
+    margin-top: 0.98rem;
+    gap: 0.72rem;
+  }
+
+  .clean-mobile-ref-primary-cta {
+    min-height: 4.44rem;
+    padding: 0.72rem 0.9rem;
+    gap: 0.82rem;
+    border-radius: 1.16rem;
+  }
+
+  .clean-mobile-ref-primary-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .clean-mobile-ref-primary-cta span:last-child {
+    font-size: 0.88rem;
+    letter-spacing: 0.055em;
+  }
+
+  .clean-mobile-ref-secondary-cta {
+    min-height: 3.7rem;
+    padding: 0.72rem 0.92rem;
+    gap: 0.64rem;
+    border-radius: 1rem;
+  }
+
+  .clean-mobile-ref-secondary-cta span:nth-child(2) {
+    font-size: 0.9rem;
+  }
+
+  .clean-mobile-ref-secondary-cta strong {
+    font-size: 1.65rem;
+  }
+
+  .clean-mobile-ref-metrics-card {
+    margin-top: 1rem;
+    padding: 0.56rem 0.15rem;
+    border-radius: 1.16rem;
+  }
+
+  .clean-mobile-ref-metric {
+    gap: 0.34rem;
+    padding: 0.52rem 0.12rem;
+  }
+
+  .clean-mobile-ref-metric-icon {
+    width: 1.92rem;
+    height: 1.92rem;
+  }
+
+  .clean-mobile-ref-metric-icon svg {
+    width: 1.18rem;
+    height: 1.18rem;
+  }
+
+  .clean-mobile-ref-metric strong {
+    font-size: 0.84rem;
+    line-height: 1.06;
+  }
+
+  .clean-mobile-ref-metric span {
+    font-size: 0.64rem;
+    line-height: 1.2;
+  }
+
+  .clean-mobile-ref-assurance {
+    margin-top: 0.82rem;
+    font-size: 0.88rem;
+    gap: 0.48rem;
+  }
+
+  .clean-mobile-ref-assurance svg {
+    width: 1.28rem;
+    height: 1.28rem;
+  }
+}
+
+@media (max-width: 767px) and (max-height: 900px) {
+  .clean-mobile-ref-feature-item {
+    padding: 0.54rem 0;
+  }
+
+  .clean-mobile-ref-secondary-cta,
+  .clean-mobile-ref-assurance {
+    display: none;
+  }
+
+  .clean-mobile-ref-metrics-card {
+    margin-top: 0.82rem;
+  }
+}

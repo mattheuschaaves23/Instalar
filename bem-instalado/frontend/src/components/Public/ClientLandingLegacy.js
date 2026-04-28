@@ -814,17 +814,15 @@ export default function ClientLanding() {
                 <h1 className="clean-hero-title">
                   <span className="clean-mobile-ref-title-line">Encontre</span>
                   <span className="clean-mobile-ref-title-line gold-keyword">instaladores</span>
-                  <span className="clean-mobile-ref-title-line">de papel de</span>
-                  <span className="clean-mobile-ref-title-line">parede com</span>
-                  <span className="clean-mobile-ref-title-line gold-keyword">mais segurança.</span>
+                  <span className="clean-mobile-ref-title-line">de papel de parede</span>
+                  <span className="clean-mobile-ref-title-line gold-keyword">com mais segurança.</span>
                 </h1>
                 <p className="clean-hero-description">
                   <span className="clean-mobile-ref-copy-line">
                     Encontre <span className="gold-keyword">instaladores especializados</span>,
                   </span>
-                  <span className="clean-mobile-ref-copy-line">compare avaliações e fale direto</span>
                   <span className="clean-mobile-ref-copy-line">
-                    no <span className="gold-keyword">WhatsApp</span>.
+                    compare avaliações e fale direto no <span className="gold-keyword">WhatsApp</span>.
                   </span>
                 </p>
 
