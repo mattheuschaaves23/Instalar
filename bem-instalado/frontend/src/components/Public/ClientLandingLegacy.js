@@ -961,19 +961,6 @@ export default function ClientLanding() {
                 <div className="clean-reference-hero-glow" />
               </div>
 
-              <div className="clean-reference-metrics-row">
-                {DESKTOP_HERO_METRICS.map((item) => (
-                  <article className="clean-reference-metric-card" key={item.title}>
-                    <div className="clean-reference-metric-icon">
-                      <ReferenceHeroIcon name={item.icon} />
-                    </div>
-                    <div>
-                      <strong>{item.value}</strong>
-                      <span>{item.title}</span>
-                    </div>
-                  </article>
-                ))}
-              </div>
             </section>
           </>
         )}
