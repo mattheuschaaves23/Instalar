@@ -6323,6 +6323,19 @@ body {
   pointer-events: none;
 }
 
+.clean-reference-store-layout {
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.88fr) minmax(0, 1.12fr);
+  align-items: start;
+  gap: 1.55rem;
+}
+
+.clean-reference-store-copy {
+  display: grid;
+  gap: 1.1rem;
+  min-width: 0;
+}
+
 .clean-reference-panel-head {
   display: grid;
   gap: 0.82rem;
@@ -6358,6 +6371,12 @@ body {
   text-shadow: 0 0 18px rgba(205, 163, 73, 0.14);
 }
 
+.clean-reference-store-heading {
+  max-width: 10.2ch;
+  font-size: clamp(2.25rem, 3.2vw, 4.05rem);
+  line-height: 0.97;
+}
+
 .clean-reference-panel-head > p:last-child,
 .clean-reference-why-copy > p:last-of-type {
   max-width: 32rem;
@@ -6368,6 +6387,30 @@ body {
   line-height: 1.6;
 }
 
+.clean-reference-store-benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 0.15rem;
+}
+
+.clean-reference-store-benefit {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.72rem;
+  color: #fff5dd;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.clean-reference-store-benefit strong {
+  display: block;
+  font-weight: 500;
+}
+
 .clean-reference-store-shell {
   position: relative;
   display: grid;
@@ -6375,6 +6418,11 @@ body {
   align-items: center;
   gap: 0.9rem;
   margin-top: 1.45rem;
+}
+
+.clean-reference-store-layout .clean-reference-store-shell,
+.clean-reference-store-layout .clean-reference-pager {
+  margin-top: 0;
 }
 
 .clean-reference-store-shell.is-static {
@@ -6393,6 +6441,10 @@ body {
   align-items: stretch;
 }
 
+.clean-reference-store-grid .clean-reference-store-slide {
+  padding-inline: 0;
+}
+
 .clean-reference-brand-logo {
   width: 100%;
   max-width: 7rem;
@@ -6404,6 +6456,13 @@ body {
   border-radius: 14px;
   border: 1px solid rgba(205, 163, 73, 0.16);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.clean-reference-brand-logo img {
+  max-width: 100%;
+  max-height: 3.2rem;
+  object-fit: contain;
+  display: block;
 }
 
 .clean-reference-brand-logo span {
@@ -6486,6 +6545,7 @@ body {
 }
 
 .clean-reference-store-card {
+  position: relative;
   width: 100%;
   justify-self: stretch;
   height: 100%;
@@ -6499,6 +6559,28 @@ body {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 70%),
     rgba(17, 15, 13, 0.92);
+}
+
+.clean-reference-store-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  min-height: 1.95rem;
+  width: fit-content;
+  padding: 0.26rem 0.72rem;
+  border-radius: 999px;
+  background: rgba(205, 163, 73, 0.18);
+  color: var(--gold-strong);
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.clean-reference-store-pill svg {
+  width: 0.82rem;
+  height: 0.82rem;
 }
 
 .clean-reference-store-logo {
@@ -6532,10 +6614,10 @@ body {
 
 .clean-reference-store-card h3 {
   margin: 0;
-  min-height: 2.4rem;
+  min-height: 2.65rem;
   color: #fff8ea;
   font-family: 'Poppins', 'Segoe UI', sans-serif;
-  font-size: 1.05rem;
+  font-size: 1.18rem;
   font-weight: 600;
   line-height: 1.25;
   text-align: center;
@@ -6545,16 +6627,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
+  gap: 0.4rem;
   color: rgba(244, 229, 191, 0.86);
   font-family: 'Poppins', 'Segoe UI', sans-serif;
-  font-size: 0.96rem;
+  font-size: 0.93rem;
 }
 
 .clean-reference-stars {
   color: var(--gold-strong);
-  font-size: 1rem;
-  letter-spacing: 0.08em;
+  font-size: 0.96rem;
+  letter-spacing: 0.06em;
 }
 
 .clean-reference-store-link {
@@ -6563,19 +6645,22 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(205, 163, 73, 0.36);
+  gap: 0.32rem;
+  border: 1px solid rgba(233, 195, 102, 0.76);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.015);
-  color: #fff2cf;
+  background: linear-gradient(180deg, rgba(245, 210, 107, 0.98), rgba(223, 177, 67, 0.96));
+  color: #1a140b;
   font-family: 'Poppins', 'Segoe UI', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   text-decoration: none;
+  box-shadow: 0 12px 24px rgba(205, 163, 73, 0.18);
 }
 
 .clean-reference-store-link.is-disabled {
   opacity: 0.55;
   pointer-events: none;
+  color: #1a140b;
 }
 
 .clean-reference-empty-state {
@@ -6615,6 +6700,10 @@ body {
   justify-content: center;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+.clean-reference-store-layout .clean-reference-pager {
+  grid-column: 2;
 }
 
 .clean-reference-pager button {
@@ -7014,6 +7103,14 @@ body {
   .clean-reference-showcase-top,
   .clean-reference-showcase-bottom {
     grid-template-columns: 1fr;
+  }
+
+  .clean-reference-store-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .clean-reference-store-layout .clean-reference-pager {
+    grid-column: auto;
   }
 
   .clean-reference-why-panel {

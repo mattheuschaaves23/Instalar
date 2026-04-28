@@ -183,6 +183,21 @@ const DESKTOP_PLATFORM_METRICS = [
   { icon: 'shield', value: 'Segurança garantida', title: 'Profissionais verificados e avaliados' },
 ];
 
+const DESKTOP_STORE_FEATURES = [
+  {
+    icon: 'shield',
+    title: 'Produtos originais',
+  },
+  {
+    icon: 'truck',
+    title: 'Entrega em todo Brasil',
+  },
+  {
+    icon: 'award',
+    title: 'Qualidade garantida',
+  },
+];
+
 const STORE_RATING_FALLBACKS = {
   'Leroy Merlin': '4,8',
   'Novo Ambiente': '4,7',
@@ -260,6 +275,31 @@ function getInitials(name) {
     .join('');
 }
 
+function getStoreBrandModifier(name) {
+  const normalized = String(name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  if (normalized.includes('leroy')) {
+    return 'is-leroy';
+  }
+
+  if (normalized.includes('novo ambiente')) {
+    return 'is-novo-ambiente';
+  }
+
+  if (normalized.includes('papel') && normalized.includes('cia')) {
+    return 'is-papel-cia';
+  }
+
+  if (normalized.includes('casa do papel')) {
+    return 'is-casa-papel';
+  }
+
+  return '';
+}
+
 function getTouchPointX(event) {
   const touch = event.changedTouches?.[0] || event.touches?.[0];
   return typeof touch?.clientX === 'number' ? touch.clientX : null;
@@ -315,7 +355,7 @@ function getStoreCardsPerView() {
     return 3;
   }
 
-  return 4;
+  return 3;
 }
 
 function getInstallerCardsPerView() {
@@ -421,6 +461,16 @@ function ReferenceHeroIcon({ name }) {
           <circle cx="12" cy="10" r="4.6" {...common} />
           <path d="m9.4 14 1.1 5.1L12 18l1.5 1.1 1.1-5.1" {...common} />
           <path d="m12 7.7.8 1.6 1.8.3-1.3 1.2.3 1.8-1.6-.9-1.6.9.3-1.8-1.3-1.2 1.8-.3z" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case 'truck':
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M3.8 6.5h10.4v8.2H3.8z" {...common} />
+          <path d="M14.2 9.2h3.1l2.5 2.7v2.8h-5.6" {...common} />
+          <circle cx="8" cy="17.2" r="1.7" {...common} />
+          <circle cx="17.1" cy="17.2" r="1.7" {...common} />
+          <path d="M5 17.2h1.3m3.4 0h5.7" {...common} />
         </svg>
       );
     case 'brazil':
@@ -643,7 +693,7 @@ export default function ClientLanding() {
   const howItWorksItems = isMobileLayout ? HOW_IT_WORKS_MOBILE : HOW_IT_WORKS;
   const desktopShowcaseStores = useMemo(
     () =>
-      activeStores.slice(0, 4).map((store, index) => ({
+      activeStores.map((store, index) => ({
         ...store,
         id: store.id || `desktop-store-${index}`,
         rating:
@@ -653,7 +703,6 @@ export default function ClientLanding() {
       })),
     [activeStores]
   );
-  const desktopStoreColumns = Math.min(Math.max(desktopShowcaseStores.length, 1), 4);
   const desktopShowcaseInstallers = DESKTOP_SHOWCASE_INSTALLERS;
 
   useEffect(() => {
@@ -959,98 +1008,272 @@ export default function ClientLanding() {
           </>
         )}
 
-        <section className="clean-stores clean-priority-stores fade-up" style={{ animationDelay: '0.07s' }}>
-          <div className="clean-section-head">
-            <p className="eyebrow">Lojas recomendadas</p>
-            <h2>{isMobileLayout ? 'Lojas para comprar com segurança' : 'Onde comprar com segurança para sua instalação'}</h2>
-            <p>
-              {isMobileLayout
-                ? 'Opções recomendadas pela plataforma.'
-                : 'Seleção atualizada pelo administrador da plataforma com as melhores opções do momento.'}
-            </p>
-          </div>
+        {isMobileLayout ? (
+          <section className="clean-stores clean-priority-stores fade-up" style={{ animationDelay: '0.07s' }}>
+            <div className="clean-section-head">
+              <p className="eyebrow">Lojas recomendadas</p>
+              <h2>Lojas para comprar com segurança</h2>
+              <p>Opções recomendadas pela plataforma.</p>
+            </div>
 
-          {activeStores.length > 0 ? (
-            <div className="clean-stores-carousel" {...(isTouchDevice ? storeSwipeHandlers : {})}>
-              <div
-                className="clean-stores-track"
-                style={{ transform: `translateX(-${activeStoreIndex * storeCardWidth}%)` }}
-              >
-                {activeStores.map((store, index) => (
-                  <article
-                    className="clean-store-slide"
-                    key={store.id || `${store.name}-${index}`}
-                    style={{ flex: `0 0 ${storeCardWidth}%` }}
-                  >
-                    <div
-                      className={`clean-store-card ${
-                        openedStoreCardId === store.id ? 'is-open' : ''
-                      }`}
-                      onClick={() => {
-                        if (!isTouchDevice) {
-                          return;
-                        }
-                        setOpenedStoreCardId((current) => (current === store.id ? null : store.id));
-                      }}
-                      onKeyDown={(event) => {
-                        if (!isTouchDevice) {
-                          return;
-                        }
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          setOpenedStoreCardId((current) => (current === store.id ? null : store.id));
-                        }
-                      }}
-                      role={isTouchDevice ? 'button' : undefined}
-                      tabIndex={isTouchDevice ? 0 : undefined}
+            {activeStores.length > 0 ? (
+              <div className="clean-stores-carousel" {...(isTouchDevice ? storeSwipeHandlers : {})}>
+                <div
+                  className="clean-stores-track"
+                  style={{ transform: `translateX(-${activeStoreIndex * storeCardWidth}%)` }}
+                >
+                  {activeStores.map((store, index) => (
+                    <article
+                      className="clean-store-slide"
+                      key={store.id || `${store.name}-${index}`}
+                      style={{ flex: `0 0 ${storeCardWidth}%` }}
                     >
-                      <div className="clean-store-media">
-                        {store.image_url ? (
-                          <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
-                        ) : (
-                          <div className="clean-store-fallback">{getInitials(store.name || 'Loja')}</div>
-                        )}
-                      </div>
-
-                      <div className="clean-store-content">
-                        <h3 className="clean-store-title">{store.name}</h3>
-                        <div className="clean-store-reveal">
-                          <p>{store.description || 'Loja recomendada para papel de parede e composição do ambiente.'}</p>
+                      <div
+                        className={`clean-store-card ${
+                          openedStoreCardId === store.id ? 'is-open' : ''
+                        }`}
+                        onClick={() => {
+                          if (!isTouchDevice) {
+                            return;
+                          }
+                          setOpenedStoreCardId((current) => (current === store.id ? null : store.id));
+                        }}
+                        onKeyDown={(event) => {
+                          if (!isTouchDevice) {
+                            return;
+                          }
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setOpenedStoreCardId((current) => (current === store.id ? null : store.id));
+                          }
+                        }}
+                        role={isTouchDevice ? 'button' : undefined}
+                        tabIndex={isTouchDevice ? 0 : undefined}
+                      >
+                        <div className="clean-store-media">
+                          {store.image_url ? (
+                            <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
+                          ) : (
+                            <div className="clean-store-fallback">{getInitials(store.name || 'Loja')}</div>
+                          )}
                         </div>
-                        {store.link_url ? (
-                          <a
-                            className="clean-store-link"
-                            href={store.link_url}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
-                            {store.cta_label || 'Ir ao site'}
-                          </a>
-                        ) : null}
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
 
-              {maxStoreIndex > 0 ? (
-                <div className="clean-stores-dots">
-                  {storeSlidePositions.map((index) => (
-                    <button
-                      aria-label={`Mostrar grupo ${index + 1} de lojas recomendadas`}
-                      className={index === activeStoreIndex ? 'is-active' : ''}
-                      key={`store-dot-${index}`}
-                      onClick={() => setActiveStoreIndex(index)}
-                      type="button"
-                    />
+                        <div className="clean-store-content">
+                          <h3 className="clean-store-title">{store.name}</h3>
+                          <div className="clean-store-reveal">
+                            <p>{store.description || 'Loja recomendada para papel de parede e composição do ambiente.'}</p>
+                          </div>
+                          {store.link_url ? (
+                            <a
+                              className="clean-store-link"
+                              href={store.link_url}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              {store.cta_label || 'Ir ao site'}
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
                   ))}
                 </div>
-              ) : null}
+
+                {maxStoreIndex > 0 ? (
+                  <div className="clean-stores-dots">
+                    {storeSlidePositions.map((index) => (
+                      <button
+                        aria-label={`Mostrar grupo ${index + 1} de lojas recomendadas`}
+                        className={index === activeStoreIndex ? 'is-active' : ''}
+                        key={`store-dot-${index}`}
+                        onClick={() => setActiveStoreIndex(index)}
+                        type="button"
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="empty-state !p-4 text-sm">As lojas recomendadas aparecerão aqui automaticamente.</div>
+            )}
+          </section>
+        ) : (
+          <section className="clean-reference-store-panel fade-up" style={{ animationDelay: '0.07s' }}>
+            <div className="clean-reference-store-layout">
+              <div className="clean-reference-store-copy">
+                <div className="clean-reference-panel-head">
+                  <p className="eyebrow">Lojas recomendadas</p>
+                  <h2 className="clean-reference-feature-heading clean-reference-store-heading">
+                    <span className="is-light">Onde comprar com</span>
+                    <span className="is-gold">segurança</span>
+                    <span className="is-light">para sua instalação</span>
+                  </h2>
+                  <p>Lojas confiáveis recomendadas pelos instaladores.</p>
+                </div>
+
+                <div className="clean-reference-store-benefits">
+                  {DESKTOP_STORE_FEATURES.map((item) => (
+                    <article className="clean-reference-store-benefit" key={item.title}>
+                      <div className="clean-reference-mini-icon">
+                        <ReferenceHeroIcon name={item.icon} />
+                      </div>
+                      <strong>{item.title}</strong>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              {desktopShowcaseStores.length > 0 ? (
+                <>
+                  <div className={`clean-reference-store-shell ${maxStoreIndex <= 0 ? 'is-static no-nav' : ''}`}>
+                    {maxStoreIndex > 0 ? (
+                      <button
+                        aria-label="Mostrar lojas recomendadas anteriores"
+                        className="clean-reference-arrow"
+                        onClick={goToPreviousStore}
+                        type="button"
+                      >
+                        ‹
+                      </button>
+                    ) : null}
+
+                    <div className="clean-reference-store-window" {...(isTouchDevice ? storeSwipeHandlers : {})}>
+                      {maxStoreIndex > 0 ? (
+                        <div
+                          className="clean-reference-store-track"
+                          style={{ transform: `translateX(-${activeStoreIndex * storeCardWidth}%)` }}
+                        >
+                          {desktopShowcaseStores.map((store, index) => (
+                            <article
+                              className="clean-reference-store-slide"
+                              key={store.id || `${store.name}-${index}`}
+                              style={{ flex: `0 0 ${storeCardWidth}%` }}
+                            >
+                              <div className="clean-reference-store-card">
+                                <span className="clean-reference-store-pill">
+                                  <ReferenceHeroIcon name="star" />
+                                  Recomendada
+                                </span>
+
+                                <div className="clean-reference-store-logo">
+                                  {store.image_url ? (
+                                    <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
+                                      <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
+                                    </div>
+                                  ) : (
+                                    <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
+                                      <span>{store.name || getInitials(store.name || 'Loja')}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <h3>{store.name}</h3>
+                                <div className="clean-reference-store-rating">
+                                  <span className="clean-reference-stars">★★★★★</span>
+                                  <span>{store.rating}</span>
+                                </div>
+
+                                {store.link_url ? (
+                                  <a
+                                    className="clean-reference-store-link"
+                                    href={store.link_url}
+                                    rel="noopener noreferrer"
+                                    target="_blank"
+                                  >
+                                    {(store.cta_label || 'Ver loja').replace(/ir ao site/i, 'Ver loja')} →
+                                  </a>
+                                ) : (
+                                  <span className="clean-reference-store-link is-disabled">Ver loja →</span>
+                                )}
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <div
+                          className="clean-reference-store-grid"
+                          style={{ ['--store-columns']: Math.min(desktopShowcaseStores.length, storesPerView) }}
+                        >
+                          {desktopShowcaseStores.map((store, index) => (
+                            <article className="clean-reference-store-slide" key={store.id || `${store.name}-${index}`}>
+                              <div className="clean-reference-store-card">
+                                <span className="clean-reference-store-pill">
+                                  <ReferenceHeroIcon name="star" />
+                                  Recomendada
+                                </span>
+
+                                <div className="clean-reference-store-logo">
+                                  {store.image_url ? (
+                                    <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
+                                      <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
+                                    </div>
+                                  ) : (
+                                    <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
+                                      <span>{store.name || getInitials(store.name || 'Loja')}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <h3>{store.name}</h3>
+                                <div className="clean-reference-store-rating">
+                                  <span className="clean-reference-stars">★★★★★</span>
+                                  <span>{store.rating}</span>
+                                </div>
+
+                                {store.link_url ? (
+                                  <a
+                                    className="clean-reference-store-link"
+                                    href={store.link_url}
+                                    rel="noopener noreferrer"
+                                    target="_blank"
+                                  >
+                                    {(store.cta_label || 'Ver loja').replace(/ir ao site/i, 'Ver loja')} →
+                                  </a>
+                                ) : (
+                                  <span className="clean-reference-store-link is-disabled">Ver loja →</span>
+                                )}
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {maxStoreIndex > 0 ? (
+                      <button
+                        aria-label="Mostrar próximas lojas recomendadas"
+                        className="clean-reference-arrow"
+                        onClick={goToNextStore}
+                        type="button"
+                      >
+                        ›
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {maxStoreIndex > 0 ? (
+                    <div className="clean-reference-pager">
+                      {storeSlidePositions.map((index) => (
+                        <button
+                          aria-label={`Mostrar grupo ${index + 1} de lojas recomendadas`}
+                          className={index === activeStoreIndex ? 'is-active' : ''}
+                          key={`desktop-store-dot-${index}`}
+                          onClick={() => setActiveStoreIndex(index)}
+                          type="button"
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <div className="clean-reference-empty-state">
+                  <strong>Lojas recomendadas em atualização</strong>
+                  <p>As lojas que você cadastrar e ativar no painel do administrador aparecerão aqui automaticamente.</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="empty-state !p-4 text-sm">As lojas recomendadas aparecerão aqui automaticamente.</div>
-          )}
-        </section>
+          </section>
+        )}
 
         <section className="clean-story clean-priority-story fade-up" style={{ animationDelay: '0.08s' }}>
           <div className="clean-story-text">
