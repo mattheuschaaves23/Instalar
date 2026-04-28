@@ -928,10 +928,6 @@ export default function ClientLanding() {
                     <span>Encontrar instaladores agora</span>
                     <span aria-hidden="true">→</span>
                   </Link>
-                  <a className="clean-reference-cta-secondary" href="#como-funciona">
-                    <ReferenceHeroIcon name="play" />
-                    <span>Como funciona</span>
-                  </a>
                 </div>
 
                 <div className="clean-reference-trust-row">
