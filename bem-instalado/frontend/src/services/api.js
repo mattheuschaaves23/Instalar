@@ -51,6 +51,12 @@ const api = axios.create({
   baseURL: resolveBaseUrl(),
 });
 
+function isLoginRoute(pathname) {
+  return ['/instalador/entrar', '/cliente/entrar', '/login'].some((route) =>
+    String(pathname || '').startsWith(route)
+  );
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
 
@@ -69,7 +75,7 @@ api.interceptors.response.use(
     const code = error.response?.data?.code || '';
 
     if (typeof window !== 'undefined') {
-      if (status === 401 && !window.location.pathname.startsWith('/instalador/entrar')) {
+      if (status === 401 && !isLoginRoute(window.location.pathname)) {
         localStorage.removeItem('token');
         window.location.href = '/instalador/entrar';
       }

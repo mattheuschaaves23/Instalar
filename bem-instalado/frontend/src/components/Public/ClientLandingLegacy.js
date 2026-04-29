@@ -876,7 +876,7 @@ export default function ClientLanding() {
                     </a>
                   ))}
                   <div className="clean-mobile-ref-menu-actions">
-                    <Link className="ghost-button" onClick={() => setIsMobileMenuOpen(false)} to="/instalador/entrar">
+                    <Link className="ghost-button" onClick={() => setIsMobileMenuOpen(false)} to="/cliente/entrar">
                       Entrar
                     </Link>
                     <Link className="gold-button" onClick={() => setIsMobileMenuOpen(false)} to="/instalador/cadastro">
@@ -985,7 +985,7 @@ export default function ClientLanding() {
               </nav>
 
               <div className="clean-reference-actions">
-                <Link className="ghost-button clean-reference-ghost" to="/instalador/entrar">
+                <Link className="ghost-button clean-reference-ghost" to="/cliente/entrar">
                   Entrar
                 </Link>
                 <Link className="gold-button clean-reference-gold" to="/instalador/cadastro">

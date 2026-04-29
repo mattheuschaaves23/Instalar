@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import ClientLogin from './components/Auth/ClientLogin';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import AdminDashboard from './components/Admin/AdminDashboard';
@@ -25,8 +26,9 @@ export default function App() {
       <Routes>
         <Route element={<ClientLanding />} path="/" />
         <Route element={<Home />} path="/cliente" />
+        <Route element={<ClientLogin />} path="/cliente/entrar" />
         <Route element={<InstallerProfile />} path="/installers/:id" />
-        <Route element={<Navigate replace to="/" />} path="/login" />
+        <Route element={<ClientLogin />} path="/login" />
         <Route element={<Login />} path="/instalador/entrar" />
         <Route element={<Navigate replace to="/" />} path="/register" />
         <Route element={<Register />} path="/instalador/cadastro" />

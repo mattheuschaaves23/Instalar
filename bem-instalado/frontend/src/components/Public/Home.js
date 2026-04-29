@@ -602,7 +602,7 @@ export default function Home() {
                 Meu painel
               </Link>
             ) : (
-              <Link className="client-app-chip-link" to="/instalador/entrar">
+              <Link className="client-app-chip-link" to="/cliente/entrar">
                 Entrar
               </Link>
             )}
