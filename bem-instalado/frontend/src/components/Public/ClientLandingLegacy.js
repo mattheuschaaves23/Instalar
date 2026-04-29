@@ -124,13 +124,12 @@ const HOW_IT_WORKS_MOBILE = [
 ];
 
 const DESKTOP_NAV_ITEMS = [
+  { label: 'Início', href: '#inicio' },
+  { label: 'Lojas recomendadas', href: '#lojas-recomendadas' },
+  { label: 'Por que escolher', href: '#por-que-escolher' },
+  { label: 'Instaladores', href: '#landing-installers' },
+  { label: 'Avaliações', href: '#landing-reviews' },
   { label: 'Como funciona', href: '#como-funciona' },
-  { label: 'Para clientes', href: '#para-clientes' },
-  { label: 'Para instaladores', href: '#para-instaladores' },
-  { label: 'Lojas recomendadas', href: '#stores' },
-  { label: 'Blog', href: '#blog' },
-  { label: 'Sobre nós', href: '#sobre-nos' },
-  { label: 'Contato', href: '#contato' },
 ];
 
 const DESKTOP_TRUST_ITEMS = [
@@ -995,7 +994,7 @@ export default function ClientLanding() {
               </div>
             </header>
 
-            <section className="clean-reference-hero fade-up" style={{ animationDelay: '0.05s' }}>
+            <section className="clean-reference-hero fade-up" id="inicio" style={{ animationDelay: '0.05s' }}>
               <div className="clean-reference-hero-copy">
                 <div className="clean-reference-badge">
                   <ReferenceHeroIcon name="group" />
@@ -1053,7 +1052,7 @@ export default function ClientLanding() {
         )}
 
         {isMobileLayout ? (
-          <section className="clean-stores clean-priority-stores fade-up" style={{ animationDelay: '0.07s' }}>
+          <section className="clean-stores clean-priority-stores fade-up" id="lojas-recomendadas" style={{ animationDelay: '0.07s' }}>
             <div className="clean-section-head">
               <p className="eyebrow">Lojas recomendadas</p>
               <h2>Lojas para comprar com segurança</h2>
@@ -1142,7 +1141,7 @@ export default function ClientLanding() {
             )}
           </section>
         ) : (
-          <section className="clean-reference-store-panel fade-up" style={{ animationDelay: '0.07s' }}>
+          <section className="clean-reference-store-panel fade-up" id="lojas-recomendadas" style={{ animationDelay: '0.07s' }}>
             <div className="clean-reference-store-layout">
               <div className="clean-reference-store-copy">
                 <div className="clean-reference-panel-head">
@@ -1320,7 +1319,7 @@ export default function ClientLanding() {
         )}
 
         {isMobileLayout ? (
-          <section className="clean-story clean-priority-story fade-up" style={{ animationDelay: '0.08s' }}>
+          <section className="clean-story clean-priority-story fade-up" id="por-que-escolher" style={{ animationDelay: '0.08s' }}>
             <div className="clean-story-text">
               <p className="eyebrow">Por que escolher</p>
               <h2>Mais clareza para decidir, mais segurança para contratar.</h2>
@@ -1340,7 +1339,7 @@ export default function ClientLanding() {
             </div>
           </section>
         ) : (
-          <section className="clean-desktop-why-showcase fade-up" style={{ animationDelay: '0.08s' }}>
+          <section className="clean-desktop-why-showcase fade-up" id="por-que-escolher" style={{ animationDelay: '0.08s' }}>
             <div className="clean-desktop-why-copy">
               <p className="clean-desktop-why-eyebrow">POR QUE ESCOLHER</p>
 
@@ -1574,7 +1573,7 @@ export default function ClientLanding() {
           </div>
         </section>
 
-        <section className="clean-how clean-priority-how fade-up" style={{ animationDelay: '0.2s' }}>
+        <section className="clean-how clean-priority-how fade-up" id="como-funciona" style={{ animationDelay: '0.2s' }}>
           {howItWorksItems.map((item) => (
             <article key={item.step}>
               <span>{item.step}</span>
