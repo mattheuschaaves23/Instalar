@@ -845,7 +845,7 @@ export default function ClientLanding() {
   const reviewSwipeHandlers = buildSwipeHandlers(reviewTouchStartRef, goToPreviousReview, goToNextReview);
 
   return (
-    <div className="auth-scene clean-light-mode min-h-screen overflow-x-hidden">
+    <div className="auth-scene min-h-screen overflow-x-hidden">
       <div className="clean-landing-shell">
         {isMobileLayout ? (
           <>
