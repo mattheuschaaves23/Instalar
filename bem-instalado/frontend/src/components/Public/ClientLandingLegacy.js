@@ -210,21 +210,6 @@ const DESKTOP_PLATFORM_METRICS = [
   },
 ];
 
-const DESKTOP_STORE_FEATURES = [
-  {
-    icon: 'shield',
-    title: 'Produtos originais',
-  },
-  {
-    icon: 'truck',
-    title: 'Entrega em todo Brasil',
-  },
-  {
-    icon: 'award',
-    title: 'Qualidade garantida',
-  },
-];
-
 const STORE_RATING_FALLBACKS = {
   'Leroy Merlin': '4,8',
   'Novo Ambiente': '4,7',
@@ -367,22 +352,22 @@ function buildSwipeHandlers(startRef, onPrevious, onNext) {
 
 function getStoreCardsPerView() {
   if (typeof window === 'undefined') {
-    return 3;
+    return 4;
   }
 
   if (window.innerWidth <= 680) {
     return 1;
   }
 
-  if (window.innerWidth <= 1080) {
+  if (window.innerWidth <= 1024) {
     return 2;
   }
 
-  if (window.innerWidth <= 1380) {
+  if (window.innerWidth <= 1180) {
     return 3;
   }
 
-  return 3;
+  return 4;
 }
 
 function getInstallerCardsPerView() {
@@ -1145,24 +1130,7 @@ export default function ClientLanding() {
             <div className="clean-reference-store-layout">
               <div className="clean-reference-store-copy">
                 <div className="clean-reference-panel-head">
-                  <p className="eyebrow">Lojas recomendadas</p>
-                  <h2 className="clean-reference-feature-heading clean-reference-store-heading">
-                    <span className="is-light">Onde comprar com</span>
-                    <span className="is-gold">segurança</span>
-                    <span className="is-light">para sua instalação</span>
-                  </h2>
-                  <p>Lojas confiáveis recomendadas pelos instaladores.</p>
-                </div>
-
-                <div className="clean-reference-store-benefits">
-                  {DESKTOP_STORE_FEATURES.map((item) => (
-                    <article className="clean-reference-store-benefit" key={item.title}>
-                      <div className="clean-reference-mini-icon">
-                        <ReferenceHeroIcon name={item.icon} />
-                      </div>
-                      <strong>{item.title}</strong>
-                    </article>
-                  ))}
+                  <h2 className="clean-reference-store-title-only">Lojas recomendadas</h2>
                 </div>
               </div>
 
