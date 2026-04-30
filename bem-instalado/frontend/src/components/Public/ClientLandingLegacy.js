@@ -588,6 +588,7 @@ export default function ClientLanding() {
   const [installerCardsPerView, setInstallerCardsPerView] = useState(getInstallerCardsPerView);
   const [reviewCardsPerView, setReviewCardsPerView] = useState(getReviewCardsPerView);
   const [activeStoreIndex, setActiveStoreIndex] = useState(0);
+  const [activeStorePage, setActiveStorePage] = useState(0);
   const [activeInstallerIndex, setActiveInstallerIndex] = useState(0);
   const [activeReviewIndex, setActiveReviewIndex] = useState(0);
   const [openedStoreCardId, setOpenedStoreCardId] = useState(null);
@@ -746,9 +747,25 @@ export default function ClientLanding() {
       })),
     [activeStores]
   );
+  const desktopStorePages = useMemo(() => {
+    const storesPerPage = Math.max(storesPerView, 1);
+    const pages = [];
+
+    for (let index = 0; index < desktopShowcaseStores.length; index += storesPerPage) {
+      pages.push(desktopShowcaseStores.slice(index, index + storesPerPage));
+    }
+
+    return pages;
+  }, [desktopShowcaseStores, storesPerView]);
+  const maxStorePageIndex = Math.max(0, desktopStorePages.length - 1);
   const desktopShowcaseInstallers = DESKTOP_SHOWCASE_INSTALLERS;
 
   useEffect(() => {
+    if (!isMobileLayout) {
+      setActiveStoreIndex(0);
+      return;
+    }
+
     if (maxStoreIndex <= 0) {
       setActiveStoreIndex(0);
       return;
@@ -761,13 +778,39 @@ export default function ClientLanding() {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [maxStoreIndex]);
+  }, [isMobileLayout, maxStoreIndex]);
+
+  useEffect(() => {
+    if (isMobileLayout) {
+      setActiveStorePage(0);
+      return;
+    }
+
+    if (maxStorePageIndex <= 0) {
+      setActiveStorePage(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setActiveStorePage((current) => (current >= maxStorePageIndex ? 0 : current + 1));
+    }, STORE_CAROUSEL_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isMobileLayout, maxStorePageIndex]);
 
   useEffect(() => {
     if (activeStoreIndex > maxStoreIndex) {
       setActiveStoreIndex(0);
     }
   }, [activeStoreIndex, maxStoreIndex]);
+
+  useEffect(() => {
+    if (activeStorePage > maxStorePageIndex) {
+      setActiveStorePage(0);
+    }
+  }, [activeStorePage, maxStorePageIndex]);
 
   useEffect(() => {
     if (maxInstallerIndex <= 0) {
@@ -819,6 +862,14 @@ export default function ClientLanding() {
     setActiveStoreIndex((current) => (current >= maxStoreIndex ? 0 : current + 1));
   };
 
+  const goToPreviousStorePage = () => {
+    setActiveStorePage((current) => (current <= 0 ? maxStorePageIndex : current - 1));
+  };
+
+  const goToNextStorePage = () => {
+    setActiveStorePage((current) => (current >= maxStorePageIndex ? 0 : current + 1));
+  };
+
   const goToPreviousInstaller = () => {
     setActiveInstallerIndex((current) => (current <= 0 ? maxInstallerIndex : current - 1));
   };
@@ -836,6 +887,7 @@ export default function ClientLanding() {
   };
 
   const storeSwipeHandlers = buildSwipeHandlers(storeTouchStartRef, goToPreviousStore, goToNextStore);
+  const desktopStoreSwipeHandlers = buildSwipeHandlers(storeTouchStartRef, goToPreviousStorePage, goToNextStorePage);
   const installerSwipeHandlers = buildSwipeHandlers(
     installerTouchStartRef,
     goToPreviousInstaller,
@@ -1153,68 +1205,64 @@ export default function ClientLanding() {
 
               {desktopShowcaseStores.length > 0 ? (
                 <>
-                  <div className={`clean-reference-store-shell ${maxStoreIndex <= 0 ? 'is-static no-nav' : ''}`}>
-                    {maxStoreIndex > 0 ? (
+                  <div className={`clean-reference-store-shell ${maxStorePageIndex <= 0 ? 'is-static no-nav' : ''}`}>
+                    {maxStorePageIndex > 0 ? (
                       <button
                         aria-label="Mostrar lojas recomendadas anteriores"
                         className="clean-reference-arrow"
-                        onClick={goToPreviousStore}
+                        onClick={goToPreviousStorePage}
                         type="button"
                       >
                         ‹
                       </button>
                     ) : null}
 
-                    <div className="clean-reference-store-window" {...(isTouchDevice ? storeSwipeHandlers : {})}>
-                      {maxStoreIndex > 0 ? (
+                    <div className="clean-reference-store-window" {...(isTouchDevice ? desktopStoreSwipeHandlers : {})}>
+                      {maxStorePageIndex > 0 ? (
                         <div
                           className="clean-reference-store-track"
-                          style={{ transform: `translateX(-${activeStoreIndex * storeCardWidth}%)` }}
+                          style={{ transform: `translateX(-${activeStorePage * 100}%)` }}
                         >
-                          {desktopShowcaseStores.map((store, index) => (
-                            <article
-                              className="clean-reference-store-slide"
-                              key={store.id || `${store.name}-${index}`}
-                              style={{ flex: `0 0 ${storeCardWidth}%` }}
-                            >
-                              <div className="clean-reference-store-card">
-                                <span className="clean-reference-store-pill">
-                                  <ReferenceHeroIcon name="star" />
-                                  Recomendada
-                                </span>
+                          {desktopStorePages.map((storePage, pageIndex) => (
+                            <div className="clean-reference-store-page" key={`desktop-store-page-${pageIndex}`}>
+                              <div
+                                className="clean-reference-store-grid"
+                                style={{ ['--store-columns']: storesPerView }}
+                              >
+                                {storePage.map((store, index) => (
+                                  <article className="clean-reference-store-slide" key={store.id || `${store.name}-${index}`}>
+                                    <div className="clean-reference-store-card">
+                                      <div className="clean-reference-store-logo">
+                                        {store.image_url ? (
+                                          <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
+                                            <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
+                                          </div>
+                                        ) : (
+                                          <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
+                                            <span>{store.name || getInitials(store.name || 'Loja')}</span>
+                                          </div>
+                                        )}
+                                      </div>
 
-                                <div className="clean-reference-store-logo">
-                                  {store.image_url ? (
-                                    <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
-                                      <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
+                                      <h3>{store.name}</h3>
+
+                                      {store.link_url ? (
+                                        <a
+                                          className="clean-reference-store-link"
+                                          href={store.link_url}
+                                          rel="noopener noreferrer"
+                                          target="_blank"
+                                        >
+                                          {(store.cta_label || 'Ver loja').replace(/ir ao site/i, 'Ver loja')} →
+                                        </a>
+                                      ) : (
+                                        <span className="clean-reference-store-link is-disabled">Ver loja →</span>
+                                      )}
                                     </div>
-                                  ) : (
-                                    <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
-                                      <span>{store.name || getInitials(store.name || 'Loja')}</span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <h3>{store.name}</h3>
-                                <div className="clean-reference-store-rating">
-                                  <span className="clean-reference-stars">★★★★★</span>
-                                  <span>{store.rating}</span>
-                                </div>
-
-                                {store.link_url ? (
-                                  <a
-                                    className="clean-reference-store-link"
-                                    href={store.link_url}
-                                    rel="noopener noreferrer"
-                                    target="_blank"
-                                  >
-                                    {(store.cta_label || 'Ver loja').replace(/ir ao site/i, 'Ver loja')} →
-                                  </a>
-                                ) : (
-                                  <span className="clean-reference-store-link is-disabled">Ver loja →</span>
-                                )}
+                                  </article>
+                                ))}
                               </div>
-                            </article>
+                            </div>
                           ))}
                         </div>
                       ) : (
@@ -1225,11 +1273,6 @@ export default function ClientLanding() {
                           {desktopShowcaseStores.map((store, index) => (
                             <article className="clean-reference-store-slide" key={store.id || `${store.name}-${index}`}>
                               <div className="clean-reference-store-card">
-                                <span className="clean-reference-store-pill">
-                                  <ReferenceHeroIcon name="star" />
-                                  Recomendada
-                                </span>
-
                                 <div className="clean-reference-store-logo">
                                   {store.image_url ? (
                                     <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
@@ -1243,10 +1286,6 @@ export default function ClientLanding() {
                                 </div>
 
                                 <h3>{store.name}</h3>
-                                <div className="clean-reference-store-rating">
-                                  <span className="clean-reference-stars">★★★★★</span>
-                                  <span>{store.rating}</span>
-                                </div>
 
                                 {store.link_url ? (
                                   <a
@@ -1267,11 +1306,11 @@ export default function ClientLanding() {
                       )}
                     </div>
 
-                    {maxStoreIndex > 0 ? (
+                    {maxStorePageIndex > 0 ? (
                       <button
                         aria-label="Mostrar próximas lojas recomendadas"
                         className="clean-reference-arrow"
-                        onClick={goToNextStore}
+                        onClick={goToNextStorePage}
                         type="button"
                       >
                         ›
@@ -1279,14 +1318,14 @@ export default function ClientLanding() {
                     ) : null}
                   </div>
 
-                  {maxStoreIndex > 0 ? (
+                  {maxStorePageIndex > 0 ? (
                     <div className="clean-reference-pager">
-                      {storeSlidePositions.map((index) => (
+                      {desktopStorePages.map((_, index) => (
                         <button
                           aria-label={`Mostrar grupo ${index + 1} de lojas recomendadas`}
-                          className={index === activeStoreIndex ? 'is-active' : ''}
+                          className={index === activeStorePage ? 'is-active' : ''}
                           key={`desktop-store-dot-${index}`}
-                          onClick={() => setActiveStoreIndex(index)}
+                          onClick={() => setActiveStorePage(index)}
                           type="button"
                         />
                       ))}

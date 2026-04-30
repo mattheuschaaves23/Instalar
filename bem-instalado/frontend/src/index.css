@@ -6639,9 +6639,9 @@ body {
 
 .clean-reference-brand-logo {
   width: 100%;
-  max-width: 8.6rem;
-  min-height: 5.45rem;
-  padding: 0.55rem 0.85rem;
+  max-width: 12rem;
+  min-height: 8.35rem;
+  padding: 0.65rem 0.85rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6652,7 +6652,7 @@ body {
 
 .clean-reference-brand-logo img {
   max-width: 100%;
-  max-height: 3.2rem;
+  max-height: 7rem;
   object-fit: contain;
   display: block;
 }
@@ -6727,8 +6727,13 @@ body {
 
 .clean-reference-store-track {
   display: flex;
-  transition: transform 320ms ease;
+  transition: transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
+}
+
+.clean-reference-store-page {
+  flex: 0 0 100%;
+  min-width: 0;
 }
 
 .clean-reference-store-slide {
@@ -6741,11 +6746,11 @@ body {
   width: 100%;
   justify-self: stretch;
   height: 100%;
-  min-height: 18.4rem;
-  padding: 1.35rem 1.12rem 1.22rem;
+  min-height: 19rem;
+  padding: 1.18rem 1.12rem 1.22rem;
   display: grid;
   align-content: start;
-  gap: 0.92rem;
+  gap: 1.05rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 22px;
   background:
@@ -6776,7 +6781,7 @@ body {
 }
 
 .clean-reference-store-logo {
-  min-height: 6.35rem;
+  min-height: 9rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6784,7 +6789,7 @@ body {
 
 .clean-reference-store-logo img {
   max-width: 100%;
-  max-height: 5.65rem;
+  max-height: 8rem;
   object-fit: contain;
 }
 
@@ -6806,7 +6811,7 @@ body {
 
 .clean-reference-store-card h3 {
   margin: 0;
-  min-height: 3.15rem;
+  min-height: 2.8rem;
   color: #fff8ea;
   font-family: 'Poppins', 'Segoe UI', sans-serif;
   font-size: clamp(1.22rem, 1.3vw, 1.45rem);
