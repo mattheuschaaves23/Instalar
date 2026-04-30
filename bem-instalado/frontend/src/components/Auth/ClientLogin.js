@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
+import { startSocialLogin } from '../../services/auth';
 
 function ClientLoginLogoMark() {
   return (
@@ -143,6 +144,14 @@ export default function ClientLogin() {
 
   const submitLabel = useMemo(() => (needs2FA ? 'Validar acesso' : 'Entrar'), [needs2FA]);
 
+  useEffect(() => {
+    const error = new URLSearchParams(window.location.search).get('oauth_error');
+
+    if (error) {
+      toast.error('Nao foi possivel entrar com essa conta social.');
+    }
+  }, []);
+
   const handleChange = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   };
@@ -174,6 +183,10 @@ export default function ClientLogin() {
 
   const showPendingMessage = () => {
     toast('Recurso em preparacao.');
+  };
+
+  const handleSocialLogin = (provider) => {
+    startSocialLogin(provider, { role: 'client', next: '/cliente' });
   };
 
   return (
@@ -307,11 +320,11 @@ export default function ClientLogin() {
             </div>
 
             <div className="client-login-socials">
-              <button onClick={showPendingMessage} type="button">
+              <button onClick={() => handleSocialLogin('google')} type="button">
                 <span className="client-login-google">G</span>
                 <span>Google</span>
               </button>
-              <button onClick={showPendingMessage} type="button">
+              <button onClick={() => handleSocialLogin('apple')} type="button">
                 <span className="client-login-apple">
                   <ClientLoginIcon name="apple" />
                 </span>

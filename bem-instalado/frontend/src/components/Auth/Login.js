@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
+import { startSocialLogin } from '../../services/auth';
 
 function InstallerLoginLogoMark() {
   return (
@@ -189,6 +190,14 @@ export default function Login() {
 
   const submitLabel = useMemo(() => (needs2FA ? 'Validar acesso' : 'Entrar na plataforma'), [needs2FA]);
 
+  useEffect(() => {
+    const error = new URLSearchParams(window.location.search).get('oauth_error');
+
+    if (error) {
+      toast.error('Não foi possível entrar com essa conta social.');
+    }
+  }, []);
+
   const handleChange = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   };
@@ -220,6 +229,10 @@ export default function Login() {
 
   const showPendingMessage = () => {
     toast('Recurso em preparação.');
+  };
+
+  const handleSocialLogin = (provider) => {
+    startSocialLogin(provider, { role: 'installer', next: '/dashboard' });
   };
 
   return (
@@ -362,11 +375,11 @@ export default function Login() {
             </div>
 
             <div className="installer-login-socials">
-              <button onClick={showPendingMessage} type="button">
+              <button onClick={() => handleSocialLogin('google')} type="button">
                 <span className="installer-login-google">G</span>
                 <span>Entrar com Google</span>
               </button>
-              <button onClick={showPendingMessage} type="button">
+              <button onClick={() => handleSocialLogin('apple')} type="button">
                 <span className="installer-login-apple">
                   <InstallerLoginIcon name="apple" />
                 </span>

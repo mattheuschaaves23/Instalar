@@ -33,6 +33,9 @@ const passwordRecoveryLimiter = createRateLimiter({
 
 router.post('/register', authBurstLimiter, controller.register);
 router.post('/login', loginLimiter, controller.login);
+router.get('/oauth/:provider', authBurstLimiter, controller.startOAuth);
+router.get('/oauth/:provider/callback', authBurstLimiter, controller.handleOAuthCallback);
+router.post('/oauth/:provider/callback', authBurstLimiter, controller.handleOAuthCallback);
 router.post('/forgot-password', passwordRecoveryLimiter, controller.forgotPassword);
 router.post('/reset-password', passwordRecoveryLimiter, controller.resetPassword);
 router.get('/2fa/setup', auth, controller.setup2FA);

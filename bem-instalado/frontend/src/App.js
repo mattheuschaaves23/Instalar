@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import ClientLogin from './components/Auth/ClientLogin';
 import Login from './components/Auth/Login';
+import OAuthCallback from './components/Auth/OAuthCallback';
 import Register from './components/Auth/Register';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import Agenda from './components/Agenda/Agenda';
@@ -30,6 +31,7 @@ export default function App() {
         <Route element={<InstallerProfile />} path="/installers/:id" />
         <Route element={<ClientLogin />} path="/login" />
         <Route element={<Login />} path="/instalador/entrar" />
+        <Route element={<OAuthCallback />} path="/auth/social/callback" />
         <Route element={<Navigate replace to="/" />} path="/register" />
         <Route element={<Register />} path="/instalador/cadastro" />
 

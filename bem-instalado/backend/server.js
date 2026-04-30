@@ -149,6 +149,7 @@ app.use(
   })
 );
 app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '64kb' }));
 
 const io = new Server(httpServer, {
   cors: {
@@ -348,6 +349,10 @@ app.use((_req, res) => {
 async function ensureRuntimeSchema() {
   const statements = [
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(40)',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider_id VARCHAR(180)',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS installer_photo TEXT',
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS installation_gallery JSONB NOT NULL DEFAULT '[]'::jsonb",
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS certificate_file TEXT',
@@ -454,6 +459,11 @@ async function ensureRuntimeSchema() {
     `
       CREATE INDEX IF NOT EXISTS users_featured_installer_idx
       ON users (featured_installer, certification_verified, public_profile)
+    `,
+    `
+      CREATE UNIQUE INDEX IF NOT EXISTS users_auth_provider_id_idx
+      ON users (auth_provider, auth_provider_id)
+      WHERE auth_provider IS NOT NULL AND auth_provider_id IS NOT NULL
     `,
     `
       CREATE INDEX IF NOT EXISTS support_ideas_installer_idx

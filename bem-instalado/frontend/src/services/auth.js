@@ -5,6 +5,30 @@ export async function loginRequest(payload) {
   return response.data;
 }
 
+function getSocialLoginBaseUrl() {
+  return String(api.defaults.baseURL || '/api').replace(/\/+$/, '');
+}
+
+function sanitizeNextPath(value, fallback) {
+  const nextPath = String(value || '').trim();
+  return nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : fallback;
+}
+
+export function buildSocialLoginUrl(provider, { role = 'installer', next = '/dashboard' } = {}) {
+  const normalizedRole = role === 'client' ? 'client' : 'installer';
+  const fallbackNext = normalizedRole === 'client' ? '/cliente' : '/dashboard';
+  const url = new URL(`${getSocialLoginBaseUrl()}/auth/oauth/${provider}`, window.location.origin);
+
+  url.searchParams.set('role', normalizedRole);
+  url.searchParams.set('next', sanitizeNextPath(next, fallbackNext));
+
+  return url.toString();
+}
+
+export function startSocialLogin(provider, options) {
+  window.location.assign(buildSocialLoginUrl(provider, options));
+}
+
 export async function registerRequest(payload) {
   const response = await api.post('/auth/register', payload);
   return response.data;

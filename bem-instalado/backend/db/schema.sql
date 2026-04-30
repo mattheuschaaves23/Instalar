@@ -3,6 +3,10 @@
   name VARCHAR(100) NOT NULL,
   email VARCHAR(150) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
+  auth_provider VARCHAR(40),
+  auth_provider_id VARCHAR(180),
+  email_verified_at TIMESTAMP,
+  last_login_at TIMESTAMP,
   phone VARCHAR(30),
   logo TEXT,
   installer_photo TEXT,
@@ -289,6 +293,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS public_profile BOOLEAN NOT NULL DEFAU
 ALTER TABLE users ADD COLUMN IF NOT EXISTS years_experience INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS wallpaper_store_recommended BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(40);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider_id VARCHAR(180);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS installer_photo TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS installation_gallery JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS certificate_file TEXT;
@@ -341,6 +349,10 @@ CREATE INDEX IF NOT EXISTS users_public_profile_idx
 
 CREATE INDEX IF NOT EXISTS users_featured_installer_idx
   ON users (featured_installer, certification_verified, public_profile);
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_auth_provider_id_idx
+  ON users (auth_provider, auth_provider_id)
+  WHERE auth_provider IS NOT NULL AND auth_provider_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS support_conversations_last_message_idx
   ON support_conversations (last_message_at DESC, updated_at DESC);
