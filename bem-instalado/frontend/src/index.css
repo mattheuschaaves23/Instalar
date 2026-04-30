@@ -16518,6 +16518,732 @@ body {
   }
 }
 
+/* -------- Installer Login -------- */
+.installer-login-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 1.25rem;
+  background:
+    radial-gradient(52rem 36rem at 30% 12%, rgba(179, 119, 28, 0.12), transparent 62%),
+    radial-gradient(42rem 30rem at 72% 18%, rgba(255, 218, 145, 0.08), transparent 58%),
+    linear-gradient(180deg, #050505 0%, #080807 52%, #040404 100%);
+  color: #fff8ec;
+  font-family: 'Public Sans', 'Segoe UI', sans-serif;
+}
+
+.installer-login-frame {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.03fr) minmax(0, 0.97fr);
+  min-height: calc(100dvh - 2.5rem);
+  overflow: hidden;
+  border: 1px solid rgba(201, 145, 38, 0.36);
+  border-radius: 1.05rem;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018), transparent 28%),
+    rgba(5, 5, 5, 0.97);
+  box-shadow:
+    0 0 0 1px rgba(201, 145, 38, 0.05) inset,
+    0 2rem 5rem rgba(0, 0, 0, 0.42);
+}
+
+.installer-login-left,
+.installer-login-right {
+  position: relative;
+  min-width: 0;
+}
+
+.installer-login-left {
+  min-height: 48rem;
+  padding: 3.6rem 3.6rem 8.4rem;
+  display: grid;
+  align-content: start;
+  gap: 4.2rem;
+  isolation: isolate;
+}
+
+.installer-login-left::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(201, 145, 38, 0.08), rgba(201, 145, 38, 0.46), rgba(201, 145, 38, 0.1));
+  z-index: 2;
+}
+
+.installer-login-worker-photo,
+.installer-login-left-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.installer-login-worker-photo {
+  left: auto;
+  width: 42%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  filter: saturate(0.96) brightness(0.88);
+  z-index: -2;
+}
+
+.installer-login-left-overlay {
+  background:
+    radial-gradient(24rem 26rem at 64% 32%, rgba(211, 146, 42, 0.18), transparent 66%),
+    linear-gradient(90deg, rgba(5, 5, 5, 0.99) 0%, rgba(5, 5, 5, 0.96) 42%, rgba(5, 5, 5, 0.28) 76%, rgba(5, 5, 5, 0.1) 100%),
+    linear-gradient(180deg, rgba(5, 5, 5, 0.06), rgba(5, 5, 5, 0.72));
+  z-index: -1;
+}
+
+.installer-login-brand {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.78rem;
+  width: max-content;
+  max-width: 100%;
+}
+
+.installer-login-logo-mark {
+  width: 4.35rem;
+  height: 4.35rem;
+  color: #f2bd48;
+  filter: drop-shadow(0 0 16px rgba(242, 189, 72, 0.2));
+}
+
+.installer-login-logo-mark path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.installer-login-logo-mark path:first-child {
+  stroke-width: 4.2;
+}
+
+.installer-login-logo-mark path:not(:first-child) {
+  stroke-width: 3.4;
+}
+
+.installer-login-wordmark {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.installer-login-wordmark strong {
+  display: block;
+  color: #f7f4ef;
+  font-size: 2.35rem;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.installer-login-wordmark strong span,
+.installer-login-wordmark small,
+.installer-login-kicker,
+.installer-login-copy h1 span,
+.installer-login-forgot,
+.installer-login-register a {
+  color: #f2bd48;
+}
+
+.installer-login-wordmark small {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.installer-login-copy {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 30rem);
+}
+
+.installer-login-kicker {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.installer-login-copy h1 {
+  margin: 1.35rem 0 0;
+  color: #fff;
+  font-size: clamp(2.25rem, 2.62vw, 3rem);
+  font-weight: 800;
+  line-height: 1.16;
+  letter-spacing: 0;
+}
+
+.installer-login-copy h1 span {
+  display: inline;
+}
+
+.installer-login-description {
+  margin: 1.28rem 0 0;
+  width: min(100%, 30rem);
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 1.05rem;
+  line-height: 1.58;
+}
+
+.installer-login-benefits {
+  margin-top: 2.28rem;
+  display: grid;
+  gap: 1.28rem;
+}
+
+.installer-login-benefits article {
+  display: grid;
+  grid-template-columns: 3.7rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  max-width: 27rem;
+}
+
+.installer-login-benefit-icon {
+  width: 3.45rem;
+  height: 3.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: rgba(201, 145, 38, 0.13);
+  color: #f2bd48;
+}
+
+.installer-login-benefit-icon svg {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+
+.installer-login-benefits strong {
+  display: block;
+  color: #fff;
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.installer-login-benefits p {
+  margin: 0.25rem 0 0;
+  max-width: 20rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.91rem;
+  line-height: 1.45;
+}
+
+.installer-login-right {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 48rem;
+  padding: 2.8rem 2.85rem 8.65rem;
+  background:
+    radial-gradient(38rem 34rem at 50% 28%, rgba(255, 255, 255, 0.038), transparent 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 48%);
+}
+
+.installer-login-card {
+  width: min(100%, 41.2rem);
+  min-height: 48.8rem;
+  padding: 2rem 3.25rem 1.65rem;
+  display: grid;
+  align-content: start;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.9rem;
+  background:
+    radial-gradient(24rem 16rem at 50% 0%, rgba(255, 255, 255, 0.046), transparent 72%),
+    rgba(16, 16, 16, 0.55);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.055) inset,
+    0 2rem 5rem rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(18px);
+}
+
+.installer-login-avatar {
+  width: 4.85rem;
+  height: 4.85rem;
+  margin: 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background:
+    radial-gradient(circle at 50% 34%, rgba(242, 189, 72, 0.12), transparent 62%),
+    rgba(255, 255, 255, 0.042);
+  color: #f2bd48;
+}
+
+.installer-login-avatar svg {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.installer-login-card-head {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.installer-login-card-head h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.78rem;
+  font-weight: 800;
+  line-height: 1.18;
+}
+
+.installer-login-card-head p {
+  margin: 0.72rem 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.02rem;
+  line-height: 1.4;
+}
+
+.installer-login-field {
+  display: grid;
+  gap: 0.68rem;
+  margin-top: 1.65rem;
+}
+
+.installer-login-field + .installer-login-field {
+  margin-top: 1.25rem;
+}
+
+.installer-login-field > span {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.installer-login-input-wrap {
+  min-height: 3.55rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.95rem;
+  padding: 0 1.18rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.45rem;
+  background: rgba(255, 255, 255, 0.034);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 1.1rem 2.2rem rgba(0, 0, 0, 0.14) inset;
+}
+
+.installer-login-input-wrap:focus-within {
+  border-color: rgba(242, 189, 72, 0.72);
+  box-shadow:
+    0 0 0 3px rgba(242, 189, 72, 0.08),
+    0 1.1rem 2.2rem rgba(0, 0, 0, 0.14) inset;
+}
+
+.installer-login-input-wrap > svg {
+  width: 1.38rem;
+  height: 1.38rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.installer-login-input-wrap input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.installer-login-input-wrap input::placeholder {
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.installer-login-eye {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  padding: 0;
+}
+
+.installer-login-eye svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.installer-login-options {
+  margin-top: 1.28rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.installer-login-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.62rem;
+  color: #fff;
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.installer-login-remember input {
+  width: 1.14rem;
+  height: 1.14rem;
+  margin: 0;
+  accent-color: #f2bd48;
+}
+
+.installer-login-forgot {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.installer-login-submit {
+  min-height: 3.65rem;
+  margin-top: 2rem;
+  padding: 0 1.45rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  border: 1px solid rgba(255, 222, 145, 0.62);
+  border-radius: 0.45rem;
+  background: linear-gradient(135deg, #ffdc84 0%, #e9ad44 52%, #d18e27 100%);
+  color: #1b1105;
+  font-size: 1.12rem;
+  font-weight: 800;
+  box-shadow:
+    0 1rem 2.2rem rgba(201, 145, 38, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.32) inset;
+}
+
+.installer-login-submit:hover,
+.installer-login-submit:focus-visible {
+  filter: brightness(1.04);
+}
+
+.installer-login-submit svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.installer-login-divider {
+  margin-top: 1.65rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1.18rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.installer-login-divider span {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.installer-login-divider p {
+  margin: 0;
+  font-size: 0.94rem;
+}
+
+.installer-login-socials {
+  margin-top: 1.22rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.installer-login-socials button {
+  min-height: 3.58rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.72rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.45rem;
+  background: rgba(255, 255, 255, 0.022);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.installer-login-google {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 900;
+  text-shadow:
+    0.08em 0 #4285f4,
+    -0.08em 0 #34a853,
+    0 0.08em #fbbc05,
+    0 -0.08em #ea4335;
+}
+
+.installer-login-apple {
+  width: 1.3rem;
+  height: 1.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.installer-login-apple svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.installer-login-register {
+  margin: 1.55rem 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  text-align: center;
+  font-size: 0.96rem;
+}
+
+.installer-login-register a {
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.installer-login-trust-bar {
+  position: absolute;
+  left: 3.55rem;
+  right: 3.55rem;
+  bottom: 1.1rem;
+  min-height: 6.35rem;
+  padding: 1.18rem 2.2rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  background:
+    radial-gradient(28rem 10rem at 50% 0%, rgba(255, 255, 255, 0.04), transparent 75%),
+    rgba(18, 18, 18, 0.74);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.045) inset,
+    0 1.2rem 3rem rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(16px);
+  z-index: 4;
+}
+
+.installer-login-trust-bar article {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.1rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+}
+
+.installer-login-trust-bar article + article::before {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  top: 18%;
+  bottom: 18%;
+  width: 1px;
+  background: rgba(201, 145, 38, 0.48);
+}
+
+.installer-login-trust-icon {
+  width: 2.8rem;
+  height: 2.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f2bd48;
+}
+
+.installer-login-trust-icon svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.installer-login-trust-bar strong {
+  display: block;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.installer-login-trust-bar p {
+  margin: 0.45rem 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.92rem;
+  line-height: 1.48;
+}
+
+@media (max-width: 1180px) {
+  .installer-login-frame {
+    grid-template-columns: 1fr;
+  }
+
+  .installer-login-left,
+  .installer-login-right {
+    min-height: auto;
+  }
+
+  .installer-login-left {
+    padding: 2.3rem 2.1rem 3rem;
+    gap: 2.3rem;
+  }
+
+  .installer-login-left::after {
+    top: auto;
+    left: 0;
+    width: auto;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(201, 145, 38, 0.1), rgba(201, 145, 38, 0.48), rgba(201, 145, 38, 0.1));
+  }
+
+  .installer-login-worker-photo {
+    width: 38%;
+  }
+
+  .installer-login-copy {
+    width: min(100%, 46rem);
+  }
+
+  .installer-login-copy h1 {
+    max-width: 31rem;
+  }
+
+  .installer-login-benefits {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(100%, 48rem);
+  }
+
+  .installer-login-right {
+    padding: 2.3rem 1.2rem 2.2rem;
+  }
+
+  .installer-login-trust-bar {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    margin: 0 1.2rem 1.2rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .installer-login-page {
+    padding: 0.55rem;
+  }
+
+  .installer-login-frame {
+    min-height: calc(100dvh - 1.1rem);
+    border-radius: 0.85rem;
+  }
+
+  .installer-login-left {
+    padding: 1.35rem;
+  }
+
+  .installer-login-worker-photo {
+    width: 54%;
+    opacity: 0.76;
+  }
+
+  .installer-login-left-overlay {
+    background:
+      linear-gradient(90deg, rgba(5, 5, 5, 0.98) 0%, rgba(5, 5, 5, 0.87) 62%, rgba(5, 5, 5, 0.3) 100%),
+      linear-gradient(180deg, rgba(5, 5, 5, 0.08), rgba(5, 5, 5, 0.78));
+  }
+
+  .installer-login-logo-mark {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .installer-login-wordmark strong {
+    font-size: 1.75rem;
+  }
+
+  .installer-login-copy h1 {
+    font-size: 2.05rem;
+  }
+
+  .installer-login-description {
+    font-size: 0.98rem;
+  }
+
+  .installer-login-benefits {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .installer-login-benefits article {
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+  }
+
+  .installer-login-benefit-icon {
+    width: 3.1rem;
+    height: 3.1rem;
+  }
+
+  .installer-login-right {
+    padding: 1rem 0.8rem;
+  }
+
+  .installer-login-card {
+    min-height: 0;
+    padding: 1.35rem 1rem;
+    border-radius: 0.75rem;
+  }
+
+  .installer-login-card-head h2 {
+    font-size: 1.45rem;
+  }
+
+  .installer-login-card-head p {
+    font-size: 0.94rem;
+  }
+
+  .installer-login-options {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .installer-login-input-wrap,
+  .installer-login-submit,
+  .installer-login-socials button {
+    min-height: 3.35rem;
+  }
+
+  .installer-login-socials,
+  .installer-login-trust-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .installer-login-trust-bar {
+    margin: 0 0.8rem 0.8rem;
+    padding: 1rem;
+    gap: 1.1rem;
+  }
+
+  .installer-login-trust-bar article + article::before {
+    display: none;
+  }
+}
+
 /* -------- Client Login -------- */
 .client-login-page {
   min-height: 100vh;
