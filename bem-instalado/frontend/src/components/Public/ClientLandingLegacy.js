@@ -210,6 +210,21 @@ const DESKTOP_PLATFORM_METRICS = [
   },
 ];
 
+const DESKTOP_STORE_FEATURES = [
+  {
+    icon: 'shield',
+    title: 'Produtos originais',
+  },
+  {
+    icon: 'truck',
+    title: 'Entrega em todo Brasil',
+  },
+  {
+    icon: 'award',
+    title: 'Qualidade garantida',
+  },
+];
+
 const STORE_RATING_FALLBACKS = {
   'Leroy Merlin': '4,8',
   'Novo Ambiente': '4,7',
@@ -1130,7 +1145,9 @@ export default function ClientLanding() {
             <div className="clean-reference-store-layout">
               <div className="clean-reference-store-copy">
                 <div className="clean-reference-panel-head">
-                  <h2 className="clean-reference-store-title-only">Lojas recomendadas</h2>
+                  <h2 className="clean-reference-store-title-only">
+                    Lojas <span className="is-gold">recomendadas</span>
+                  </h2>
                 </div>
               </div>
 
@@ -1282,6 +1299,17 @@ export default function ClientLanding() {
                   <p>As lojas que você cadastrar e ativar no painel do administrador aparecerão aqui automaticamente.</p>
                 </div>
               )}
+
+              <div className="clean-reference-store-benefits" aria-label="Benefícios das lojas recomendadas">
+                {DESKTOP_STORE_FEATURES.map((item) => (
+                  <article className="clean-reference-store-benefit" key={item.title}>
+                    <div className="clean-reference-mini-icon">
+                      <ReferenceHeroIcon name={item.icon} />
+                    </div>
+                    <strong>{item.title}</strong>
+                  </article>
+                ))}
+              </div>
             </div>
           </section>
         )}

@@ -6471,7 +6471,7 @@ body {
 .clean-reference-store-panel {
   position: relative;
   padding: 2.25rem clamp(1.2rem, 2.6vw, 2.8rem) 2.15rem;
-  border: 1px solid rgba(205, 163, 73, 0.2);
+  border: 0;
   border-radius: 36px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.014), transparent 68%),
@@ -6516,6 +6516,11 @@ body {
   font-weight: 650;
   line-height: 0.98;
   letter-spacing: 0;
+}
+
+.clean-reference-store-title-only .is-gold {
+  color: var(--gold-strong);
+  text-shadow: 0 0 18px rgba(205, 163, 73, 0.14);
 }
 
 .clean-reference-panel-head {
@@ -6570,16 +6575,19 @@ body {
 }
 
 .clean-reference-store-benefits {
+  width: min(100%, 46rem);
+  margin: 0.15rem auto 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9rem;
-  margin-top: 0.15rem;
+  justify-items: center;
+  gap: clamp(1.05rem, 2vw, 2.4rem);
 }
 
 .clean-reference-store-benefit {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, max-content);
   align-items: center;
+  justify-content: center;
   gap: 0.72rem;
   color: #fff5dd;
   font-family: 'Poppins', 'Segoe UI', sans-serif;
@@ -6590,6 +6598,7 @@ body {
 
 .clean-reference-store-benefit strong {
   display: block;
+  max-width: 9rem;
   font-weight: 500;
 }
 
@@ -6637,7 +6646,7 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 14px;
-  border: 1px solid rgba(205, 163, 73, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
@@ -6737,7 +6746,7 @@ body {
   display: grid;
   align-content: start;
   gap: 0.92rem;
-  border: 1px solid rgba(205, 163, 73, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 22px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 70%),
@@ -6852,7 +6861,7 @@ body {
   display: grid;
   place-items: center;
   gap: 0.6rem;
-  border: 1px dashed rgba(205, 163, 73, 0.28);
+  border: 0;
   border-radius: 22px;
   background:
     radial-gradient(circle at top, rgba(205, 163, 73, 0.08), transparent 56%),
