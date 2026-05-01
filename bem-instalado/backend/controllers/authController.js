@@ -23,6 +23,7 @@ const OAUTH_STATE_EXPIRES_IN = '10m';
 const OAUTH_APPLE_AUDIENCE = 'https://appleid.apple.com';
 const OAUTH_APPLE_ISSUER = 'https://appleid.apple.com';
 const OAUTH_ALLOWED_ROLES = new Set(['installer', 'client']);
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 const OAUTH_REDIRECT_ERROR_CODES = new Set([
   'account_type_mismatch',
   'access_denied',
@@ -96,18 +97,43 @@ function normalizeUrlPathSlashes(rawUrl) {
   }
 }
 
-function getBackendBaseUrl(req) {
-  const configured = normalizeBaseUrl(process.env.APP_URL || process.env.BACKEND_URL);
+function isLocalHost(hostname) {
+  return LOCAL_HOSTS.has(String(hostname || '').trim().toLowerCase());
+}
 
-  if (configured) {
-    return configured;
-  }
-
+function getRequestBaseUrl(req) {
   return `${req.protocol}://${req.get('host')}`;
 }
 
+function shouldUseConfiguredPublicUrl(configuredUrl, req) {
+  try {
+    const configured = new URL(configuredUrl);
+    const request = new URL(getRequestBaseUrl(req));
+
+    return !(isLocalHost(configured.hostname) && !isLocalHost(request.hostname));
+  } catch (_error) {
+    return true;
+  }
+}
+
+function getBackendBaseUrl(req) {
+  const configured = normalizeBaseUrl(process.env.APP_URL || process.env.BACKEND_URL);
+
+  if (configured && shouldUseConfiguredPublicUrl(configured, req)) {
+    return configured;
+  }
+
+  return getRequestBaseUrl(req);
+}
+
 function getFrontendBaseUrl(req) {
-  return normalizeBaseUrl(process.env.FRONTEND_URL || process.env.APP_URL) || getBackendBaseUrl(req);
+  const configured = normalizeBaseUrl(process.env.FRONTEND_URL || process.env.APP_URL);
+
+  if (configured && shouldUseConfiguredPublicUrl(configured, req)) {
+    return configured;
+  }
+
+  return getRequestBaseUrl(req);
 }
 
 function getOAuthCallbackUrl(req, provider) {
@@ -118,7 +144,7 @@ function getOAuthCallbackUrl(req, provider) {
     provider === 'apple' ? 'APPLE_REDIRECT_URI' : 'GOOGLE_REDIRECT_URI'
   );
 
-  if (configured) {
+  if (configured && shouldUseConfiguredPublicUrl(configured, req)) {
     return normalizeUrlPathSlashes(configured);
   }
 

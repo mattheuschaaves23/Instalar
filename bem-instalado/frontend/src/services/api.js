@@ -20,7 +20,7 @@ function normalizeApiUrl(rawUrl) {
       isLocalHost(parsedUrl.hostname) &&
       !isLocalHost(window.location.hostname)
     ) {
-      parsedUrl.hostname = window.location.hostname;
+      return `${window.location.origin}${parsedUrl.pathname}${parsedUrl.search}`.replace(/\/$/, '');
     }
 
     return parsedUrl.toString().replace(/\/$/, '');
