@@ -62,6 +62,14 @@ function getLoginRoute(pathname) {
   return path.startsWith('/cliente') || path.startsWith('/installers') ? '/cliente/entrar' : '/instalador/entrar';
 }
 
+function redirectTo(targetPath) {
+  if (!targetPath || window.location.pathname === targetPath) {
+    return;
+  }
+
+  window.location.replace(targetPath);
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
 
@@ -82,11 +90,11 @@ api.interceptors.response.use(
     if (typeof window !== 'undefined') {
       if (status === 401 && !isLoginRoute(window.location.pathname)) {
         localStorage.removeItem('token');
-        window.location.href = getLoginRoute(window.location.pathname);
+        redirectTo(getLoginRoute(window.location.pathname));
       }
 
       if (status === 403 && code === 'ACCOUNT_TYPE_FORBIDDEN') {
-        window.location.href = error.response?.data?.account_type === 'client' ? '/cliente' : '/dashboard';
+        redirectTo(error.response?.data?.account_type === 'client' ? '/cliente' : '/dashboard');
       }
 
       if (
@@ -94,7 +102,7 @@ api.interceptors.response.use(
         (code === 'SUBSCRIPTION_INACTIVE' || message.toLowerCase().includes('assinatura inativa')) &&
         window.location.pathname !== '/subscription'
       ) {
-        window.location.href = '/subscription';
+        redirectTo('/subscription');
       }
     }
 
