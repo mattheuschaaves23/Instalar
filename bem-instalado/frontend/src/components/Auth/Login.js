@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { startSocialLogin } from '../../services/auth';
+import { clearOAuthErrorFromUrl, getOAuthErrorMessage } from '../../utils/oauthMessages';
 
 function InstallerLoginLogoMark() {
   return (
@@ -194,7 +195,8 @@ export default function Login() {
     const error = new URLSearchParams(window.location.search).get('oauth_error');
 
     if (error) {
-      toast.error('Não foi possível entrar com essa conta social.');
+      toast.error(getOAuthErrorMessage(error));
+      clearOAuthErrorFromUrl();
     }
   }, []);
 

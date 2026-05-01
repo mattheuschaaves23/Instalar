@@ -536,6 +536,8 @@ exports.startOAuth = async (req, res) => {
         response_type: 'code',
         scope: 'openid email profile',
         prompt: 'select_account',
+        access_type: 'offline',
+        include_granted_scopes: 'true',
         state,
       });
 
