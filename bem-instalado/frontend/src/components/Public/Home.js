@@ -342,7 +342,6 @@ function getRegionLabel(installer) {
 export default function Home() {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
-  const isClientUser = user?.account_type === 'client';
   const accountHomePath = user?.account_type === 'client' ? '/cliente' : '/dashboard';
   const accountLinkLabel = user?.account_type === 'client' ? 'Minha conta' : 'Meu painel';
   const [filters, setFilters] = useState({ search: '', city: '', state: '' });
@@ -620,11 +619,9 @@ export default function Home() {
                 <Link className="client-app-chip-link" to={accountHomePath}>
                   {accountLinkLabel}
                 </Link>
-                {isClientUser ? (
-                  <button className="client-app-chip-link client-app-logout-button" onClick={handleLogout} type="button">
-                    Sair
-                  </button>
-                ) : null}
+                <button className="client-app-chip-link client-app-logout-button" onClick={handleLogout} type="button">
+                  Sair
+                </button>
               </>
             ) : (
               <Link className="client-app-chip-link" to="/cliente/entrar">
@@ -1036,12 +1033,10 @@ export default function Home() {
               <AppIcon name="profile" />
               <span>Perfil</span>
             </Link>
-            {isClientUser ? (
-              <button onClick={handleLogout} type="button">
-                <AppIcon name="logout" />
-                <span>Sair</span>
-              </button>
-            ) : null}
+            <button onClick={handleLogout} type="button">
+              <AppIcon name="logout" />
+              <span>Sair</span>
+            </button>
           </>
         ) : (
           <Link to="/instalador/entrar">

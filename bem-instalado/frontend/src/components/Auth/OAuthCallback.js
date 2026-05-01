@@ -31,7 +31,7 @@ function resolveNextPath(next, profile) {
     return nextPath === '/cliente' || nextPath.startsWith('/installers/') ? nextPath : fallback;
   }
 
-  return nextPath.startsWith('/cliente') || nextPath.startsWith('/installers/') ? fallback : nextPath;
+  return nextPath;
 }
 
 export default function OAuthCallback() {

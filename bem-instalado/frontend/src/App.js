@@ -33,7 +33,7 @@ export default function App() {
         <Route element={<Navigate replace to="/" />} path="/register" />
         <Route element={<Register />} path="/instalador/cadastro" />
 
-        <Route element={<ProtectedRoute allowedAccountTypes={['client']} loginPath="/cliente/entrar" />}>
+        <Route element={<ProtectedRoute allowedAccountTypes={['client', 'installer']} loginPath="/cliente/entrar" />}>
           <Route element={<Home />} path="/cliente" />
           <Route element={<InstallerProfile />} path="/installers/:id" />
         </Route>
