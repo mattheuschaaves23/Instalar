@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -159,6 +159,14 @@ function AppIcon({ name, className = '' }) {
         <svg {...commonProps}>
           <circle cx="12" cy="8.1" r="3.2" />
           <path d="M5 20a7 7 0 0 1 14 0" />
+        </svg>
+      );
+    case 'logout':
+      return (
+        <svg {...commonProps}>
+          <path d="M9 21H5.8A1.8 1.8 0 0 1 4 19.2V4.8A1.8 1.8 0 0 1 5.8 3H9" />
+          <path d="M15.5 8.5 19 12l-3.5 3.5" />
+          <path d="M19 12H9" />
         </svg>
       );
     case 'check-badge':
@@ -332,7 +340,9 @@ function getRegionLabel(installer) {
 }
 
 export default function Home() {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+  const isClientUser = user?.account_type === 'client';
   const accountHomePath = user?.account_type === 'client' ? '/cliente' : '/dashboard';
   const accountLinkLabel = user?.account_type === 'client' ? 'Minha conta' : 'Meu painel';
   const [filters, setFilters] = useState({ search: '', city: '', state: '' });
@@ -583,6 +593,12 @@ export default function Home() {
     setQuickFilter(QUICK_FILTER_OPTIONS[nextIndex].value);
   };
 
+  const handleLogout = () => {
+    logout();
+    toast.success('Voce saiu da conta.');
+    navigate('/cliente/entrar', { replace: true });
+  };
+
   return (
     <div className="client-app-page" id="top">
       <div className="client-app-shell">
@@ -600,9 +616,16 @@ export default function Home() {
               <AppIcon name="bell" />
             </button>
             {user ? (
-              <Link className="client-app-chip-link" to={accountHomePath}>
-                {accountLinkLabel}
-              </Link>
+              <>
+                <Link className="client-app-chip-link" to={accountHomePath}>
+                  {accountLinkLabel}
+                </Link>
+                {isClientUser ? (
+                  <button className="client-app-chip-link client-app-logout-button" onClick={handleLogout} type="button">
+                    Sair
+                  </button>
+                ) : null}
+              </>
             ) : (
               <Link className="client-app-chip-link" to="/cliente/entrar">
                 Entrar
@@ -1008,10 +1031,18 @@ export default function Home() {
           <span>Mensagens</span>
         </a>
         {user ? (
-          <Link to={accountHomePath}>
-            <AppIcon name="profile" />
-            <span>Perfil</span>
-          </Link>
+          <>
+            <Link to={accountHomePath}>
+              <AppIcon name="profile" />
+              <span>Perfil</span>
+            </Link>
+            {isClientUser ? (
+              <button onClick={handleLogout} type="button">
+                <AppIcon name="logout" />
+                <span>Sair</span>
+              </button>
+            ) : null}
+          </>
         ) : (
           <Link to="/instalador/entrar">
             <AppIcon name="profile" />

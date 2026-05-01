@@ -11207,6 +11207,12 @@ body {
   background: rgba(255, 255, 255, 0.025);
   font-size: 0.92rem;
   font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.client-app-logout-button {
+  color: var(--gold);
 }
 
 .client-app-hero {
@@ -12160,7 +12166,7 @@ body {
     bottom: 0.55rem;
     z-index: 40;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 0.25rem;
     padding: 0.45rem 0.45rem calc(0.55rem + env(safe-area-inset-bottom, 0px));
     border-radius: 22px;
@@ -12173,9 +12179,12 @@ body {
       0 0 0 1px rgba(205, 163, 73, 0.08) inset;
   }
 
-  .client-app-mobile-dock a {
+  .client-app-mobile-dock a,
+  .client-app-mobile-dock button {
     min-height: 3.35rem;
     border-radius: 18px;
+    border: 0;
+    background: transparent;
     text-decoration: none;
     color: rgba(255, 247, 233, 0.68);
     display: grid;
@@ -12183,6 +12192,8 @@ body {
     align-content: center;
     gap: 0.25rem;
     font-size: 0.7rem;
+    font-family: inherit;
+    cursor: pointer;
   }
 
   .client-app-mobile-dock svg {
