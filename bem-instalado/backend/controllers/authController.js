@@ -24,6 +24,7 @@ const OAUTH_APPLE_AUDIENCE = 'https://appleid.apple.com';
 const OAUTH_APPLE_ISSUER = 'https://appleid.apple.com';
 const OAUTH_ALLOWED_ROLES = new Set(['installer', 'client']);
 const OAUTH_REDIRECT_ERROR_CODES = new Set([
+  'account_type_mismatch',
   'access_denied',
   'apple_id_token_missing',
   'apple_key_not_found',
@@ -127,6 +128,15 @@ function getOAuthCallbackUrl(req, provider) {
 function normalizeOAuthRole(value) {
   const role = String(value || '').trim().toLowerCase();
   return OAUTH_ALLOWED_ROLES.has(role) ? role : 'installer';
+}
+
+function normalizeAccountType(value) {
+  const accountType = String(value || '').trim().toLowerCase();
+  return OAUTH_ALLOWED_ROLES.has(accountType) ? accountType : '';
+}
+
+function getUserAccountType(user) {
+  return normalizeAccountType(user?.account_type) || 'installer';
 }
 
 function getDefaultNextPath(role) {
@@ -240,6 +250,7 @@ function sanitizeUser(user) {
 
   return {
     id: user.id,
+    account_type: getUserAccountType(user),
     name: user.name,
     email: user.email,
     phone: user.phone,
@@ -262,6 +273,7 @@ async function fetchSanitizedUserById(userId) {
     `
       SELECT
         id,
+        COALESCE(account_type, 'installer') AS account_type,
         name,
         email,
         phone,
@@ -321,8 +333,20 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
   const existingUserResult = await pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [normalizedEmail]);
   let user = existingUserResult.rows[0];
   const shouldGrantOwnerAdmin = isOwnerAdminEmail(normalizedEmail);
+  const accountType = normalizeOAuthRole(role);
 
   if (user) {
+    const existingAccountType = normalizeAccountType(user.account_type);
+    const canAdoptAccountType = !existingAccountType && user.auth_provider === provider && user.auth_provider_id === providerSubject;
+
+    if (existingAccountType && existingAccountType !== accountType) {
+      throw new Error('account_type_mismatch');
+    }
+
+    if (!existingAccountType && accountType === 'client' && !canAdoptAccountType) {
+      throw new Error('account_type_mismatch');
+    }
+
     const updatedUser = await pool.query(
       `
         UPDATE users
@@ -332,11 +356,13 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
           email_verified_at = COALESCE(email_verified_at, NOW()),
           last_login_at = NOW(),
           is_admin = CASE WHEN $4 THEN TRUE ELSE is_admin END,
+          account_type = COALESCE(NULLIF(account_type, ''), $5),
+          public_profile = CASE WHEN $5 = 'client' THEN FALSE ELSE public_profile END,
           updated_at = NOW()
         WHERE id = $1
         RETURNING *
       `,
-      [user.id, provider, providerSubject, shouldGrantOwnerAdmin]
+      [user.id, provider, providerSubject, shouldGrantOwnerAdmin, accountType]
     );
     user = updatedUser.rows[0] || user;
   } else {
@@ -349,21 +375,25 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
           name,
           email,
           password,
+          account_type,
           auth_provider,
           auth_provider_id,
           email_verified_at,
           last_login_at,
+          public_profile,
           is_admin
         )
-        VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), $6)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), $7, $8)
         RETURNING *
       `,
-      [displayName, normalizedEmail, generatedPassword, provider, providerSubject, shouldGrantOwnerAdmin]
+      [displayName, normalizedEmail, generatedPassword, accountType, provider, providerSubject, accountType === 'installer', shouldGrantOwnerAdmin]
     );
     user = createdUser.rows[0];
   }
 
-  await ensureUserSubscription(user.id);
+  if (getUserAccountType(user) === 'installer') {
+    await ensureUserSubscription(user.id);
+  }
 
   await logAudit({
     actorUserId: user.id,
@@ -373,7 +403,7 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
     metadata: {
       email: user.email,
       provider,
-      role,
+      role: accountType,
     },
     req,
   });
@@ -420,10 +450,11 @@ exports.register = async (req, res) => {
 
     const { rows } = await pool.query(
       `
-        INSERT INTO users (name, email, password, phone, business_name, is_admin)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO users (name, email, password, phone, business_name, account_type, is_admin)
+        VALUES ($1, $2, $3, $4, $5, 'installer', $6)
         RETURNING
           id,
+          COALESCE(account_type, 'installer') AS account_type,
           name,
           email,
           phone,
@@ -481,6 +512,7 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password, twoFactorToken } = req.body;
+    const expectedAccountType = normalizeAccountType(req.body?.account_type || req.body?.role);
     const normalizedEmail = normalizeEmail(email);
     const { rows } = await pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [normalizedEmail]);
     let user = rows[0];
@@ -495,6 +527,29 @@ exports.login = async (req, res) => {
         req,
       });
       return res.status(401).json({ error: 'Credenciais inválidas.' });
+    }
+
+    if (expectedAccountType && getUserAccountType(user) !== expectedAccountType) {
+      await logAudit({
+        actorUserId: user.id,
+        action: 'auth.login_failed_account_type_mismatch',
+        entityType: 'user',
+        entityId: user.id,
+        metadata: {
+          email: user.email,
+          expectedAccountType,
+          accountType: getUserAccountType(user),
+        },
+        req,
+      });
+
+      return res.status(403).json({
+        error: expectedAccountType === 'client'
+          ? 'Esta conta pertence a um instalador. Entre pela tela do instalador.'
+          : 'Esta conta pertence a um cliente. Entre pela tela do cliente.',
+        code: 'ACCOUNT_TYPE_MISMATCH',
+        account_type: getUserAccountType(user),
+      });
     }
 
     const validPassword = await bcrypt.compare(password || '', user.password);

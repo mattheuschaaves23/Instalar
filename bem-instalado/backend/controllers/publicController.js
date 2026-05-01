@@ -229,7 +229,8 @@ async function getTopInstallers(limit = 5) {
           FROM schedules
           GROUP BY user_id
         ) schedule_stats ON schedule_stats.user_id = u.id
-        WHERE COALESCE(u.public_profile, true) = true
+        WHERE COALESCE(u.account_type, 'installer') = 'installer'
+          AND COALESCE(u.public_profile, true) = true
           AND (
             COALESCE(reviews.review_count, 0) > 0
             OR COALESCE(schedule_stats.completed_unique_clients, 0) > 0
@@ -323,7 +324,8 @@ exports.getInstallers = async (req, res) => {
           FROM schedules
           GROUP BY user_id
         ) schedule_stats ON schedule_stats.user_id = u.id
-        WHERE COALESCE(u.public_profile, true) = true
+        WHERE COALESCE(u.account_type, 'installer') = 'installer'
+          AND COALESCE(u.public_profile, true) = true
           AND ($1 = '%%' OR (
             COALESCE(u.business_name, '') ILIKE $1
             OR COALESCE(u.name, '') ILIKE $1
@@ -361,7 +363,8 @@ exports.getInstallers = async (req, res) => {
             NULLIF(TRIM(u.state), '') AS state,
             COALESCE(u.featured_installer, false) AS featured_installer
           FROM users u
-          WHERE COALESCE(u.public_profile, true) = true
+          WHERE COALESCE(u.account_type, 'installer') = 'installer'
+            AND COALESCE(u.public_profile, true) = true
             AND ($1 = '%%' OR (
               COALESCE(u.business_name, '') ILIKE $1
               OR COALESCE(u.name, '') ILIKE $1
@@ -453,7 +456,8 @@ exports.getInstallers = async (req, res) => {
             COALESCE(NULLIF(u.business_name, ''), u.name) AS installer_name
           FROM installer_reviews ir
           JOIN users u ON u.id = ir.installer_id
-          WHERE COALESCE(u.public_profile, true) = true
+          WHERE COALESCE(u.account_type, 'installer') = 'installer'
+            AND COALESCE(u.public_profile, true) = true
           ORDER BY ir.created_at DESC
           LIMIT 6
         `
@@ -631,6 +635,7 @@ exports.getInstallerProfile = async (req, res) => {
             GROUP BY user_id
           ) schedule_stats ON schedule_stats.user_id = u.id
           WHERE u.id = $1
+            AND COALESCE(u.account_type, 'installer') = 'installer'
             AND COALESCE(u.public_profile, true) = true
         `,
         [installerId]
@@ -749,7 +754,9 @@ const legacyCreateReview = async (req, res) => {
       `
         SELECT id
         FROM users
-        WHERE id = $1 AND COALESCE(public_profile, true) = true
+        WHERE id = $1
+          AND COALESCE(account_type, 'installer') = 'installer'
+          AND COALESCE(public_profile, true) = true
       `,
       [installerId]
     );
@@ -850,7 +857,9 @@ exports.createReview = async (req, res) => {
       `
         SELECT id
         FROM users
-        WHERE id = $1 AND COALESCE(public_profile, true) = true
+        WHERE id = $1
+          AND COALESCE(account_type, 'installer') = 'installer'
+          AND COALESCE(public_profile, true) = true
       `,
       [installerId]
     );

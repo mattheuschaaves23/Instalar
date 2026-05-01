@@ -263,7 +263,8 @@ async function getTopInstallers(limit = 5) {
           FROM schedules
           GROUP BY user_id
         ) schedule_stats ON schedule_stats.user_id = u.id
-        WHERE COALESCE(u.public_profile, true) = true
+        WHERE COALESCE(u.account_type, 'installer') = 'installer'
+          AND COALESCE(u.public_profile, true) = true
           AND (
             COALESCE(reviews.review_count, 0) > 0
             OR COALESCE(schedule_stats.completed_unique_clients, 0) > 0
@@ -287,6 +288,7 @@ exports.getProfile = async (req, res) => {
       `
         SELECT
           id,
+          COALESCE(account_type, 'installer') AS account_type,
           name,
           email,
           phone,
@@ -421,6 +423,7 @@ exports.updateProfile = async (req, res) => {
         WHERE id = $32
         RETURNING
           id,
+          COALESCE(account_type, 'installer') AS account_type,
           name,
           email,
           phone,
@@ -775,7 +778,8 @@ exports.getDashboard = async (req, res) => {
                 FROM schedules
                 GROUP BY user_id
               ) schedule_stats ON schedule_stats.user_id = u.id
-              WHERE COALESCE(u.public_profile, true) = true
+              WHERE COALESCE(u.account_type, 'installer') = 'installer'
+                AND COALESCE(u.public_profile, true) = true
                 AND (
                   COALESCE(reviews.review_count, 0) > 0
                   OR COALESCE(schedule_stats.completed_unique_clients, 0) > 0

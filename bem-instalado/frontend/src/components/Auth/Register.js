@@ -73,6 +73,7 @@ export default function Register() {
         email: form.email,
         password: form.password,
         phone: form.phone,
+        account_type: 'installer',
       });
 
       toast.success('Conta criada. Agora finalize a assinatura para liberar o painel completo.');

@@ -162,7 +162,7 @@ export default function ClientLogin() {
     event.preventDefault();
 
     try {
-      const result = await login(form);
+      const result = await login({ ...form, account_type: 'client' });
 
       if (result.twoFactorRequired) {
         setNeeds2FA(true);

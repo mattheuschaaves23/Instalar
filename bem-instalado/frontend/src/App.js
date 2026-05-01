@@ -26,16 +26,19 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<ClientLanding />} path="/" />
-        <Route element={<Home />} path="/cliente" />
         <Route element={<ClientLogin />} path="/cliente/entrar" />
-        <Route element={<InstallerProfile />} path="/installers/:id" />
         <Route element={<ClientLogin />} path="/login" />
         <Route element={<Login />} path="/instalador/entrar" />
         <Route element={<OAuthCallback />} path="/auth/social/callback" />
         <Route element={<Navigate replace to="/" />} path="/register" />
         <Route element={<Register />} path="/instalador/cadastro" />
 
-        <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedRoute allowedAccountTypes={['client']} loginPath="/cliente/entrar" />}>
+          <Route element={<Home />} path="/cliente" />
+          <Route element={<InstallerProfile />} path="/installers/:id" />
+        </Route>
+
+        <Route element={<ProtectedRoute allowedAccountTypes={['installer']} loginPath="/instalador/entrar" />}>
           <Route element={<Layout />}>
             <Route element={<Profile />} path="/profile" />
             <Route element={<Subscription />} path="/subscription" />

@@ -57,6 +57,11 @@ function isLoginRoute(pathname) {
   );
 }
 
+function getLoginRoute(pathname) {
+  const path = String(pathname || '');
+  return path.startsWith('/cliente') || path.startsWith('/installers') ? '/cliente/entrar' : '/instalador/entrar';
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
 
@@ -77,7 +82,11 @@ api.interceptors.response.use(
     if (typeof window !== 'undefined') {
       if (status === 401 && !isLoginRoute(window.location.pathname)) {
         localStorage.removeItem('token');
-        window.location.href = '/instalador/entrar';
+        window.location.href = getLoginRoute(window.location.pathname);
+      }
+
+      if (status === 403 && code === 'ACCOUNT_TYPE_FORBIDDEN') {
+        window.location.href = error.response?.data?.account_type === 'client' ? '/cliente' : '/dashboard';
       }
 
       if (

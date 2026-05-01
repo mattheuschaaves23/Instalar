@@ -1,17 +1,18 @@
 const express = require('express');
 const supportController = require('../controllers/supportController');
 const authMiddleware = require('../middleware/authMiddleware');
+const requireAccountType = require('../middleware/accountTypeMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
 
 const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get('/me', supportController.getMyConversation);
-router.post('/messages', supportController.sendMessage);
-router.post('/me/read', supportController.markMyConversationAsRead);
-router.get('/ideas/me', supportController.getMyIdeas);
-router.post('/ideas', supportController.createIdea);
+router.get('/me', requireAccountType('installer'), supportController.getMyConversation);
+router.post('/messages', requireAccountType('installer'), supportController.sendMessage);
+router.post('/me/read', requireAccountType('installer'), supportController.markMyConversationAsRead);
+router.get('/ideas/me', requireAccountType('installer'), supportController.getMyIdeas);
+router.post('/ideas', requireAccountType('installer'), supportController.createIdea);
 
 router.get('/admin/conversations', adminMiddleware, supportController.getAdminConversations);
 router.get('/admin/conversations/:conversationId/messages', adminMiddleware, supportController.getAdminConversationMessages);

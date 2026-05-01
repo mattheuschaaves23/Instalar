@@ -333,6 +333,8 @@ function getRegionLabel(installer) {
 
 export default function Home() {
   const { user } = useAuth();
+  const accountHomePath = user?.account_type === 'client' ? '/cliente' : '/dashboard';
+  const accountLinkLabel = user?.account_type === 'client' ? 'Minha conta' : 'Meu painel';
   const [filters, setFilters] = useState({ search: '', city: '', state: '' });
   const [directory, setDirectory] = useState({ installers: [], ranking: [], reviews: [], marketplace: null });
   const [loading, setLoading] = useState(true);
@@ -598,8 +600,8 @@ export default function Home() {
               <AppIcon name="bell" />
             </button>
             {user ? (
-              <Link className="client-app-chip-link" to="/dashboard">
-                Meu painel
+              <Link className="client-app-chip-link" to={accountHomePath}>
+                {accountLinkLabel}
               </Link>
             ) : (
               <Link className="client-app-chip-link" to="/cliente/entrar">
@@ -1006,7 +1008,7 @@ export default function Home() {
           <span>Mensagens</span>
         </a>
         {user ? (
-          <Link to="/dashboard">
+          <Link to={accountHomePath}>
             <AppIcon name="profile" />
             <span>Perfil</span>
           </Link>

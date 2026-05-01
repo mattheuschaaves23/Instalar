@@ -143,6 +143,15 @@ async function isAdmin(userId) {
 
 module.exports = async (req, res, next) => {
   try {
+    if (req.user?.account_type === 'client') {
+      return res.status(403).json({
+        error: 'Acesso restrito a instaladores.',
+        code: 'ACCOUNT_TYPE_FORBIDDEN',
+        account_type: 'client',
+        required_account_type: 'installer',
+      });
+    }
+
     if (await isAdmin(req.userId)) {
       return next();
     }

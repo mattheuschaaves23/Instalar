@@ -1,4 +1,5 @@
 const OAUTH_ERROR_MESSAGES = {
+  account_type_mismatch: 'Esse e-mail ja pertence ao outro tipo de conta. Entre pela tela correta.',
   google_not_configured:
     'Login com Google ainda nao esta configurado. Preencha GOOGLE_OAUTH_CLIENT_ID e GOOGLE_OAUTH_CLIENT_SECRET no backend.',
   apple_not_configured: 'Login com Apple ainda nao esta configurado. Preencha as chaves da Apple no backend.',

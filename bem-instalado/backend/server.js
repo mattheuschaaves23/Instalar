@@ -349,6 +349,7 @@ app.use((_req, res) => {
 async function ensureRuntimeSchema() {
   const statements = [
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type VARCHAR(20)',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(40)',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider_id VARCHAR(180)',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP',

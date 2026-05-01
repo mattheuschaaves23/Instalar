@@ -208,7 +208,7 @@ export default function Login() {
     event.preventDefault();
 
     try {
-      const result = await login(form);
+      const result = await login({ ...form, account_type: 'installer' });
 
       if (result.twoFactorRequired) {
         setNeeds2FA(true);

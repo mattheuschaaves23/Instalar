@@ -1,7 +1,16 @@
-﻿import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-export default function ProtectedRoute() {
+function getAccountType(user) {
+  return user?.account_type === 'client' ? 'client' : 'installer';
+}
+
+function getHomePath(user) {
+  return getAccountType(user) === 'client' ? '/cliente' : '/dashboard';
+}
+
+export default function ProtectedRoute({ allowedAccountTypes = ['installer'], loginPath = '/instalador/entrar' }) {
+  const location = useLocation();
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -9,14 +18,22 @@ export default function ProtectedRoute() {
       <div className="auth-scene flex min-h-screen items-center justify-center px-6">
         <div className="lux-panel fade-up max-w-lg p-8 text-center">
           <p className="eyebrow">InstaLar</p>
-          <h1 className="page-title mt-4 text-[3rem]">Abrindo seu painel</h1>
+          <h1 className="page-title mt-4 text-[3rem]">Abrindo seu acesso</h1>
           <p className="page-copy mt-4">
-            Estamos preparando seus clientes, orçamentos e agenda para a próxima instalação.
+            Estamos validando sua conta antes de liberar a proxima tela.
           </p>
         </div>
       </div>
     );
   }
 
-  return user ? <Outlet /> : <Navigate replace to="/instalador/entrar" />;
+  if (!user) {
+    return <Navigate replace state={{ from: location.pathname }} to={loginPath} />;
+  }
+
+  if (allowedAccountTypes.length > 0 && !allowedAccountTypes.includes(getAccountType(user))) {
+    return <Navigate replace to={getHomePath(user)} />;
+  }
+
+  return <Outlet />;
 }
