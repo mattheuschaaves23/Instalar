@@ -23,6 +23,28 @@ const OAUTH_STATE_EXPIRES_IN = '10m';
 const OAUTH_APPLE_AUDIENCE = 'https://appleid.apple.com';
 const OAUTH_APPLE_ISSUER = 'https://appleid.apple.com';
 const OAUTH_ALLOWED_ROLES = new Set(['installer', 'client']);
+const OAUTH_REDIRECT_ERROR_CODES = new Set([
+  'access_denied',
+  'apple_id_token_missing',
+  'apple_key_not_found',
+  'apple_keys_fetch_failed',
+  'apple_not_configured',
+  'apple_token_exchange_failed',
+  'code_missing',
+  'google_audience_invalid',
+  'google_id_token_missing',
+  'google_not_configured',
+  'google_token_exchange_failed',
+  'google_token_verify_failed',
+  'invalid_provider',
+  'oauth_email_missing',
+  'oauth_email_unverified',
+  'oauth_subject_missing',
+  'oauth_state_expired',
+  'oauth_state_invalid',
+  'oauth_start_failed',
+  'state_provider_mismatch',
+]);
 
 function signToken(id) {
   return jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
@@ -124,6 +146,24 @@ function redirectOAuthResult(req, res, { token, next, role, error }) {
   });
 
   return res.redirect(`${frontendUrl}${loginPath}?${query.toString()}`);
+}
+
+function getOAuthRedirectErrorCode(error) {
+  const code = String(error?.message || error || '').trim();
+
+  if (OAUTH_REDIRECT_ERROR_CODES.has(code)) {
+    return code;
+  }
+
+  if (code === 'jwt expired') {
+    return 'oauth_state_expired';
+  }
+
+  if (code.includes('jwt') || code.includes('invalid signature')) {
+    return 'oauth_state_invalid';
+  }
+
+  return 'oauth_failed';
 }
 
 function normalizeProvider(provider) {
@@ -581,6 +621,12 @@ async function exchangeGoogleCode(req, code) {
   });
 
   if (!tokenResponse.ok) {
+    const details = await tokenResponse.text().catch(() => '');
+    console.error('Google OAuth token exchange failed', {
+      status: tokenResponse.status,
+      redirectUri,
+      details: details.slice(0, 500),
+    });
     throw new Error('google_token_exchange_failed');
   }
 
@@ -741,6 +787,14 @@ exports.handleOAuthCallback = async (req, res) => {
       next,
     });
   } catch (error) {
+    const redirectError = getOAuthRedirectErrorCode(error);
+
+    console.error('OAuth login failed', {
+      error: error.message,
+      redirectError,
+      role,
+    });
+
     await logAudit({
       actorUserId: null,
       action: 'auth.oauth_login_failed',
@@ -752,7 +806,7 @@ exports.handleOAuthCallback = async (req, res) => {
       req,
     }).catch(() => null);
 
-    return redirectOAuthResult(req, res, { role, next, error: 'oauth_failed' });
+    return redirectOAuthResult(req, res, { role, next, error: redirectError });
   }
 };
 
