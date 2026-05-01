@@ -122,36 +122,38 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     return NAV_GROUPS;
   }, [user?.is_admin]);
 
-  const [openGroups, setOpenGroups] = useState(() =>
-    Object.fromEntries(groups.map((group) => [group.key, group.key !== 'account']))
-  );
+  const [openGroups, setOpenGroups] = useState({});
 
   useEffect(() => {
-    setOpenGroups((current) => {
-      const next = { ...current };
+    if (!isOpen || typeof document === 'undefined') {
+      return undefined;
+    }
 
-      groups.forEach((group) => {
-        const hasActiveItem = group.items.some((item) => isItemActive(item, location));
-        if (hasActiveItem) {
-          next[group.key] = true;
-        } else if (!(group.key in next)) {
-          next[group.key] = group.key !== 'account';
-        }
-      });
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
 
-      return next;
-    });
-  }, [groups, location]);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
 
   const toggleGroup = (groupKey) => {
     setOpenGroups((current) => ({ ...current, [groupKey]: !current[groupKey] }));
   };
 
   return (
-    <aside
-      className={`sidebar-shell ${isOpen ? 'block' : 'hidden'} border-b border-[var(--line)] bg-[rgba(9,8,7,0.94)] md:block md:w-[324px] md:border-b-0 md:border-r`}
-    >
-      <div className="flex min-h-full flex-col p-4 sm:p-5 md:min-h-screen md:gap-1">
+    <>
+      <button
+        aria-label="Fechar menu"
+        className={`sidebar-mobile-backdrop ${isOpen ? 'is-open' : ''}`}
+        onClick={onClose}
+        type="button"
+      />
+
+      <aside
+        className={`sidebar-shell ${isOpen ? 'is-open' : ''} border-b border-[var(--line)] bg-[rgba(9,8,7,0.94)] md:w-[324px] md:border-b-0 md:border-r`}
+      >
+        <div className="flex min-h-full flex-col p-4 sm:p-5 md:min-h-screen md:gap-1">
         <div className="mb-4 flex items-center justify-between md:hidden">
           <p className="eyebrow">Navegação</p>
           <button className="ghost-button !min-h-0 !px-3 !py-2 text-xs" onClick={onClose} type="button">
@@ -249,7 +251,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
             );
           })}
         </nav>
-      </div>
-    </aside>
+        </div>
+      </aside>
+    </>
   );
 }

@@ -2563,6 +2563,62 @@ body {
     rgba(8, 8, 7, 0.95);
 }
 
+.sidebar-mobile-backdrop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .sidebar-shell {
+    position: sticky;
+    top: 0;
+    flex: 0 0 324px;
+    height: 100vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .sidebar-mobile-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 48;
+    display: block;
+    border: 0;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    pointer-events: none;
+    backdrop-filter: blur(3px);
+    transition: opacity 220ms ease;
+  }
+
+  .sidebar-mobile-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar-shell {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 49;
+    width: min(88vw, 23.5rem);
+    max-width: calc(100vw - 0.7rem);
+    height: 100dvh;
+    overflow-y: auto;
+    border-bottom: 0 !important;
+    border-left: 1px solid rgba(205, 163, 73, 0.18);
+    box-shadow: -26px 0 54px rgba(0, 0, 0, 0.46);
+    transform: translateX(calc(100% + 1rem));
+    transition: transform 260ms ease;
+  }
+
+  .sidebar-shell.is-open {
+    transform: translateX(0);
+  }
+}
+
 .sidebar-links {
   padding-bottom: 0.7rem;
 }
