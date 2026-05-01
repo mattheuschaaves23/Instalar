@@ -138,12 +138,27 @@ const benefitItems = [
 
 export default function ClientLogin() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { loading, login, logout, user } = useAuth();
   const [form, setForm] = useState({ email: '', password: '', twoFactorToken: '' });
   const [needs2FA, setNeeds2FA] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const submitLabel = useMemo(() => (needs2FA ? 'Validar acesso' : 'Entrar'), [needs2FA]);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    if (user?.account_type === 'client') {
+      navigate('/cliente', { replace: true });
+      return;
+    }
+
+    if (user) {
+      logout();
+    }
+  }, [loading, logout, navigate, user]);
 
   useEffect(() => {
     const error = new URLSearchParams(window.location.search).get('oauth_error');
@@ -171,7 +186,7 @@ export default function ClientLogin() {
       }
 
       toast.success('Login realizado.');
-      navigate('/cliente');
+      navigate('/cliente', { replace: true });
     } catch (error) {
       if (error.response?.status === 401 && error.response?.data?.twoFactorRequired) {
         setNeeds2FA(true);

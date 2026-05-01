@@ -19,6 +19,21 @@ function sanitizeNextPath(value) {
   return nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/dashboard';
 }
 
+function getAccountHomePath(profile) {
+  return profile?.account_type === 'client' ? '/cliente' : '/dashboard';
+}
+
+function resolveNextPath(next, profile) {
+  const fallback = getAccountHomePath(profile);
+  const nextPath = sanitizeNextPath(next);
+
+  if (profile?.account_type === 'client') {
+    return nextPath === '/cliente' || nextPath.startsWith('/installers/') ? nextPath : fallback;
+  }
+
+  return nextPath.startsWith('/cliente') || nextPath.startsWith('/installers/') ? fallback : nextPath;
+}
+
 export default function OAuthCallback() {
   const navigate = useNavigate();
   const { setUser } = useAuth();
@@ -45,7 +60,7 @@ export default function OAuthCallback() {
 
         setUser(profile);
         toast.success('Login realizado.');
-        navigate(sanitizeNextPath(next), { replace: true });
+        navigate(resolveNextPath(next, profile), { replace: true });
       } catch (_error) {
         localStorage.removeItem('token');
 

@@ -183,13 +183,28 @@ const trustItems = [
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { loading, login, logout, user } = useAuth();
   const [form, setForm] = useState({ email: '', password: '', twoFactorToken: '' });
   const [needs2FA, setNeeds2FA] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
   const submitLabel = useMemo(() => (needs2FA ? 'Validar acesso' : 'Entrar na plataforma'), [needs2FA]);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    if (user?.account_type === 'installer' || user?.is_admin) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+
+    if (user) {
+      logout();
+    }
+  }, [loading, logout, navigate, user]);
 
   useEffect(() => {
     const error = new URLSearchParams(window.location.search).get('oauth_error');
@@ -217,7 +232,7 @@ export default function Login() {
       }
 
       toast.success('Acesso liberado.');
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (error) {
       if (error.response?.status === 401 && error.response?.data?.twoFactorRequired) {
         setNeeds2FA(true);

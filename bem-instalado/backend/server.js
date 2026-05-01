@@ -349,7 +349,11 @@ app.use((_req, res) => {
 async function ensureRuntimeSchema() {
   const statements = [
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE',
-    'ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type VARCHAR(20)',
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type VARCHAR(20) DEFAULT 'installer'",
+    "UPDATE users SET account_type = 'installer' WHERE account_type IS NULL OR account_type NOT IN ('installer', 'client')",
+    "ALTER TABLE users ALTER COLUMN account_type SET DEFAULT 'installer'",
+    'ALTER TABLE users ALTER COLUMN account_type SET NOT NULL',
+    'ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(40)',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider_id VARCHAR(180)',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP',
@@ -462,8 +466,13 @@ async function ensureRuntimeSchema() {
       ON users (featured_installer, certification_verified, public_profile)
     `,
     `
+      CREATE UNIQUE INDEX IF NOT EXISTS users_email_account_type_idx
+      ON users (LOWER(email), account_type)
+    `,
+    'DROP INDEX IF EXISTS users_auth_provider_id_idx',
+    `
       CREATE UNIQUE INDEX IF NOT EXISTS users_auth_provider_id_idx
-      ON users (auth_provider, auth_provider_id)
+      ON users (auth_provider, auth_provider_id, account_type)
       WHERE auth_provider IS NOT NULL AND auth_provider_id IS NOT NULL
     `,
     `

@@ -1,9 +1,9 @@
 ﻿CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
-  email VARCHAR(150) UNIQUE NOT NULL,
+  email VARCHAR(150) NOT NULL,
   password VARCHAR(255) NOT NULL,
-  account_type VARCHAR(20),
+  account_type VARCHAR(20) NOT NULL DEFAULT 'installer',
   auth_provider VARCHAR(40),
   auth_provider_id VARCHAR(180),
   email_verified_at TIMESTAMP,
@@ -294,7 +294,11 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS public_profile BOOLEAN NOT NULL DEFAU
 ALTER TABLE users ADD COLUMN IF NOT EXISTS years_experience INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS wallpaper_store_recommended BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type VARCHAR(20) DEFAULT 'installer';
+UPDATE users SET account_type = 'installer' WHERE account_type IS NULL OR account_type NOT IN ('installer', 'client');
+ALTER TABLE users ALTER COLUMN account_type SET DEFAULT 'installer';
+ALTER TABLE users ALTER COLUMN account_type SET NOT NULL;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(40);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider_id VARCHAR(180);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP;
@@ -352,8 +356,13 @@ CREATE INDEX IF NOT EXISTS users_public_profile_idx
 CREATE INDEX IF NOT EXISTS users_featured_installer_idx
   ON users (featured_installer, certification_verified, public_profile);
 
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_account_type_idx
+  ON users (LOWER(email), account_type);
+
+DROP INDEX IF EXISTS users_auth_provider_id_idx;
+
 CREATE UNIQUE INDEX IF NOT EXISTS users_auth_provider_id_idx
-  ON users (auth_provider, auth_provider_id)
+  ON users (auth_provider, auth_provider_id, account_type)
   WHERE auth_provider IS NOT NULL AND auth_provider_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS support_conversations_last_message_idx

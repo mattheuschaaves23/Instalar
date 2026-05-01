@@ -330,23 +330,25 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
     throw new Error('oauth_subject_missing');
   }
 
-  const existingUserResult = await pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [normalizedEmail]);
+  const accountType = normalizeOAuthRole(role);
+  const existingUserResult = await pool.query(
+    `
+      SELECT *
+      FROM users
+      WHERE account_type = $1
+        AND (
+          (auth_provider = $2 AND auth_provider_id = $3)
+          OR LOWER(email) = LOWER($4)
+        )
+      ORDER BY CASE WHEN auth_provider = $2 AND auth_provider_id = $3 THEN 0 ELSE 1 END
+      LIMIT 1
+    `,
+    [accountType, provider, providerSubject, normalizedEmail]
+  );
   let user = existingUserResult.rows[0];
   const shouldGrantOwnerAdmin = isOwnerAdminEmail(normalizedEmail);
-  const accountType = normalizeOAuthRole(role);
 
   if (user) {
-    const existingAccountType = normalizeAccountType(user.account_type);
-    const canAdoptAccountType = !existingAccountType && user.auth_provider === provider && user.auth_provider_id === providerSubject;
-
-    if (existingAccountType && existingAccountType !== accountType) {
-      throw new Error('account_type_mismatch');
-    }
-
-    if (!existingAccountType && accountType === 'client' && !canAdoptAccountType) {
-      throw new Error('account_type_mismatch');
-    }
-
     const updatedUser = await pool.query(
       `
         UPDATE users
@@ -356,7 +358,7 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
           email_verified_at = COALESCE(email_verified_at, NOW()),
           last_login_at = NOW(),
           is_admin = CASE WHEN $4 THEN TRUE ELSE is_admin END,
-          account_type = COALESCE(NULLIF(account_type, ''), $5),
+          account_type = $5,
           public_profile = CASE WHEN $5 = 'client' THEN FALSE ELSE public_profile END,
           updated_at = NOW()
         WHERE id = $1
@@ -430,7 +432,10 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'A senha precisa ter pelo menos 6 caracteres.' });
     }
 
-    const existingUser = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [normalizedEmail]);
+    const existingUser = await pool.query(
+      "SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND account_type = 'installer'",
+      [normalizedEmail]
+    );
 
     if (existingUser.rowCount > 0) {
       await logAudit({
@@ -513,8 +518,12 @@ exports.login = async (req, res) => {
   try {
     const { email, password, twoFactorToken } = req.body;
     const expectedAccountType = normalizeAccountType(req.body?.account_type || req.body?.role);
+    const requestedAccountType = expectedAccountType || 'installer';
     const normalizedEmail = normalizeEmail(email);
-    const { rows } = await pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [normalizedEmail]);
+    const { rows } = await pool.query(
+      'SELECT * FROM users WHERE LOWER(email) = LOWER($1) AND account_type = $2',
+      [normalizedEmail, requestedAccountType]
+    );
     let user = rows[0];
 
     if (!user) {
@@ -527,29 +536,6 @@ exports.login = async (req, res) => {
         req,
       });
       return res.status(401).json({ error: 'Credenciais inválidas.' });
-    }
-
-    if (expectedAccountType && getUserAccountType(user) !== expectedAccountType) {
-      await logAudit({
-        actorUserId: user.id,
-        action: 'auth.login_failed_account_type_mismatch',
-        entityType: 'user',
-        entityId: user.id,
-        metadata: {
-          email: user.email,
-          expectedAccountType,
-          accountType: getUserAccountType(user),
-        },
-        req,
-      });
-
-      return res.status(403).json({
-        error: expectedAccountType === 'client'
-          ? 'Esta conta pertence a um instalador. Entre pela tela do instalador.'
-          : 'Esta conta pertence a um cliente. Entre pela tela do cliente.',
-        code: 'ACCOUNT_TYPE_MISMATCH',
-        account_type: getUserAccountType(user),
-      });
     }
 
     const validPassword = await bcrypt.compare(password || '', user.password);
@@ -957,6 +943,7 @@ exports.disable2FA = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   try {
     const normalizedEmail = normalizeEmail(req.body?.email);
+    const requestedAccountType = normalizeAccountType(req.body?.account_type || req.body?.role) || 'installer';
 
     if (!normalizedEmail) {
       return res.status(400).json({ error: 'Informe um e-mail válido.' });
@@ -967,9 +954,10 @@ exports.forgotPassword = async (req, res) => {
         SELECT id, email
         FROM users
         WHERE LOWER(email) = LOWER($1)
+          AND account_type = $2
         LIMIT 1
       `,
-      [normalizedEmail]
+      [normalizedEmail, requestedAccountType]
     );
     const user = userResult.rows[0];
 
@@ -985,7 +973,7 @@ exports.forgotPassword = async (req, res) => {
         action: 'auth.password_reset_requested_unknown_email',
         entityType: 'user',
         entityId: normalizedEmail,
-        metadata: { email: normalizedEmail },
+        metadata: { email: normalizedEmail, accountType: requestedAccountType },
         req,
       });
 
@@ -1017,7 +1005,7 @@ exports.forgotPassword = async (req, res) => {
       action: 'auth.password_reset_requested',
       entityType: 'user',
       entityId: user.id,
-      metadata: { email: user.email },
+      metadata: { email: user.email, accountType: requestedAccountType },
       req,
     });
 
