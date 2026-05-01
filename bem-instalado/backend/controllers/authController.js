@@ -79,6 +79,22 @@ function normalizeBaseUrl(rawUrl) {
   return value.replace(/\/+$/, '');
 }
 
+function normalizeUrlPathSlashes(rawUrl) {
+  const value = String(rawUrl || '').trim();
+
+  if (!value) {
+    return '';
+  }
+
+  try {
+    const url = new URL(value);
+    url.pathname = url.pathname.replace(/\/{2,}/g, '/');
+    return url.toString();
+  } catch (_error) {
+    return value.replace(/([^:])\/{2,}/g, '$1/');
+  }
+}
+
 function getBackendBaseUrl(req) {
   const configured = normalizeBaseUrl(process.env.APP_URL || process.env.BACKEND_URL);
 
@@ -102,7 +118,7 @@ function getOAuthCallbackUrl(req, provider) {
   );
 
   if (configured) {
-    return configured;
+    return normalizeUrlPathSlashes(configured);
   }
 
   return `${getBackendBaseUrl(req)}/api/auth/oauth/${provider}/callback`;
