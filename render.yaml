@@ -2,6 +2,7 @@ databases:
   - name: bem-instalado-db
     databaseName: bem_instalado
     user: bem_instalado
+    region: oregon
     plan: starter
 
 services:
@@ -9,6 +10,7 @@ services:
     name: bem-instalado
     runtime: node
     rootDir: bem-instalado/backend
+    region: oregon
     plan: starter
     buildCommand: npm install && npm run build:web
     startCommand: npm start
