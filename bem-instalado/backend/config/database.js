@@ -1,7 +1,25 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const connectionString = process.env.DATABASE_URL;
+function normalizeConnectionString(value) {
+  if (!value) {
+    return value;
+  }
+
+  try {
+    const url = new URL(value);
+
+    if (['prefer', 'require', 'verify-ca'].includes(url.searchParams.get('sslmode'))) {
+      url.searchParams.delete('sslmode');
+    }
+
+    return url.toString();
+  } catch (error) {
+    return value;
+  }
+}
+
+const connectionString = normalizeConnectionString(process.env.DATABASE_URL);
 const hasDiscreteConfig =
   process.env.DB_HOST ||
   process.env.DB_PORT ||
