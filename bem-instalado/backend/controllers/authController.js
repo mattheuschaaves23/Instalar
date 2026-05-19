@@ -5,6 +5,7 @@ const pool = require('../config/database');
 const { jwtSecret, jwtExpiresIn } = require('../config/auth');
 const { generateSecret, verifyToken, generateQrCode } = require('../utils/totp');
 const { logAudit } = require('../utils/auditLog');
+const { sendPasswordResetEmail } = require('../services/email');
 
 const REGISTER_PLAN_PRICE = Number(process.env.SUBSCRIPTION_PRICE || 40);
 const PASSWORD_RESET_EXPIRATION_MINUTES = Number(process.env.PASSWORD_RESET_EXPIRATION_MINUTES || 30);
@@ -443,6 +444,12 @@ function buildPasswordResetToken() {
   const token = crypto.randomBytes(32).toString('hex');
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   return { token, tokenHash };
+}
+
+function buildPasswordResetUrl(req, token) {
+  const frontendUrl = getFrontendBaseUrl(req);
+  const query = new URLSearchParams({ token });
+  return `${frontendUrl}/instalador/recuperar-senha?${query.toString()}`;
 }
 
 exports.register = async (req, res) => {
@@ -1035,15 +1042,30 @@ exports.forgotPassword = async (req, res) => {
       req,
     });
 
-    if (process.env.NODE_ENV !== 'production' || PASSWORD_RESET_EXPOSE_TOKEN) {
+    const resetUrl = buildPasswordResetUrl(req, token);
+    const delivery = await sendPasswordResetEmail({
+      to: user.email,
+      resetUrl,
+      expiresInMinutes: PASSWORD_RESET_EXPIRATION_MINUTES,
+    }).catch((error) => {
+      console.error('Falha ao enviar e-mail de recuperacao de senha.');
+      console.error(error);
+      return { sent: false, reason: 'send_failed' };
+    });
+
+    const shouldExposeResetToken = process.env.NODE_ENV !== 'production' || PASSWORD_RESET_EXPOSE_TOKEN;
+
+    if (shouldExposeResetToken) {
       return res.json({
         ...genericResponse,
+        delivery,
         reset_token: token,
+        reset_url: resetUrl,
         reset_expires_at: expiresAt.toISOString(),
       });
     }
 
-    return res.json(genericResponse);
+    return res.json({ ...genericResponse, delivery });
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao iniciar recuperação de senha.' });
   }

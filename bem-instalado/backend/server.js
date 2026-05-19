@@ -6,6 +6,9 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const compression = require('compression');
+
+dotenv.config();
+
 const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const pool = require('./config/database');
@@ -22,8 +25,6 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const supportRoutes = require('./routes/supportRoutes');
-
-dotenv.config();
 
 const app = express();
 const httpServer = http.createServer(app);

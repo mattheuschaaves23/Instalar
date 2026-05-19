@@ -244,10 +244,6 @@ export default function Login() {
     }
   };
 
-  const showPendingMessage = () => {
-    toast('Recurso em preparação.');
-  };
-
   const handleSocialLogin = (provider) => {
     startSocialLogin(provider, { role: 'installer', next: '/dashboard' });
   };
@@ -375,9 +371,9 @@ export default function Login() {
                 <span>Lembrar de mim</span>
               </label>
 
-              <button className="installer-login-forgot" onClick={showPendingMessage} type="button">
+              <Link className="installer-login-forgot" to="/instalador/recuperar-senha">
                 Esqueceu sua senha?
-              </button>
+              </Link>
             </div>
 
             <button className="installer-login-submit" type="submit">
@@ -394,7 +390,7 @@ export default function Login() {
             <div className="installer-login-socials">
               <button onClick={() => handleSocialLogin('google')} type="button">
                 <span className="installer-login-google">G</span>
-                <span>Entrar com Google</span>
+                <span>Entrar com Gmail</span>
               </button>
               <button onClick={() => handleSocialLogin('apple')} type="button">
                 <span className="installer-login-apple">
