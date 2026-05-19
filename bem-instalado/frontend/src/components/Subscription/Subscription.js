@@ -84,10 +84,15 @@ export default function Subscription() {
   }, [payment?.automaticConfirmation, payment?.payment?.external_id, payment?.payment?.status]);
 
   const handlePay = async () => {
+    if (subscription?.payment_mode === 'disabled') {
+      toast.error(subscription?.payment_notice || 'Pagamento temporariamente indisponivel.');
+      return;
+    }
+
     try {
       const response = await api.post('/subscriptions/pay');
       setPayment(response.data);
-      toast.success('PIX gerado. O acesso será liberado assim que o pagamento for confirmado.');
+      toast.success('Pagamento gerado. O acesso sera liberado assim que for confirmado.');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível gerar o pagamento.');
     }
@@ -116,7 +121,7 @@ export default function Subscription() {
   };
 
   const canUseApp = Boolean(subscription?.can_use_app);
-  const isAutomaticMode = subscription?.payment_mode === 'automatic';
+  const isPaymentDisabled = subscription?.payment_mode === 'disabled';
   const showRecipient = Boolean(payment?.recipientName || payment?.city);
   const pricing = subscription?.pricing || defaultPricing;
   const apiBenefits = Array.isArray(subscription?.plan_benefits) ? subscription.plan_benefits : [];
@@ -127,7 +132,7 @@ export default function Subscription() {
   return (
     <section className="page-shell space-y-7">
       <PageIntro
-        description="O acesso ao sistema depende de pagamento confirmado. Sem assinatura ativa, o usuário fica limitado ao perfil e a esta tela de cobrança."
+        description="O acesso ao sistema depende de assinatura ativa. A cobranca esta pausada enquanto um novo metodo de pagamento e preparado."
         eyebrow="Assinatura"
         stats={[
           {
@@ -147,10 +152,10 @@ export default function Subscription() {
             value: canUseApp ? 'LIBERADO' : 'BLOQUEADO',
             detail: canUseApp
               ? 'Ferramentas premium liberadas.'
-              : 'Os módulos do painel ficam bloqueados até a confirmação do pagamento.',
+              : 'Os modulos do painel ficam bloqueados ate a assinatura ser ativada.',
           },
         ]}
-        title="Pagamento confirmado é a chave para liberar o restante do painel."
+        title="A assinatura ativa libera o restante do painel."
       />
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -166,8 +171,8 @@ export default function Subscription() {
           </div>
 
           <p className="mt-5 text-sm leading-7 text-[var(--muted)]">
-            O sistema usa a confirmação do provedor para liberar o uso. Assim que o PIX for aprovado,
-            a assinatura muda para ativa e as rotas protegidas voltam a abrir.
+            A integracao de pagamento foi removida temporariamente. Quando o novo metodo for configurado,
+            esta tela voltara a gerar cobrancas e liberar a assinatura apos confirmacao.
           </p>
 
           <div className="subscription-inline-note mt-6">
@@ -185,8 +190,13 @@ export default function Subscription() {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <button className="gold-button w-full sm:w-auto" onClick={handlePay} type="button">
-              {payment ? 'Abrir PIX atual' : 'Gerar PIX mensal'}
+            <button
+              className="gold-button w-full sm:w-auto"
+              disabled={isPaymentDisabled}
+              onClick={handlePay}
+              type="button"
+            >
+              {isPaymentDisabled ? 'Pagamento indisponivel' : payment ? 'Abrir pagamento atual' : 'Gerar pagamento mensal'}
             </button>
             {payment ? (
               <button className="ghost-button w-full sm:w-auto" onClick={handleCheck} type="button">
@@ -197,9 +207,8 @@ export default function Subscription() {
 
           <div className="subscription-inline-note mt-6">
             <p className="text-sm leading-7 text-[var(--muted)]">
-              {isAutomaticMode
-                ? 'Validação automática ligada com Mercado Pago. Sem aprovação do provedor, o acesso continua bloqueado.'
-                : 'O gateway automático ainda não foi configurado neste ambiente. Sem ele, o acesso não deve ser liberado em produção.'}
+              {subscription?.payment_notice
+                || 'Pagamento temporariamente indisponivel. Um novo metodo sera configurado futuramente.'}
             </p>
           </div>
 
@@ -215,7 +224,7 @@ export default function Subscription() {
             <section className="lux-panel fade-up min-w-0 p-6" style={{ animationDelay: '0.08s' }}>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="eyebrow">Pagamento PIX</p>
+                  <p className="eyebrow">Pagamento manual</p>
                   <h2 className="mt-3 text-2xl font-semibold text-[var(--text)]">Compra em aberto</h2>
                 </div>
                 <span className="status-pill" data-tone={payment?.payment?.status}>
@@ -239,7 +248,9 @@ export default function Subscription() {
 
                 <div className="subscription-info-row">
                   <span>Validação</span>
-                  <strong className="text-[var(--text)]">Automática via provedor</strong>
+                  <strong className="text-[var(--text)]">
+                    {payment?.automaticConfirmation ? 'Automatica' : 'Manual'}
+                  </strong>
                 </div>
 
                 {payment.expirationDate ? (
@@ -274,7 +285,7 @@ export default function Subscription() {
                 </button>
                 {payment.ticketUrl ? (
                   <a className="ghost-button w-full sm:w-auto" href={payment.ticketUrl} rel="noreferrer" target="_blank">
-                    Abrir no provedor
+                    Abrir comprovante
                   </a>
                 ) : null}
                 <button className="ghost-button w-full sm:w-auto" onClick={handleCheck} type="button">
@@ -284,8 +295,8 @@ export default function Subscription() {
 
               <div className="subscription-inline-note mt-5">
                 <p className="text-sm leading-7 text-[var(--muted)]">
-                  Depois do pagamento, o sistema consulta o provedor e só libera o uso quando o PIX estiver
-                  realmente aprovado. Enquanto isso, dashboard, clientes, agenda e orçamentos permanecem bloqueados.
+                  Enquanto o novo metodo de pagamento nao estiver configurado, o acesso premium permanece bloqueado
+                  para assinaturas inativas.
                 </p>
               </div>
             </section>

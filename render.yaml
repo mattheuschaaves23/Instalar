@@ -34,9 +34,3 @@ services:
         sync: false
       - key: GOOGLE_OAUTH_CALLBACK_URL
         sync: false
-      - key: MERCADOPAGO_ACCESS_TOKEN
-        sync: false
-      - key: MERCADOPAGO_PIX_EXPIRATION_MINUTES
-        value: 30
-      - key: MERCADOPAGO_STATEMENT_DESCRIPTOR
-        value: BEM INSTALADO
