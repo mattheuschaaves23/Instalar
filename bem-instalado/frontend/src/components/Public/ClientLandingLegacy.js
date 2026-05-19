@@ -1,6 +1,5 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useRef } from 'react';
 import api from '../../services/api';
 import BrandMark from '../Layout/BrandMark';
 import BrandWordmark from '../Layout/BrandWordmark';
@@ -944,7 +943,7 @@ export default function ClientLanding() {
                 alt="Instalador aplicando papel de parede com mapa do Brasil"
                 className="clean-hero-image"
                 decoding="async"
-                fetchPriority="high"
+                fetchpriority="high"
                 loading="eager"
                 src={HERO_IMAGE_URL}
               />
@@ -970,20 +969,6 @@ export default function ClientLanding() {
                   </span>
                 </p>
 
-                <ul className="clean-mobile-ref-feature-list">
-                  {MOBILE_FEATURE_ITEMS.map((item, index) => (
-                    <li className="clean-mobile-ref-feature-item" key={item.title} style={{ animationDelay: `${0.14 + index * 0.07}s` }}>
-                      <span className="clean-mobile-ref-feature-icon">
-                        <ReferenceHeroIcon name={item.icon} />
-                      </span>
-                      <div>
-                        <strong>{item.title}</strong>
-                        <span>{item.copy}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-
                 <div className="clean-mobile-ref-actions">
                   <Link className="clean-mobile-ref-primary-cta" to="/cliente">
                     <span className="clean-mobile-ref-primary-icon">
@@ -1000,6 +985,20 @@ export default function ClientLanding() {
                     <strong aria-hidden="true">›</strong>
                   </a>
                 </div>
+
+                <ul className="clean-mobile-ref-feature-list">
+                  {MOBILE_FEATURE_ITEMS.map((item, index) => (
+                    <li className="clean-mobile-ref-feature-item" key={item.title} style={{ animationDelay: `${0.14 + index * 0.07}s` }}>
+                      <span className="clean-mobile-ref-feature-icon">
+                        <ReferenceHeroIcon name={item.icon} />
+                      </span>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <span>{item.copy}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
 
                 <div className="clean-mobile-ref-metrics-card">
                   {MOBILE_HERO_STATS.map((item) => (
@@ -1025,7 +1024,7 @@ export default function ClientLanding() {
             <header className="clean-landing-reference-topbar fade-up">
               <div className="clean-reference-brand">
                 <BrandMark className="client-brand-mark clean-reference-brand-mark" />
-                <strong>Papel na Parede</strong>
+                <BrandWordmark className="clean-reference-wordmark" size="sm" />
               </div>
 
               <nav className="clean-reference-nav" aria-label="Navegação principal">
@@ -1092,7 +1091,7 @@ export default function ClientLanding() {
                   alt="Instalador aplicando papel de parede com mapa do Brasil"
                   className="clean-reference-hero-image"
                   decoding="async"
-                  fetchPriority="high"
+                  fetchpriority="high"
                   loading="eager"
                   src={HERO_IMAGE_URL}
                 />
