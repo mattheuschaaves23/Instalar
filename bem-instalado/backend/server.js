@@ -348,6 +348,11 @@ app.use((_req, res) => {
 });
 
 async function ensureRuntimeSchema() {
+  const baseSchemaPath = path.join(__dirname, 'db', 'schema.sql');
+  const baseSchema = fs.readFileSync(baseSchemaPath, 'utf8').replace(/^\uFEFF/, '');
+
+  await pool.query(baseSchema);
+
   const statements = [
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE',
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type VARCHAR(20) DEFAULT 'installer'",
