@@ -102,8 +102,20 @@ function isLocalHost(hostname) {
   return LOCAL_HOSTS.has(String(hostname || '').trim().toLowerCase());
 }
 
+function firstHeaderValue(value) {
+  if (Array.isArray(value)) {
+    return firstHeaderValue(value[0]);
+  }
+
+  return String(value || '').split(',')[0].trim();
+}
+
 function getRequestBaseUrl(req) {
-  return `${req.protocol}://${req.get('host')}`;
+  const forwardedProto = firstHeaderValue(req.get('x-forwarded-proto')).toLowerCase();
+  const protocol = ['http', 'https'].includes(forwardedProto) ? forwardedProto : req.protocol;
+  const host = firstHeaderValue(req.get('x-forwarded-host')) || firstHeaderValue(req.get('host'));
+
+  return `${protocol}://${host}`;
 }
 
 function shouldUseConfiguredPublicUrl(configuredUrl, req) {
