@@ -397,8 +397,8 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
           email_verified_at = COALESCE(email_verified_at, NOW()),
           last_login_at = NOW(),
           is_admin = CASE WHEN $4 THEN TRUE ELSE is_admin END,
-          account_type = $5,
-          public_profile = CASE WHEN $5 = 'client' THEN FALSE ELSE public_profile END,
+          account_type = $5::VARCHAR(20),
+          public_profile = CASE WHEN $5::VARCHAR(20) = 'client' THEN FALSE ELSE public_profile END,
           updated_at = NOW()
         WHERE id = $1
         RETURNING *
