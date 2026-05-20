@@ -18797,6 +18797,13 @@ body,
   font-family: 'Inter', 'Public Sans', 'Segoe UI', sans-serif;
 }
 
+.ref-panel-shell,
+.ref-panel-shell *,
+.ref-panel-shell *::before,
+.ref-panel-shell *::after {
+  box-sizing: border-box;
+}
+
 .ref-panel-sidebar {
   position: fixed;
   inset: 0 auto 0 0;
@@ -18834,6 +18841,7 @@ body,
 
 .ref-panel-logo,
 .ref-panel-avatar {
+  position: relative;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -18855,6 +18863,18 @@ body,
   width: 2.5rem;
   height: 2.5rem;
   font-size: 0.82rem;
+}
+
+.ref-panel-user .ref-panel-avatar::after {
+  content: '';
+  position: absolute;
+  right: -0.08rem;
+  bottom: 0.05rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 2px solid #050505;
+  border-radius: 999px;
+  background: #21d88a;
 }
 
 .ref-panel-brand strong,
@@ -19095,6 +19115,10 @@ body,
   font-weight: 900;
 }
 
+.ref-panel-account svg:last-child {
+  color: var(--ref-muted);
+}
+
 .ref-panel-mobile-header {
   display: none;
 }
@@ -19117,6 +19141,7 @@ body,
 }
 
 .ref-panel-hero {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -19205,6 +19230,11 @@ body,
 }
 
 .ref-panel-mobile-section-head {
+  display: none;
+}
+
+.ref-panel-label-mobile,
+.ref-panel-metric-dots {
   display: none;
 }
 
@@ -19306,6 +19336,9 @@ body,
 }
 
 .ref-panel-card-head a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   color: var(--ref-gold);
   font-size: 0.84rem;
   font-weight: 800;
@@ -19457,6 +19490,26 @@ body,
   font-size: 1.2rem;
 }
 
+.ref-panel-agenda-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ref-panel-agenda-title svg {
+  color: var(--ref-gold);
+}
+
+.ref-panel-agenda-title h3,
+.ref-panel-agenda-title span {
+  margin: 0;
+}
+
+.ref-panel-agenda-title span {
+  color: var(--ref-muted);
+  font-size: 0.86rem;
+}
+
 .ref-panel-appointment-list {
   display: grid;
   gap: 0.75rem;
@@ -19483,6 +19536,65 @@ body,
 
 .ref-panel-appointment small {
   color: var(--ref-muted);
+}
+
+.ref-panel-appointment-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ref-panel-appointment-head > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.ref-panel-status-pill {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(24, 217, 149, 0.13);
+  color: #36df9b;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.ref-panel-status-pill[data-status='pending'] {
+  background: rgba(226, 180, 45, 0.14);
+  color: var(--ref-gold);
+}
+
+.ref-panel-appointment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  color: var(--ref-muted);
+  font-size: 0.76rem;
+}
+
+.ref-panel-appointment-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.ref-panel-add-appointment {
+  min-height: 3.15rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  border: 1px dashed rgba(226, 180, 45, 0.28);
+  border-radius: 0.9rem;
+  background: rgba(226, 180, 45, 0.05);
+  color: var(--ref-gold);
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-decoration: none;
 }
 
 .ref-panel-ranking-row,
@@ -19558,12 +19670,14 @@ body,
     position: sticky;
     top: 0;
     z-index: 30;
+    width: 100vw;
+    max-width: 100vw;
     min-height: 4rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+    padding: 0.75rem 0.85rem;
     border-bottom: 1px solid var(--ref-line-soft);
     background: rgba(0, 0, 0, 0.9);
     backdrop-filter: blur(14px);
@@ -19587,13 +19701,13 @@ body,
   .ref-panel-mobile-header nav {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.42rem;
   }
 
   .ref-panel-mobile-header nav a {
     position: relative;
-    width: 2.35rem;
-    height: 2.35rem;
+    width: 2.05rem;
+    height: 2.05rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -19602,7 +19716,10 @@ body,
   }
 
   .ref-panel-mobile-header nav a.ref-panel-avatar {
+    width: 2.18rem;
+    height: 2.18rem;
     color: #120e05;
+    font-size: 0.72rem;
   }
 
   .ref-panel-mobile-header nav em {
@@ -19616,11 +19733,17 @@ body,
   }
 
   .ref-panel-content {
+    width: 100vw;
+    max-width: 100vw;
+    overflow: hidden;
     gap: 1.25rem;
     padding: 0.9rem 1rem calc(6rem + env(safe-area-inset-bottom, 0px));
   }
 
   .ref-panel-hero {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+    justify-self: center;
     min-height: 13.4rem;
     display: grid;
     gap: 1rem;
@@ -19647,6 +19770,7 @@ body,
   }
 
   .ref-panel-hero-actions {
+    width: 100%;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 3rem;
     gap: 0.55rem;
@@ -19676,13 +19800,18 @@ body,
   }
 
   .ref-panel-primary {
+    width: 100%;
+    min-width: 0;
     min-height: 2.85rem;
     border-radius: 0.9rem;
+    padding: 0 0.75rem;
+    font-size: 0.84rem;
   }
 
   .ref-panel-secondary {
     width: 3rem;
     min-width: 3rem;
+    justify-self: end;
     padding: 0;
     color: transparent;
     font-size: 0;
@@ -19696,6 +19825,9 @@ body,
   }
 
   .ref-panel-mobile-section-head {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+    justify-self: center;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -19709,18 +19841,32 @@ body,
   }
 
   .ref-panel-mobile-section-head a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
     color: var(--ref-gold);
     font-size: 0.78rem;
     text-decoration: none;
   }
 
+  .ref-panel-label-desktop {
+    display: none;
+  }
+
+  .ref-panel-label-mobile {
+    display: inline;
+  }
+
   .ref-panel-metrics {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+    justify-self: center;
     display: flex;
     gap: 0.75rem;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    margin: 0 -1rem;
-    padding: 0 1rem 0.35rem;
+    margin: -0.35rem 0 0;
+    padding: 0 0 0.35rem;
     scrollbar-width: none;
   }
 
@@ -19729,16 +19875,19 @@ body,
   }
 
   .ref-panel-metric-card {
-    min-width: 8.75rem;
-    min-height: 9.05rem;
+    min-width: 7.75rem;
+    min-height: 8.9rem;
     scroll-snap-align: start;
     padding: 1rem;
     border-radius: 0.9rem;
   }
 
   .ref-panel-metric-icon {
-    width: 2.2rem;
-    height: 2.2rem;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0;
+    background: transparent;
+    color: var(--ref-text);
   }
 
   .ref-panel-metric-card > strong {
@@ -19749,7 +19898,33 @@ body,
     font-size: 0.68rem;
   }
 
+  .ref-panel-metric-dots {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.38rem;
+    margin-top: -0.7rem;
+  }
+
+  .ref-panel-metric-dots span {
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  .ref-panel-metric-dots span.is-active {
+    background: var(--ref-gold);
+    box-shadow: 0 0 14px rgba(226, 180, 45, 0.45);
+  }
+
   .ref-panel-mobile-stack {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+    justify-self: center;
     grid-template-columns: 1fr;
     gap: 1rem;
   }
@@ -19759,8 +19934,31 @@ body,
     border-radius: 1rem;
   }
 
+  .ref-panel-agenda-card {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
   .ref-panel-card-head h3 {
     font-size: 0.98rem;
+  }
+
+  .ref-panel-agenda-card .ref-panel-card-head {
+    align-items: center;
+    padding: 0 0.15rem;
+  }
+
+  .ref-panel-agenda-title {
+    gap: 0.42rem;
+  }
+
+  .ref-panel-agenda-title h3 {
+    font-size: 0.95rem;
+  }
+
+  .ref-panel-agenda-title span {
+    font-size: 0.79rem;
   }
 
   .ref-panel-agenda-stats {
@@ -19769,6 +19967,37 @@ body,
 
   .ref-panel-agenda-stats span {
     min-height: 3.7rem;
+    border-radius: 0.72rem;
+    background: #040404;
+    font-size: 0.64rem;
+  }
+
+  .ref-panel-agenda-stats strong {
+    font-size: 1.1rem;
+  }
+
+  .ref-panel-appointment-list {
+    gap: 0.55rem;
+  }
+
+  .ref-panel-appointment {
+    min-height: 6rem;
+    gap: 0.7rem;
+    padding: 0.95rem 1rem;
+    border-radius: 0.9rem;
+    background: #050505;
+  }
+
+  .ref-panel-appointment strong {
+    font-size: 0.88rem;
+  }
+
+  .ref-panel-appointment-meta {
+    font-size: 0.7rem;
+  }
+
+  .ref-panel-add-appointment {
+    display: inline-flex;
   }
 
   .ref-panel-ranking-card {
@@ -19777,28 +20006,32 @@ body,
 
   .ref-panel-bottom-nav {
     position: fixed;
-    left: 0.85rem;
-    right: 0.85rem;
-    bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px));
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 35;
+    width: 100vw;
+    max-width: 100vw;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.18rem;
-    padding: 0.45rem;
-    border: 1px solid var(--ref-line);
-    border-radius: 1.2rem;
-    background: rgba(7, 7, 7, 0.96);
-    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(16px);
+    gap: 0.12rem;
+    padding: 0.5rem 0.55rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-top: 1px solid var(--ref-line-soft);
+    border-radius: 0;
+    background: rgba(3, 3, 3, 0.94);
+    box-shadow: 0 -20px 44px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(18px);
   }
 
   .ref-panel-bottom-tab {
-    min-height: 3.45rem;
+    position: relative;
+    min-height: 3.15rem;
     display: grid;
     align-content: center;
     justify-items: center;
     gap: 0.24rem;
-    border-radius: 0.92rem;
+    border-radius: 0.9rem;
     color: var(--ref-muted);
     text-decoration: none;
     transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
@@ -19817,6 +20050,16 @@ body,
     color: var(--ref-gold);
     background: rgba(226, 180, 45, 0.13);
   }
+
+  .ref-panel-bottom-tab.is-active::before {
+    content: '';
+    position: absolute;
+    top: 0.35rem;
+    width: 0.28rem;
+    height: 0.28rem;
+    border-radius: 999px;
+    background: var(--ref-gold);
+  }
 }
 
 @media (max-width: 380px) {
@@ -19825,12 +20068,12 @@ body,
   }
 
   .ref-panel-metrics {
-    margin-inline: -0.75rem;
-    padding-inline: 0.75rem;
+    margin-inline: 0;
+    padding-inline: 0;
   }
 
   .ref-panel-metric-card {
-    min-width: 8.2rem;
+    min-width: 7.55rem;
   }
 
   .ref-panel-bottom-tab span {

@@ -144,9 +144,9 @@ function DashboardDockIcon({ type }) {
 
 const MOBILE_DOCK_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'home' },
+  { to: '/agenda', label: 'Agenda', icon: 'agenda' },
   { to: '/budgets', label: 'Orçamentos', icon: 'budgets' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
-  { to: '/agenda', label: 'Agenda', icon: 'agenda' },
   { to: '/profile', label: 'Perfil', icon: 'profile' },
 ];
 
@@ -156,9 +156,11 @@ const PANEL_NAV_ITEMS = [
   { to: '/agenda', label: 'Agenda', icon: 'agenda', badge: 3 },
   { to: '/budgets', label: 'Orcamentos', icon: 'file', section: 'OPERACAO' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
+  { to: '/dashboard', label: 'Avaliacoes', icon: 'star' },
   { to: '/profile', label: 'Perfil', icon: 'profile', section: 'CONTA' },
   { to: '/subscription', label: 'Assinatura', icon: 'card' },
   { to: '/notifications', label: 'Notificacoes', icon: 'bell', badge: 2 },
+  { to: '/profile', label: 'Configuracoes', icon: 'settings' },
   { to: '/support', label: 'Suporte', icon: 'help' },
 ];
 
@@ -181,13 +183,19 @@ function PanelIcon({ type, size = 20 }) {
     agenda: <><rect x="4" y="5" width="16" height="15" rx="2.4" /><path d="M8 3v4M16 3v4M4 10h16" /></>,
     file: <><path d="M7 3.8h7l3 3V20H7z" /><path d="M14 3.8V7h3" /><path d="M9.5 11h5M9.5 15h4" /></>,
     clients: <><circle cx="9" cy="9" r="3" /><circle cx="17" cy="10" r="2.2" /><path d="M3.8 19c.9-3.1 2.8-4.7 5.2-4.7s4.3 1.6 5.2 4.7" /><path d="M14.8 15c1.9.4 3.3 1.7 4 4" /></>,
+    star: <><path d="m12 3.8 2.45 4.95 5.47.8-3.96 3.86.94 5.45L12 16.28l-4.9 2.58.94-5.45-3.96-3.86 5.47-.8z" /></>,
     profile: <><circle cx="12" cy="8" r="3.2" /><path d="M5.4 19c1.5-3 4-4.5 6.6-4.5s5.1 1.5 6.6 4.5" /></>,
     card: <><rect x="4" y="6.5" width="16" height="11" rx="2" /><path d="M4 10h16" /></>,
     bell: <><path d="M18 10.8a6 6 0 0 0-12 0c0 5-2 5.7-2 5.7h16s-2-.7-2-5.7" /><path d="M10 20a2.4 2.4 0 0 0 4 0" /></>,
+    settings: <><path d="M12 8.4a3.6 3.6 0 1 1 0 7.2 3.6 3.6 0 0 1 0-7.2Z" /><path d="M19.2 13.4a7.9 7.9 0 0 0 0-2.8l2-1.55-2-3.46-2.43.98a7.25 7.25 0 0 0-2.4-1.39L14 2.6h-4l-.37 2.58a7.25 7.25 0 0 0-2.4 1.39L4.8 5.59l-2 3.46 2 1.55a7.9 7.9 0 0 0 0 2.8l-2 1.55 2 3.46 2.43-.98a7.25 7.25 0 0 0 2.4 1.39L10 21.4h4l.37-2.58a7.25 7.25 0 0 0 2.4-1.39l2.43.98 2-3.46z" /></>,
     help: <><circle cx="12" cy="12" r="8.5" /><path d="M9.8 9.4a2.4 2.4 0 1 1 3.6 2.1c-.9.5-1.4 1.1-1.4 2.2" /><path d="M12 17.2h.01" /></>,
     search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></>,
     dollar: <><circle cx="12" cy="12" r="8.5" /><path d="M14.8 9.4c0-1.2-1-2.1-2.6-2.1-1.6 0-2.7.8-2.7 2.1 0 2.7 5.5 1.6 5.5 4.2 0 1.2-1 2.1-2.8 2.1-1.7 0-2.8-.9-2.9-2.2" /><path d="M12 6v12" /></>,
     arrow: <><path d="M7 17 17 7" /><path d="M9 7h8v8" /></>,
+    clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.6V12l3 1.8" /></>,
+    pin: <><path d="M19 10.2c0 5-7 10-7 10s-7-5-7-10a7 7 0 1 1 14 0Z" /><circle cx="12" cy="10.2" r="2.2" /></>,
+    plus: <><path d="M12 5v14M5 12h14" /></>,
+    chevron: <><path d="m9 6 6 6-6 6" /></>,
     menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
   };
 
@@ -207,6 +215,24 @@ function compactCurrency(value) {
   }
 
   return formatCurrency(amount);
+}
+
+function formatCurrencyWhole(value) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
+}
+
+function formatReferenceDate(date) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+  })
+    .format(date)
+    .replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`);
 }
 
 function startOfMonth(date) {
@@ -753,35 +779,44 @@ export default function Dashboard() {
   const conversionRate = budgetsThisMonth.length
     ? Math.round((approvedBudgetsThisMonth / budgetsThisMonth.length) * 100)
     : 0;
+  const todayAgendaLabel = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long' }).format(today);
   const referenceCards = [
     {
-      label: 'Receita',
-      value: compactCurrency(metrics.monthly_revenue),
-      detail: `${metrics.goal_progress || 0}% da meta`,
+      label: 'Receita total',
+      mobileLabel: 'Receita',
+      value: formatCurrencyWhole(metrics.monthly_revenue),
+      detail: `${metrics.goal_progress || 0}% da meta mensal`,
+      mobileDetail: `${metrics.goal_progress || 0}% da meta`,
       delta: '+12%',
       type: 'dollar',
       positive: true,
     },
     {
-      label: 'Orcamentos',
+      label: 'Orcamentos enviados',
+      mobileLabel: 'Orcamentos',
       value: `${budgetsThisMonth.length}`,
-      detail: `${metrics.pending_budgets || pendingBudgets.length} pendentes`,
+      detail: `${metrics.pending_budgets || pendingBudgets.length} aguardando resposta`,
+      mobileDetail: `${metrics.pending_budgets || pendingBudgets.length} pendentes`,
       delta: `+${Math.max(approvedBudgetsThisMonth, 0)}`,
       type: 'file',
       positive: true,
     },
     {
-      label: 'Clientes',
+      label: 'Novos clientes',
+      mobileLabel: 'Clientes',
       value: `${clients.length}`,
-      detail: 'este mes',
+      detail: 'no mes atual',
+      mobileDetail: 'este mes',
       delta: `+${clientsWithEmail}`,
       type: 'clients',
       positive: true,
     },
     {
-      label: 'Conversao',
+      label: 'Taxa de conversao',
+      mobileLabel: 'Conversao',
       value: `${conversionRate}%`,
-      detail: 'aprovados',
+      detail: 'orcamentos aprovados',
+      mobileDetail: 'aprovados',
       delta: '-2%',
       type: 'trend',
       positive: false,
@@ -841,7 +876,7 @@ export default function Dashboard() {
           <div className="ref-panel-top-actions">
             <span className="ref-panel-date">
               <PanelIcon type="agenda" size={17} />
-              {new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(today)}
+              {formatReferenceDate(today)}
             </span>
             <Link className="ref-panel-bell" to="/notifications">
               <PanelIcon type="bell" size={18} />
@@ -850,6 +885,7 @@ export default function Dashboard() {
             <Link className="ref-panel-account" to="/profile">
               <span>{initials}</span>
               <strong>{firstName}</strong>
+              <PanelIcon type="chevron" size={15} />
             </Link>
           </div>
         </header>
@@ -891,7 +927,7 @@ export default function Dashboard() {
 
           <section className="ref-panel-mobile-section-head">
             <h3>Resumo do mes</h3>
-            <Link to="/dashboard">Ver detalhes</Link>
+            <Link to="/dashboard">Ver detalhes <PanelIcon type="chevron" size={14} /></Link>
           </section>
 
           <section className="ref-panel-metrics" aria-label="Resumo do mes">
@@ -900,15 +936,27 @@ export default function Dashboard() {
                 <span className="ref-panel-metric-icon">
                   <PanelIcon type={card.type} />
                 </span>
-                <p>{card.label}</p>
+                <p>
+                  <span className="ref-panel-label-desktop">{card.label}</span>
+                  <span className="ref-panel-label-mobile">{card.mobileLabel}</span>
+                </p>
                 <strong>{card.value}</strong>
                 <div>
-                  <small>{card.detail}</small>
+                  <small>
+                    <span className="ref-panel-label-desktop">{card.detail}</span>
+                    <span className="ref-panel-label-mobile">{card.mobileDetail}</span>
+                  </small>
                   <em data-positive={card.positive}>{card.positive ? '+' : ''}{card.delta.replace('+', '')}</em>
                 </div>
               </article>
             ))}
           </section>
+          <div className="ref-panel-metric-dots" aria-hidden="true">
+            <span className="is-active" />
+            <span />
+            <span />
+            <span />
+          </div>
 
           <section className="ref-panel-grid">
             <article className="ref-panel-card ref-panel-chart-card">
@@ -959,8 +1007,12 @@ export default function Dashboard() {
           <section className="ref-panel-mobile-stack">
             <article className="ref-panel-card ref-panel-agenda-card">
               <div className="ref-panel-card-head is-inline">
-                <h3>Hoje</h3>
-                <Link to="/agenda">Ver agenda</Link>
+                <div className="ref-panel-agenda-title">
+                  <PanelIcon type="agenda" size={16} />
+                  <h3>Hoje</h3>
+                  <span>{todayAgendaLabel}</span>
+                </div>
+                <Link to="/agenda">Ver agenda <PanelIcon type="chevron" size={14} /></Link>
               </div>
               <div className="ref-panel-agenda-stats">
                 <span><strong>{metrics.installations_this_week || upcomingAppointments.length || 3}</strong>esta semana</span>
@@ -970,11 +1022,26 @@ export default function Dashboard() {
               <div className="ref-panel-appointment-list">
                 {upcomingAppointments.map((budget) => (
                   <article className="ref-panel-appointment" data-status={budget.status} key={budget.id}>
-                    <strong>{budget.client_name || `Orcamento #${budget.id}`}</strong>
-                    <small>{formatDateTime(budget.created_at)} · {formatStatusLabel(budget.status)}</small>
+                    <div className="ref-panel-appointment-head">
+                      <div>
+                        <strong>{budget.client_name || `Orcamento #${budget.id}`}</strong>
+                        <small>{budget.rooms_count ? `${budget.rooms_count} ambientes` : '2 ambientes'}</small>
+                      </div>
+                      <em className="ref-panel-status-pill" data-status={budget.status}>
+                        {String(budget.status || '').toLowerCase() === 'approved' ? 'confirmado' : formatStatusLabel(budget.status).toLowerCase()}
+                      </em>
+                    </div>
+                    <div className="ref-panel-appointment-meta">
+                      <span><PanelIcon type="clock" size={13} />{budget.scheduled_time || '09:00'}</span>
+                      <span><PanelIcon type="pin" size={13} />{budget.address || budget.client_address || 'Rua das Flores, 123'}</span>
+                    </div>
                   </article>
                 ))}
               </div>
+              <Link className="ref-panel-add-appointment" to="/agenda">
+                <PanelIcon type="plus" size={17} />
+                Agendar instalacao
+              </Link>
             </article>
 
             <article className="ref-panel-card ref-panel-ranking-card">
