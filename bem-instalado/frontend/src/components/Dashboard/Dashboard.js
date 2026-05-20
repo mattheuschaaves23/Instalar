@@ -912,8 +912,13 @@ export default function Dashboard() {
               <h1>Bom dia, <span>{firstName}</span></h1>
               <h2>Ola, <span>{firstName}</span></h2>
               <small>
-                Voce tem <strong>{metrics.installations_this_week || upcomingAppointments.length || 3} instalacoes</strong> agendadas para esta semana.
-                Continue assim para alcancar sua meta mensal.
+                <span className="ref-panel-hero-copy-desktop">
+                  Voce tem <strong>{metrics.installations_this_week || upcomingAppointments.length || 3} instalacoes</strong> agendadas para esta semana.
+                  Continue assim para alcancar sua meta mensal.
+                </span>
+                <span className="ref-panel-hero-copy-mobile">
+                  Continue assim para alcancar sua <strong>meta mensal</strong>.
+                </span>
               </small>
             </div>
             <div className="ref-panel-hero-actions">
@@ -1049,8 +1054,8 @@ export default function Dashboard() {
                 <h3>Ranking</h3>
                 <span>Top instaladores</span>
               </div>
-              {rankingItems.map((item) => (
-                <div className="ref-panel-ranking-row" key={item.id || item.display_name}>
+              {rankingItems.map((item, index) => (
+                <div className="ref-panel-ranking-row" key={item.id || item.display_name || item.name || `ranking-${index}`}>
                   <em>#{item.ranking_position || 1}</em>
                   <span>{item.display_name || 'Instalador'}</span>
                   <strong>{Number(item.average_rating || 0).toFixed(1)}</strong>
@@ -1456,8 +1461,8 @@ export default function Dashboard() {
             {ranking.length > 0 ? (
               <div className="dashboard-neo-top-list">
                 <p className="dashboard-neo-mini-title">Melhores instaladores no ranking público</p>
-                {ranking.slice(0, 3).map((item) => (
-                  <div className="dashboard-neo-top-item" key={item.id}>
+                {ranking.slice(0, 3).map((item, index) => (
+                  <div className="dashboard-neo-top-item" key={item.id || item.display_name || item.name || `top-${index}`}>
                     <span>#{item.ranking_position}</span>
                     <p>{item.display_name}</p>
                     <strong>{Number(item.average_rating || 0).toFixed(1)}</strong>

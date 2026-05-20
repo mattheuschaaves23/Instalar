@@ -2,11 +2,25 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import InstallerPanelShell from './InstallerPanelShell';
+
+const PANEL_ROUTE_PREFIXES = [
+  '/agenda',
+  '/budgets',
+  '/clients',
+  '/profile',
+  '/subscription',
+  '/notifications',
+  '/support',
+];
 
 export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isStandaloneDashboard = location.pathname === '/dashboard';
+  const isInstallerPanelRoute = PANEL_ROUTE_PREFIXES.some((route) =>
+    location.pathname === route || location.pathname.startsWith(`${route}/`)
+  );
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -16,6 +30,16 @@ export default function Layout() {
     return (
       <div className="app-layout dashboard-reference-layout">
         <Outlet />
+      </div>
+    );
+  }
+
+  if (isInstallerPanelRoute) {
+    return (
+      <div className="app-layout dashboard-reference-layout">
+        <InstallerPanelShell>
+          <Outlet />
+        </InstallerPanelShell>
       </div>
     );
   }

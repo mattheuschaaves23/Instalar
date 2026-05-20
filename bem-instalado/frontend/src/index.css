@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 :root {
-  --bg: #050505;
+  --bg: #000000;
   --bg-soft: #0d0c0b;
   --surface: rgba(16, 15, 13, 0.9);
   --surface-strong: rgba(23, 21, 17, 0.98);
@@ -37,10 +37,7 @@ body {
   overflow-x: hidden;
   font-family: 'Manrope', 'Segoe UI', sans-serif;
   color: var(--text);
-  background:
-    radial-gradient(circle at top left, rgba(205, 163, 73, 0.14), transparent 28%),
-    radial-gradient(circle at top right, rgba(205, 163, 73, 0.08), transparent 24%),
-    linear-gradient(180deg, #040404 0%, #090807 40%, #050505 100%);
+  background: rgb(0, 0, 0);
 }
 
 #root {
@@ -19193,6 +19190,10 @@ body,
   color: var(--ref-gold);
 }
 
+.ref-panel-hero-copy-mobile {
+  display: none;
+}
+
 .ref-panel-hero-actions {
   display: flex;
   align-items: center;
@@ -19642,6 +19643,25 @@ body,
   display: none;
 }
 
+.ref-panel-mobile-drawer,
+.ref-panel-drawer-backdrop {
+  display: none;
+}
+
+.ref-panel-route-content {
+  align-content: start;
+}
+
+.ref-panel-route-content > section {
+  width: 100%;
+}
+
+.ref-panel-route-content .page-shell,
+.ref-panel-route-content .agenda-modern-shell,
+.ref-panel-route-content .client-intake-shell {
+  color: var(--ref-text);
+}
+
 @keyframes refPanelEnter {
   from {
     opacity: 0;
@@ -19659,6 +19679,50 @@ body,
   .ref-panel-topbar,
   .ref-panel-grid {
     display: none;
+  }
+
+  .ref-panel-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    display: block;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0);
+    opacity: 0;
+    transition: opacity 180ms ease, background-color 180ms ease;
+  }
+
+  .ref-panel-drawer-backdrop.is-open {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.62);
+    opacity: 1;
+    backdrop-filter: blur(10px);
+  }
+
+  .ref-panel-mobile-drawer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    z-index: 50;
+    width: min(19rem, calc(100vw - 2rem));
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--ref-line-soft);
+    background: #050505;
+    transform: translateX(105%);
+    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .ref-panel-mobile-drawer.is-open {
+    transform: translateX(0);
+  }
+
+  .ref-panel-mobile-drawer .ref-panel-sidebar {
+    position: static;
+    width: 100%;
+    display: flex;
+    border-right: 0;
   }
 
   .ref-panel-main,
@@ -19740,6 +19804,19 @@ body,
     padding: 0.9rem 1rem calc(6rem + env(safe-area-inset-bottom, 0px));
   }
 
+  .ref-panel-route-content {
+    width: 100vw;
+    max-width: 100vw;
+    overflow: hidden;
+    padding: 0.9rem 1rem calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ref-panel-route-content > section {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+    justify-self: center;
+  }
+
   .ref-panel-hero {
     width: calc(100vw - 2rem);
     max-width: calc(100vw - 2rem);
@@ -19767,6 +19844,14 @@ body,
   .ref-panel-hero small {
     margin-top: 0.95rem;
     font-size: 0.88rem;
+  }
+
+  .ref-panel-hero-copy-desktop {
+    display: none;
+  }
+
+  .ref-panel-hero-copy-mobile {
+    display: inline;
   }
 
   .ref-panel-hero-actions {
@@ -20090,5 +20175,274 @@ body,
   .ref-panel-nav-link,
   .ref-panel-bottom-tab {
     transition: none !important;
+  }
+}
+
+.dashboard-reference-layout .page-shell,
+.dashboard-reference-layout .agenda-modern-shell,
+.dashboard-reference-layout .client-intake-shell {
+  --route-panel: #060606;
+  --route-panel-soft: #0b0b0b;
+  --route-line: rgba(255, 255, 255, 0.08);
+  --route-line-gold: rgba(226, 180, 45, 0.22);
+  --route-muted: #8f8f8f;
+  min-width: 0;
+}
+
+.dashboard-reference-layout .page-intro-main,
+.dashboard-reference-layout .page-intro-stat,
+.dashboard-reference-layout .list-surface,
+.dashboard-reference-layout .agenda-modern-hero,
+.dashboard-reference-layout .agenda-modern-calendar-card,
+.dashboard-reference-layout .agenda-modern-day-panel,
+.dashboard-reference-layout .agenda-modern-summary-card,
+.dashboard-reference-layout .client-intake-form-shell,
+.dashboard-reference-layout .client-intake-side-card,
+.dashboard-reference-layout .client-intake-mobile-list {
+  border: 1px solid var(--route-line);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(226, 180, 45, 0.06), transparent 35%),
+    var(--route-panel);
+  box-shadow: none;
+}
+
+.dashboard-reference-layout .page-intro-main::before,
+.dashboard-reference-layout .page-intro-stat::before,
+.dashboard-reference-layout .lux-panel::before,
+.dashboard-reference-layout .lux-panel-soft::before {
+  display: none;
+}
+
+.dashboard-reference-layout .eyebrow,
+.dashboard-reference-layout .agenda-modern-eyebrow,
+.dashboard-reference-layout .agenda-modern-section-label,
+.dashboard-reference-layout .client-intake-kicker {
+  color: var(--ref-gold);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.dashboard-reference-layout .page-title,
+.dashboard-reference-layout .agenda-modern-hero h1,
+.dashboard-reference-layout .client-intake-form-head h2 {
+  color: var(--ref-text);
+  font-size: clamp(1.65rem, 2.5vw, 2.25rem);
+  font-weight: 780;
+  line-height: 1.15;
+}
+
+.dashboard-reference-layout .page-copy,
+.dashboard-reference-layout .agenda-modern-hero-copy > p,
+.dashboard-reference-layout .client-intake-form-head span,
+.dashboard-reference-layout .client-intake-section-title p {
+  color: var(--route-muted);
+  line-height: 1.65;
+}
+
+.dashboard-reference-layout .gold-button,
+.dashboard-reference-layout .agenda-modern-primary-button,
+.dashboard-reference-layout .client-intake-primary,
+.dashboard-reference-layout .client-intake-save,
+.dashboard-reference-layout .client-intake-zip-button {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: linear-gradient(135deg, var(--ref-gold-strong), #c28d12);
+  color: #100b03;
+  font-size: 0.86rem;
+  font-weight: 850;
+  text-decoration: none;
+  box-shadow: 0 14px 28px rgba(226, 180, 45, 0.18);
+}
+
+.dashboard-reference-layout .ghost-button,
+.dashboard-reference-layout .danger-button,
+.dashboard-reference-layout .client-intake-secondary,
+.dashboard-reference-layout .agenda-modern-chip-button,
+.dashboard-reference-layout .agenda-modern-icon-button,
+.dashboard-reference-layout .agenda-modern-action,
+.dashboard-reference-layout .agenda-modern-summary-link {
+  min-height: 2.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid var(--route-line);
+  border-radius: 0.8rem;
+  background: #050505;
+  color: var(--ref-text);
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.dashboard-reference-layout .danger-button,
+.dashboard-reference-layout .agenda-modern-action.is-danger {
+  color: #ff8d8d;
+}
+
+.dashboard-reference-layout .page-intro-stats,
+.dashboard-reference-layout .agenda-modern-hero-metrics,
+.dashboard-reference-layout .client-intake-stat-grid {
+  gap: 1rem;
+}
+
+.dashboard-reference-layout .page-intro-stat,
+.dashboard-reference-layout .agenda-modern-hero-metrics article,
+.dashboard-reference-layout .client-intake-stat-grid article {
+  min-height: 8rem;
+  border: 1px solid var(--route-line);
+  border-radius: 0.95rem;
+  background: var(--route-panel-soft);
+  padding: 1rem;
+}
+
+.dashboard-reference-layout .metric-value,
+.dashboard-reference-layout .agenda-modern-hero-metrics strong,
+.dashboard-reference-layout .client-intake-stat-grid strong {
+  color: var(--ref-text);
+  font-size: 1.65rem;
+  font-weight: 850;
+}
+
+.dashboard-reference-layout .list-row {
+  border-color: var(--route-line);
+  background: transparent;
+}
+
+.dashboard-reference-layout .list-row:hover,
+.dashboard-reference-layout .agenda-modern-appointment:hover,
+.dashboard-reference-layout .client-intake-client-card:hover {
+  border-color: var(--route-line-gold);
+  background: rgba(226, 180, 45, 0.035);
+}
+
+.dashboard-reference-layout .status-pill,
+.dashboard-reference-layout .agenda-modern-status {
+  border: 0;
+  border-radius: 999px;
+  background: rgba(226, 180, 45, 0.14);
+  color: var(--ref-gold);
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.dashboard-reference-layout .status-pill[data-tone='approved'],
+.dashboard-reference-layout .status-pill[data-tone='completed'],
+.dashboard-reference-layout .agenda-modern-status[data-tone='completed'] {
+  background: rgba(24, 217, 149, 0.14);
+  color: #36df9b;
+}
+
+.dashboard-reference-layout .field-input,
+.dashboard-reference-layout .field-select,
+.dashboard-reference-layout .client-intake-field input,
+.dashboard-reference-layout .client-intake-field select,
+.dashboard-reference-layout .client-intake-field textarea {
+  border: 1px solid var(--route-line);
+  border-radius: 0.8rem;
+  background: #030303;
+  color: var(--ref-text);
+}
+
+.dashboard-reference-layout .agenda-modern-layout,
+.dashboard-reference-layout .client-intake-layout {
+  gap: 1.5rem;
+}
+
+.dashboard-reference-layout .agenda-modern-calendar-grid {
+  gap: 0.35rem;
+}
+
+.dashboard-reference-layout .agenda-modern-day {
+  border-radius: 0.7rem;
+  color: var(--ref-text);
+}
+
+.dashboard-reference-layout .agenda-modern-day[data-selected='true'] {
+  background: var(--ref-gold);
+  color: #100b03;
+}
+
+.dashboard-reference-layout .agenda-modern-day-marker,
+.dashboard-reference-layout .agenda-modern-legend .has-events {
+  background: #21d88a;
+}
+
+.dashboard-reference-layout .agenda-modern-appointment,
+.dashboard-reference-layout .client-intake-client-card {
+  border: 1px solid var(--route-line);
+  border-radius: 0.95rem;
+  background: #050505;
+}
+
+.dashboard-reference-layout .client-intake-topbar,
+.dashboard-reference-layout .client-intake-mobile-dock {
+  display: none;
+}
+
+.dashboard-reference-layout .client-intake-layout {
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.75fr);
+}
+
+.dashboard-reference-layout .client-intake-main,
+.dashboard-reference-layout .client-intake-side {
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-reference-layout .page-shell,
+  .dashboard-reference-layout .agenda-modern-shell,
+  .dashboard-reference-layout .client-intake-shell {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+    margin-inline: auto;
+  }
+
+  .dashboard-reference-layout .page-intro-main,
+  .dashboard-reference-layout .agenda-modern-hero,
+  .dashboard-reference-layout .agenda-modern-calendar-card,
+  .dashboard-reference-layout .agenda-modern-day-panel,
+  .dashboard-reference-layout .client-intake-form-shell,
+  .dashboard-reference-layout .client-intake-side-card,
+  .dashboard-reference-layout .client-intake-mobile-list {
+    border-radius: 0.9rem;
+    padding: 1rem;
+  }
+
+  .dashboard-reference-layout .page-intro-stats,
+  .dashboard-reference-layout .agenda-modern-hero-metrics,
+  .dashboard-reference-layout .client-intake-stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .dashboard-reference-layout .page-intro-stat,
+  .dashboard-reference-layout .agenda-modern-hero-metrics article,
+  .dashboard-reference-layout .client-intake-stat-grid article {
+    min-height: 3.8rem;
+    padding: 0.75rem;
+  }
+
+  .dashboard-reference-layout .metric-value,
+  .dashboard-reference-layout .agenda-modern-hero-metrics strong,
+  .dashboard-reference-layout .client-intake-stat-grid strong {
+    font-size: 1.1rem;
+  }
+
+  .dashboard-reference-layout .client-intake-layout,
+  .dashboard-reference-layout .agenda-modern-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-reference-layout .client-intake-side {
+    display: grid;
   }
 }
