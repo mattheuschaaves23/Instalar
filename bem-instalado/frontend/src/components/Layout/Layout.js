@@ -6,10 +6,19 @@ import Header from './Header';
 export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isStandaloneDashboard = location.pathname === '/dashboard';
 
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  if (isStandaloneDashboard) {
+    return (
+      <div className="app-layout dashboard-reference-layout">
+        <Outlet />
+      </div>
+    );
+  }
 
   return (
     <div className="app-layout app-layout-shell overflow-x-hidden md:flex">

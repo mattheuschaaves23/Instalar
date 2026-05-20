@@ -143,12 +143,56 @@ function DashboardDockIcon({ type }) {
 }
 
 const MOBILE_DOCK_ITEMS = [
-  { to: '/dashboard', label: 'Dashboard', icon: 'home' },
+  { to: '/dashboard', label: 'Inicio', icon: 'home' },
   { to: '/budgets', label: 'Orçamentos', icon: 'budgets' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
   { to: '/agenda', label: 'Agenda', icon: 'agenda' },
   { to: '/profile', label: 'Perfil', icon: 'profile' },
 ];
+
+const PANEL_NAV_ITEMS = [
+  { to: '/dashboard', label: 'Inicio', icon: 'grid', section: 'VISAO GERAL' },
+  { to: '/dashboard', label: 'Desempenho', icon: 'trend' },
+  { to: '/agenda', label: 'Agenda', icon: 'agenda', badge: 3 },
+  { to: '/budgets', label: 'Orcamentos', icon: 'file', section: 'OPERACAO' },
+  { to: '/clients', label: 'Clientes', icon: 'clients' },
+  { to: '/profile', label: 'Perfil', icon: 'profile', section: 'CONTA' },
+  { to: '/subscription', label: 'Assinatura', icon: 'card' },
+  { to: '/notifications', label: 'Notificacoes', icon: 'bell', badge: 2 },
+  { to: '/support', label: 'Suporte', icon: 'help' },
+];
+
+function PanelIcon({ type, size = 20 }) {
+  const sharedProps = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': 'true',
+  };
+
+  const icons = {
+    grid: <><rect x="4" y="4" width="6" height="6" rx="1.2" /><rect x="14" y="4" width="6" height="6" rx="1.2" /><rect x="4" y="14" width="6" height="6" rx="1.2" /><rect x="14" y="14" width="6" height="6" rx="1.2" /></>,
+    trend: <><path d="M4 16.5 9 11l4 3 6-7" /><path d="M15 7h4v4" /></>,
+    agenda: <><rect x="4" y="5" width="16" height="15" rx="2.4" /><path d="M8 3v4M16 3v4M4 10h16" /></>,
+    file: <><path d="M7 3.8h7l3 3V20H7z" /><path d="M14 3.8V7h3" /><path d="M9.5 11h5M9.5 15h4" /></>,
+    clients: <><circle cx="9" cy="9" r="3" /><circle cx="17" cy="10" r="2.2" /><path d="M3.8 19c.9-3.1 2.8-4.7 5.2-4.7s4.3 1.6 5.2 4.7" /><path d="M14.8 15c1.9.4 3.3 1.7 4 4" /></>,
+    profile: <><circle cx="12" cy="8" r="3.2" /><path d="M5.4 19c1.5-3 4-4.5 6.6-4.5s5.1 1.5 6.6 4.5" /></>,
+    card: <><rect x="4" y="6.5" width="16" height="11" rx="2" /><path d="M4 10h16" /></>,
+    bell: <><path d="M18 10.8a6 6 0 0 0-12 0c0 5-2 5.7-2 5.7h16s-2-.7-2-5.7" /><path d="M10 20a2.4 2.4 0 0 0 4 0" /></>,
+    help: <><circle cx="12" cy="12" r="8.5" /><path d="M9.8 9.4a2.4 2.4 0 1 1 3.6 2.1c-.9.5-1.4 1.1-1.4 2.2" /><path d="M12 17.2h.01" /></>,
+    search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></>,
+    dollar: <><circle cx="12" cy="12" r="8.5" /><path d="M14.8 9.4c0-1.2-1-2.1-2.6-2.1-1.6 0-2.7.8-2.7 2.1 0 2.7 5.5 1.6 5.5 4.2 0 1.2-1 2.1-2.8 2.1-1.7 0-2.8-.9-2.9-2.2" /><path d="M12 6v12" /></>,
+    arrow: <><path d="M7 17 17 7" /><path d="M9 7h8v8" /></>,
+    menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
+  };
+
+  return <svg {...sharedProps}>{icons[type] || icons.grid}</svg>;
+}
 
 function compactCurrency(value) {
   const amount = Number(value || 0);
@@ -493,6 +537,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const [chartView, setChartView] = useState('monthly');
   const [chartDate, setChartDate] = useState(() => new Date());
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -696,6 +741,298 @@ export default function Dashboard() {
 
     setChartDate((current) => new Date(current.getFullYear(), nextMonth, 1));
   };
+
+  const initials = (user?.name || 'Matheus Chaves')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() || 'MC';
+  const pendingBudgets = budgetsThisMonth.filter((budget) => String(budget.status || '').toLowerCase() === 'pending');
+  const conversionRate = budgetsThisMonth.length
+    ? Math.round((approvedBudgetsThisMonth / budgetsThisMonth.length) * 100)
+    : 0;
+  const referenceCards = [
+    {
+      label: 'Receita',
+      value: compactCurrency(metrics.monthly_revenue),
+      detail: `${metrics.goal_progress || 0}% da meta`,
+      delta: '+12%',
+      type: 'dollar',
+      positive: true,
+    },
+    {
+      label: 'Orcamentos',
+      value: `${budgetsThisMonth.length}`,
+      detail: `${metrics.pending_budgets || pendingBudgets.length} pendentes`,
+      delta: `+${Math.max(approvedBudgetsThisMonth, 0)}`,
+      type: 'file',
+      positive: true,
+    },
+    {
+      label: 'Clientes',
+      value: `${clients.length}`,
+      detail: 'este mes',
+      delta: `+${clientsWithEmail}`,
+      type: 'clients',
+      positive: true,
+    },
+    {
+      label: 'Conversao',
+      value: `${conversionRate}%`,
+      detail: 'aprovados',
+      delta: '-2%',
+      type: 'trend',
+      positive: false,
+    },
+  ];
+  const upcomingAppointments = filteredRecentBudgets.slice(0, 3);
+  const rankingItems = ranking.length
+    ? ranking.slice(0, 4)
+    : [
+        { id: 'self', ranking_position: metrics.ranking_position || 3, display_name: user?.name || 'Matheus Chaves', average_rating: metrics.average_rating || 4.8 },
+      ];
+
+  return (
+    <section className={`ref-panel-shell ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
+      <aside className="ref-panel-sidebar" aria-label="Navegacao do painel">
+        <div className="ref-panel-brand">
+          <span className="ref-panel-logo">P</span>
+          <strong>PapelPro</strong>
+          <button aria-label="Recolher menu" onClick={() => setSidebarCollapsed((current) => !current)} type="button">
+            <span>{sidebarCollapsed ? '>' : '<'}</span>
+          </button>
+        </div>
+
+        <div className="ref-panel-user">
+          <span className="ref-panel-avatar">{initials}</span>
+          <div>
+            <strong>{user?.name || 'Matheus Chaves'}</strong>
+            <small>Instalador Pro</small>
+          </div>
+        </div>
+
+        <nav className="ref-panel-nav">
+          {PANEL_NAV_ITEMS.map((item) => (
+            <div className="ref-panel-nav-block" key={`${item.section || ''}-${item.label}`}>
+              {item.section ? <p>{item.section}</p> : null}
+              <NavLink className={({ isActive }) => `ref-panel-nav-link ${isActive && item.label === 'Inicio' ? 'is-active' : ''}`} to={item.to}>
+                <PanelIcon type={item.icon} />
+                <span>{item.label}</span>
+                {item.badge ? <em>{item.badge}</em> : null}
+              </NavLink>
+            </div>
+          ))}
+        </nav>
+
+        <button className="ref-panel-logout" type="button">
+          <PanelIcon type="profile" />
+          <span>Sair</span>
+        </button>
+      </aside>
+
+      <div className="ref-panel-main">
+        <header className="ref-panel-topbar">
+          <label className="ref-panel-search">
+            <PanelIcon type="search" size={18} />
+            <input onChange={(event) => setSearch(event.target.value)} placeholder="Buscar clientes, orcamentos..." type="search" value={search} />
+          </label>
+          <div className="ref-panel-top-actions">
+            <span className="ref-panel-date">
+              <PanelIcon type="agenda" size={17} />
+              {new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(today)}
+            </span>
+            <Link className="ref-panel-bell" to="/notifications">
+              <PanelIcon type="bell" size={18} />
+              <em>2</em>
+            </Link>
+            <Link className="ref-panel-account" to="/profile">
+              <span>{initials}</span>
+              <strong>{firstName}</strong>
+            </Link>
+          </div>
+        </header>
+
+        <header className="ref-panel-mobile-header">
+          <button type="button">
+            <PanelIcon type="menu" />
+          </button>
+          <div>
+            <span className="ref-panel-logo">P</span>
+            <strong>PapelPro</strong>
+          </div>
+          <nav aria-label="Acoes rapidas do painel">
+            <Link to="/dashboard"><PanelIcon type="search" size={18} /></Link>
+            <Link to="/notifications"><PanelIcon type="bell" size={18} /><em /></Link>
+            <Link to="/profile" className="ref-panel-avatar">{initials}</Link>
+          </nav>
+        </header>
+
+        <main className="ref-panel-content">
+          <section className="ref-panel-hero">
+            <div>
+              <p>Painel do instalador</p>
+              <h1>Bom dia, <span>{firstName}</span></h1>
+              <h2>Ola, <span>{firstName}</span></h2>
+              <small>
+                Voce tem <strong>{metrics.installations_this_week || upcomingAppointments.length || 3} instalacoes</strong> agendadas para esta semana.
+                Continue assim para alcancar sua meta mensal.
+              </small>
+            </div>
+            <div className="ref-panel-hero-actions">
+              <span className="ref-panel-week-badge"><i />{metrics.installations_this_week || 3} esta semana</span>
+              <Link className="ref-panel-primary" to="/budgets/new">
+                Novo orcamento <PanelIcon type="arrow" size={16} />
+              </Link>
+              <Link className="ref-panel-secondary" to="/agenda">Ver agenda</Link>
+            </div>
+          </section>
+
+          <section className="ref-panel-mobile-section-head">
+            <h3>Resumo do mes</h3>
+            <Link to="/dashboard">Ver detalhes</Link>
+          </section>
+
+          <section className="ref-panel-metrics" aria-label="Resumo do mes">
+            {referenceCards.map((card, index) => (
+              <article className="ref-panel-metric-card" key={card.label} style={{ animationDelay: `${index * 70}ms` }}>
+                <span className="ref-panel-metric-icon">
+                  <PanelIcon type={card.type} />
+                </span>
+                <p>{card.label}</p>
+                <strong>{card.value}</strong>
+                <div>
+                  <small>{card.detail}</small>
+                  <em data-positive={card.positive}>{card.positive ? '+' : ''}{card.delta.replace('+', '')}</em>
+                </div>
+              </article>
+            ))}
+          </section>
+
+          <section className="ref-panel-grid">
+            <article className="ref-panel-card ref-panel-chart-card">
+              <div className="ref-panel-card-head">
+                <div>
+                  <h3>Visao geral de vendas</h3>
+                  <p>{chartData.description}</p>
+                </div>
+                <div className="ref-panel-tabs">
+                  {CHART_VIEWS.map((view) => (
+                    <button className={chartView === view ? 'is-active' : ''} key={view} onClick={() => handleChartViewChange(view)} type="button">
+                      {CHART_VIEW_LABELS[view]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="ref-panel-chart-wrap">
+                <svg aria-hidden="true" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}>
+                  {chartGeometry.ticks.map((tick) => (
+                    <line className="ref-panel-chart-gridline" key={`grid-${tick.y}`} x1={CHART_PADDING_X} x2={CHART_WIDTH - CHART_PADDING_X} y1={tick.y} y2={tick.y} />
+                  ))}
+                  <path className="ref-panel-chart-area" d={chartGeometry.areaPath} />
+                  <path className="ref-panel-chart-line" d={chartGeometry.linePath} />
+                </svg>
+              </div>
+            </article>
+
+            <article className="ref-panel-card ref-panel-donut-card">
+              <div className="ref-panel-card-head">
+                <div>
+                  <h3>Distribuicao das propostas</h3>
+                  <p>Como o valor total do mes esta dividido por status.</p>
+                </div>
+              </div>
+              <div className="ref-panel-donut-row">
+                <div className="ref-panel-donut" style={{ background: segmentData.gradient }}>
+                  <span>{budgetsThisMonth.length || segmentData.items.length}<small>propostas</small></span>
+                </div>
+                <div className="ref-panel-legend">
+                  {segmentData.items.map((item) => (
+                    <p key={item.label}><i style={{ background: item.color }} />{item.label}<strong>{Math.round(item.percentage || 0)}%</strong></p>
+                  ))}
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section className="ref-panel-mobile-stack">
+            <article className="ref-panel-card ref-panel-agenda-card">
+              <div className="ref-panel-card-head is-inline">
+                <h3>Hoje</h3>
+                <Link to="/agenda">Ver agenda</Link>
+              </div>
+              <div className="ref-panel-agenda-stats">
+                <span><strong>{metrics.installations_this_week || upcomingAppointments.length || 3}</strong>esta semana</span>
+                <span><strong>{metrics.completed_this_week || 1}</strong>concluidas</span>
+                <span><strong>{pendingBudgets.length || 2}</strong>pendentes</span>
+              </div>
+              <div className="ref-panel-appointment-list">
+                {upcomingAppointments.map((budget) => (
+                  <article className="ref-panel-appointment" data-status={budget.status} key={budget.id}>
+                    <strong>{budget.client_name || `Orcamento #${budget.id}`}</strong>
+                    <small>{formatDateTime(budget.created_at)} · {formatStatusLabel(budget.status)}</small>
+                  </article>
+                ))}
+              </div>
+            </article>
+
+            <article className="ref-panel-card ref-panel-ranking-card">
+              <div className="ref-panel-card-head is-inline">
+                <h3>Ranking</h3>
+                <span>Top instaladores</span>
+              </div>
+              {rankingItems.map((item) => (
+                <div className="ref-panel-ranking-row" key={item.id || item.display_name}>
+                  <em>#{item.ranking_position || 1}</em>
+                  <span>{item.display_name || 'Instalador'}</span>
+                  <strong>{Number(item.average_rating || 0).toFixed(1)}</strong>
+                </div>
+              ))}
+            </article>
+
+            <article className="ref-panel-card ref-panel-quotes-card">
+              <div className="ref-panel-card-head is-inline">
+                <h3>Orcamentos recentes</h3>
+                <Link to="/budgets">Ver todos</Link>
+              </div>
+              {filteredRecentBudgets.map((budget) => (
+                <Link className="ref-panel-quote-row" key={budget.id} to="/budgets">
+                  <span>#{budget.id}</span>
+                  <strong>{budget.client_name || 'Cliente nao informado'}</strong>
+                  <em>{formatCurrency(budget.total_amount)}</em>
+                </Link>
+              ))}
+            </article>
+
+            <article className="ref-panel-card ref-panel-finance-card">
+              <div className="ref-panel-card-head">
+                <div>
+                  <h3>Resumo financeiro</h3>
+                  <p>Leitura rapida do que entra, aberto e desempenho.</p>
+                </div>
+              </div>
+              {quickSummary.map((item) => (
+                <div className="ref-panel-finance-row" key={item.label}>
+                  <span>{item.label}</span>
+                  <strong data-tone={item.tone}>{item.value}</strong>
+                </div>
+              ))}
+            </article>
+          </section>
+        </main>
+
+        <nav aria-label="Navegacao mobile" className="ref-panel-bottom-nav">
+          {MOBILE_DOCK_ITEMS.map((item) => (
+            <NavLink className={({ isActive }) => `ref-panel-bottom-tab ${isActive ? 'is-active' : ''}`} key={item.to} to={item.to}>
+              <DashboardDockIcon type={item.icon} />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+    </section>
+  );
 
   return (
     <section className="dashboard-neo-shell">
