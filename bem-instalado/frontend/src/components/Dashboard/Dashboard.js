@@ -615,7 +615,7 @@ export default function Dashboard() {
   const dashboardCards = [
     {
       label: 'Receita total',
-      value: formatCurrency(metrics.monthly_revenue),
+      value: compactCurrency(metrics.monthly_revenue),
       detail: `${metrics.goal_progress || 0}% da meta mensal`,
       tone: 'blue',
       type: 'revenue',
@@ -636,7 +636,7 @@ export default function Dashboard() {
     },
     {
       label: 'Ticket medio',
-      value: formatCurrency(averageTicket),
+      value: compactCurrency(averageTicket),
       detail: `${approvedBudgetsThisMonth || 0} aprovados no mes`,
       tone: 'orange',
       type: 'ticket',
