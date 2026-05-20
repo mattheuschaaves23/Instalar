@@ -18754,3 +18754,22 @@ body {
     transition: none !important;
   }
 }
+
+:root {
+  --bg: rgb(0, 0, 0);
+  --bg-soft: rgb(0, 0, 0);
+}
+
+html,
+body,
+#root,
+.app-layout,
+.app-layout-shell,
+.auth-scene,
+.clean-landing-shell,
+.client-app-page,
+.showcase-landing-shell,
+.installer-login-page,
+.client-login-page {
+  background: rgb(0, 0, 0) !important;
+}
