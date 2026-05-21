@@ -16,10 +16,10 @@ const ADMIN_MOBILE_DOCK_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
 
 const PANEL_NAV_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'grid', section: 'VISAO GERAL' },
-  { to: '/agenda', label: 'Agenda', icon: 'agenda', badgeKey: 'agenda' },
-  { to: '/budgets', label: 'Orcamentos', icon: 'file', section: 'OPERACAO' },
-  { to: '/clients', label: 'Clientes', icon: 'clients' },
   { to: '/reviews', label: 'Avaliacoes', icon: 'star', badgeKey: 'reviews' },
+  { to: '/agenda', label: 'Agenda', icon: 'agenda', section: 'OPERACAO', badgeKey: 'agenda' },
+  { to: '/budgets', label: 'Orcamentos', icon: 'file' },
+  { to: '/clients', label: 'Clientes', icon: 'clients' },
   { to: '/profile', label: 'Perfil', icon: 'profile', section: 'CONTA' },
   { to: '/subscription', label: 'Assinatura', icon: 'card' },
   { to: '/notifications', label: 'Notificacoes', icon: 'bell', badgeKey: 'notifications' },
