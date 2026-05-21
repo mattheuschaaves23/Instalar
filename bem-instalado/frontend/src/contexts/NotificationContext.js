@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from './AuthContext';
 
@@ -8,6 +8,7 @@ export function NotificationProvider({ children }) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const canLoadNotifications = user?.account_type === 'installer' || user?.is_admin;
+  const lastAttentionRefreshAtRef = useRef(0);
 
   const loadNotifications = useCallback(async () => {
     if (!canLoadNotifications) {
@@ -30,8 +31,32 @@ export function NotificationProvider({ children }) {
       return undefined;
     }
 
-    const interval = setInterval(loadNotifications, 30000);
-    return () => clearInterval(interval);
+    const refreshWhenActive = () => {
+      if (!document.hidden) {
+        loadNotifications();
+      }
+    };
+
+    const refreshAfterAttentionReturn = () => {
+      const now = Date.now();
+
+      if (document.hidden || now - lastAttentionRefreshAtRef.current < 5000) {
+        return;
+      }
+
+      lastAttentionRefreshAtRef.current = now;
+      loadNotifications();
+    };
+
+    const interval = setInterval(refreshWhenActive, 30000);
+    window.addEventListener('focus', refreshAfterAttentionReturn);
+    document.addEventListener('visibilitychange', refreshAfterAttentionReturn);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', refreshAfterAttentionReturn);
+      document.removeEventListener('visibilitychange', refreshAfterAttentionReturn);
+    };
   }, [canLoadNotifications, loadNotifications, user?.id]);
 
   return (

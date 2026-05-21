@@ -19306,6 +19306,7 @@ body,
   gap: 0.8rem;
   padding: 1.25rem;
   border-radius: 1rem;
+  contain: layout paint;
   animation: refPanelEnter 260ms ease both;
 }
 
@@ -19366,6 +19367,7 @@ body,
 .ref-panel-card {
   padding: 1.5rem;
   border-radius: 1rem;
+  contain: layout paint;
 }
 
 .ref-panel-card-head,
@@ -20205,6 +20207,27 @@ body,
     height: 0.28rem;
     border-radius: 999px;
     background: var(--ref-gold);
+  }
+}
+
+@media (max-width: 1023px) {
+  .ref-panel-mobile-header,
+  .ref-panel-bottom-nav,
+  .ref-panel-drawer-backdrop.is-open {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .ref-panel-mobile-header {
+    background: #000;
+  }
+
+  .ref-panel-bottom-nav {
+    background: #030303;
+  }
+
+  .ref-panel-drawer-backdrop.is-open {
+    background: rgba(0, 0, 0, 0.68);
   }
 }
 

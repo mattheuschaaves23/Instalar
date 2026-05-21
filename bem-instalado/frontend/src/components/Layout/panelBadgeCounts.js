@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
@@ -48,6 +48,7 @@ export function usePanelBadgeCounts() {
   const refreshNotifications = notificationContext?.refreshNotifications;
   const [agenda, setAgenda] = useState(0);
   const canLoadCounts = user?.account_type === 'installer' || user?.is_admin;
+  const lastFocusedRefreshAtRef = useRef(0);
 
   const loadAgendaCount = useCallback(async () => {
     if (!canLoadCounts) {
@@ -63,9 +64,11 @@ export function usePanelBadgeCounts() {
     }
   }, [canLoadCounts]);
 
-  const refreshCounts = useCallback(() => {
+  const refreshCounts = useCallback((includeNotifications = false) => {
     loadAgendaCount();
-    refreshNotifications?.();
+    if (includeNotifications) {
+      refreshNotifications?.();
+    }
   }, [loadAgendaCount, refreshNotifications]);
 
   useEffect(() => {
@@ -75,21 +78,39 @@ export function usePanelBadgeCounts() {
       return undefined;
     }
 
-    const interval = setInterval(refreshCounts, BADGE_REFRESH_INTERVAL);
-    const refreshWhenVisible = () => {
+    const interval = setInterval(() => {
       if (!document.hidden) {
         refreshCounts();
       }
+    }, BADGE_REFRESH_INTERVAL);
+
+    const refreshAfterAttentionReturn = () => {
+      const now = Date.now();
+
+      if (document.hidden || now - lastFocusedRefreshAtRef.current < 5000) {
+        return;
+      }
+
+      lastFocusedRefreshAtRef.current = now;
+      refreshCounts(true);
     };
 
-    window.addEventListener('focus', refreshCounts);
-    window.addEventListener(PANEL_BADGE_REFRESH_EVENT, refreshCounts);
+    const refreshWhenVisible = () => {
+      if (!document.hidden) {
+        refreshAfterAttentionReturn();
+      }
+    };
+
+    const refreshAfterPanelEvent = () => refreshCounts(true);
+
+    window.addEventListener('focus', refreshAfterAttentionReturn);
+    window.addEventListener(PANEL_BADGE_REFRESH_EVENT, refreshAfterPanelEvent);
     document.addEventListener('visibilitychange', refreshWhenVisible);
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('focus', refreshCounts);
-      window.removeEventListener(PANEL_BADGE_REFRESH_EVENT, refreshCounts);
+      window.removeEventListener('focus', refreshAfterAttentionReturn);
+      window.removeEventListener(PANEL_BADGE_REFRESH_EVENT, refreshAfterPanelEvent);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
   }, [canLoadCounts, refreshCounts]);

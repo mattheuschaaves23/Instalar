@@ -66,7 +66,7 @@ export default function SubscriptionGate() {
     let isMounted = true;
 
     const validateInBackground = () => {
-      validateSubscriptionAccess(userKey, { force: true })
+      validateSubscriptionAccess(userKey)
         .then((nextCanUseApp) => {
           if (isMounted) {
             setCanUseApp(Boolean(nextCanUseApp));
