@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { hasAdminAccess } from '../../utils/adminAccess';
 
 function getAccountType(user) {
   return user?.account_type === 'client' ? 'client' : 'installer';
@@ -31,7 +32,7 @@ export default function ProtectedRoute({ allowedAccountTypes = ['installer'], lo
     return <Navigate replace state={{ from: location.pathname }} to={loginPath} />;
   }
 
-  const adminCanUseInstallerArea = user?.is_admin && allowedAccountTypes.includes('installer');
+  const adminCanUseInstallerArea = hasAdminAccess(user) && allowedAccountTypes.includes('installer');
 
   if (allowedAccountTypes.length > 0 && !allowedAccountTypes.includes(getAccountType(user)) && !adminCanUseInstallerArea) {
     return <Navigate replace to={getHomePath(user)} />;

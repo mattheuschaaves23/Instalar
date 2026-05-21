@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useConfirm } from '../../contexts/ConfirmContext';
-import PageIntro from '../Layout/PageIntro';
 import PaginationControls from '../Layout/PaginationControls';
 import {
   formatCurrency,
@@ -37,6 +36,52 @@ const initialStoreForm = {
 
 const USERS_PER_PAGE = 6;
 const PAYMENTS_PER_PAGE = 6;
+
+function AdminPanelIcon({ type }) {
+  const sharedProps = {
+    width: 20,
+    height: 20,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    strokeWidth: 1.8,
+    'aria-hidden': 'true',
+  };
+
+  const icons = {
+    overview: <><rect x="4" y="4" width="6" height="6" rx="1.2" /><rect x="14" y="4" width="6" height="6" rx="1.2" /><rect x="4" y="14" width="6" height="6" rx="1.2" /><rect x="14" y="14" width="6" height="6" rx="1.2" /></>,
+    users: <><circle cx="9" cy="9" r="3" /><circle cx="17" cy="10" r="2.2" /><path d="M3.8 19c.9-3.1 2.8-4.7 5.2-4.7s4.3 1.6 5.2 4.7" /><path d="M14.8 15c1.9.4 3.3 1.7 4 4" /></>,
+    payments: <><circle cx="12" cy="12" r="8.5" /><path d="M14.8 9.4c0-1.2-1-2.1-2.6-2.1-1.6 0-2.7.8-2.7 2.1 0 2.7 5.5 1.6 5.5 4.2 0 1.2-1 2.1-2.8 2.1-1.7 0-2.8-.9-2.9-2.2" /><path d="M12 6v12" /></>,
+    stores: <><path d="M5 9.2 6.2 4h11.6L19 9.2" /><path d="M5 9.2h14v9.3a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 18.5Z" /><path d="M8.4 13h7.2" /></>,
+    announcements: <><path d="M5 10.5v3a2 2 0 0 0 2 2h2.2l4.8 3.2v-13L9.2 8H7a2 2 0 0 0-2 2.5Z" /><path d="M17 9.2c.8.6 1.3 1.5 1.3 2.6s-.5 2-1.3 2.6" /></>,
+  };
+
+  return <svg {...sharedProps}>{icons[type] || icons.overview}</svg>;
+}
+
+function PageIntro({ title, description, stats = [] }) {
+  return (
+    <section className="admin-modern-hero">
+      <div className="admin-modern-hero-copy">
+        <p>Administracao</p>
+        <h1>{title || 'Painel ADM'}</h1>
+        <small>{description}</small>
+      </div>
+
+      <div className="admin-modern-hero-metrics" aria-label="Resumo administrativo">
+        {stats.map((stat) => (
+          <article key={stat.label}>
+            <span>{stat.label}</span>
+            <strong>{stat.value}</strong>
+            {stat.detail ? <small>{stat.detail}</small> : null}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function formatCurrencyParts(value) {
   const parts = new Intl.NumberFormat('pt-BR', {
@@ -541,14 +586,14 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <section className="page-shell space-y-7">
-        <div className="empty-state">Carregando painel administrativo...</div>
+      <section className="admin-modern-shell">
+        <div className="admin-modern-empty">Carregando painel administrativo...</div>
       </section>
     );
   }
 
   return (
-    <section className="page-shell space-y-7">
+    <section className="admin-modern-shell">
       <PageIntro
         description="Área exclusiva do criador para acompanhar operação, assinaturas, pagamentos, confiança dos perfis e comunicados globais da plataforma."
         eyebrow="Administrador"
@@ -580,13 +625,14 @@ export default function AdminDashboard() {
             onClick={() => setSearchParams({ section: section.key })}
             type="button"
           >
+            <span className="admin-section-tab-icon"><AdminPanelIcon type={section.key} /></span>
             <span className="admin-section-tab-label">{section.label}</span>
             <span className="admin-section-tab-detail">{section.detail}</span>
           </button>
         ))}
       </section>
 
-      <div className="grid gap-6">
+      <div className="admin-modern-body">
         <section className={`${['overview', 'payments'].includes(activeAdminSection.key) ? 'grid gap-6' : 'hidden'}`}>
           {activeAdminSection.key === 'overview' ? (
           <article className="lux-panel fade-up p-6">

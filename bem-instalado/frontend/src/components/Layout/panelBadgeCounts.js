@@ -28,7 +28,7 @@ export function getPanelBadgeValue(item, counts = {}) {
 
   const count = Number(counts[item.badgeKey] || 0);
 
-  if (item.badgeKey === 'agenda') {
+  if (item.badgeKey === 'agenda' || item.badgeKey === 'reviews') {
     return formatPanelBadgeCount(count);
   }
 
@@ -47,6 +47,7 @@ export function usePanelBadgeCounts() {
   const notifications = notificationContext?.notifications || [];
   const refreshNotifications = notificationContext?.refreshNotifications;
   const [agenda, setAgenda] = useState(0);
+  const [reviews, setReviews] = useState(0);
   const canLoadCounts = user?.account_type === 'installer' || user?.is_admin;
   const lastFocusedRefreshAtRef = useRef(0);
 
@@ -64,12 +65,27 @@ export function usePanelBadgeCounts() {
     }
   }, [canLoadCounts]);
 
+  const loadReviewCount = useCallback(async () => {
+    if (!canLoadCounts) {
+      setReviews(0);
+      return;
+    }
+
+    try {
+      const response = await api.get('/users/reviews/summary');
+      setReviews(Number(response.data?.review_count || 0));
+    } catch (_error) {
+      setReviews(0);
+    }
+  }, [canLoadCounts]);
+
   const refreshCounts = useCallback((includeNotifications = false) => {
     loadAgendaCount();
+    loadReviewCount();
     if (includeNotifications) {
       refreshNotifications?.();
     }
-  }, [loadAgendaCount, refreshNotifications]);
+  }, [loadAgendaCount, loadReviewCount, refreshNotifications]);
 
   useEffect(() => {
     refreshCounts();
@@ -120,8 +136,9 @@ export function usePanelBadgeCounts() {
   return useMemo(
     () => ({
       agenda,
+      reviews,
       notifications: unreadNotifications,
     }),
-    [agenda, unreadNotifications]
+    [agenda, reviews, unreadNotifications]
   );
 }

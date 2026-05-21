@@ -21,6 +21,7 @@ const Profile = lazy(() => import('./components/Profile/Profile'));
 const ClientLanding = lazy(() => import('./components/Public/ClientLanding'));
 const Home = lazy(() => import('./components/Public/Home'));
 const InstallerProfile = lazy(() => import('./components/Public/InstallerProfile'));
+const ReviewsDashboard = lazy(() => import('./components/Reviews/ReviewsDashboard'));
 const SupportChat = lazy(() => import('./components/Support/SupportChat'));
 const Subscription = lazy(() => import('./components/Subscription/Subscription'));
 
@@ -69,6 +70,7 @@ export default function App() {
                 <Route element={<Budgets />} path="/budgets" />
                 <Route element={<BudgetForm />} path="/budgets/new" />
                 <Route element={<Agenda />} path="/agenda" />
+                <Route element={<ReviewsDashboard />} path="/reviews" />
                 <Route element={<Notifications />} path="/notifications" />
               </Route>
             </Route>

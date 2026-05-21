@@ -8,6 +8,8 @@ const requireInstaller = requireAccountType('installer');
 
 router.get('/profile', auth, controller.getProfile);
 router.get('/dashboard', auth, requireInstaller, controller.getDashboard);
+router.get('/reviews/summary', auth, requireInstaller, controller.getReviewsSummary);
+router.get('/reviews-dashboard', auth, requireInstaller, controller.getReviewsDashboard);
 router.put('/profile', auth, requireInstaller, controller.updateProfile);
 router.get('/availability', auth, requireInstaller, controller.getAvailabilitySlots);
 router.post('/availability', auth, requireInstaller, controller.createAvailabilitySlot);

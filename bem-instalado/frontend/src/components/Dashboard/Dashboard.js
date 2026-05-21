@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatPanelBadgeCount, getPanelBadgeValue, usePanelBadgeCounts } from '../Layout/panelBadgeCounts';
+import { hasAdminAccess } from '../../utils/adminAccess';
 import {
   formatCurrency,
   formatDateTime,
@@ -123,6 +124,12 @@ function DashboardDockIcon({ type }) {
           <path d="M14 14.1c1.5.2 2.8 1.1 3.5 3.1" />
         </svg>
       );
+    case 'reviews':
+      return (
+        <svg {...sharedProps}>
+          <path d="m12 3.8 2.45 4.95 5.47.8-3.96 3.86.94 5.45L12 16.28l-4.9 2.58.94-5.45-3.96-3.86 5.47-.8z" />
+        </svg>
+      );
     case 'agenda':
       return (
         <svg {...sharedProps}>
@@ -154,8 +161,8 @@ const MOBILE_DOCK_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'home' },
   { to: '/agenda', label: 'Agenda', icon: 'agenda' },
   { to: '/budgets', label: 'Orçamentos', icon: 'budgets' },
+  { to: '/reviews', label: 'Avaliacoes', icon: 'reviews' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
-  { to: '/profile', label: 'Perfil', icon: 'profile' },
 ];
 
 const ADMIN_MOBILE_DOCK_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
@@ -165,7 +172,7 @@ const PANEL_NAV_ITEMS = [
   { to: '/agenda', label: 'Agenda', icon: 'agenda', badgeKey: 'agenda' },
   { to: '/budgets', label: 'Orcamentos', icon: 'file', section: 'OPERACAO' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
-  { to: '/dashboard', label: 'Avaliacoes', icon: 'star' },
+  { to: '/reviews', label: 'Avaliacoes', icon: 'star', badgeKey: 'reviews' },
   { to: '/profile', label: 'Perfil', icon: 'profile', section: 'CONTA' },
   { to: '/subscription', label: 'Assinatura', icon: 'card' },
   { to: '/notifications', label: 'Notificacoes', icon: 'bell', badgeKey: 'notifications' },
@@ -578,10 +585,11 @@ export default function Dashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const badgeCounts = usePanelBadgeCounts();
   const notificationBadge = badgeCounts.notifications > 0 ? formatPanelBadgeCount(badgeCounts.notifications) : null;
-  const panelNavItems = useMemo(() => (user?.is_admin ? [...PANEL_NAV_ITEMS, ADMIN_NAV_ITEM] : PANEL_NAV_ITEMS), [user?.is_admin]);
+  const canSeeAdmin = hasAdminAccess(user);
+  const panelNavItems = useMemo(() => (canSeeAdmin ? [...PANEL_NAV_ITEMS, ADMIN_NAV_ITEM] : PANEL_NAV_ITEMS), [canSeeAdmin]);
   const mobileDockItems = useMemo(
-    () => (user?.is_admin ? [...MOBILE_DOCK_ITEMS.slice(0, 4), ADMIN_MOBILE_DOCK_ITEM] : MOBILE_DOCK_ITEMS),
-    [user?.is_admin]
+    () => (canSeeAdmin ? [...MOBILE_DOCK_ITEMS.slice(0, 4), ADMIN_MOBILE_DOCK_ITEM] : MOBILE_DOCK_ITEMS),
+    [canSeeAdmin]
   );
 
   useEffect(() => {

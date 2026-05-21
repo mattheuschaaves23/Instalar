@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatPanelBadgeCount, getPanelBadgeValue, usePanelBadgeCounts } from './panelBadgeCounts';
+import { hasAdminAccess } from '../../utils/adminAccess';
 
 const MOBILE_DOCK_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'home' },
   { to: '/agenda', label: 'Agenda', icon: 'agenda' },
   { to: '/budgets', label: 'Orcamentos', icon: 'budgets' },
+  { to: '/reviews', label: 'Avaliacoes', icon: 'star' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
-  { to: '/profile', label: 'Perfil', icon: 'profile' },
 ];
 
 const ADMIN_MOBILE_DOCK_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
@@ -18,7 +19,7 @@ const PANEL_NAV_ITEMS = [
   { to: '/agenda', label: 'Agenda', icon: 'agenda', badgeKey: 'agenda' },
   { to: '/budgets', label: 'Orcamentos', icon: 'file', section: 'OPERACAO' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
-  { to: '/dashboard', label: 'Avaliacoes', icon: 'star' },
+  { to: '/reviews', label: 'Avaliacoes', icon: 'star', badgeKey: 'reviews' },
   { to: '/profile', label: 'Perfil', icon: 'profile', section: 'CONTA' },
   { to: '/subscription', label: 'Assinatura', icon: 'card' },
   { to: '/notifications', label: 'Notificacoes', icon: 'bell', badgeKey: 'notifications' },
@@ -101,7 +102,8 @@ function SidebarContent({ allowCollapse = false, badgeCounts, collapsed = false,
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
-  const navItems = useMemo(() => (user?.is_admin ? [...PANEL_NAV_ITEMS, ADMIN_NAV_ITEM] : PANEL_NAV_ITEMS), [user?.is_admin]);
+  const canSeeAdmin = hasAdminAccess(user);
+  const navItems = useMemo(() => (canSeeAdmin ? [...PANEL_NAV_ITEMS, ADMIN_NAV_ITEM] : PANEL_NAV_ITEMS), [canSeeAdmin]);
 
   const handleLogout = () => {
     logout();
@@ -168,9 +170,10 @@ export default function InstallerPanelShell({ children }) {
   const userName = user?.name || 'Matheus Chaves';
   const badgeCounts = usePanelBadgeCounts();
   const notificationBadge = badgeCounts.notifications > 0 ? formatPanelBadgeCount(badgeCounts.notifications) : null;
+  const canSeeAdmin = hasAdminAccess(user);
   const mobileDockItems = useMemo(
-    () => (user?.is_admin ? [...MOBILE_DOCK_ITEMS.slice(0, 4), ADMIN_MOBILE_DOCK_ITEM] : MOBILE_DOCK_ITEMS),
-    [user?.is_admin]
+    () => (canSeeAdmin ? [...MOBILE_DOCK_ITEMS.slice(0, 4), ADMIN_MOBILE_DOCK_ITEM] : MOBILE_DOCK_ITEMS),
+    [canSeeAdmin]
   );
 
   useEffect(() => {

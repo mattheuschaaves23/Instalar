@@ -858,3 +858,170 @@ exports.getDashboard = async (req, res) => {
     return res.status(500).json({ error: 'Erro ao montar o dashboard.' });
   }
 };
+
+exports.getReviewsSummary = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `
+        SELECT
+          COUNT(*)::int AS review_count,
+          COALESCE(AVG(rating), 0) AS average_rating
+        FROM installer_reviews
+        WHERE installer_id = $1
+      `,
+      [req.userId]
+    );
+
+    const summary = rows[0] || {};
+
+    return res.json({
+      review_count: Number(summary.review_count || 0),
+      average_rating: Number(summary.average_rating || 0),
+    });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Erro ao carregar resumo das avaliacoes.' });
+  }
+};
+
+exports.getReviewsDashboard = async (req, res) => {
+  try {
+    const [profileResult, summaryResult, distributionResult, monthlyResult, reviewsResult] = await Promise.all([
+      pool.query(
+        `
+          SELECT
+            id,
+            COALESCE(NULLIF(business_name, ''), name) AS display_name,
+            COALESCE(public_profile, true) AS public_profile
+          FROM users
+          WHERE id = $1
+        `,
+        [req.userId]
+      ),
+      pool.query(
+        `
+          SELECT
+            COUNT(*)::int AS review_count,
+            COALESCE(AVG(rating), 0) AS average_rating,
+            COUNT(*) FILTER (
+              WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)
+            )::int AS current_month_count,
+            COUNT(*) FILTER (
+              WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'
+                AND created_at < DATE_TRUNC('month', CURRENT_DATE)
+            )::int AS previous_month_count,
+            COUNT(*) FILTER (
+              WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+            )::int AS recent_30_count,
+            COUNT(*) FILTER (
+              WHERE NULLIF(TRIM(COALESCE(comment, '')), '') IS NOT NULL
+            )::int AS commented_count,
+            MAX(created_at) AS last_review_at
+          FROM installer_reviews
+          WHERE installer_id = $1
+        `,
+        [req.userId]
+      ),
+      pool.query(
+        `
+          SELECT rating, COUNT(*)::int AS review_count
+          FROM installer_reviews
+          WHERE installer_id = $1
+          GROUP BY rating
+          ORDER BY rating DESC
+        `,
+        [req.userId]
+      ),
+      pool.query(
+        `
+          SELECT
+            TO_CHAR(series.month_start, 'YYYY-MM') AS month,
+            COUNT(reviews.id)::int AS review_count,
+            COALESCE(AVG(reviews.rating), 0) AS average_rating
+          FROM GENERATE_SERIES(
+            DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months',
+            DATE_TRUNC('month', CURRENT_DATE),
+            INTERVAL '1 month'
+          ) AS series(month_start)
+          LEFT JOIN installer_reviews reviews
+            ON reviews.installer_id = $1
+            AND reviews.created_at >= series.month_start
+            AND reviews.created_at < series.month_start + INTERVAL '1 month'
+          GROUP BY series.month_start
+          ORDER BY series.month_start ASC
+        `,
+        [req.userId]
+      ),
+      pool.query(
+        `
+          SELECT
+            id,
+            reviewer_name,
+            reviewer_region,
+            rating,
+            comment,
+            created_at
+          FROM installer_reviews
+          WHERE installer_id = $1
+          ORDER BY created_at DESC
+          LIMIT 30
+        `,
+        [req.userId]
+      ),
+    ]);
+
+    const profile = profileResult.rows[0];
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Usuario nao encontrado.' });
+    }
+
+    const rawSummary = summaryResult.rows[0] || {};
+    const reviewCount = Number(rawSummary.review_count || 0);
+    const currentMonthCount = Number(rawSummary.current_month_count || 0);
+    const previousMonthCount = Number(rawSummary.previous_month_count || 0);
+    const commentedCount = Number(rawSummary.commented_count || 0);
+    const distributionByRating = new Map(
+      distributionResult.rows.map((row) => [Number(row.rating), Number(row.review_count || 0)])
+    );
+
+    return res.json({
+      profile: {
+        id: profile.id,
+        display_name: profile.display_name,
+        public_profile: Boolean(profile.public_profile),
+      },
+      summary: {
+        review_count: reviewCount,
+        average_rating: Number(rawSummary.average_rating || 0),
+        current_month_count: currentMonthCount,
+        previous_month_count: previousMonthCount,
+        recent_30_count: Number(rawSummary.recent_30_count || 0),
+        commented_count: commentedCount,
+        comment_rate: reviewCount > 0 ? Math.round((commentedCount / reviewCount) * 100) : 0,
+        monthly_delta:
+          previousMonthCount > 0
+            ? Math.round(((currentMonthCount - previousMonthCount) / previousMonthCount) * 100)
+            : currentMonthCount > 0
+              ? 100
+              : 0,
+        last_review_at: rawSummary.last_review_at,
+      },
+      rating_distribution: [5, 4, 3, 2, 1].map((rating) => {
+        const count = distributionByRating.get(rating) || 0;
+        return {
+          rating,
+          review_count: count,
+          percentage: reviewCount > 0 ? Math.round((count / reviewCount) * 100) : 0,
+        };
+      }),
+      monthly_series: monthlyResult.rows.map((row) => ({
+        month: row.month,
+        review_count: Number(row.review_count || 0),
+        average_rating: Number(row.average_rating || 0),
+      })),
+      reviews: reviewsResult.rows,
+    });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Erro ao carregar painel de avaliacoes.' });
+  }
+};
