@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import PageIntro from '../Layout/PageIntro';
 import PaginationControls from '../Layout/PaginationControls';
+import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import { formatDateTime, formatStatusLabel } from '../../utils/formatters';
 
 const NOTIFICATIONS_PER_PAGE = 8;
@@ -27,7 +28,8 @@ export default function Notifications() {
   const markAsRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`);
-      loadItems();
+      await loadItems();
+      notifyPanelBadgeCountsChanged();
     } catch (error) {
       toast.error(error.response?.data?.error || 'Nao foi possivel atualizar a notificacao.');
     }

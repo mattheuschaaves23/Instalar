@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { formatPanelBadgeCount, getPanelBadgeValue, usePanelBadgeCounts } from './panelBadgeCounts';
 
 const MOBILE_DOCK_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'home' },
@@ -12,13 +13,13 @@ const MOBILE_DOCK_ITEMS = [
 
 const PANEL_NAV_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'grid', section: 'VISAO GERAL' },
-  { to: '/agenda', label: 'Agenda', icon: 'agenda', badge: 3 },
+  { to: '/agenda', label: 'Agenda', icon: 'agenda', badgeKey: 'agenda' },
   { to: '/budgets', label: 'Orcamentos', icon: 'file', section: 'OPERACAO' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
   { to: '/dashboard', label: 'Avaliacoes', icon: 'star' },
   { to: '/profile', label: 'Perfil', icon: 'profile', section: 'CONTA' },
   { to: '/subscription', label: 'Assinatura', icon: 'card' },
-  { to: '/notifications', label: 'Notificacoes', icon: 'bell', badge: 2 },
+  { to: '/notifications', label: 'Notificacoes', icon: 'bell', badgeKey: 'notifications' },
   { to: '/profile', label: 'Configuracoes', icon: 'settings' },
   { to: '/support', label: 'Suporte', icon: 'help' },
 ];
@@ -91,7 +92,7 @@ function isActiveRoute(pathname, item) {
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
 
-function SidebarContent({ allowCollapse = false, collapsed = false, initials, onNavigate, onToggleCollapse, userName }) {
+function SidebarContent({ allowCollapse = false, badgeCounts, collapsed = false, initials, onNavigate, onToggleCollapse, userName }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -121,20 +122,24 @@ function SidebarContent({ allowCollapse = false, collapsed = false, initials, on
       </div>
 
       <nav className="ref-panel-nav">
-        {PANEL_NAV_ITEMS.map((item) => (
-          <div className="ref-panel-nav-block" key={`${item.section || ''}-${item.label}`}>
-            {item.section ? <p>{item.section}</p> : null}
-            <NavLink
-              className={`ref-panel-nav-link ${isActiveRoute(location.pathname, item) ? 'is-active' : ''}`}
-              onClick={onNavigate}
-              to={item.to}
-            >
-              <PanelIcon type={item.icon} />
-              <span>{item.label}</span>
-              {item.badge ? <em>{item.badge}</em> : null}
-            </NavLink>
-          </div>
-        ))}
+        {PANEL_NAV_ITEMS.map((item) => {
+          const badge = getPanelBadgeValue(item, badgeCounts);
+
+          return (
+            <div className="ref-panel-nav-block" key={`${item.section || ''}-${item.label}`}>
+              {item.section ? <p>{item.section}</p> : null}
+              <NavLink
+                className={`ref-panel-nav-link ${isActiveRoute(location.pathname, item) ? 'is-active' : ''}`}
+                onClick={onNavigate}
+                to={item.to}
+              >
+                <PanelIcon type={item.icon} />
+                <span>{item.label}</span>
+                {badge !== null ? <em>{badge}</em> : null}
+              </NavLink>
+            </div>
+          );
+        })}
       </nav>
 
       <button className="ref-panel-logout" onClick={handleLogout} type="button">
@@ -155,6 +160,8 @@ export default function InstallerPanelShell({ children }) {
   const initials = getInitials(user?.name);
   const firstName = user?.name?.split(' ')[0] || 'Matheus';
   const userName = user?.name || 'Matheus Chaves';
+  const badgeCounts = usePanelBadgeCounts();
+  const notificationBadge = badgeCounts.notifications > 0 ? formatPanelBadgeCount(badgeCounts.notifications) : null;
 
   useEffect(() => {
     setMobileDrawerOpen(false);
@@ -173,6 +180,7 @@ export default function InstallerPanelShell({ children }) {
         <SidebarContent
           allowCollapse
           collapsed={sidebarCollapsed}
+          badgeCounts={badgeCounts}
           initials={initials}
           onToggleCollapse={() => setSidebarCollapsed((current) => !current)}
           userName={userName}
@@ -181,7 +189,7 @@ export default function InstallerPanelShell({ children }) {
 
       <div className={`ref-panel-drawer-backdrop ${mobileDrawerOpen ? 'is-open' : ''}`} onClick={() => setMobileDrawerOpen(false)} />
       <aside className={`ref-panel-mobile-drawer ${mobileDrawerOpen ? 'is-open' : ''}`} aria-label="Menu mobile do painel">
-        <SidebarContent initials={initials} onNavigate={() => setMobileDrawerOpen(false)} userName={userName} />
+        <SidebarContent badgeCounts={badgeCounts} initials={initials} onNavigate={() => setMobileDrawerOpen(false)} userName={userName} />
       </aside>
 
       <div className="ref-panel-main">
@@ -197,7 +205,7 @@ export default function InstallerPanelShell({ children }) {
             </span>
             <Link className="ref-panel-bell" to="/notifications">
               <PanelIcon type="bell" size={18} />
-              <em>2</em>
+              {notificationBadge ? <em>{notificationBadge}</em> : null}
             </Link>
             <Link className="ref-panel-account" to="/profile">
               <span>{initials}</span>
@@ -217,7 +225,7 @@ export default function InstallerPanelShell({ children }) {
           </div>
           <nav aria-label="Acoes rapidas do painel">
             <Link to={location.pathname}><PanelIcon type="search" size={18} /></Link>
-            <Link to="/notifications"><PanelIcon type="bell" size={18} /><em /></Link>
+            <Link to="/notifications"><PanelIcon type="bell" size={18} />{notificationBadge ? <em>{notificationBadge}</em> : null}</Link>
             <Link to="/profile" className="ref-panel-avatar">{initials}</Link>
           </nav>
         </header>

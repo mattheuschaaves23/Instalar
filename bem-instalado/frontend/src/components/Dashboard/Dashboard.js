@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { formatPanelBadgeCount, getPanelBadgeValue, usePanelBadgeCounts } from '../Layout/panelBadgeCounts';
 import {
   formatCurrency,
   formatDateTime,
@@ -152,13 +153,13 @@ const MOBILE_DOCK_ITEMS = [
 
 const PANEL_NAV_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'grid', section: 'VISAO GERAL' },
-  { to: '/agenda', label: 'Agenda', icon: 'agenda', badge: 3 },
+  { to: '/agenda', label: 'Agenda', icon: 'agenda', badgeKey: 'agenda' },
   { to: '/budgets', label: 'Orcamentos', icon: 'file', section: 'OPERACAO' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
   { to: '/dashboard', label: 'Avaliacoes', icon: 'star' },
   { to: '/profile', label: 'Perfil', icon: 'profile', section: 'CONTA' },
   { to: '/subscription', label: 'Assinatura', icon: 'card' },
-  { to: '/notifications', label: 'Notificacoes', icon: 'bell', badge: 2 },
+  { to: '/notifications', label: 'Notificacoes', icon: 'bell', badgeKey: 'notifications' },
   { to: '/profile', label: 'Configuracoes', icon: 'settings' },
   { to: '/support', label: 'Suporte', icon: 'help' },
 ];
@@ -563,6 +564,8 @@ export default function Dashboard() {
   const [chartView, setChartView] = useState('monthly');
   const [chartDate, setChartDate] = useState(() => new Date());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const badgeCounts = usePanelBadgeCounts();
+  const notificationBadge = badgeCounts.notifications > 0 ? formatPanelBadgeCount(badgeCounts.notifications) : null;
 
   useEffect(() => {
     Promise.all([
@@ -848,16 +851,20 @@ export default function Dashboard() {
         </div>
 
         <nav className="ref-panel-nav">
-          {PANEL_NAV_ITEMS.map((item) => (
-            <div className="ref-panel-nav-block" key={`${item.section || ''}-${item.label}`}>
-              {item.section ? <p>{item.section}</p> : null}
-              <NavLink className={({ isActive }) => `ref-panel-nav-link ${isActive && item.label === 'Inicio' ? 'is-active' : ''}`} to={item.to}>
-                <PanelIcon type={item.icon} />
-                <span>{item.label}</span>
-                {item.badge ? <em>{item.badge}</em> : null}
-              </NavLink>
-            </div>
-          ))}
+          {PANEL_NAV_ITEMS.map((item) => {
+            const badge = getPanelBadgeValue(item, badgeCounts);
+
+            return (
+              <div className="ref-panel-nav-block" key={`${item.section || ''}-${item.label}`}>
+                {item.section ? <p>{item.section}</p> : null}
+                <NavLink className={({ isActive }) => `ref-panel-nav-link ${isActive && item.label === 'Inicio' ? 'is-active' : ''}`} to={item.to}>
+                  <PanelIcon type={item.icon} />
+                  <span>{item.label}</span>
+                  {badge !== null ? <em>{badge}</em> : null}
+                </NavLink>
+              </div>
+            );
+          })}
         </nav>
 
         <button className="ref-panel-logout" type="button">
@@ -879,7 +886,7 @@ export default function Dashboard() {
             </span>
             <Link className="ref-panel-bell" to="/notifications">
               <PanelIcon type="bell" size={18} />
-              <em>2</em>
+              {notificationBadge ? <em>{notificationBadge}</em> : null}
             </Link>
             <Link className="ref-panel-account" to="/profile">
               <span>{initials}</span>
@@ -899,7 +906,7 @@ export default function Dashboard() {
           </div>
           <nav aria-label="Acoes rapidas do painel">
             <Link to="/dashboard"><PanelIcon type="search" size={18} /></Link>
-            <Link to="/notifications"><PanelIcon type="bell" size={18} /><em /></Link>
+            <Link to="/notifications"><PanelIcon type="bell" size={18} />{notificationBadge ? <em>{notificationBadge}</em> : null}</Link>
             <Link to="/profile" className="ref-panel-avatar">{initials}</Link>
           </nav>
         </header>

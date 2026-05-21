@@ -19030,6 +19030,19 @@ body,
   display: none;
 }
 
+.ref-panel-shell.is-collapsed .ref-panel-nav-link em {
+  position: absolute;
+  top: 0.34rem;
+  right: 0.28rem;
+  width: auto;
+  min-width: 1.05rem;
+  min-height: 1.05rem;
+  display: grid;
+  opacity: 1;
+  overflow: visible;
+  font-size: 0.62rem;
+}
+
 .ref-panel-shell.is-collapsed .ref-panel-nav-link,
 .ref-panel-shell.is-collapsed .ref-panel-logout {
   width: 56px;
@@ -19829,12 +19842,19 @@ body,
 
   .ref-panel-mobile-header nav em {
     position: absolute;
-    top: 0.15rem;
-    right: 0.2rem;
-    width: 0.48rem;
-    height: 0.48rem;
+    top: -0.16rem;
+    right: -0.1rem;
+    min-width: 1rem;
+    height: 1rem;
+    padding: 0 0.22rem;
+    display: grid;
+    place-items: center;
     border-radius: 999px;
     background: var(--ref-gold);
+    color: #0b0802;
+    font-size: 0.58rem;
+    font-style: normal;
+    font-weight: 900;
   }
 
   .ref-panel-content {

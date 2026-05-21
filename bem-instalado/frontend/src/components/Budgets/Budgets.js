@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import PageIntro from '../Layout/PageIntro';
 import PaginationControls from '../Layout/PaginationControls';
+import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import { formatCurrency, formatDateTime, formatStatusLabel } from '../../utils/formatters';
 
 const BUDGETS_PER_PAGE = 6;
@@ -76,7 +77,8 @@ export default function Budgets() {
       toast.success('Orcamento aprovado e enviado para agenda.');
       setCurrentPage(1);
       closeApprovalModal();
-      loadBudgets();
+      await loadBudgets();
+      notifyPanelBadgeCountsChanged();
     } catch (error) {
       toast.error(error.response?.data?.error || 'Nao foi possivel aprovar o orcamento.');
     }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useConfirm } from '../../contexts/ConfirmContext';
+import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import { formatStatusLabel } from '../../utils/formatters';
 
 const weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
@@ -261,7 +262,8 @@ export default function Agenda() {
       await api.put(`/schedules/${id}/status`, { status });
       toast.success('Agenda atualizada.');
       setOpenMenuId(null);
-      loadAgenda();
+      await loadAgenda();
+      notifyPanelBadgeCountsChanged();
     } catch (error) {
       toast.error(error.response?.data?.error || 'Nao foi possivel atualizar a agenda.');
     }
@@ -284,7 +286,8 @@ export default function Agenda() {
       await api.delete(`/schedules/${id}`);
       toast.success('Agendamento excluido.');
       setOpenMenuId(null);
-      loadAgenda();
+      await loadAgenda();
+      notifyPanelBadgeCountsChanged();
     } catch (error) {
       toast.error(error.response?.data?.error || 'Nao foi possivel excluir o agendamento.');
     }

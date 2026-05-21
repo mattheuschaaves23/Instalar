@@ -1,0 +1,106 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+
+export const PANEL_BADGE_REFRESH_EVENT = 'panel-badge-counts:refresh';
+
+const BADGE_REFRESH_INTERVAL = 15000;
+const INACTIVE_SCHEDULE_STATUSES = new Set(['completed', 'canceled', 'cancelled']);
+
+function countActiveSchedules(items) {
+  if (!Array.isArray(items)) {
+    return 0;
+  }
+
+  return items.filter((item) => !INACTIVE_SCHEDULE_STATUSES.has(String(item.status || '').toLowerCase())).length;
+}
+
+export function formatPanelBadgeCount(value) {
+  const count = Number(value || 0);
+  return count > 99 ? '99+' : String(count);
+}
+
+export function getPanelBadgeValue(item, counts = {}) {
+  if (!item.badgeKey) {
+    return null;
+  }
+
+  const count = Number(counts[item.badgeKey] || 0);
+
+  if (item.badgeKey === 'agenda') {
+    return formatPanelBadgeCount(count);
+  }
+
+  return count > 0 ? formatPanelBadgeCount(count) : null;
+}
+
+export function notifyPanelBadgeCountsChanged() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(PANEL_BADGE_REFRESH_EVENT));
+  }
+}
+
+export function usePanelBadgeCounts() {
+  const { user } = useAuth();
+  const notificationContext = useNotifications();
+  const notifications = notificationContext?.notifications || [];
+  const refreshNotifications = notificationContext?.refreshNotifications;
+  const [agenda, setAgenda] = useState(0);
+  const canLoadCounts = user?.account_type === 'installer' || user?.is_admin;
+
+  const loadAgendaCount = useCallback(async () => {
+    if (!canLoadCounts) {
+      setAgenda(0);
+      return;
+    }
+
+    try {
+      const response = await api.get('/schedules');
+      setAgenda(countActiveSchedules(response.data));
+    } catch (_error) {
+      setAgenda(0);
+    }
+  }, [canLoadCounts]);
+
+  const refreshCounts = useCallback(() => {
+    loadAgendaCount();
+    refreshNotifications?.();
+  }, [loadAgendaCount, refreshNotifications]);
+
+  useEffect(() => {
+    refreshCounts();
+
+    if (!canLoadCounts) {
+      return undefined;
+    }
+
+    const interval = setInterval(refreshCounts, BADGE_REFRESH_INTERVAL);
+    const refreshWhenVisible = () => {
+      if (!document.hidden) {
+        refreshCounts();
+      }
+    };
+
+    window.addEventListener('focus', refreshCounts);
+    window.addEventListener(PANEL_BADGE_REFRESH_EVENT, refreshCounts);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', refreshCounts);
+      window.removeEventListener(PANEL_BADGE_REFRESH_EVENT, refreshCounts);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [canLoadCounts, refreshCounts]);
+
+  const unreadNotifications = notifications.filter((item) => !item.read).length;
+
+  return useMemo(
+    () => ({
+      agenda,
+      notifications: unreadNotifications,
+    }),
+    [agenda, unreadNotifications]
+  );
+}
