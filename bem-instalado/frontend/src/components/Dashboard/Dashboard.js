@@ -138,6 +138,13 @@ function DashboardDockIcon({ type }) {
           <path d="M5.5 19c1.6-3 4.2-4.5 6.5-4.5S16.9 16 18.5 19" />
         </svg>
       );
+    case 'admin':
+      return (
+        <svg {...sharedProps}>
+          <path d="M12 3.8 18.6 7v5c0 4.1-2.7 6.9-6.6 8.2-3.9-1.3-6.6-4.1-6.6-8.2V7L12 3.8Z" />
+          <path d="M9.8 11.8 11.3 13.3 14.8 9.8" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -151,6 +158,8 @@ const MOBILE_DOCK_ITEMS = [
   { to: '/profile', label: 'Perfil', icon: 'profile' },
 ];
 
+const ADMIN_MOBILE_DOCK_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
+
 const PANEL_NAV_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'grid', section: 'VISAO GERAL' },
   { to: '/agenda', label: 'Agenda', icon: 'agenda', badgeKey: 'agenda' },
@@ -163,6 +172,8 @@ const PANEL_NAV_ITEMS = [
   { to: '/profile', label: 'Configuracoes', icon: 'settings' },
   { to: '/support', label: 'Suporte', icon: 'help' },
 ];
+
+const ADMIN_NAV_ITEM = { to: '/admin', label: 'Painel ADM', icon: 'admin', section: 'SISTEMA' };
 
 function PanelIcon({ type, size = 20 }) {
   const sharedProps = {
@@ -189,6 +200,7 @@ function PanelIcon({ type, size = 20 }) {
     bell: <><path d="M18 10.8a6 6 0 0 0-12 0c0 5-2 5.7-2 5.7h16s-2-.7-2-5.7" /><path d="M10 20a2.4 2.4 0 0 0 4 0" /></>,
     settings: <><path d="M12 8.4a3.6 3.6 0 1 1 0 7.2 3.6 3.6 0 0 1 0-7.2Z" /><path d="M19.2 13.4a7.9 7.9 0 0 0 0-2.8l2-1.55-2-3.46-2.43.98a7.25 7.25 0 0 0-2.4-1.39L14 2.6h-4l-.37 2.58a7.25 7.25 0 0 0-2.4 1.39L4.8 5.59l-2 3.46 2 1.55a7.9 7.9 0 0 0 0 2.8l-2 1.55 2 3.46 2.43-.98a7.25 7.25 0 0 0 2.4 1.39L10 21.4h4l.37-2.58a7.25 7.25 0 0 0 2.4-1.39l2.43.98 2-3.46z" /></>,
     help: <><circle cx="12" cy="12" r="8.5" /><path d="M9.8 9.4a2.4 2.4 0 1 1 3.6 2.1c-.9.5-1.4 1.1-1.4 2.2" /><path d="M12 17.2h.01" /></>,
+    admin: <><path d="M12 3.8 18.6 7v5c0 4.1-2.7 6.9-6.6 8.2-3.9-1.3-6.6-4.1-6.6-8.2V7L12 3.8Z" /><path d="M9.8 11.8 11.3 13.3 14.8 9.8" /></>,
     search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></>,
     dollar: <><circle cx="12" cy="12" r="8.5" /><path d="M14.8 9.4c0-1.2-1-2.1-2.6-2.1-1.6 0-2.7.8-2.7 2.1 0 2.7 5.5 1.6 5.5 4.2 0 1.2-1 2.1-2.8 2.1-1.7 0-2.8-.9-2.9-2.2" /><path d="M12 6v12" /></>,
     arrow: <><path d="M7 17 17 7" /><path d="M9 7h8v8" /></>,
@@ -566,6 +578,11 @@ export default function Dashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const badgeCounts = usePanelBadgeCounts();
   const notificationBadge = badgeCounts.notifications > 0 ? formatPanelBadgeCount(badgeCounts.notifications) : null;
+  const panelNavItems = useMemo(() => (user?.is_admin ? [...PANEL_NAV_ITEMS, ADMIN_NAV_ITEM] : PANEL_NAV_ITEMS), [user?.is_admin]);
+  const mobileDockItems = useMemo(
+    () => (user?.is_admin ? [...MOBILE_DOCK_ITEMS.slice(0, 4), ADMIN_MOBILE_DOCK_ITEM] : MOBILE_DOCK_ITEMS),
+    [user?.is_admin]
+  );
 
   useEffect(() => {
     Promise.all([
@@ -851,7 +868,7 @@ export default function Dashboard() {
         </div>
 
         <nav className="ref-panel-nav">
-          {PANEL_NAV_ITEMS.map((item) => {
+          {panelNavItems.map((item) => {
             const badge = getPanelBadgeValue(item, badgeCounts);
 
             return (
@@ -1101,7 +1118,7 @@ export default function Dashboard() {
         </main>
 
         <nav aria-label="Navegacao mobile" className="ref-panel-bottom-nav">
-          {MOBILE_DOCK_ITEMS.map((item) => (
+          {mobileDockItems.map((item) => (
             <NavLink className={({ isActive }) => `ref-panel-bottom-tab ${isActive ? 'is-active' : ''}`} key={item.to} to={item.to}>
               <DashboardDockIcon type={item.icon} />
               <span>{item.label}</span>

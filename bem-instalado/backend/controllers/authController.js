@@ -5,21 +5,12 @@ const pool = require('../config/database');
 const { jwtSecret, jwtExpiresIn } = require('../config/auth');
 const { generateSecret, verifyToken, generateQrCode } = require('../utils/totp');
 const { logAudit } = require('../utils/auditLog');
+const { isOwnerAdminEmail, normalizeEmail } = require('../utils/adminAccess');
 const { sendPasswordResetEmail } = require('../services/email');
 
 const REGISTER_PLAN_PRICE = Number(process.env.SUBSCRIPTION_PRICE || 40);
 const PASSWORD_RESET_EXPIRATION_MINUTES = Number(process.env.PASSWORD_RESET_EXPIRATION_MINUTES || 30);
 const PASSWORD_RESET_EXPOSE_TOKEN = process.env.PASSWORD_RESET_EXPOSE_TOKEN === 'true';
-const OWNER_ADMIN_EMAILS = new Set(
-  [
-    'matheuschavesminadasilva@gmail.com',
-    ...String(process.env.OWNER_ADMIN_EMAILS || '')
-      .split(',')
-      .map((value) => value.trim())
-      .filter(Boolean),
-  ].map((value) => String(value || '').trim().toLowerCase())
-);
-
 const OAUTH_STATE_EXPIRES_IN = '10m';
 const OAUTH_APPLE_AUDIENCE = 'https://appleid.apple.com';
 const OAUTH_APPLE_ISSUER = 'https://appleid.apple.com';
@@ -51,14 +42,6 @@ const OAUTH_REDIRECT_ERROR_CODES = new Set([
 
 function signToken(id) {
   return jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
-}
-
-function normalizeEmail(value) {
-  return String(value || '').trim().toLowerCase();
-}
-
-function isOwnerAdminEmail(email) {
-  return OWNER_ADMIN_EMAILS.has(normalizeEmail(email));
 }
 
 function firstEnvValue(...names) {

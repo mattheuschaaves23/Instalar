@@ -31,7 +31,9 @@ export default function ProtectedRoute({ allowedAccountTypes = ['installer'], lo
     return <Navigate replace state={{ from: location.pathname }} to={loginPath} />;
   }
 
-  if (allowedAccountTypes.length > 0 && !allowedAccountTypes.includes(getAccountType(user))) {
+  const adminCanUseInstallerArea = user?.is_admin && allowedAccountTypes.includes('installer');
+
+  if (allowedAccountTypes.length > 0 && !allowedAccountTypes.includes(getAccountType(user)) && !adminCanUseInstallerArea) {
     return <Navigate replace to={getHomePath(user)} />;
   }
 

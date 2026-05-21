@@ -12,6 +12,7 @@ const PANEL_ROUTE_PREFIXES = [
   '/subscription',
   '/notifications',
   '/support',
+  '/admin',
 ];
 
 export default function Layout() {

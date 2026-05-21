@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { isOwnerAdminEmail } = require('../utils/adminAccess');
 const { buildAvailableDates, normalizeInstallationDays } = require('../utils/installerAvailability');
 
 function normalizeStringList(values, maxItems = 8) {
@@ -335,9 +336,23 @@ exports.getProfile = async (req, res) => {
       return res.status(404).json({ error: 'Usuário não encontrado.' });
     }
 
+    const rawProfile = rows[0];
+
+    if (!rawProfile.is_admin && isOwnerAdminEmail(rawProfile.email)) {
+      await pool.query(
+        `
+          UPDATE users
+          SET is_admin = TRUE, updated_at = NOW()
+          WHERE id = $1
+        `,
+        [rawProfile.id]
+      );
+      rawProfile.is_admin = true;
+    }
+
     const profile = {
-      ...rows[0],
-      installation_gallery: normalizeGallery(rows[0]?.installation_gallery),
+      ...rawProfile,
+      installation_gallery: normalizeGallery(rawProfile?.installation_gallery),
     };
     return res.json(profile);
   } catch (_error) {

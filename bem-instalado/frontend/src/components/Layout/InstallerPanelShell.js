@@ -11,6 +11,8 @@ const MOBILE_DOCK_ITEMS = [
   { to: '/profile', label: 'Perfil', icon: 'profile' },
 ];
 
+const ADMIN_MOBILE_DOCK_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
+
 const PANEL_NAV_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'grid', section: 'VISAO GERAL' },
   { to: '/agenda', label: 'Agenda', icon: 'agenda', badgeKey: 'agenda' },
@@ -23,6 +25,8 @@ const PANEL_NAV_ITEMS = [
   { to: '/profile', label: 'Configuracoes', icon: 'settings' },
   { to: '/support', label: 'Suporte', icon: 'help' },
 ];
+
+const ADMIN_NAV_ITEM = { to: '/admin', label: 'Painel ADM', icon: 'admin', section: 'SISTEMA' };
 
 function PanelIcon({ type, size = 20 }) {
   const sharedProps = {
@@ -55,6 +59,7 @@ function PanelIcon({ type, size = 20 }) {
     logout: <><path d="M10 6H6.5A1.5 1.5 0 0 0 5 7.5v9A1.5 1.5 0 0 0 6.5 18H10" /><path d="M14 8l4 4-4 4M18 12H9" /></>,
     home: <><path d="M4 11.5 12 5l8 6.5" /><path d="M6.5 10.5V19h11v-8.5" /></>,
     budgets: <><path d="M4 7h2l1.8 8.2a1 1 0 0 0 1 .8h7.7a1 1 0 0 0 1-.8L19 9H8.2" /><circle cx="10" cy="19" r="1.3" /><circle cx="17" cy="19" r="1.3" /></>,
+    admin: <><path d="M12 3.8 18.6 7v5c0 4.1-2.7 6.9-6.6 8.2-3.9-1.3-6.6-4.1-6.6-8.2V7L12 3.8Z" /><path d="M9.8 11.8 11.3 13.3 14.8 9.8" /></>,
   };
 
   return <svg {...sharedProps}>{icons[type] || icons.grid}</svg>;
@@ -95,7 +100,8 @@ function isActiveRoute(pathname, item) {
 function SidebarContent({ allowCollapse = false, badgeCounts, collapsed = false, initials, onNavigate, onToggleCollapse, userName }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const navItems = useMemo(() => (user?.is_admin ? [...PANEL_NAV_ITEMS, ADMIN_NAV_ITEM] : PANEL_NAV_ITEMS), [user?.is_admin]);
 
   const handleLogout = () => {
     logout();
@@ -122,7 +128,7 @@ function SidebarContent({ allowCollapse = false, badgeCounts, collapsed = false,
       </div>
 
       <nav className="ref-panel-nav">
-        {PANEL_NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const badge = getPanelBadgeValue(item, badgeCounts);
 
           return (
@@ -162,6 +168,10 @@ export default function InstallerPanelShell({ children }) {
   const userName = user?.name || 'Matheus Chaves';
   const badgeCounts = usePanelBadgeCounts();
   const notificationBadge = badgeCounts.notifications > 0 ? formatPanelBadgeCount(badgeCounts.notifications) : null;
+  const mobileDockItems = useMemo(
+    () => (user?.is_admin ? [...MOBILE_DOCK_ITEMS.slice(0, 4), ADMIN_MOBILE_DOCK_ITEM] : MOBILE_DOCK_ITEMS),
+    [user?.is_admin]
+  );
 
   useEffect(() => {
     setMobileDrawerOpen(false);
@@ -235,7 +245,7 @@ export default function InstallerPanelShell({ children }) {
         </main>
 
         <nav aria-label="Navegacao mobile" className="ref-panel-bottom-nav">
-          {MOBILE_DOCK_ITEMS.map((item) => (
+          {mobileDockItems.map((item) => (
             <NavLink className={({ isActive }) => `ref-panel-bottom-tab ${isActive ? 'is-active' : ''}`} key={item.to} to={item.to}>
               <PanelIcon type={item.icon} />
               <span>{item.label}</span>
