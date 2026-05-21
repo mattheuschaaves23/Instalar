@@ -18997,6 +18997,7 @@ body,
 .ref-panel-shell.is-collapsed .ref-panel-logout span,
 .ref-panel-shell.is-collapsed .ref-panel-nav-link em {
   width: 0;
+  min-width: 0;
   opacity: 0;
   overflow: hidden;
 }
@@ -19006,6 +19007,46 @@ body,
 .ref-panel-shell.is-collapsed .ref-panel-nav-link,
 .ref-panel-shell.is-collapsed .ref-panel-logout {
   justify-content: center;
+}
+
+.ref-panel-shell.is-collapsed .ref-panel-nav {
+  width: 100%;
+  padding-inline: 0;
+  scrollbar-width: none;
+}
+
+.ref-panel-shell.is-collapsed .ref-panel-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.ref-panel-shell.is-collapsed .ref-panel-nav-block {
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.ref-panel-shell.is-collapsed .ref-panel-nav-block p,
+.ref-panel-shell.is-collapsed .ref-panel-nav-link em {
+  display: none;
+}
+
+.ref-panel-shell.is-collapsed .ref-panel-nav-link,
+.ref-panel-shell.is-collapsed .ref-panel-logout {
+  width: 56px;
+  min-height: 2.75rem;
+  margin-inline: auto;
+  gap: 0;
+  padding-inline: 0;
+}
+
+.ref-panel-shell.is-collapsed .ref-panel-nav-link svg,
+.ref-panel-shell.is-collapsed .ref-panel-logout svg {
+  flex: 0 0 auto;
+}
+
+.ref-panel-shell.is-collapsed .ref-panel-nav-link:hover,
+.ref-panel-shell.is-collapsed .ref-panel-logout:hover {
+  transform: none;
 }
 
 .ref-panel-main {
