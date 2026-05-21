@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatPanelBadgeCount, getPanelBadgeValue, usePanelBadgeCounts } from '../Layout/panelBadgeCounts';
+import {
+  PANEL_BADGE_REFRESH_EVENT,
+  formatPanelBadgeCount,
+  getPanelBadgeValue,
+  usePanelBadgeCounts,
+} from '../Layout/panelBadgeCounts';
 import { hasAdminAccess } from '../../utils/adminAccess';
 import {
   formatCurrency,
@@ -16,6 +21,7 @@ const CHART_WIDTH = 820;
 const CHART_HEIGHT = 280;
 const CHART_PADDING_X = 18;
 const CHART_PADDING_Y = 24;
+const DASHBOARD_REFRESH_INTERVAL = 30000;
 const CHART_VIEWS = ['weekly', 'monthly', 'yearly'];
 const CHART_VIEW_LABELS = {
   weekly: 'Semanal',
@@ -557,7 +563,8 @@ function buildStatusSegments(budgets) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const today = useMemo(() => new Date(), []);
+  const isDashboardMountedRef = useRef(false);
+  const [today, setToday] = useState(() => new Date());
   const [data, setData] = useState({
     metrics: {
       monthly_revenue: 0,
@@ -592,21 +599,68 @@ export default function Dashboard() {
     [canSeeAdmin]
   );
 
-  useEffect(() => {
-    Promise.all([
-      api.get('/users/dashboard'),
-      api.get('/budgets').catch(() => ({ data: [] })),
-      api.get('/clients').catch(() => ({ data: [] })),
-    ])
-      .then(([dashboardResponse, budgetsResponse, clientsResponse]) => {
-        setData(dashboardResponse.data);
-        setBudgets(Array.isArray(budgetsResponse.data) ? budgetsResponse.data : []);
-        setClients(Array.isArray(clientsResponse.data) ? clientsResponse.data : []);
-      })
-      .catch((error) => {
+  const loadDashboardData = useCallback(async ({ silent = false } = {}) => {
+    try {
+      const [dashboardResponse, budgetsResponse, clientsResponse] = await Promise.all([
+        api.get('/users/dashboard'),
+        api.get('/budgets').catch(() => ({ data: [] })),
+        api.get('/clients').catch(() => ({ data: [] })),
+      ]);
+
+      if (!isDashboardMountedRef.current) {
+        return;
+      }
+
+      setToday(new Date());
+      setData(dashboardResponse.data);
+      setBudgets(Array.isArray(budgetsResponse.data) ? budgetsResponse.data : []);
+      setClients(Array.isArray(clientsResponse.data) ? clientsResponse.data : []);
+    } catch (error) {
+      if (!silent && isDashboardMountedRef.current) {
         toast.error(error.response?.data?.error || 'Nao foi possivel carregar o dashboard.');
-      });
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    let lastAttentionRefreshAt = 0;
+    isDashboardMountedRef.current = true;
+    loadDashboardData();
+
+    const refreshSilently = () => loadDashboardData({ silent: true });
+    const refreshAfterAttentionReturn = () => {
+      const now = Date.now();
+
+      if (document.hidden || now - lastAttentionRefreshAt < 5000) {
+        return;
+      }
+
+      lastAttentionRefreshAt = now;
+      refreshSilently();
+    };
+    const refreshWhenVisible = () => {
+      if (!document.hidden) {
+        refreshAfterAttentionReturn();
+      }
+    };
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        refreshSilently();
+      }
+    }, DASHBOARD_REFRESH_INTERVAL);
+
+    window.addEventListener('focus', refreshAfterAttentionReturn);
+    window.addEventListener(PANEL_BADGE_REFRESH_EVENT, refreshSilently);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      isDashboardMountedRef.current = false;
+      clearInterval(interval);
+      window.removeEventListener('focus', refreshAfterAttentionReturn);
+      window.removeEventListener(PANEL_BADGE_REFRESH_EVENT, refreshSilently);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [loadDashboardData]);
 
   const { metrics, ranking } = data;
   const firstName = user?.name?.split(' ')[0] || 'Instalador';

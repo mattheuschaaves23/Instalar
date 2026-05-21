@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { formatShortDate } from '../../utils/formatters';
 
 const ratingFilters = ['all', 5, 4, 3, 2, 1];
+const REVIEWS_REFRESH_INTERVAL = 30000;
 
 function ReviewIcon({ type }) {
   const props = {
@@ -90,35 +91,70 @@ function ReviewsLoadingState() {
 }
 
 export default function ReviewsDashboard() {
+  const isReviewsMountedRef = useRef(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filterRating, setFilterRating] = useState('all');
 
-  useEffect(() => {
-    let active = true;
+  const loadReviews = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+    }
 
-    const loadReviews = async () => {
-      try {
-        const response = await api.get('/users/reviews-dashboard');
+    try {
+      const response = await api.get('/users/reviews-dashboard');
 
-        if (active) {
-          setData(response.data);
-        }
-      } catch (error) {
-        toast.error(error.response?.data?.error || 'Nao foi possivel carregar as avaliacoes.');
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
+      if (isReviewsMountedRef.current) {
+        setData(response.data);
       }
-    };
+    } catch (error) {
+      if (!silent && isReviewsMountedRef.current) {
+        toast.error(error.response?.data?.error || 'Nao foi possivel carregar as avaliacoes.');
+      }
+    } finally {
+      if (!silent && isReviewsMountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, []);
 
+  useEffect(() => {
+    let lastAttentionRefreshAt = 0;
+    isReviewsMountedRef.current = true;
     loadReviews();
 
-    return () => {
-      active = false;
+    const refreshSilently = () => loadReviews({ silent: true });
+    const refreshAfterAttentionReturn = () => {
+      const now = Date.now();
+
+      if (document.hidden || now - lastAttentionRefreshAt < 5000) {
+        return;
+      }
+
+      lastAttentionRefreshAt = now;
+      refreshSilently();
     };
-  }, []);
+    const refreshWhenVisible = () => {
+      if (!document.hidden) {
+        refreshAfterAttentionReturn();
+      }
+    };
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        refreshSilently();
+      }
+    }, REVIEWS_REFRESH_INTERVAL);
+
+    window.addEventListener('focus', refreshAfterAttentionReturn);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      isReviewsMountedRef.current = false;
+      clearInterval(interval);
+      window.removeEventListener('focus', refreshAfterAttentionReturn);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [loadReviews]);
 
   const summary = data?.summary || {};
   const reviews = data?.reviews || [];
@@ -184,13 +220,7 @@ export default function ReviewsDashboard() {
               </Link>
             ) : null}
             <button
-              onClick={() => {
-                setLoading(true);
-                api.get('/users/reviews-dashboard')
-                  .then((response) => setData(response.data))
-                  .catch((error) => toast.error(error.response?.data?.error || 'Nao foi possivel atualizar.'))
-                  .finally(() => setLoading(false));
-              }}
+              onClick={() => loadReviews()}
               type="button"
             >
               <ReviewIcon type="refresh" />
