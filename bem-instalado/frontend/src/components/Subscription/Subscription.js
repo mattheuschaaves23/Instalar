@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import PageIntro from '../Layout/PageIntro';
+import { useAuth } from '../../contexts/AuthContext';
+import { setSubscriptionAccessCache } from '../Layout/subscriptionAccessCache';
 import {
   formatCurrency,
   formatDateTime,
@@ -25,6 +27,7 @@ const defaultBenefits = [
 ];
 
 export default function Subscription() {
+  const { user } = useAuth();
   const [subscription, setSubscription] = useState(null);
   const [payment, setPayment] = useState(null);
 
@@ -33,6 +36,7 @@ export default function Subscription() {
       const response = await api.get('/subscriptions');
       setSubscription(response.data);
       setPayment(response.data.pending_payment || null);
+      setSubscriptionAccessCache(user?.id || user?.email, Boolean(response.data?.can_use_app));
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível carregar a assinatura.');
     }
