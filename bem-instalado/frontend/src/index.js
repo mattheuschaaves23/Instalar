@@ -6,8 +6,11 @@ import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { ConfirmProvider } from './contexts/ConfirmContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { applyStoredSitePreferences } from './utils/sitePreferences';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+
+applyStoredSitePreferences();
 
 root.render(
   <React.StrictMode>
@@ -20,7 +23,7 @@ root.render(
             toastOptions={{
               style: {
                 borderRadius: '18px',
-                border: '1px solid rgba(205, 163, 73, 0.18)',
+                border: '1px solid var(--site-accent-line)',
                 background: 'rgba(11, 10, 9, 0.94)',
                 color: '#f6efdf',
                 boxShadow: '0 18px 40px rgba(0, 0, 0, 0.3)',

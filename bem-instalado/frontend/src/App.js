@@ -22,6 +22,7 @@ const ClientLanding = lazy(() => import('./components/Public/ClientLanding'));
 const Home = lazy(() => import('./components/Public/Home'));
 const InstallerProfile = lazy(() => import('./components/Public/InstallerProfile'));
 const ReviewsDashboard = lazy(() => import('./components/Reviews/ReviewsDashboard'));
+const Settings = lazy(() => import('./components/Settings/Settings'));
 const SupportChat = lazy(() => import('./components/Support/SupportChat'));
 const Subscription = lazy(() => import('./components/Subscription/Subscription'));
 
@@ -58,6 +59,7 @@ export default function App() {
           <Route element={<ProtectedRoute allowedAccountTypes={['installer']} loginPath="/instalador/entrar" />}>
             <Route element={<Layout />}>
               <Route element={<Profile />} path="/profile" />
+              <Route element={<Settings />} path="/settings" />
               <Route element={<Subscription />} path="/subscription" />
               <Route element={<SupportChat />} path="/support" />
               <Route element={<AdminRoute />}>

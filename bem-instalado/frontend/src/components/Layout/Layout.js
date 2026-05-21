@@ -10,6 +10,7 @@ const PANEL_ROUTE_PREFIXES = [
   '/clients',
   '/reviews',
   '/profile',
+  '/settings',
   '/subscription',
   '/notifications',
   '/support',

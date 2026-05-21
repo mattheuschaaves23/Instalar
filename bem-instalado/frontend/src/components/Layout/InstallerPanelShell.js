@@ -23,7 +23,7 @@ const PANEL_NAV_ITEMS = [
   { to: '/profile', label: 'Perfil', icon: 'profile', section: 'CONTA' },
   { to: '/subscription', label: 'Assinatura', icon: 'card' },
   { to: '/notifications', label: 'Notificacoes', icon: 'bell', badgeKey: 'notifications' },
-  { to: '/profile', label: 'Configuracoes', icon: 'settings' },
+  { to: '/settings', label: 'Configuracoes', icon: 'settings' },
   { to: '/support', label: 'Suporte', icon: 'help' },
 ];
 
@@ -114,8 +114,8 @@ function SidebarContent({ allowCollapse = false, badgeCounts, collapsed = false,
   return (
     <>
       <div className="ref-panel-brand">
-        <span className="ref-panel-logo">P</span>
-        <strong>PapelPro</strong>
+        <span className="ref-panel-logo">I+</span>
+        <strong>Instalar+</strong>
         <button aria-label={allowCollapse ? 'Recolher menu' : 'Fechar menu'} onClick={onToggleCollapse || onNavigate} type="button">
           <span>{allowCollapse && collapsed ? '>' : '<'}</span>
         </button>
@@ -233,8 +233,8 @@ export default function InstallerPanelShell({ children }) {
             <PanelIcon type="menu" />
           </button>
           <div>
-            <span className="ref-panel-logo">P</span>
-            <strong>PapelPro</strong>
+            <span className="ref-panel-logo">I+</span>
+            <strong>Instalar+</strong>
           </div>
           <nav aria-label="Acoes rapidas do painel">
             <Link to={location.pathname}><PanelIcon type="search" size={18} /></Link>
