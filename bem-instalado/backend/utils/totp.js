@@ -3,8 +3,8 @@ const QRCode = require('qrcode');
 
 exports.generateSecret = () =>
   speakeasy.generateSecret({
-    name: 'Bem Instalado',
-    issuer: 'Bem Instalado',
+    name: 'Instalar+',
+    issuer: 'Instalar+',
     length: 20,
   });
 
@@ -19,8 +19,8 @@ exports.verifyToken = (secret, token) =>
 exports.generateQrCode = async (secret, email) => {
   const otpauthUrl = speakeasy.otpauthURL({
     secret,
-    label: `Bem Instalado (${email})`,
-    issuer: 'Bem Instalado',
+    label: `Instalar+ (${email})`,
+    issuer: 'Instalar+',
     encoding: 'base32',
   });
 

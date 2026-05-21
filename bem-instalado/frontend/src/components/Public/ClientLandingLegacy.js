@@ -244,7 +244,7 @@ const DESKTOP_SHOWCASE_INSTALLERS = [
   },
   {
     id: 'desktop-installer-2',
-    display_name: 'Bem Instalado',
+    display_name: 'Instalar+',
     city: 'Curitiba',
     state: 'PR',
     average_rating: 4.9,

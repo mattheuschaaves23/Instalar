@@ -13,9 +13,9 @@ const emptyReviewForm = {
   comment: '',
 };
 const defaultMarketplace = {
-  title: 'Loja Oficial Bem Instalado',
+  title: 'Loja Oficial Instalar+',
   description:
-    'A loja oficial Bem Instalado Home Decor reúne papéis de parede para vários estilos, com operação em Florianópolis e atendimento para todo o Brasil.',
+    'A loja oficial Instalar+ Home Decor reúne papéis de parede para vários estilos, com operação em Florianópolis e atendimento para todo o Brasil.',
   url: 'https://www.beminstalado.com.br',
   cta_label: 'Visitar loja oficial',
   whatsapp_url: 'https://api.whatsapp.com/send?phone=5548999816000',

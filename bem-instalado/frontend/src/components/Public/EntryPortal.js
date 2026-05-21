@@ -13,7 +13,7 @@ export default function EntryPortal() {
     <div className="auth-scene min-h-screen overflow-x-hidden px-5 py-10 md:px-8 md:py-12 lg:px-12 lg:py-16">
       <div className="entry-portal-v2">
         <header className="entry-portal-head fade-up">
-          <p className="eyebrow">InstaLar</p>
+          <p className="eyebrow">Instalar+</p>
           <h1 className="entry-portal-title">Escolha como você quer entrar</h1>
           <p className="entry-portal-copy">
             Um espaço para clientes encontrarem profissionais e um painel para instaladores

@@ -9,7 +9,7 @@ export default function BrandMark({ className = '', fallback = 'IN' }) {
     <span className={`brand-mark ${className}`.trim()}>
       {!imageError ? (
         <img
-          alt="Logo Instalar"
+          alt="Logo Instalar+"
           className="brand-mark-image"
           onError={() => setImageError(true)}
           src={BRAND_MARK_URL}

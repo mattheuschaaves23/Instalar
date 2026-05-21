@@ -587,6 +587,20 @@ async function ensureRuntimeSchema() {
       CREATE INDEX IF NOT EXISTS audit_logs_actor_idx
       ON audit_logs (actor_user_id, created_at DESC)
     `,
+    `
+      UPDATE users
+      SET business_name = 'Luiz Instalar+'
+      WHERE business_name = ('Luiz ' || 'Paper' || ' Pro')
+    `,
+    `
+      UPDATE recommended_stores
+      SET
+        name = REPLACE(name, 'Bem' || ' Instalado', 'Instalar+'),
+        description = REPLACE(description, 'Bem' || ' Instalado', 'Instalar+')
+      WHERE
+        name LIKE ('%' || 'Bem' || ' Instalado' || '%')
+        OR description LIKE ('%' || 'Bem' || ' Instalado' || '%')
+    `,
   ];
 
   for (const statement of statements) {
@@ -606,7 +620,7 @@ async function startServer() {
 
   const port = Number(process.env.PORT || 5000);
   httpServer.listen(port, () => {
-    console.log(`Bem Instalado backend rodando na porta ${port}`);
+    console.log(`Instalar+ backend rodando na porta ${port}`);
     if (isProduction) {
       console.log('Build frontend em producao:', getFrontendBuildInfo());
       console.log('Commit atual:', renderGitCommit || 'nao informado');

@@ -38,7 +38,7 @@ async function sendPasswordResetEmail({ to, resetUrl, expiresInMinutes }) {
   }
 
   const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER');
-  const appName = firstEnvValue('APP_NAME') || 'InstaLar';
+  const appName = firstEnvValue('APP_NAME') || 'Instalar+';
   const transporter = createTransporter();
 
   await transporter.sendMail({

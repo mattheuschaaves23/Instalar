@@ -9,13 +9,13 @@ export default function BrandWordmark({ size = 'md', className = '' }) {
     <span className={`brand-wordmark brand-wordmark--${size} ${className}`.trim()}>
       {!imageError ? (
         <img
-          alt="Logo Instalar"
+          alt="Logo Instalar+"
           className="brand-wordmark-image"
           onError={() => setImageError(true)}
           src={WORDMARK_URL}
         />
       ) : (
-        <span className="brand-wordmark-fallback">Instalar</span>
+        <span className="brand-wordmark-fallback">Instalar+</span>
       )}
     </span>
   );

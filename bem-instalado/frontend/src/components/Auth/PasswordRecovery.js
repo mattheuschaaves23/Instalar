@@ -84,7 +84,7 @@ export default function PasswordRecovery() {
       asideCopy="Recuperar acesso"
       asideTitle="Senha"
       description="Use seu e-mail de instalador para gerar um link seguro de redefinicao."
-      eyebrow="InstaLar"
+      eyebrow="Instalar+"
       highlights={[
         { kicker: 'Seguro', title: 'Token temporario', copy: 'O link expira automaticamente.' },
         { kicker: 'Conta', title: 'Somente instalador', copy: 'A recuperacao valida a conta do painel.' },

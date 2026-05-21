@@ -8,7 +8,7 @@ const DEMO_PASSWORD = 'demo123456';
 const demoInstallers = [
   {
     name: 'Matheus Chaves',
-    businessName: 'InstaLar Home Premium',
+    businessName: 'Instalar+ Home Premium',
     city: 'Florianópolis',
     state: 'SC',
     region: 'Grande Florianópolis',
@@ -22,7 +22,7 @@ const demoInstallers = [
     yearsExperience: 11,
     featured: true,
     certified: true,
-    certificateName: 'Certificação Profissional InstaLar',
+    certificateName: 'Certificação Profissional Instalar+',
     certificateFile: 'https://picsum.photos/seed/certificate-1/1200/800',
     installerPhoto: 'https://i.pravatar.cc/500?img=12',
     logo: 'https://picsum.photos/seed/logo-instalar-1/600/600',
@@ -89,7 +89,7 @@ const demoInstallers = [
   },
   {
     name: 'André Luiz',
-    businessName: 'Luiz Paper Pro',
+    businessName: 'Luiz Instalar+',
     city: 'Blumenau',
     state: 'SC',
     region: 'Blumenau e região',

@@ -13,9 +13,9 @@ const MARKETPLACE_CONTACT_EMAIL = process.env.MARKETPLACE_CONTACT_EMAIL || 'bemi
 
 function buildMarketplacePayload() {
   return {
-    title: 'Loja Oficial Bem Instalado',
+    title: 'Loja Oficial Instalar+',
     description:
-      'A loja oficial Bem Instalado Home Decor reúne papéis de parede para vários estilos, com operação em Florianópolis e atendimento para todo o Brasil.',
+      'A loja oficial Instalar+ Home Decor reúne papéis de parede para vários estilos, com operação em Florianópolis e atendimento para todo o Brasil.',
     url: MARKETPLACE_URL,
     cta_label: MARKETPLACE_CTA_LABEL,
     whatsapp_url: MARKETPLACE_WHATSAPP_URL,
@@ -503,7 +503,7 @@ exports.getInstallers = async (req, res) => {
           whatsapp_link: installer.phone
             ? generateWhatsAppLink(
                 installer.phone,
-                `Olá ${installer.display_name}, vi seu perfil na Bem Instalado e gostaria de conversar sobre uma instalação.`
+                `Olá ${installer.display_name}, vi seu perfil na Instalar+ e gostaria de conversar sobre uma instalação.`
               )
             : null,
           featured_installer: Boolean(installer.featured_installer),
@@ -720,7 +720,7 @@ exports.getInstallerProfile = async (req, res) => {
           whatsapp_link: installer.phone
             ? generateWhatsAppLink(
                 installer.phone,
-                `Olá ${installer.display_name}, vi seu perfil na Bem Instalado e quero conversar sobre meu projeto.`
+                `Olá ${installer.display_name}, vi seu perfil na Instalar+ e quero conversar sobre meu projeto.`
               )
             : null,
           available_dates: availableDates,

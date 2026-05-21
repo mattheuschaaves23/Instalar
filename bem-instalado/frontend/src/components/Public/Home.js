@@ -605,7 +605,7 @@ export default function Home() {
           <div className="client-app-brand">
             <BrandMark className="client-app-brand-mark" />
             <div className="client-app-brand-copy">
-              <strong>InstaLar</strong>
+              <strong>Instalar+</strong>
               <span>Encontre instaladores no Brasil</span>
             </div>
           </div>

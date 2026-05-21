@@ -42,9 +42,9 @@ function getPixConfig() {
   return {
     staticCode,
     pixKey: staticCode ? process.env.PIX_DISPLAY_KEY || '' : process.env.PIX_KEY || 'pagamentos@beminstalado.com',
-    recipientName: normalizeText(process.env.PIX_RECIPIENT_NAME || 'Bem Instalado', 25),
+    recipientName: normalizeText(process.env.PIX_RECIPIENT_NAME || 'Instalar+', 25),
     city: normalizeText(process.env.PIX_CITY || 'Sao Paulo', 15),
-    description: normalizeText(process.env.PIX_DESCRIPTION || 'Assinatura Bem Instalado', 40),
+    description: normalizeText(process.env.PIX_DESCRIPTION || 'Assinatura Instalar+', 40),
   };
 }
 
