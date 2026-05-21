@@ -12,7 +12,6 @@ const MOBILE_DOCK_ITEMS = [
 
 const PANEL_NAV_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'grid', section: 'VISAO GERAL' },
-  { to: '/dashboard', label: 'Desempenho', icon: 'trend' },
   { to: '/agenda', label: 'Agenda', icon: 'agenda', badge: 3 },
   { to: '/budgets', label: 'Orcamentos', icon: 'file', section: 'OPERACAO' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
