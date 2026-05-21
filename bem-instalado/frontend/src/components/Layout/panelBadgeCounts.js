@@ -28,10 +28,6 @@ export function getPanelBadgeValue(item, counts = {}) {
 
   const count = Number(counts[item.badgeKey] || 0);
 
-  if (item.badgeKey === 'agenda' || item.badgeKey === 'reviews') {
-    return formatPanelBadgeCount(count);
-  }
-
   return count > 0 ? formatPanelBadgeCount(count) : null;
 }
 

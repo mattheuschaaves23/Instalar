@@ -154,9 +154,9 @@ export default function ReviewsDashboard() {
       icon: 'trend',
     },
     {
-      label: 'Ultimos 30 dias',
-      value: summary.recent_30_count || 0,
-      detail: 'Novas provas sociais recentes',
+      label: 'Ultimos 3 dias',
+      value: summary.recent_3_count || 0,
+      detail: 'Movimento recente do perfil',
       icon: 'calendar',
     },
     {

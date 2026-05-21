@@ -910,8 +910,8 @@ exports.getReviewsDashboard = async (req, res) => {
                 AND created_at < DATE_TRUNC('month', CURRENT_DATE)
             )::int AS previous_month_count,
             COUNT(*) FILTER (
-              WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
-            )::int AS recent_30_count,
+              WHERE created_at >= NOW() - INTERVAL '3 days'
+            )::int AS recent_3_count,
             COUNT(*) FILTER (
               WHERE NULLIF(TRIM(COALESCE(comment, '')), '') IS NOT NULL
             )::int AS commented_count,
@@ -995,7 +995,7 @@ exports.getReviewsDashboard = async (req, res) => {
         average_rating: Number(rawSummary.average_rating || 0),
         current_month_count: currentMonthCount,
         previous_month_count: previousMonthCount,
-        recent_30_count: Number(rawSummary.recent_30_count || 0),
+        recent_3_count: Number(rawSummary.recent_3_count || 0),
         commented_count: commentedCount,
         comment_rate: reviewCount > 0 ? Math.round((commentedCount / reviewCount) * 100) : 0,
         monthly_delta:
