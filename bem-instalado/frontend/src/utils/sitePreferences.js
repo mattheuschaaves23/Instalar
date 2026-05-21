@@ -69,13 +69,31 @@ function getContrastText(hex) {
 function buildAccentTokens(accentColor) {
   const accent = normalizeHexColor(accentColor);
   const { r, g, b } = hexToRgb(accent);
+  const strong = mixColor(accent, '#ffffff', 0.24);
+  const deep = mixColor(accent, '#000000', 0.38);
+  const panel = mixColor('#050505', accent, 0.04);
+  const panelSoft = mixColor('#090909', accent, 0.06);
+  const panelElevated = mixColor('#0d0d0d', accent, 0.08);
+  const strongRgb = hexToRgb(strong);
+  const deepRgb = hexToRgb(deep);
+  const panelRgb = hexToRgb(panel);
+  const panelSoftRgb = hexToRgb(panelSoft);
+  const panelElevatedRgb = hexToRgb(panelElevated);
 
   return {
     accent,
-    strong: mixColor(accent, '#ffffff', 0.24),
-    deep: mixColor(accent, '#000000', 0.38),
+    strong,
+    deep,
     contrast: getContrastText(accent),
     rgb: `${r}, ${g}, ${b}`,
+    strongRgb: `${strongRgb.r}, ${strongRgb.g}, ${strongRgb.b}`,
+    deepRgb: `${deepRgb.r}, ${deepRgb.g}, ${deepRgb.b}`,
+    panel,
+    panelSoft,
+    panelElevated,
+    panelRgb: `${panelRgb.r}, ${panelRgb.g}, ${panelRgb.b}`,
+    panelSoftRgb: `${panelSoftRgb.r}, ${panelSoftRgb.g}, ${panelSoftRgb.b}`,
+    panelElevatedRgb: `${panelElevatedRgb.r}, ${panelElevatedRgb.g}, ${panelElevatedRgb.b}`,
   };
 }
 
@@ -116,9 +134,17 @@ export function applySitePreferences(nextPreferences = readSitePreferences()) {
   root.style.setProperty('--site-accent-deep', tokens.deep);
   root.style.setProperty('--site-accent-contrast', tokens.contrast);
   root.style.setProperty('--site-accent-rgb', tokens.rgb);
+  root.style.setProperty('--site-accent-strong-rgb', tokens.strongRgb);
+  root.style.setProperty('--site-accent-deep-rgb', tokens.deepRgb);
   root.style.setProperty('--site-accent-soft', `rgba(${tokens.rgb}, 0.14)`);
   root.style.setProperty('--site-accent-line', `rgba(${tokens.rgb}, 0.18)`);
   root.style.setProperty('--site-accent-line-strong', `rgba(${tokens.rgb}, 0.34)`);
+  root.style.setProperty('--site-panel', tokens.panel);
+  root.style.setProperty('--site-panel-soft', tokens.panelSoft);
+  root.style.setProperty('--site-panel-elevated', tokens.panelElevated);
+  root.style.setProperty('--site-panel-rgb', tokens.panelRgb);
+  root.style.setProperty('--site-panel-soft-rgb', tokens.panelSoftRgb);
+  root.style.setProperty('--site-panel-elevated-rgb', tokens.panelElevatedRgb);
   root.style.setProperty('--gold', tokens.accent);
   root.style.setProperty('--gold-strong', tokens.strong);
   root.style.setProperty('--gold-soft', `rgba(${tokens.rgb}, 0.14)`);

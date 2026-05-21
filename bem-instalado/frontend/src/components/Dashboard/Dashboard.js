@@ -507,10 +507,10 @@ function buildLineGeometry(series) {
 
 function buildStatusSegments(budgets) {
   const baseSegments = [
-    { key: 'approved', label: 'Aprovados', color: '#f0d28a' },
-    { key: 'pending', label: 'Pendentes', color: '#cda349' },
-    { key: 'scheduled', label: 'Agendados', color: '#9b7131' },
-    { key: 'other', label: 'Outros', color: '#5d4521' },
+    { key: 'approved', label: 'Aprovados', color: 'var(--site-accent-strong)' },
+    { key: 'pending', label: 'Pendentes', color: 'var(--site-accent)' },
+    { key: 'scheduled', label: 'Agendados', color: 'var(--site-accent-deep)' },
+    { key: 'other', label: 'Outros', color: 'rgba(var(--site-accent-rgb), 0.38)' },
   ];
 
   const values = baseSegments.map((segment) => {
@@ -536,7 +536,7 @@ function buildStatusSegments(budgets) {
     return {
       total: 4,
       items: baseSegments.map((segment) => ({ ...segment, value: 1, percentage: 25 })),
-      gradient: `conic-gradient(#f0d28a 0deg 90deg, #cda349 90deg 180deg, #9b7131 180deg 270deg, #5d4521 270deg 360deg)`,
+      gradient: 'conic-gradient(var(--site-accent-strong) 0deg 90deg, var(--site-accent) 90deg 180deg, var(--site-accent-deep) 180deg 270deg, rgba(var(--site-accent-rgb), 0.38) 270deg 360deg)',
     };
   }
 
