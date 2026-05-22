@@ -588,7 +588,7 @@ export default function Home() {
   const handleLogout = () => {
     logout();
     toast.success('Voce saiu da conta.');
-    navigate('/cliente/entrar', { replace: true });
+    navigate('/cliente', { replace: true });
   };
 
   return (
@@ -616,11 +616,7 @@ export default function Home() {
                   Sair
                 </button>
               </>
-            ) : (
-              <Link className="client-app-chip-link" to="/cliente/entrar">
-                Entrar
-              </Link>
-            )}
+            ) : null}
           </div>
         </header>
 
@@ -1031,12 +1027,7 @@ export default function Home() {
               <span>Sair</span>
             </button>
           </>
-        ) : (
-          <Link to="/instalador/entrar">
-            <AppIcon name="profile" />
-            <span>Perfil</span>
-          </Link>
-        )}
+        ) : null}
       </nav>
     </div>
   );

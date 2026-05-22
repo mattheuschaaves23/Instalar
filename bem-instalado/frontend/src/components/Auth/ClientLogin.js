@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { startSocialLogin } from '../../services/auth';
@@ -136,7 +136,18 @@ const benefitItems = [
   },
 ];
 
+function sanitizeClientNextPath(value) {
+  const nextPath = String(value?.pathname ? `${value.pathname}${value.search || ''}${value.hash || ''}` : value || '').trim();
+
+  if ((nextPath.startsWith('/cliente') || nextPath.startsWith('/installers/')) && !nextPath.startsWith('//')) {
+    return nextPath;
+  }
+
+  return '/cliente';
+}
+
 export default function ClientLogin() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { loading, login, logout, user } = useAuth();
   const [form, setForm] = useState({ email: '', password: '', twoFactorToken: '' });
@@ -144,6 +155,11 @@ export default function ClientLogin() {
   const [showPassword, setShowPassword] = useState(false);
 
   const submitLabel = useMemo(() => (needs2FA ? 'Validar acesso' : 'Entrar'), [needs2FA]);
+  const nextPath = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return sanitizeClientNextPath(params.get('next') || location.state?.from);
+  }, [location.search, location.state]);
+  const isInstallerIntent = nextPath.startsWith('/installers/');
 
   useEffect(() => {
     if (loading) {
@@ -151,14 +167,14 @@ export default function ClientLogin() {
     }
 
     if (user?.account_type === 'client') {
-      navigate('/cliente', { replace: true });
+      navigate(nextPath, { replace: true });
       return;
     }
 
     if (user) {
       logout();
     }
-  }, [loading, logout, navigate, user]);
+  }, [loading, logout, navigate, nextPath, user]);
 
   useEffect(() => {
     const error = new URLSearchParams(window.location.search).get('oauth_error');
@@ -186,7 +202,7 @@ export default function ClientLogin() {
       }
 
       toast.success('Login realizado.');
-      navigate('/cliente', { replace: true });
+      navigate(nextPath, { replace: true });
     } catch (error) {
       if (error.response?.status === 401 && error.response?.data?.twoFactorRequired) {
         setNeeds2FA(true);
@@ -203,7 +219,7 @@ export default function ClientLogin() {
   };
 
   const handleSocialLogin = (provider) => {
-    startSocialLogin(provider, { role: 'client', next: '/cliente' });
+    startSocialLogin(provider, { role: 'client', next: nextPath });
   };
 
   return (
@@ -261,8 +277,12 @@ export default function ClientLogin() {
             </div>
 
             <div className="client-login-card-head">
-              <h2>Bem-vindo de volta!</h2>
-              <p>Faça login para acessar sua conta.</p>
+              <h2>{isInstallerIntent ? 'Finalize seu acesso' : 'Bem-vindo de volta!'}</h2>
+              <p>
+                {isInstallerIntent
+                  ? 'Entre para falar com o instalador escolhido.'
+                  : 'Faça login para acessar sua conta.'}
+              </p>
             </div>
 
             <label className="client-login-field">

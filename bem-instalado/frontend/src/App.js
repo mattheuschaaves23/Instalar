@@ -50,11 +50,8 @@ export default function App() {
           <Route element={<OAuthCallback />} path="/auth/social/callback" />
           <Route element={<Navigate replace to="/" />} path="/register" />
           <Route element={<Register />} path="/instalador/cadastro" />
-
-          <Route element={<ProtectedRoute allowedAccountTypes={['client', 'installer']} loginPath="/cliente/entrar" />}>
-            <Route element={<Home />} path="/cliente" />
-            <Route element={<InstallerProfile />} path="/installers/:id" />
-          </Route>
+          <Route element={<Home />} path="/cliente" />
+          <Route element={<InstallerProfile />} path="/installers/:id" />
 
           <Route element={<ProtectedRoute allowedAccountTypes={['installer']} loginPath="/instalador/entrar" />}>
             <Route element={<Layout />}>

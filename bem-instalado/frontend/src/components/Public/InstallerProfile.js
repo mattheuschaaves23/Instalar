@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -67,8 +67,13 @@ function groupAvailabilitySlots(slots = []) {
   }, {});
 }
 
+function getClientLoginPath(nextPath) {
+  return `/cliente/entrar?next=${encodeURIComponent(nextPath)}`;
+}
+
 export default function InstallerProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [payload, setPayload] = useState(null);
   const [reviewForm, setReviewForm] = useState(emptyReviewForm);
@@ -101,7 +106,8 @@ export default function InstallerProfile() {
     const reviewerName = reviewForm.reviewer_name.trim();
 
     if (!user) {
-      toast.error('Faça login no painel para enviar uma avaliação.');
+      toast('Entre para avaliar o instalador escolhido.');
+      navigate(getClientLoginPath(`/installers/${id}#avaliar-instalador`));
       return;
     }
 
@@ -133,6 +139,17 @@ export default function InstallerProfile() {
     } finally {
       setSendingReview(false);
     }
+  };
+
+  const requireClientLogin = (event, nextPath, message) => {
+    if (user) {
+      return true;
+    }
+
+    event?.preventDefault();
+    toast(message);
+    navigate(getClientLoginPath(nextPath));
+    return false;
   };
 
   if (!payload) {
@@ -330,7 +347,19 @@ export default function InstallerProfile() {
 
               <div className="mt-8 flex flex-wrap gap-3">
                 {installer.whatsapp_link ? (
-                  <a className="gold-button" href={installer.whatsapp_link} rel="noreferrer" target="_blank">
+                  <a
+                    className="gold-button"
+                    href={installer.whatsapp_link}
+                    onClick={(event) =>
+                      requireClientLogin(
+                        event,
+                        `/installers/${installer.id}`,
+                        'Entre para falar com o instalador escolhido.'
+                      )
+                    }
+                    rel="noreferrer"
+                    target="_blank"
+                  >
                     Entrar em contato pelo WhatsApp
                   </a>
                 ) : null}
@@ -338,11 +367,21 @@ export default function InstallerProfile() {
                   Ver avaliações
                 </a>
                 {!isOwnInstallerProfile ? (
-                  <a className="ghost-button" href="#avaliar-instalador">
+                  <a
+                    className="ghost-button"
+                    href="#avaliar-instalador"
+                    onClick={(event) =>
+                      requireClientLogin(
+                        event,
+                        `/installers/${installer.id}#avaliar-instalador`,
+                        'Entre para avaliar o instalador escolhido.'
+                      )
+                    }
+                  >
                     Avaliar este instalador
                   </a>
                 ) : null}
-                <Link className="ghost-button" to="/">
+                <Link className="ghost-button" to="/cliente">
                   Voltar para a busca
                 </Link>
               </div>
@@ -399,7 +438,13 @@ export default function InstallerProfile() {
 
               {!user ? (
                 <div className="empty-state mt-4 !p-4 text-sm">
-                  Faça login no painel para enviar avaliação e manter a reputação da plataforma protegida.
+                  <p>Entre depois de escolher este instalador para enviar sua avaliação.</p>
+                  <Link
+                    className="gold-button mt-4 w-full justify-center"
+                    to={getClientLoginPath(`/installers/${installer.id}#avaliar-instalador`)}
+                  >
+                    Entrar para avaliar
+                  </Link>
                 </div>
               ) : isOwnInstallerProfile ? (
                 <div className="empty-state mt-4 !p-4 text-sm">
