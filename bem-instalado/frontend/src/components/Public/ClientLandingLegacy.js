@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import BrandMark from '../Layout/BrandMark';
@@ -35,22 +35,6 @@ const STORY_POINTS = [
   'Comparação simples entre opções',
   'Contato direto sem intermediários',
   'Fotos para validar o acabamento',
-];
-
-const HERO_MINI_TOPICS = [
-  'Instaladores especializados',
-  'Perfis verificados',
-  'Avaliações reais de clientes',
-  'Contato rápido no WhatsApp',
-  'Suporte antes, durante e depois',
-];
-
-const HERO_MINI_TOPICS_MOBILE = [
-  'Instaladores especializados',
-  'Perfis verificados',
-  'Avaliações reais de clientes',
-  'Contato direto no WhatsApp',
-  'Suporte antes e depois',
 ];
 
 const MOBILE_FEATURE_ITEMS = [
@@ -149,24 +133,6 @@ const DESKTOP_TRUST_ITEMS = [
   },
 ];
 
-const DESKTOP_HERO_METRICS = [
-  {
-    icon: 'users',
-    value: '+8.000',
-    title: 'instaladores cadastrados',
-  },
-  {
-    icon: 'award',
-    value: '4,9/5',
-    title: 'avaliação média dos clientes',
-  },
-  {
-    icon: 'brazil',
-    value: 'Todos os estados',
-    title: 'do Brasil',
-  },
-];
-
 const DESKTOP_WHY_POINTS = [
   {
     icon: 'verified',
@@ -230,29 +196,6 @@ const STORE_RATING_FALLBACKS = {
   'Papel & Cia': '4,9',
   'Casa do Papel': '4,8',
 };
-
-const DESKTOP_SHOWCASE_INSTALLERS = [
-  {
-    id: 'desktop-installer-1',
-    display_name: 'Teste',
-    city: 'São Paulo',
-    state: 'SP',
-    average_rating: 5,
-    review_count: 32,
-    completed_jobs: 80,
-    featured_installer: true,
-  },
-  {
-    id: 'desktop-installer-2',
-    display_name: 'Instalar+',
-    city: 'Curitiba',
-    state: 'PR',
-    average_rating: 4.9,
-    review_count: 27,
-    completed_jobs: 60,
-    featured_installer: true,
-  },
-];
 
 const moneyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -731,7 +674,6 @@ export default function ClientLanding() {
     [maxReviewIndex]
   );
   const reviewCardWidth = 100 / Math.max(reviewCardsPerView, 1);
-  const heroMiniTopics = isMobileLayout ? HERO_MINI_TOPICS_MOBILE : HERO_MINI_TOPICS;
   const storyPoints = STORY_POINTS;
   const howItWorksItems = isMobileLayout ? HOW_IT_WORKS_MOBILE : HOW_IT_WORKS;
   const desktopShowcaseStores = useMemo(
@@ -757,8 +699,6 @@ export default function ClientLanding() {
     return pages;
   }, [desktopShowcaseStores, storesPerView]);
   const maxStorePageIndex = Math.max(0, desktopStorePages.length - 1);
-  const desktopShowcaseInstallers = DESKTOP_SHOWCASE_INSTALLERS;
-
   useEffect(() => {
     if (!isMobileLayout) {
       setActiveStoreIndex(0);
@@ -1226,7 +1166,7 @@ export default function ClientLanding() {
                             <div className="clean-reference-store-page" key={`desktop-store-page-${pageIndex}`}>
                               <div
                                 className="clean-reference-store-grid"
-                                style={{ ['--store-columns']: storesPerView }}
+                                style={{ '--store-columns': storesPerView }}
                               >
                                 {storePage.map((store, index) => (
                                   <article className="clean-reference-store-slide" key={store.id || `${store.name}-${index}`}>
@@ -1267,7 +1207,7 @@ export default function ClientLanding() {
                       ) : (
                         <div
                           className="clean-reference-store-grid"
-                          style={{ ['--store-columns']: Math.min(desktopShowcaseStores.length, storesPerView) }}
+                          style={{ '--store-columns': Math.min(desktopShowcaseStores.length, storesPerView) }}
                         >
                           {desktopShowcaseStores.map((store, index) => (
                             <article className="clean-reference-store-slide" key={store.id || `${store.name}-${index}`}>

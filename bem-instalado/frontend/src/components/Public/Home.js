@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { safeSessionStorage } from '../../utils/safeStorage';
 import BrandMark from '../Layout/BrandMark';
 import PaginationControls from '../Layout/PaginationControls';
 
 const AUTO_LOCATION_SESSION_KEY = 'bem_instalado_client_location_checked';
 const INSTALLERS_PER_PAGE = 6;
+const INITIAL_FILTERS = { search: '', city: '', state: '' };
 
 const CATEGORY_OPTIONS = [
   { value: 'all', label: 'Todos', keywords: [] },
@@ -278,20 +280,6 @@ function sortInstallers(items, sortBy) {
   return nextItems;
 }
 
-function RatingStars({ value }) {
-  const rounded = Math.max(0, Math.min(5, Math.round(Number(value || 0))));
-
-  return (
-    <span className="client-app-rating-stars" aria-hidden="true">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <span className={index < rounded ? 'is-on' : ''} key={index}>
-          ★
-        </span>
-      ))}
-    </span>
-  );
-}
-
 function buildSuggestionScenarios(filters) {
   const scenarios = [];
   const city = String(filters.city || '').trim();
@@ -344,10 +332,11 @@ export default function Home() {
   const { logout, user } = useAuth();
   const accountHomePath = user?.account_type === 'client' ? '/cliente' : '/dashboard';
   const accountLinkLabel = user?.account_type === 'client' ? 'Minha conta' : 'Meu painel';
-  const [filters, setFilters] = useState({ search: '', city: '', state: '' });
+  const autoLocationRequestedRef = useRef(false);
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [directory, setDirectory] = useState({ installers: [], ranking: [], reviews: [], marketplace: null });
   const [loading, setLoading] = useState(true);
-  const [locationState, setLocationState] = useState({
+  const [, setLocationState] = useState({
     status: 'idle',
     message: 'Ative sua localizacao para encontrar profissionais mais proximos.',
   });
@@ -402,7 +391,7 @@ export default function Home() {
     [filteredInstallers, installersStart]
   );
 
-  const loadDirectory = async (nextFilters = filters) => {
+  const loadDirectory = useCallback(async (nextFilters = INITIAL_FILTERS) => {
     setLoading(true);
 
     try {
@@ -413,17 +402,17 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const reverseLocation = async (latitude, longitude) => {
+  const reverseLocation = useCallback(async (latitude, longitude) => {
     const response = await api.get('/public/location/reverse', {
       params: { lat: latitude, lon: longitude },
     });
 
     return response.data;
-  };
+  }, []);
 
-  const requestLocationSearch = async ({ silent = false } = {}) => {
+  const requestLocationSearch = useCallback(async ({ silent = false } = {}) => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
       setLocationState({
         status: 'unsupported',
@@ -488,24 +477,28 @@ export default function Home() {
         maximumAge: 300000,
       }
     );
-  };
+  }, [filters, loadDirectory, reverseLocation]);
 
   useEffect(() => {
     loadDirectory();
-  }, []);
+  }, [loadDirectory]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
 
-    if (window.sessionStorage.getItem(AUTO_LOCATION_SESSION_KEY) === 'done') {
+    if (
+      autoLocationRequestedRef.current ||
+      safeSessionStorage.getItem(AUTO_LOCATION_SESSION_KEY) === 'done'
+    ) {
       return;
     }
 
-    window.sessionStorage.setItem(AUTO_LOCATION_SESSION_KEY, 'done');
+    autoLocationRequestedRef.current = true;
+    safeSessionStorage.setItem(AUTO_LOCATION_SESSION_KEY, 'done');
     requestLocationSearch({ silent: true });
-  }, []);
+  }, [requestLocationSearch]);
 
   useEffect(() => {
     setInstallersPage(1);

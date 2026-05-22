@@ -18,7 +18,7 @@ export function NotificationProvider({ children }) {
 
     try {
       const response = await api.get('/notifications');
-      setNotifications(response.data);
+      setNotifications(Array.isArray(response.data) ? response.data : response.data?.notifications || []);
     } catch (_error) {
       setNotifications([]);
     }

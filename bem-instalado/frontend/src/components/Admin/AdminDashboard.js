@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -36,6 +36,8 @@ const initialStoreForm = {
 
 const USERS_PER_PAGE = 6;
 const PAYMENTS_PER_PAGE = 6;
+const initialUserFilters = { q: '', status: 'all' };
+const initialPaymentFilters = { q: '', status: 'all' };
 
 function AdminPanelIcon({ type }) {
   const sharedProps = {
@@ -115,8 +117,8 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [payments, setPayments] = useState([]);
   const [recommendedStores, setRecommendedStores] = useState([]);
-  const [userFilters, setUserFilters] = useState({ q: '', status: 'all' });
-  const [paymentFilters, setPaymentFilters] = useState({ q: '', status: 'all' });
+  const [userFilters, setUserFilters] = useState(initialUserFilters);
+  const [paymentFilters, setPaymentFilters] = useState(initialPaymentFilters);
   const [announcement, setAnnouncement] = useState(initialAnnouncement);
   const [storeForm, setStoreForm] = useState(initialStoreForm);
   const [editingStoreId, setEditingStoreId] = useState(null);
@@ -132,12 +134,12 @@ export default function AdminDashboard() {
   const [loadingStores, setLoadingStores] = useState(false);
   const [savingStore, setSavingStore] = useState(false);
 
-  const loadOverview = async () => {
+  const loadOverview = useCallback(async () => {
     const response = await api.get('/admin/overview');
     setOverview(response.data || initialOverview);
-  };
+  }, []);
 
-  const loadUsers = async (nextFilters = userFilters) => {
+  const loadUsers = useCallback(async (nextFilters = initialUserFilters) => {
     setLoadingUsers(true);
 
     try {
@@ -153,9 +155,9 @@ export default function AdminDashboard() {
     } finally {
       setLoadingUsers(false);
     }
-  };
+  }, []);
 
-  const loadPayments = async (nextFilters = paymentFilters) => {
+  const loadPayments = useCallback(async (nextFilters = initialPaymentFilters) => {
     setLoadingPayments(true);
 
     try {
@@ -171,9 +173,9 @@ export default function AdminDashboard() {
     } finally {
       setLoadingPayments(false);
     }
-  };
+  }, []);
 
-  const loadRecommendedStores = async () => {
+  const loadRecommendedStores = useCallback(async () => {
     setLoadingStores(true);
 
     try {
@@ -182,7 +184,7 @@ export default function AdminDashboard() {
     } finally {
       setLoadingStores(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -192,7 +194,7 @@ export default function AdminDashboard() {
         toast.error(error.response?.data?.error || 'Não foi possível carregar o painel administrativo.');
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadOverview, loadPayments, loadRecommendedStores, loadUsers]);
 
   const handleUserFilterChange = (event) => {
     setUserFilters((current) => ({ ...current, [event.target.name]: event.target.value }));

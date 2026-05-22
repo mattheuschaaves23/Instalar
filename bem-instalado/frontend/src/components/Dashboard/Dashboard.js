@@ -316,14 +316,6 @@ function addYears(date, years) {
   return new Date(date.getFullYear() + years, date.getMonth(), 1);
 }
 
-function getDateKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function getMonthKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
-
 function getIsoWeekInfo(date) {
   const target = new Date(date);
   target.setHours(0, 0, 0, 0);
@@ -910,7 +902,10 @@ export default function Dashboard() {
         { id: 'self', ranking_position: metrics.ranking_position || 3, display_name: user?.name || 'Matheus Chaves', average_rating: metrics.average_rating || 4.8 },
       ];
 
-  return (
+  const useLegacyDashboard = process.env.REACT_APP_DASHBOARD_VARIANT === 'legacy';
+
+  if (!useLegacyDashboard) {
+    return (
     <section className={`ref-panel-shell ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
       <aside className="ref-panel-sidebar" aria-label="Navegacao do painel">
         <div className="ref-panel-brand">
@@ -1189,7 +1184,8 @@ export default function Dashboard() {
         </nav>
       </div>
     </section>
-  );
+    );
+  }
 
   return (
     <section className="dashboard-neo-shell">
@@ -1282,6 +1278,7 @@ export default function Dashboard() {
                       className={`dashboard-neo-view-tab ${chartView === view ? 'is-active' : ''}`}
                       key={view}
                       onClick={() => handleChartViewChange(view)}
+                      role="tab"
                       type="button"
                     >
                       {CHART_VIEW_LABELS[view]}

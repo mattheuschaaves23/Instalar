@@ -1,3 +1,5 @@
+import { safeLocalStorage } from './safeStorage';
+
 export const SITE_PREFERENCES_EVENT = 'site-preferences:changed';
 
 const STORAGE_KEY = 'instalar-site-preferences';
@@ -113,7 +115,7 @@ export function readSitePreferences() {
   }
 
   try {
-    const storedValue = window.localStorage.getItem(STORAGE_KEY);
+    const storedValue = safeLocalStorage.getItem(STORAGE_KEY);
     return normalizeSitePreferences(storedValue ? JSON.parse(storedValue) : DEFAULT_SITE_PREFERENCES);
   } catch (_error) {
     return DEFAULT_SITE_PREFERENCES;
@@ -163,9 +165,13 @@ export function saveSitePreferences(nextPreferences) {
   const preferences = normalizeSitePreferences(nextPreferences);
 
   if (typeof window !== 'undefined') {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+    safeLocalStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
     applySitePreferences(preferences);
-    window.dispatchEvent(new CustomEvent(SITE_PREFERENCES_EVENT, { detail: preferences }));
+    try {
+      window.dispatchEvent(new CustomEvent(SITE_PREFERENCES_EVENT, { detail: preferences }));
+    } catch (_error) {
+      window.dispatchEvent(new Event(SITE_PREFERENCES_EVENT));
+    }
   }
 
   return preferences;
@@ -173,7 +179,7 @@ export function saveSitePreferences(nextPreferences) {
 
 export function resetSitePreferences() {
   if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(STORAGE_KEY);
+    safeLocalStorage.removeItem(STORAGE_KEY);
   }
 
   return saveSitePreferences(DEFAULT_SITE_PREFERENCES);

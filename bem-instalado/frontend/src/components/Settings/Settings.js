@@ -5,7 +5,6 @@ import PageIntro from '../Layout/PageIntro';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   ACCENT_PRESETS,
-  DEFAULT_SITE_PREFERENCES,
   readSitePreferences,
   resetSitePreferences,
   saveSitePreferences,

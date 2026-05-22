@@ -237,8 +237,6 @@ export default function BudgetForm() {
 
   const grandTotal = totals.total;
   const normalizedInstallments = installmentEnabled ? Number(installmentsCount || 2) : 1;
-  const installmentValue = normalizedInstallments > 0 ? grandTotal / normalizedInstallments : grandTotal;
-
   const selectedClient = clients.find((client) => Number(client.id) === Number(clientId));
   const canCalculate = totals.area > 0;
   const canSave = canCalculate && grandTotal > 0 && Number(clientId) > 0;

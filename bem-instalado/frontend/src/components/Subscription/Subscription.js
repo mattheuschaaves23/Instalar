@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import PageIntro from '../Layout/PageIntro';
@@ -31,7 +31,7 @@ export default function Subscription() {
   const [subscription, setSubscription] = useState(null);
   const [payment, setPayment] = useState(null);
 
-  const loadSubscription = async () => {
+  const loadSubscription = useCallback(async () => {
     try {
       const response = await api.get('/subscriptions');
       setSubscription(response.data);
@@ -40,9 +40,9 @@ export default function Subscription() {
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível carregar a assinatura.');
     }
-  };
+  }, [user?.email, user?.id]);
 
-  const syncPaymentStatus = async (externalId, silent = false) => {
+  const syncPaymentStatus = useCallback(async (externalId, silent = false) => {
     if (!externalId) {
       return;
     }
@@ -69,11 +69,11 @@ export default function Subscription() {
         toast.error(error.response?.data?.error || 'Não foi possível consultar o pagamento.');
       }
     }
-  };
+  }, [loadSubscription]);
 
   useEffect(() => {
     loadSubscription();
-  }, []);
+  }, [loadSubscription]);
 
   useEffect(() => {
     if (!payment?.automaticConfirmation || payment?.payment?.status !== 'pending' || !payment?.payment?.external_id) {
@@ -85,7 +85,7 @@ export default function Subscription() {
     }, 8000);
 
     return () => window.clearInterval(interval);
-  }, [payment?.automaticConfirmation, payment?.payment?.external_id, payment?.payment?.status]);
+  }, [payment?.automaticConfirmation, payment?.payment?.external_id, payment?.payment?.status, syncPaymentStatus]);
 
   const handlePay = async () => {
     if (subscription?.payment_mode === 'disabled') {

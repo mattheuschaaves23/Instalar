@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { safeLocalStorage } from '../utils/safeStorage';
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+const DEFAULT_API_TIMEOUT_MS = 20000;
 
 function isLocalHost(hostname) {
   return LOCAL_HOSTS.has(String(hostname || '').toLowerCase());
@@ -47,8 +49,19 @@ function resolveBaseUrl() {
   return '/api';
 }
 
+function resolveApiTimeout() {
+  const rawTimeout = Number.parseInt(process.env.REACT_APP_API_TIMEOUT_MS, 10);
+
+  if (Number.isFinite(rawTimeout) && rawTimeout >= 3000) {
+    return rawTimeout;
+  }
+
+  return DEFAULT_API_TIMEOUT_MS;
+}
+
 const api = axios.create({
   baseURL: resolveBaseUrl(),
+  timeout: resolveApiTimeout(),
 });
 
 function isLoginRoute(pathname) {
@@ -63,7 +76,7 @@ function getLoginRoute(pathname) {
 }
 
 function redirectTo(targetPath) {
-  if (!targetPath || window.location.pathname === targetPath) {
+  if (typeof window === 'undefined' || !targetPath || window.location.pathname === targetPath) {
     return;
   }
 
@@ -71,9 +84,10 @@ function redirectTo(targetPath) {
 }
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = safeLocalStorage.getItem('token');
 
   if (token) {
+    config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   }
 
@@ -89,7 +103,7 @@ api.interceptors.response.use(
 
     if (typeof window !== 'undefined') {
       if (status === 401 && !isLoginRoute(window.location.pathname)) {
-        localStorage.removeItem('token');
+        safeLocalStorage.removeItem('token');
         redirectTo(getLoginRoute(window.location.pathname));
       }
 

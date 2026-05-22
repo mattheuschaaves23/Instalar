@@ -1,5 +1,6 @@
-﻿import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { getProfileRequest, loginRequest, registerRequest } from '../services/auth';
+import { safeLocalStorage } from '../utils/safeStorage';
 
 const AuthContext = createContext(null);
 
@@ -8,38 +9,54 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = safeLocalStorage.getItem('token');
 
     if (!token) {
       setLoading(false);
       return;
     }
 
+    let isMounted = true;
+
     getProfileRequest()
-      .then((profile) => setUser(profile))
-      .catch(() => {
-        localStorage.removeItem('token');
-        setUser(null);
+      .then((profile) => {
+        if (isMounted) {
+          setUser(profile);
+        }
       })
-      .finally(() => setLoading(false));
+      .catch(() => {
+        safeLocalStorage.removeItem('token');
+        if (isMounted) {
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = async (payload) => {
     const result = await loginRequest(payload);
-    localStorage.setItem('token', result.token);
+    safeLocalStorage.setItem('token', result.token);
     setUser(result.user);
     return result;
   };
 
   const register = async (payload) => {
     const result = await registerRequest(payload);
-    localStorage.setItem('token', result.token);
+    safeLocalStorage.setItem('token', result.token);
     setUser(result.user);
     return result;
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    safeLocalStorage.removeItem('token');
     setUser(null);
   };
 

@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { formatDateTime, formatStatusLabel } from '../../utils/formatters';
+import { safeLocalStorage } from '../../utils/safeStorage';
 import PageIntro from '../Layout/PageIntro';
 
 const IDEA_CATEGORY_LABEL = {
@@ -193,7 +194,9 @@ export default function SupportChat() {
         if (isAdmin) {
           const [conversationResponse, ideasList] = await Promise.all([
             api.get('/support/admin/conversations', { params: { limit: 120 } }),
-            fetchAdminIdeas({ status: 'all', q: '' }),
+            api
+              .get('/support/admin/ideas', { params: { limit: 180, status: 'all', q: '' } })
+              .then((response) => sortIdeas(response.data?.ideas || [])),
           ]);
           const conversationList = sortConversations(conversationResponse.data?.conversations || []);
           if (!isMounted) return;
@@ -262,7 +265,7 @@ export default function SupportChat() {
 
   useEffect(() => {
     if (!user?.id) return undefined;
-    const token = localStorage.getItem('token');
+    const token = safeLocalStorage.getItem('token');
     if (!token) return undefined;
     const socket = io(resolveSocketUrl(), { auth: { token }, transports: ['websocket', 'polling'] });
     socketRef.current = socket;

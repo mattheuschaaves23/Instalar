@@ -6,6 +6,7 @@ import { formatShortDate } from '../../utils/formatters';
 
 const ratingFilters = ['all', 5, 4, 3, 2, 1];
 const REVIEWS_REFRESH_INTERVAL = 30000;
+const EMPTY_LIST = [];
 
 function ReviewIcon({ type }) {
   const props = {
@@ -157,9 +158,9 @@ export default function ReviewsDashboard() {
   }, [loadReviews]);
 
   const summary = data?.summary || {};
-  const reviews = data?.reviews || [];
-  const distribution = data?.rating_distribution || [];
-  const monthlySeries = data?.monthly_series || [];
+  const reviews = data?.reviews || EMPTY_LIST;
+  const distribution = data?.rating_distribution || EMPTY_LIST;
+  const monthlySeries = data?.monthly_series || EMPTY_LIST;
   const maxMonthlyCount = useMemo(
     () => Math.max(1, ...monthlySeries.map((item) => Number(item.review_count || 0))),
     [monthlySeries]

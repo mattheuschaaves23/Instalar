@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { getProfileRequest } from '../../services/auth';
+import { safeLocalStorage } from '../../utils/safeStorage';
 
 function readCallbackParams() {
   const rawHash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
@@ -51,7 +52,7 @@ export default function OAuthCallback() {
       }
 
       try {
-        localStorage.setItem('token', token);
+        safeLocalStorage.setItem('token', token);
         const profile = await getProfileRequest();
 
         if (!isMounted) {
@@ -62,7 +63,7 @@ export default function OAuthCallback() {
         toast.success('Login realizado.');
         navigate(resolveNextPath(next, profile), { replace: true });
       } catch (_error) {
-        localStorage.removeItem('token');
+        safeLocalStorage.removeItem('token');
 
         if (isMounted) {
           setError('Nao foi possivel concluir o login social.');

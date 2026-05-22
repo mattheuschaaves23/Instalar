@@ -357,20 +357,6 @@ export default function Profile() {
     }
   };
 
-  const removeAvailabilitySlotLegacy = async (slotId) => {
-    if (!(await confirm('Deseja remover este horário vago?'))) {
-      return;
-    }
-
-    try {
-      await api.delete(`/users/availability/${slotId}`);
-      toast.success('Horário removido.');
-      await loadAvailabilitySlots(availabilityMonth);
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Não foi possível remover o horário.');
-    }
-  };
-
   const removeAvailabilitySlot = async (slotId) => {
     const confirmed = await confirm({
       title: 'Remover horário',
