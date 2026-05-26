@@ -27,6 +27,68 @@ const QUICK_FILTER_OPTIONS = [
   { value: 'featured', label: 'Destaques' },
 ];
 
+const SERVICE_REQUEST_OPTIONS = [
+  {
+    value: 'residential',
+    title: 'Casa ou apartamento',
+    description: 'Instalacao em sala, quarto, cozinha ou corredor.',
+    icon: 'home',
+  },
+  {
+    value: 'commercial',
+    title: 'Empresa ou loja',
+    description: 'Ambientes comerciais, recepcao, vitrine ou escritorio.',
+    icon: 'building',
+  },
+  {
+    value: 'vinyl',
+    title: 'Papel vinilico',
+    description: 'Materiais lavaveis, resistentes ou de maior durabilidade.',
+    icon: 'roller',
+  },
+  {
+    value: 'textured',
+    title: 'Texturizado',
+    description: 'Papeis com relevo, textura ou acabamento especial.',
+    icon: 'texture',
+  },
+  {
+    value: 'kids',
+    title: 'Infantil',
+    description: 'Quarto de bebe, crianca, brinquedoteca ou tema infantil.',
+    icon: 'smile',
+  },
+  {
+    value: 'all',
+    title: 'Ainda estou decidindo',
+    description: 'Quero ver profissionais e conversar sobre possibilidades.',
+    icon: 'users',
+  },
+];
+
+const ROOM_OPTIONS = ['Sala', 'Quarto', 'Cozinha', 'Comercial', 'Outro ambiente'];
+const URGENCY_OPTIONS = [
+  { value: 'urgent', label: 'Urgente' },
+  { value: 'week', label: 'Esta semana' },
+  { value: 'days', label: 'Proximos dias' },
+  { value: 'quote', label: 'So quero orcar' },
+];
+const REQUEST_STEPS = [
+  { value: 'service', label: 'Servico' },
+  { value: 'details', label: 'Detalhes' },
+  { value: 'location', label: 'Local' },
+  { value: 'review', label: 'Resultados' },
+];
+const INITIAL_SERVICE_REQUEST = {
+  service: '',
+  room: '',
+  urgency: 'days',
+  city: '',
+  state: '',
+  details: '',
+};
+const LAST_REQUEST_STEP = REQUEST_STEPS.length - 1;
+
 function AppIcon({ name, className = '' }) {
   const commonProps = {
     className,
@@ -327,6 +389,10 @@ function getRegionLabel(installer) {
   return [installer.city, installer.state].filter(Boolean).join(', ') || installer.service_region || 'Regiao nao informada';
 }
 
+function getServiceRequestOption(value) {
+  return SERVICE_REQUEST_OPTIONS.find((item) => item.value === value) || null;
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -345,11 +411,22 @@ export default function Home() {
   const [quickFilter, setQuickFilter] = useState('all');
   const [sortBy, setSortBy] = useState('rating');
   const [favorites, setFavorites] = useState({});
+  const [requestStep, setRequestStep] = useState(0);
+  const [serviceRequest, setServiceRequest] = useState(INITIAL_SERVICE_REQUEST);
+  const [hasGuidedRequest, setHasGuidedRequest] = useState(false);
   const [noResultsSuggestions, setNoResultsSuggestions] = useState({
     loading: false,
     label: '',
     items: [],
   });
+  const selectedServiceRequest = useMemo(
+    () => getServiceRequestOption(serviceRequest.service),
+    [serviceRequest.service]
+  );
+  const selectedUrgency = useMemo(
+    () => URGENCY_OPTIONS.find((item) => item.value === serviceRequest.urgency),
+    [serviceRequest.urgency]
+  );
 
   const hasActiveFilters = useMemo(
     () => Boolean(filters.search.trim() || filters.city.trim() || filters.state.trim()),
@@ -505,7 +582,7 @@ export default function Home() {
   }, [category, quickFilter, sortBy]);
 
   useEffect(() => {
-    if (loading) {
+    if (loading || !hasGuidedRequest) {
       return;
     }
 
@@ -550,21 +627,111 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [directory.installers.length, filters, hasActiveFilters, loading]);
+  }, [directory.installers.length, filters, hasActiveFilters, hasGuidedRequest, loading]);
 
-  const handleFilterChange = (event) => {
-    setFilters((current) => ({ ...current, [event.target.name]: event.target.value }));
+  const updateServiceRequest = (field, value) => {
+    setServiceRequest((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSearch = async (event) => {
+  const canAdvanceRequest = () => {
+    if (requestStep === 0 && !serviceRequest.service) {
+      toast.error('Escolha o tipo de instalacao para continuar.');
+      return false;
+    }
+
+    if (requestStep === 2 && !serviceRequest.city.trim() && !serviceRequest.state.trim()) {
+      toast.error('Informe sua cidade ou estado para encontrar profissionais proximos.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleRequestNext = () => {
+    if (!canAdvanceRequest()) {
+      return;
+    }
+
+    setRequestStep((current) => Math.min(current + 1, LAST_REQUEST_STEP));
+  };
+
+  const handleRequestBack = () => {
+    setRequestStep((current) => Math.max(current - 1, 0));
+  };
+
+  const requestGuidedLocation = useCallback(async () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      toast.error('Seu navegador nao oferece localizacao automatica.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const region = await reverseLocation(position.coords.latitude, position.coords.longitude);
+          setServiceRequest((current) => ({
+            ...current,
+            city: region.city || current.city,
+            state: region.state || current.state,
+          }));
+          toast.success(region.label ? `Regiao encontrada: ${region.label}.` : 'Regiao encontrada.');
+        } catch (error) {
+          toast.error(error.response?.data?.error || 'Nao foi possivel localizar sua regiao agora.');
+        }
+      },
+      () => {
+        toast.error('Permita a localizacao ou preencha sua cidade manualmente.');
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 300000,
+      }
+    );
+  }, [reverseLocation]);
+
+  const handleGuidedSearch = async (event) => {
     event.preventDefault();
+
+    if (!serviceRequest.service) {
+      setRequestStep(0);
+      toast.error('Escolha o tipo de instalacao primeiro.');
+      return;
+    }
+
+    if (!serviceRequest.city.trim() && !serviceRequest.state.trim()) {
+      setRequestStep(2);
+      toast.error('Informe a regiao do servico para ver profissionais compativeis.');
+      return;
+    }
+
+    const nextFilters = {
+      search: '',
+      city: serviceRequest.city.trim(),
+      state: serviceRequest.state.trim().toUpperCase(),
+    };
+
+    setFilters(nextFilters);
+    setCategory(serviceRequest.service || 'all');
+    setQuickFilter('available');
+    setSortBy('rating');
     setInstallersPage(1);
-    await loadDirectory(filters);
+    setHasGuidedRequest(true);
+    await loadDirectory(nextFilters);
+
+    if (typeof document !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        document.getElementById('resultados')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
   };
 
   const clearFilters = async () => {
     const nextFilters = { search: '', city: '', state: '' };
     setFilters(nextFilters);
+    setServiceRequest(INITIAL_SERVICE_REQUEST);
+    setRequestStep(0);
+    setHasGuidedRequest(false);
     setCategory('all');
     setQuickFilter('all');
     setSortBy('rating');
@@ -640,123 +807,246 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="client-app-search-card fade-up" id="busca">
-          <form className="client-app-search-form" onSubmit={handleSearch}>
-            <div className="client-app-search-main">
-              <div className="client-app-search-inputwrap">
-                <AppIcon className="client-app-inline-icon" name="map-pin" />
-                <input
-                  name="search"
-                  onChange={handleFilterChange}
-                  placeholder="Digite sua cidade ou CEP"
-                  value={filters.search}
-                />
-                <button
-                  className="client-app-locate-button"
-                  onClick={() => requestLocationSearch()}
-                  type="button"
-                >
-                  <AppIcon name="target" />
-                </button>
-              </div>
-
-              <button className="client-app-search-submit" type="submit">
-                Buscar
-              </button>
+        <section className="client-app-request-card fade-up" id="busca">
+          <div className="client-app-request-head">
+            <div>
+              <p className="client-app-kicker">Pedido guiado</p>
+              <h2>Conte o que precisa e veja profissionais compativeis</h2>
+              <p>
+                O cliente informa o servico, a regiao e o prazo. Depois compara os instaladores e so entra
+                quando escolher quem quer chamar.
+              </p>
             </div>
 
-            <div className="client-app-search-advanced">
-              <label>
-                <span>Cidade</span>
-                <input
-                  name="city"
-                  onChange={handleFilterChange}
-                  placeholder="Ex.: Sao Paulo"
-                  value={filters.city}
-                />
-              </label>
+            <div className="client-app-request-progress" aria-label="Etapas do pedido">
+              {REQUEST_STEPS.map((step, index) => (
+                <button
+                  className={index === requestStep ? 'is-active' : index < requestStep ? 'is-done' : ''}
+                  key={step.value}
+                  onClick={() => setRequestStep(index)}
+                  type="button"
+                >
+                  <span>{index + 1}</span>
+                  {step.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-              <label>
-                <span>Estado</span>
-                <input
-                  name="state"
-                  onChange={handleFilterChange}
-                  placeholder="Ex.: SP"
-                  value={filters.state}
-                />
-              </label>
+          <form className="client-app-request-form" onSubmit={handleGuidedSearch}>
+            {requestStep === 0 ? (
+              <div className="client-app-request-panel">
+                <h3>Qual servico voce precisa?</h3>
+                <p>Escolha a opcao mais proxima. Ela vai ser usada para priorizar os instaladores certos.</p>
+                <div className="client-app-service-grid">
+                  {SERVICE_REQUEST_OPTIONS.map((item) => (
+                    <button
+                      className={serviceRequest.service === item.value ? 'is-selected' : ''}
+                      key={item.value}
+                      onClick={() => updateServiceRequest('service', item.value)}
+                      type="button"
+                    >
+                      <span className="client-app-service-icon">
+                        <AppIcon name={item.icon} />
+                      </span>
+                      <strong>{item.title}</strong>
+                      <span>{item.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {requestStep === 1 ? (
+              <div className="client-app-request-panel">
+                <h3>Algum detalhe importante?</h3>
+                <p>Essas respostas ajudam o cliente a comparar melhor antes de abrir o perfil.</p>
+                <div className="client-app-chip-grid" role="group" aria-label="Ambiente do servico">
+                  {ROOM_OPTIONS.map((room) => (
+                    <button
+                      className={serviceRequest.room === room ? 'is-selected' : ''}
+                      key={room}
+                      onClick={() => updateServiceRequest('room', room)}
+                      type="button"
+                    >
+                      {room}
+                    </button>
+                  ))}
+                </div>
+                <label className="client-app-request-field">
+                  <span>Descreva em poucas palavras</span>
+                  <textarea
+                    onChange={(event) => updateServiceRequest('details', event.target.value)}
+                    placeholder="Ex.: instalar papel de parede em uma sala, parede lisa, material ja comprado"
+                    rows="4"
+                    value={serviceRequest.details}
+                  />
+                </label>
+              </div>
+            ) : null}
+
+            {requestStep === 2 ? (
+              <div className="client-app-request-panel">
+                <h3>Onde sera o servico?</h3>
+                <p>Use a cidade e o estado para listar primeiro profissionais da regiao.</p>
+                <div className="client-app-request-location">
+                  <label className="client-app-request-field">
+                    <span>Cidade</span>
+                    <input
+                      onChange={(event) => updateServiceRequest('city', event.target.value)}
+                      placeholder="Ex.: Sao Paulo"
+                      value={serviceRequest.city}
+                    />
+                  </label>
+                  <label className="client-app-request-field">
+                    <span>Estado</span>
+                    <input
+                      maxLength="2"
+                      onChange={(event) => updateServiceRequest('state', event.target.value)}
+                      placeholder="SP"
+                      value={serviceRequest.state}
+                    />
+                  </label>
+                  <button className="client-app-ghost-button" onClick={requestGuidedLocation} type="button">
+                    <AppIcon name="target" />
+                    Usar minha localizacao
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {requestStep === 3 ? (
+              <div className="client-app-request-panel">
+                <h3>Revise e veja os profissionais</h3>
+                <p>Voce ainda nao precisa criar conta. O login aparece so quando escolher um instalador.</p>
+                <div className="client-app-chip-grid" role="group" aria-label="Prazo desejado">
+                  {URGENCY_OPTIONS.map((item) => (
+                    <button
+                      className={serviceRequest.urgency === item.value ? 'is-selected' : ''}
+                      key={item.value}
+                      onClick={() => updateServiceRequest('urgency', item.value)}
+                      type="button"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="client-app-request-summary">
+                  <span>{selectedServiceRequest?.title || 'Servico nao escolhido'}</span>
+                  <span>{serviceRequest.room || 'Ambiente nao informado'}</span>
+                  <span>
+                    {[serviceRequest.city, serviceRequest.state.toUpperCase()].filter(Boolean).join(' - ') ||
+                      'Regiao nao informada'}
+                  </span>
+                  <span>{selectedUrgency?.label || 'Prazo flexivel'}</span>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="client-app-request-actions">
+              <button
+                className="client-app-ghost-button"
+                disabled={requestStep === 0}
+                onClick={handleRequestBack}
+                type="button"
+              >
+                Voltar
+              </button>
+              {requestStep < LAST_REQUEST_STEP ? (
+                <button className="client-app-search-submit" onClick={handleRequestNext} type="button">
+                  Continuar
+                </button>
+              ) : (
+                <button className="client-app-search-submit" type="submit">
+                  Ver profissionais
+                </button>
+              )}
             </div>
           </form>
         </section>
 
-        <section className="client-app-category-row fade-up">
-          {CATEGORY_OPTIONS.map((item) => (
-            <button
-              className={`client-app-category ${category === item.value ? 'is-active' : ''}`}
-              key={item.value}
-              onClick={() => setCategory(item.value)}
-              type="button"
-            >
-              <span className="client-app-category-icon">
-                <AppIcon
-                  name={
-                    item.value === 'all'
-                      ? 'users'
-                      : item.value === 'residential'
-                        ? 'home'
-                        : item.value === 'commercial'
-                          ? 'building'
-                          : item.value === 'textured'
-                            ? 'texture'
-                            : item.value === 'vinyl'
-                              ? 'roller'
-                              : 'smile'
-                  }
-                />
-              </span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </section>
+        {hasGuidedRequest ? (
+          <>
+            <section className="client-app-category-row fade-up">
+              {CATEGORY_OPTIONS.map((item) => (
+                <button
+                  className={`client-app-category ${category === item.value ? 'is-active' : ''}`}
+                  key={item.value}
+                  onClick={() => setCategory(item.value)}
+                  type="button"
+                >
+                  <span className="client-app-category-icon">
+                    <AppIcon
+                      name={
+                        item.value === 'all'
+                          ? 'users'
+                          : item.value === 'residential'
+                            ? 'home'
+                            : item.value === 'commercial'
+                              ? 'building'
+                              : item.value === 'textured'
+                                ? 'texture'
+                                : item.value === 'vinyl'
+                                  ? 'roller'
+                                  : 'smile'
+                      }
+                    />
+                  </span>
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </section>
 
-        <section className="client-app-toolbar fade-up">
-          <button className="client-app-toolbar-pill" onClick={() => requestLocationSearch()} type="button">
-            <AppIcon name="map-pin" />
-            <span>
-              {filters.city
-                ? `${filters.city}${filters.state ? `, ${filters.state}` : ''}`
-                : 'Minha localizacao'}
-            </span>
-          </button>
+            <section className="client-app-toolbar fade-up">
+              <button className="client-app-toolbar-pill" onClick={() => requestLocationSearch()} type="button">
+                <AppIcon name="map-pin" />
+                <span>
+                  {filters.city
+                    ? `${filters.city}${filters.state ? `, ${filters.state}` : ''}`
+                    : 'Minha localizacao'}
+                </span>
+              </button>
 
-          <div className="client-app-toolbar-actions">
-            <button className="client-app-toolbar-action" onClick={cycleQuickFilter} type="button">
-              <AppIcon name="filter" />
-              <span>{QUICK_FILTER_OPTIONS.find((item) => item.value === quickFilter)?.label || 'Filtro'}</span>
-            </button>
+              <div className="client-app-toolbar-actions">
+                <button className="client-app-toolbar-action" onClick={cycleQuickFilter} type="button">
+                  <AppIcon name="filter" />
+                  <span>{QUICK_FILTER_OPTIONS.find((item) => item.value === quickFilter)?.label || 'Filtro'}</span>
+                </button>
 
-            <label className="client-app-toolbar-select">
-              <AppIcon name="sort" />
-              <select onChange={(event) => setSortBy(event.target.value)} value={sortBy}>
-                <option value="rating">Melhor avaliados</option>
-                <option value="reviews">Mais avaliacoes</option>
-                <option value="available">Mais disponiveis</option>
-                <option value="name">Ordem alfabetica</option>
-              </select>
-            </label>
-          </div>
-        </section>
+                <label className="client-app-toolbar-select">
+                  <AppIcon name="sort" />
+                  <select onChange={(event) => setSortBy(event.target.value)} value={sortBy}>
+                    <option value="rating">Melhor avaliados</option>
+                    <option value="reviews">Mais avaliacoes</option>
+                    <option value="available">Mais disponiveis</option>
+                    <option value="name">Ordem alfabetica</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+          </>
+        ) : (
+          <section className="client-app-empty client-app-start-empty fade-up">
+            <strong>Comece pelo pedido para receber indicacoes melhores.</strong>
+            <p>
+              O fluxo fica em etapas como um marketplace de servicos: primeiro voce explica o que precisa,
+              depois compara profissionais e escolhe com quem quer falar.
+            </p>
+          </section>
+        )}
 
-        <section className="client-app-results-head fade-up">
-          <div>
-            <h2>Instaladores encontrados</h2>
-          </div>
-          <span className="client-app-count-badge">{filteredInstallers.length} profissionais</span>
-        </section>
+        {hasGuidedRequest ? (
+          <section className="client-app-results-head fade-up" id="resultados">
+            <div>
+              <h2>Profissionais compativeis com seu pedido</h2>
+            </div>
+            <span className="client-app-count-badge">{filteredInstallers.length} profissionais</span>
+          </section>
+        ) : null}
 
-        {loading ? <div className="client-app-empty fade-up">Carregando instaladores...</div> : null}
+        {hasGuidedRequest && loading ? <div className="client-app-empty fade-up">Carregando instaladores...</div> : null}
 
-        {!loading && filteredInstallers.length === 0 ? (
+        {hasGuidedRequest && !loading && filteredInstallers.length === 0 ? (
           <div className="client-app-empty fade-up">
             <strong>Nenhum instalador encontrado com esse filtro.</strong>
             <p>
@@ -770,7 +1060,7 @@ export default function Home() {
           </div>
         ) : null}
 
-        {!loading && filteredInstallers.length === 0 && hasActiveFilters && noResultsSuggestions.items.length > 0 ? (
+        {hasGuidedRequest && !loading && filteredInstallers.length === 0 && hasActiveFilters && noResultsSuggestions.items.length > 0 ? (
           <section className="client-app-suggestion-box fade-up">
             <div className="client-app-section-copy">
               <p className="client-app-kicker">Sugestoes automaticas</p>
@@ -797,7 +1087,7 @@ export default function Home() {
           </section>
         ) : null}
 
-        {favoriteInstallers.length > 0 ? (
+        {hasGuidedRequest && favoriteInstallers.length > 0 ? (
           <section className="client-app-favorites fade-up" id="favoritos">
             <div className="client-app-results-head client-app-results-head--small">
               <div>
@@ -880,7 +1170,7 @@ export default function Home() {
           </section>
         ) : null}
 
-        {!loading && filteredInstallers.length > 0 ? (
+        {hasGuidedRequest && !loading && filteredInstallers.length > 0 ? (
           <section className="client-app-results-list fade-up">
             {paginatedInstallers.map((installer) => {
               const availability = getAvailabilityState(installer);
@@ -966,7 +1256,7 @@ export default function Home() {
           </section>
         ) : null}
 
-        {!loading && filteredInstallers.length > 0 ? (
+        {hasGuidedRequest && !loading && filteredInstallers.length > 0 ? (
           <PaginationControls
             currentPage={normalizedInstallersPage}
             onPageChange={setInstallersPage}
@@ -999,36 +1289,38 @@ export default function Home() {
         </section>
       </div>
 
-      <nav className="client-app-mobile-dock">
-        <a href="#top">
-          <AppIcon name="home" />
-          <span>Inicio</span>
-        </a>
-        <a href="#busca">
-          <AppIcon name="search" />
-          <span>Buscar</span>
-        </a>
-        <a href="#favoritos">
-          <AppIcon name="heart" />
-          <span>Favoritos</span>
-        </a>
-        <a href="https://api.whatsapp.com/send?phone=5548999816000" rel="noreferrer" target="_blank">
-          <AppIcon name="message" />
-          <span>Mensagens</span>
-        </a>
-        {user ? (
-          <>
-            <Link to={accountHomePath}>
-              <AppIcon name="profile" />
-              <span>Perfil</span>
-            </Link>
-            <button onClick={handleLogout} type="button">
-              <AppIcon name="logout" />
-              <span>Sair</span>
-            </button>
-          </>
-        ) : null}
-      </nav>
+      {hasGuidedRequest || user ? (
+        <nav className="client-app-mobile-dock">
+          <a href="#top">
+            <AppIcon name="home" />
+            <span>Inicio</span>
+          </a>
+          <a href="#busca">
+            <AppIcon name="search" />
+            <span>Buscar</span>
+          </a>
+          <a href="#favoritos">
+            <AppIcon name="heart" />
+            <span>Favoritos</span>
+          </a>
+          <a href="https://api.whatsapp.com/send?phone=5548999816000" rel="noreferrer" target="_blank">
+            <AppIcon name="message" />
+            <span>Mensagens</span>
+          </a>
+          {user ? (
+            <>
+              <Link to={accountHomePath}>
+                <AppIcon name="profile" />
+                <span>Perfil</span>
+              </Link>
+              <button onClick={handleLogout} type="button">
+                <AppIcon name="logout" />
+                <span>Sair</span>
+              </button>
+            </>
+          ) : null}
+        </nav>
+      ) : null}
     </div>
   );
 }

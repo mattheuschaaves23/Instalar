@@ -11237,6 +11237,7 @@ body {
 
 .client-app-topbar,
 .client-app-hero,
+.client-app-request-card,
 .client-app-search-card,
 .client-app-toolbar,
 .client-app-installer-card,
@@ -11473,6 +11474,301 @@ body {
   right: 9.3rem;
   height: 3rem;
   transform: rotate(14deg);
+}
+
+.client-app-request-card {
+  margin-top: -0.3rem;
+  border-radius: 30px;
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.client-app-request-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.82fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.client-app-request-head h2 {
+  margin: 0.35rem 0 0;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  line-height: 1.08;
+  color: #fffaf0;
+}
+
+.client-app-request-head p {
+  margin: 0.65rem 0 0;
+  max-width: 58rem;
+  color: rgba(255, 246, 232, 0.68);
+  line-height: 1.55;
+}
+
+.client-app-request-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.client-app-request-progress button {
+  min-height: 4.2rem;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(255, 246, 232, 0.62);
+  display: grid;
+  gap: 0.28rem;
+  justify-items: center;
+  align-content: center;
+  font: inherit;
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition:
+    transform 200ms ease,
+    border-color 200ms ease,
+    background 200ms ease,
+    color 200ms ease;
+}
+
+.client-app-request-progress button span {
+  width: 1.55rem;
+  height: 1.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.2);
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.client-app-request-progress button.is-active,
+.client-app-request-progress button.is-done {
+  color: #fff7e9;
+  border-color: rgba(var(--site-accent-rgb), 0.36);
+  background: rgba(var(--site-accent-rgb), 0.08);
+}
+
+.client-app-request-progress button.is-active {
+  transform: translateY(-1px);
+}
+
+.client-app-request-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.client-app-request-panel {
+  min-height: 18.5rem;
+  border-radius: 24px;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0.012)),
+    rgba(255, 255, 255, 0.018);
+  padding: 1rem;
+  display: grid;
+  align-content: start;
+  gap: 0.85rem;
+}
+
+.client-app-request-panel h3 {
+  margin: 0;
+  color: #fff9ef;
+  font-size: clamp(1.25rem, 2.3vw, 1.7rem);
+  line-height: 1.15;
+}
+
+.client-app-request-panel p {
+  margin: -0.2rem 0 0;
+  color: rgba(255, 246, 232, 0.64);
+  line-height: 1.55;
+}
+
+.client-app-service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.client-app-service-grid button {
+  min-height: 8.4rem;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.16);
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(255, 246, 232, 0.72);
+  padding: 0.9rem;
+  text-align: left;
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 200ms ease,
+    border-color 200ms ease,
+    background 200ms ease;
+}
+
+.client-app-service-grid button.is-selected,
+.client-app-chip-grid button.is-selected {
+  border-color: rgba(var(--site-accent-rgb), 0.5);
+  background: rgba(var(--site-accent-rgb), 0.1);
+  color: #fff8ea;
+}
+
+.client-app-service-grid button:hover,
+.client-app-chip-grid button:hover {
+  transform: translateY(-1px);
+}
+
+.client-app-service-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: rgba(var(--site-accent-rgb), 0.1);
+  color: var(--gold);
+}
+
+.client-app-service-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.client-app-service-grid strong {
+  color: #fff9ef;
+  font-size: 1rem;
+}
+
+.client-app-service-grid span:last-child {
+  color: rgba(255, 246, 232, 0.62);
+  font-size: 0.86rem;
+  line-height: 1.42;
+}
+
+.client-app-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.client-app-chip-grid button {
+  min-height: 2.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.16);
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(255, 246, 232, 0.72);
+  padding: 0.45rem 0.85rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 200ms ease,
+    border-color 200ms ease,
+    background 200ms ease;
+}
+
+.client-app-request-field {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.client-app-request-field span {
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-strong);
+}
+
+.client-app-request-field input,
+.client-app-request-field textarea {
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.16);
+  background: rgba(255, 255, 255, 0.025);
+  color: #fffaf0;
+  outline: 0;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.client-app-request-field input {
+  min-height: 3.45rem;
+  padding: 0 1rem;
+}
+
+.client-app-request-field textarea {
+  padding: 0.9rem 1rem;
+  resize: vertical;
+}
+
+.client-app-request-field input::placeholder,
+.client-app-request-field textarea::placeholder {
+  color: rgba(255, 248, 236, 0.42);
+}
+
+.client-app-request-location {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px minmax(180px, auto);
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.client-app-request-location .client-app-ghost-button {
+  min-height: 3.45rem;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.client-app-request-location .client-app-ghost-button svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--gold);
+}
+
+.client-app-request-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.client-app-request-summary span {
+  min-height: 3.2rem;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.14);
+  background: rgba(255, 255, 255, 0.025);
+  color: #fff8ea;
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.client-app-request-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.client-app-request-actions .client-app-ghost-button,
+.client-app-request-actions .client-app-search-submit {
+  min-height: 3.4rem;
+}
+
+.client-app-ghost-button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.client-app-start-empty {
+  border-style: dashed;
 }
 
 .client-app-search-card {
@@ -12046,6 +12342,16 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .client-app-request-head,
+  .client-app-request-location,
+  .client-app-request-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .client-app-service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .client-app-hero-visual {
     min-height: 150px;
   }
@@ -12140,6 +12446,75 @@ body {
     margin-top: -0.2rem;
     padding: 0.85rem;
     border-radius: 24px;
+  }
+
+  .client-app-request-card {
+    margin-top: -0.2rem;
+    padding: 0.85rem;
+    border-radius: 24px;
+  }
+
+  .client-app-request-head {
+    gap: 0.75rem;
+  }
+
+  .client-app-request-head h2 {
+    font-size: 1.6rem;
+  }
+
+  .client-app-request-head p,
+  .client-app-request-panel p {
+    font-size: 0.94rem;
+  }
+
+  .client-app-request-progress {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .client-app-request-progress button {
+    min-height: 3.4rem;
+    border-radius: 15px;
+    font-size: 0.64rem;
+  }
+
+  .client-app-request-progress button span {
+    width: 1.3rem;
+    height: 1.3rem;
+    font-size: 0.68rem;
+  }
+
+  .client-app-request-panel {
+    min-height: 0;
+    padding: 0.82rem;
+    border-radius: 20px;
+  }
+
+  .client-app-service-grid {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .client-app-service-grid button {
+    min-height: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .client-app-service-grid button > span:last-child {
+    grid-column: 2;
+  }
+
+  .client-app-request-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: 0.65rem;
+  }
+
+  .client-app-request-actions .client-app-ghost-button,
+  .client-app-request-actions .client-app-search-submit {
+    min-height: 3.35rem;
+    padding-inline: 0.8rem;
   }
 
   .client-app-search-main {
