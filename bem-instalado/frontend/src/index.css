@@ -12129,6 +12129,158 @@ body {
   color: var(--gold);
 }
 
+.client-app-location-preview {
+  margin-top: 0.25rem;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.022), rgba(255, 255, 255, 0.01)),
+    rgba(255, 255, 255, 0.018);
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.9rem;
+}
+
+.client-app-location-preview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.client-app-location-preview-head strong {
+  display: block;
+  color: #fff9ef;
+  font-size: 0.98rem;
+}
+
+.client-app-location-preview-head span {
+  display: block;
+  margin-top: 0.18rem;
+  color: rgba(255, 246, 232, 0.58);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.client-app-location-preview-count {
+  min-height: 2rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(var(--site-accent-rgb), 0.1);
+  color: var(--gold) !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.68rem;
+  font-size: 0.78rem !important;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.client-app-location-preview-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.client-app-location-preview-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.026);
+  padding: 0.62rem 0.72rem;
+}
+
+.client-app-location-preview-avatar {
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(var(--site-accent-rgb), 0.16), rgba(255, 255, 255, 0.04));
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.client-app-location-preview-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.client-app-location-preview-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.16rem;
+}
+
+.client-app-location-preview-copy strong {
+  min-width: 0;
+  color: #fff9ef;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.96rem;
+  line-height: 1.2;
+}
+
+.client-app-location-preview-copy svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.client-app-location-preview-copy span {
+  color: rgba(255, 246, 232, 0.58);
+  font-size: 0.82rem;
+}
+
+.client-app-location-preview-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.client-app-location-preview-meta span {
+  min-height: 1.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 246, 232, 0.72);
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.client-app-location-preview-meta span[data-tone='available'] {
+  color: #8ae7a9;
+  background: rgba(49, 100, 67, 0.24);
+}
+
+.client-app-location-preview-meta span[data-tone='scheduled'] {
+  color: var(--site-accent-strong);
+  background: rgba(163, 117, 43, 0.2);
+}
+
+.client-app-location-preview-meta span[data-tone='busy'] {
+  color: var(--site-accent);
+  background: rgba(133, 83, 35, 0.2);
+}
+
+.client-app-location-preview-empty {
+  margin: 0;
+  color: rgba(255, 246, 232, 0.6);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .client-app-request-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -13040,6 +13192,26 @@ body {
     min-height: 2.35rem;
     padding-right: 0.66rem;
     font-size: 0.84rem;
+  }
+
+  .client-app-location-preview {
+    border-radius: 20px;
+    padding: 0.78rem;
+  }
+
+  .client-app-location-preview-head {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .client-app-location-preview-item {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .client-app-location-preview-meta {
+    grid-column: 2;
+    justify-content: flex-start;
   }
 
   .client-app-service-grid {

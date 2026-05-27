@@ -292,13 +292,27 @@ function normalizeText(value) {
 }
 
 function installerTextBlob(installer) {
+  const serviceParts = [
+    installer.services,
+    installer.serviceCategories,
+    installer.service_categories,
+    installer.specialties,
+    installer.tags,
+  ].flatMap((value) => (Array.isArray(value) ? value : [value]));
+
   return normalizeText([
+    installer.name,
     installer.display_name,
+    installer.displayName,
+    installer.businessName,
+    installer.business_name,
+    installer.company_name,
     installer.bio,
     installer.installation_method,
     installer.service_region,
     installer.city,
     installer.state,
+    ...serviceParts,
   ].join(' '));
 }
 
@@ -465,11 +479,11 @@ function deriveInstallerTags(installer) {
 }
 
 function getAvailabilityState(installer) {
-  if ((installer.availability_slots || []).length > 0) {
+  if ((installer.availability_slots || []).length > 0 || installer.availableToday) {
     return { label: 'Disponivel', tone: 'available' };
   }
 
-  if ((installer.available_dates || []).length > 0) {
+  if ((installer.available_dates || []).length > 0 || installer.nextAvailability) {
     return { label: 'Agenda aberta', tone: 'scheduled' };
   }
 
@@ -551,6 +565,22 @@ function getRegionLabel(installer) {
   return [installer.city, installer.state].filter(Boolean).join(', ') || installer.service_region || 'Regiao nao informada';
 }
 
+function getInstallerDisplayName(installer) {
+  return (
+    installer.display_name ||
+    installer.displayName ||
+    installer.name ||
+    installer.businessName ||
+    installer.business_name ||
+    installer.company_name ||
+    'Instalador'
+  );
+}
+
+function getInstallerRating(installer) {
+  return Number(installer.average_rating ?? installer.rating ?? 0);
+}
+
 function getServiceRequestOption(value) {
   return SERVICE_REQUEST_OPTIONS.find((item) => item.value === value) || null;
 }
@@ -579,6 +609,11 @@ export default function Home() {
   const [noResultsSuggestions, setNoResultsSuggestions] = useState({
     loading: false,
     label: '',
+    items: [],
+  });
+  const [locationPreview, setLocationPreview] = useState({
+    loading: false,
+    hasSearched: false,
     items: [],
   });
   const selectedServiceRequest = useMemo(
@@ -613,6 +648,9 @@ export default function Home() {
     () => getRequestRooms(serviceRequest),
     [serviceRequest]
   );
+  const locationPreviewCity = serviceRequest.city.trim();
+  const locationPreviewState = serviceRequest.state.trim().toUpperCase();
+  const hasLocationPreviewInput = Boolean(locationPreviewCity || locationPreviewState);
 
   const hasActiveFilters = useMemo(
     () => Boolean(filters.search.trim() || filters.city.trim() || filters.state.trim()),
@@ -814,6 +852,68 @@ export default function Home() {
       cancelled = true;
     };
   }, [directory.installers.length, filters, hasActiveFilters, hasGuidedRequest, loading]);
+
+  useEffect(() => {
+    if (requestStep !== 2 || !hasLocationPreviewInput) {
+      setLocationPreview({ loading: false, hasSearched: false, items: [] });
+      return;
+    }
+
+    let cancelled = false;
+
+    const timer = window.setTimeout(async () => {
+      setLocationPreview((current) => ({
+        ...current,
+        loading: true,
+        hasSearched: true,
+      }));
+
+      try {
+        const response = await api.get('/public/installers', {
+          params: {
+            search: '',
+            city: locationPreviewCity,
+            state: locationPreviewState,
+          },
+        });
+
+        const regionInstallers = response.data?.installers || [];
+        const installers = [...regionInstallers]
+          .sort(
+            (left, right) =>
+              getInstallerMatchScore(right, serviceRequest) - getInstallerMatchScore(left, serviceRequest)
+          )
+          .slice(0, 4);
+
+        if (!cancelled) {
+          setLocationPreview({
+            loading: false,
+            hasSearched: true,
+            items: installers,
+          });
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setLocationPreview({
+            loading: false,
+            hasSearched: true,
+            items: [],
+          });
+        }
+      }
+    }, 320);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [
+    hasLocationPreviewInput,
+    locationPreviewCity,
+    locationPreviewState,
+    requestStep,
+    serviceRequest,
+  ]);
 
   const updateServiceRequest = (field, value) => {
     setServiceRequest((current) => ({ ...current, [field]: value }));
@@ -1293,6 +1393,75 @@ export default function Home() {
                     <AppIcon name="target" />
                     Usar minha localizacao
                   </button>
+                </div>
+
+                <div className="client-app-location-preview" aria-live="polite">
+                  <div className="client-app-location-preview-head">
+                    <div>
+                      <strong>Profissionais nessa regiao</strong>
+                      <span>
+                        {hasLocationPreviewInput
+                          ? 'A lista atualiza conforme voce preenche cidade e estado.'
+                          : 'Digite a cidade ou use sua localizacao para ver a lista.'}
+                      </span>
+                    </div>
+                    {hasLocationPreviewInput ? (
+                      <span className="client-app-location-preview-count">
+                        {locationPreview.loading
+                          ? 'Buscando'
+                          : `${locationPreview.items.length} encontrado${locationPreview.items.length === 1 ? '' : 's'}`}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {!hasLocationPreviewInput ? (
+                    <p className="client-app-location-preview-empty">
+                      A lista aparece aqui antes de voce continuar.
+                    </p>
+                  ) : locationPreview.loading ? (
+                    <p className="client-app-location-preview-empty">Buscando profissionais da regiao...</p>
+                  ) : locationPreview.items.length > 0 ? (
+                    <div className="client-app-location-preview-list">
+                      {locationPreview.items.map((installer) => {
+                        const availability = getAvailabilityState(installer);
+                        const displayName = getInstallerDisplayName(installer);
+                        const isVerified = Boolean(
+                          installer.certificate_verified ||
+                          installer.verified ||
+                          installer.safety?.document_masked
+                        );
+
+                        return (
+                          <article className="client-app-location-preview-item" key={`location-${installer.id}`}>
+                            <div className="client-app-location-preview-avatar">
+                              {installer.installer_photo ? (
+                                <img alt={`Foto de ${displayName}`} src={installer.installer_photo} />
+                              ) : installer.logo ? (
+                                <img alt={`Logo de ${displayName}`} src={installer.logo} />
+                              ) : (
+                                <span>{getInitials(displayName)}</span>
+                              )}
+                            </div>
+                            <div className="client-app-location-preview-copy">
+                              <strong>
+                                {displayName}
+                                {isVerified ? <AppIcon name="check-badge" /> : null}
+                              </strong>
+                              <span>{getRegionLabel(installer)}</span>
+                            </div>
+                            <div className="client-app-location-preview-meta">
+                              <span>{getInstallerRating(installer).toFixed(1)} nota</span>
+                              <span data-tone={availability.tone}>{availability.label}</span>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ) : locationPreview.hasSearched ? (
+                    <p className="client-app-location-preview-empty">
+                      Nenhum profissional encontrado nessa regiao ainda. Ao continuar, mostramos alternativas proximas.
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ) : null}
