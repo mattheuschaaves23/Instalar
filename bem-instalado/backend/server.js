@@ -25,6 +25,7 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const supportRoutes = require('./routes/supportRoutes');
+const opportunityRoutes = require('./routes/opportunityRoutes');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -322,6 +323,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/opportunities', opportunityRoutes);
 
 if (isProduction) {
   if (fs.existsSync(frontendBuildPath)) {

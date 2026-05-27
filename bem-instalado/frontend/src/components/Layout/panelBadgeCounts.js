@@ -44,6 +44,7 @@ export function usePanelBadgeCounts() {
   const refreshNotifications = notificationContext?.refreshNotifications;
   const [agenda, setAgenda] = useState(0);
   const [reviews, setReviews] = useState(0);
+  const [opportunities, setOpportunities] = useState(0);
   const canLoadCounts = user?.account_type === 'installer' || user?.is_admin;
   const lastFocusedRefreshAtRef = useRef(0);
 
@@ -75,13 +76,28 @@ export function usePanelBadgeCounts() {
     }
   }, [canLoadCounts]);
 
+  const loadOpportunityCount = useCallback(async () => {
+    if (!canLoadCounts) {
+      setOpportunities(0);
+      return;
+    }
+
+    try {
+      const response = await api.get('/opportunities', { params: { status: 'open', limit: 100 } });
+      setOpportunities(Number(response.data?.stats?.open || response.data?.opportunities?.length || 0));
+    } catch (_error) {
+      setOpportunities(0);
+    }
+  }, [canLoadCounts]);
+
   const refreshCounts = useCallback((includeNotifications = false) => {
     loadAgendaCount();
     loadReviewCount();
+    loadOpportunityCount();
     if (includeNotifications) {
       refreshNotifications?.();
     }
-  }, [loadAgendaCount, loadReviewCount, refreshNotifications]);
+  }, [loadAgendaCount, loadOpportunityCount, loadReviewCount, refreshNotifications]);
 
   useEffect(() => {
     refreshCounts();
@@ -132,9 +148,10 @@ export function usePanelBadgeCounts() {
   return useMemo(
     () => ({
       agenda,
+      opportunities,
       reviews,
       notifications: unreadNotifications,
     }),
-    [agenda, reviews, unreadNotifications]
+    [agenda, opportunities, reviews, unreadNotifications]
   );
 }

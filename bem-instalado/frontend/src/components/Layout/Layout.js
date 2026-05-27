@@ -8,6 +8,7 @@ const PANEL_ROUTE_PREFIXES = [
   '/agenda',
   '/budgets',
   '/clients',
+  '/opportunities',
   '/reviews',
   '/profile',
   '/settings',

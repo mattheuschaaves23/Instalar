@@ -17,6 +17,7 @@ const Layout = lazy(() => import('./components/Layout/Layout'));
 const ProtectedRoute = lazy(() => import('./components/Layout/ProtectedRoute'));
 const SubscriptionGate = lazy(() => import('./components/Layout/SubscriptionGate'));
 const Notifications = lazy(() => import('./components/Notifications/Notifications'));
+const Opportunities = lazy(() => import('./components/Opportunities/Opportunities'));
 const Profile = lazy(() => import('./components/Profile/Profile'));
 const ClientLanding = lazy(() => import('./components/Public/ClientLanding'));
 const Home = lazy(() => import('./components/Public/Home'));
@@ -65,6 +66,7 @@ export default function App() {
 
               <Route element={<SubscriptionGate />}>
                 <Route element={<Dashboard />} path="/dashboard" />
+                <Route element={<Opportunities />} path="/opportunities" />
                 <Route element={<Clients />} path="/clients" />
                 <Route element={<Budgets />} path="/budgets" />
                 <Route element={<BudgetForm />} path="/budgets/new" />

@@ -73,9 +73,9 @@ function buildAccentTokens(accentColor) {
   const { r, g, b } = hexToRgb(accent);
   const strong = mixColor(accent, '#ffffff', 0.24);
   const deep = mixColor(accent, '#000000', 0.38);
-  const panel = mixColor('#050505', accent, 0.04);
-  const panelSoft = mixColor('#090909', accent, 0.06);
-  const panelElevated = mixColor('#0d0d0d', accent, 0.08);
+  const panel = '#050505';
+  const panelSoft = '#0a0a0a';
+  const panelElevated = '#101010';
   const strongRgb = hexToRgb(strong);
   const deepRgb = hexToRgb(deep);
   const panelRgb = hexToRgb(panel);
@@ -141,6 +141,9 @@ export function applySitePreferences(nextPreferences = readSitePreferences()) {
   root.style.setProperty('--site-accent-soft', `rgba(${tokens.rgb}, 0.14)`);
   root.style.setProperty('--site-accent-line', `rgba(${tokens.rgb}, 0.18)`);
   root.style.setProperty('--site-accent-line-strong', `rgba(${tokens.rgb}, 0.34)`);
+  root.style.setProperty('--bg', '#000000');
+  root.style.setProperty('--site-bg', '#000000');
+  root.style.setProperty('--site-bg-rgb', '0, 0, 0');
   root.style.setProperty('--site-panel', tokens.panel);
   root.style.setProperty('--site-panel-soft', tokens.panelSoft);
   root.style.setProperty('--site-panel-elevated', tokens.panelElevated);
@@ -151,6 +154,7 @@ export function applySitePreferences(nextPreferences = readSitePreferences()) {
   root.style.setProperty('--gold-strong', tokens.strong);
   root.style.setProperty('--gold-soft', `rgba(${tokens.rgb}, 0.14)`);
   root.style.setProperty('--line', `rgba(${tokens.rgb}, 0.18)`);
+  root.style.setProperty('--muted', 'rgba(246, 239, 223, 0.64)');
   root.style.setProperty('--ref-gold', tokens.accent);
   root.style.setProperty('--ref-gold-strong', tokens.strong);
   root.style.setProperty('--ref-line', `rgba(${tokens.rgb}, 0.17)`);

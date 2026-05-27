@@ -165,9 +165,9 @@ function DashboardDockIcon({ type }) {
 
 const MOBILE_DOCK_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'home' },
+  { to: '/opportunities', label: 'Oportunidades', icon: 'opportunities' },
   { to: '/agenda', label: 'Agenda', icon: 'agenda' },
   { to: '/budgets', label: 'Orçamentos', icon: 'budgets' },
-  { to: '/reviews', label: 'Avaliacoes', icon: 'reviews' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
 ];
 
@@ -175,6 +175,7 @@ const ADMIN_MOBILE_DOCK_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
 
 const PANEL_NAV_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'grid', section: 'VISAO GERAL' },
+  { to: '/opportunities', label: 'Oportunidades', icon: 'opportunities', badgeKey: 'opportunities' },
   { to: '/reviews', label: 'Avaliacoes', icon: 'star', badgeKey: 'reviews' },
   { to: '/agenda', label: 'Agenda', icon: 'agenda', section: 'OPERACAO', badgeKey: 'agenda' },
   { to: '/budgets', label: 'Orcamentos', icon: 'file' },
@@ -208,6 +209,7 @@ function PanelIcon({ type, size = 20 }) {
     file: <><path d="M7 3.8h7l3 3V20H7z" /><path d="M14 3.8V7h3" /><path d="M9.5 11h5M9.5 15h4" /></>,
     clients: <><circle cx="9" cy="9" r="3" /><circle cx="17" cy="10" r="2.2" /><path d="M3.8 19c.9-3.1 2.8-4.7 5.2-4.7s4.3 1.6 5.2 4.7" /><path d="M14.8 15c1.9.4 3.3 1.7 4 4" /></>,
     star: <><path d="m12 3.8 2.45 4.95 5.47.8-3.96 3.86.94 5.45L12 16.28l-4.9 2.58.94-5.45-3.96-3.86 5.47-.8z" /></>,
+    opportunities: <><path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1" /><rect x="4" y="6" width="16" height="14" rx="2.4" /><path d="M4 12h16" /><path d="M9 15.5h6" /></>,
     profile: <><circle cx="12" cy="8" r="3.2" /><path d="M5.4 19c1.5-3 4-4.5 6.6-4.5s5.1 1.5 6.6 4.5" /></>,
     card: <><rect x="4" y="6.5" width="16" height="11" rx="2" /><path d="M4 10h16" /></>,
     bell: <><path d="M18 10.8a6 6 0 0 0-12 0c0 5-2 5.7-2 5.7h16s-2-.7-2-5.7" /><path d="M10 20a2.4 2.4 0 0 0 4 0" /></>,

@@ -195,6 +195,48 @@ CREATE TABLE IF NOT EXISTS installer_availability_slots (
   CONSTRAINT installer_availability_slot_unique UNIQUE (user_id, slot_date, start_time)
 );
 
+CREATE TABLE IF NOT EXISTS service_requests (
+  id SERIAL PRIMARY KEY,
+  client_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  client_name VARCHAR(120) NOT NULL,
+  client_phone VARCHAR(30) NOT NULL,
+  client_email VARCHAR(150),
+  service VARCHAR(60) NOT NULL,
+  service_label VARCHAR(120),
+  rooms TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  material_status VARCHAR(40),
+  material_label VARCHAR(90),
+  measurement_status VARCHAR(40),
+  measurement_label VARCHAR(90),
+  measurement_detail TEXT,
+  wall_size VARCHAR(60),
+  roll_count VARCHAR(40),
+  urgency VARCHAR(40),
+  urgency_label VARCHAR(80),
+  budget VARCHAR(40),
+  budget_label VARCHAR(90),
+  contact_preference VARCHAR(40),
+  contact_preference_label VARCHAR(80),
+  city VARCHAR(120),
+  state VARCHAR(20),
+  details TEXT,
+  photo_count INTEGER NOT NULL DEFAULT 0,
+  photo_names JSONB NOT NULL DEFAULT '[]'::jsonb,
+  status VARCHAR(20) NOT NULL DEFAULT 'open',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS service_request_interests (
+  id SERIAL PRIMARY KEY,
+  request_id INTEGER NOT NULL REFERENCES service_requests(id) ON DELETE CASCADE,
+  installer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(20) NOT NULL DEFAULT 'accepted',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (request_id, installer_id)
+);
+
 CREATE TABLE IF NOT EXISTS support_conversations (
   id SERIAL PRIMARY KEY,
   installer_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
@@ -405,6 +447,15 @@ CREATE INDEX IF NOT EXISTS password_reset_tokens_user_idx
 CREATE INDEX IF NOT EXISTS installer_availability_slots_lookup_idx
   ON installer_availability_slots (user_id, slot_date, start_time)
   WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS service_requests_lookup_idx
+  ON service_requests (status, state, city, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS service_request_interests_installer_idx
+  ON service_request_interests (installer_id, status, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS service_request_interests_request_idx
+  ON service_request_interests (request_id, status, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS payment_webhook_events_provider_idx
   ON payment_webhook_events (provider, provider_payment_id, created_at DESC);

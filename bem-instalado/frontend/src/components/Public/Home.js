@@ -30,9 +30,9 @@ const POPULAR_LOCATION_OPTIONS = [
 
 const CATEGORY_OPTIONS = [
   { value: 'all', label: 'Todos', keywords: [] },
-  { value: 'residential', label: 'Residencial', keywords: ['residencial', 'casa', 'apartamento', 'sala', 'quarto'] },
+  { value: 'residential', label: 'Residencial', keywords: ['residential', 'residencial', 'casa', 'apartamento', 'sala', 'quarto'] },
   { value: 'commercial', label: 'Comercial', keywords: ['comercial', 'empresa', 'escritorio', 'escritório', 'loja'] },
-  { value: 'textured', label: 'Texturizados', keywords: ['textura', 'texturizado', 'texturizados'] },
+  { value: 'textured', label: 'Texturizados', keywords: ['textured', 'textura', 'texturizado', 'texturizados'] },
   { value: 'vinyl', label: 'Vinilicos', keywords: ['vinil', 'vinílico', 'vinilico', 'vinilicos', 'vinílicos'] },
   { value: 'kids', label: 'Infantil', keywords: ['infantil', 'crianca', 'criança', 'kids', 'bebê', 'bebe'] },
 ];
@@ -144,6 +144,11 @@ const INITIAL_SERVICE_REQUEST = {
   state: '',
   details: '',
   photos: [],
+};
+const INITIAL_REQUEST_CONTACT = {
+  name: '',
+  phone: '',
+  email: '',
 };
 const LAST_REQUEST_STEP = REQUEST_STEPS.length - 1;
 
@@ -359,6 +364,10 @@ function matchesCategory(installer, categoryValue) {
   }
 
   const text = installerTextBlob(installer);
+  if (text.includes(normalizeText(category.value))) {
+    return true;
+  }
+
   return category.keywords.some((keyword) => text.includes(normalizeText(keyword)));
 }
 
@@ -666,6 +675,9 @@ export default function Home() {
   const [favorites, setFavorites] = useState({});
   const [requestStep, setRequestStep] = useState(0);
   const [serviceRequest, setServiceRequest] = useState(INITIAL_SERVICE_REQUEST);
+  const [requestContact, setRequestContact] = useState(INITIAL_REQUEST_CONTACT);
+  const [publishingRequest, setPublishingRequest] = useState(false);
+  const [publishedRequest, setPublishedRequest] = useState(null);
   const [hasGuidedRequest, setHasGuidedRequest] = useState(false);
   const [noResultsSuggestions, setNoResultsSuggestions] = useState({
     loading: false,
@@ -863,6 +875,18 @@ export default function Home() {
   }, [loadDirectory]);
 
   useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    setRequestContact((current) => ({
+      name: current.name || user.name || '',
+      phone: current.phone || user.phone || '',
+      email: current.email || user.email || '',
+    }));
+  }, [user]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
@@ -935,12 +959,74 @@ export default function Home() {
     setServiceRequest((current) => ({ ...current, [field]: value }));
   };
 
+  const updateRequestContact = (field, value) => {
+    setRequestContact((current) => ({ ...current, [field]: value }));
+  };
+
   const selectLocationOption = (location) => {
     setServiceRequest((current) => ({
       ...current,
       city: location.city,
       state: location.state,
     }));
+  };
+
+  const handlePublishServiceRequest = async () => {
+    const phoneDigits = requestContact.phone.replace(/\D/g, '');
+
+    if (!requestContact.name.trim()) {
+      toast.error('Informe seu nome para publicar a solicitacao.');
+      return;
+    }
+
+    if (phoneDigits.length < 10) {
+      toast.error('Informe um WhatsApp valido para os instaladores chamarem voce.');
+      return;
+    }
+
+    if (!serviceRequest.city.trim() && !serviceRequest.state.trim()) {
+      setRequestStep(2);
+      toast.error('Informe a cidade ou estado do servico.');
+      return;
+    }
+
+    setPublishingRequest(true);
+
+    try {
+      const response = await api.post('/public/service-requests', {
+        client_name: requestContact.name,
+        client_phone: requestContact.phone,
+        client_email: requestContact.email,
+        service: requestSnapshot.service,
+        service_label: requestSnapshot.serviceLabel,
+        rooms: selectedRooms,
+        material_status: requestSnapshot.materialStatus,
+        material_label: requestSnapshot.materialLabel,
+        measurement_status: requestSnapshot.measurementStatus,
+        measurement_label: requestSnapshot.measurementLabel,
+        measurement_detail: requestSnapshot.measurementDetail,
+        wall_size: requestSnapshot.wallSize,
+        roll_count: requestSnapshot.rollCount,
+        urgency: requestSnapshot.urgency,
+        urgency_label: requestSnapshot.urgencyLabel,
+        budget: requestSnapshot.budget,
+        budget_label: requestSnapshot.budgetLabel,
+        contact_preference: requestSnapshot.contactPreference,
+        contact_preference_label: requestSnapshot.contactPreferenceLabel,
+        city: requestSnapshot.city,
+        state: requestSnapshot.state,
+        details: requestSnapshot.details,
+        photo_count: requestSnapshot.photoCount,
+        photo_names: requestSnapshot.photoNames,
+      });
+
+      setPublishedRequest(response.data?.service_request || null);
+      toast.success('Solicitacao publicada para instaladores da regiao.');
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Nao foi possivel publicar a solicitacao.');
+    } finally {
+      setPublishingRequest(false);
+    }
   };
 
   const updateMeasurementStatus = (value) => {
@@ -1127,6 +1213,7 @@ export default function Home() {
     setSortBy('match');
     setInstallersPage(1);
     setHasGuidedRequest(true);
+    setPublishedRequest(null);
     writeStoredClientRequest(requestSnapshot);
     await loadDirectory(nextFilters);
 
@@ -1143,6 +1230,7 @@ export default function Home() {
     setServiceRequest(INITIAL_SERVICE_REQUEST);
     setRequestStep(0);
     setHasGuidedRequest(false);
+    setPublishedRequest(null);
     clearStoredClientRequest();
     setCategory('all');
     setQuickFilter('all');
@@ -1594,6 +1682,60 @@ export default function Home() {
                   Novo pedido
                 </button>
               </div>
+            </section>
+
+            <section className="client-app-opportunity-publish fade-up">
+              <div className="client-app-opportunity-copy">
+                <p className="client-app-kicker">Oportunidade para instaladores</p>
+                <h3>Publique seu pedido e deixe profissionais interessados chamarem voce.</h3>
+                <span>
+                  Os instaladores veem cidade, servico e detalhes. Seu WhatsApp completo so fica liberado para quem aceitar a oportunidade.
+                </span>
+              </div>
+
+              {publishedRequest ? (
+                <div className="client-app-opportunity-success">
+                  <strong>Solicitacao #{publishedRequest.id} publicada</strong>
+                  <span>Agora os instaladores podem aceitar no painel e chamar voce pelo WhatsApp.</span>
+                </div>
+              ) : (
+                <div className="client-app-opportunity-form">
+                  <label className="client-app-request-field">
+                    <span>Seu nome</span>
+                    <input
+                      onChange={(event) => updateRequestContact('name', event.target.value)}
+                      placeholder="Ex.: Matheus Silva"
+                      value={requestContact.name}
+                    />
+                  </label>
+                  <label className="client-app-request-field">
+                    <span>WhatsApp</span>
+                    <input
+                      inputMode="tel"
+                      onChange={(event) => updateRequestContact('phone', event.target.value)}
+                      placeholder="(11) 99999-9999"
+                      value={requestContact.phone}
+                    />
+                  </label>
+                  <label className="client-app-request-field">
+                    <span>E-mail opcional</span>
+                    <input
+                      onChange={(event) => updateRequestContact('email', event.target.value)}
+                      placeholder="voce@email.com"
+                      type="email"
+                      value={requestContact.email}
+                    />
+                  </label>
+                  <button
+                    className="client-app-search-submit"
+                    disabled={publishingRequest}
+                    onClick={handlePublishServiceRequest}
+                    type="button"
+                  >
+                    {publishingRequest ? 'Publicando...' : 'Publicar oportunidade'}
+                  </button>
+                </div>
+              )}
             </section>
 
             <section className="client-app-category-row fade-up">

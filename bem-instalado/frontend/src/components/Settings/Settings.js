@@ -104,7 +104,7 @@ export default function Settings() {
 
   const stats = [
     {
-      label: 'Cor ativa',
+      label: 'Cor secundaria',
       value: currentPreset?.name || preferences.accentColor.toUpperCase(),
       detail: preferences.accentColor.toUpperCase(),
     },
@@ -141,7 +141,7 @@ export default function Settings() {
             <span><SettingsIcon type="palette" /></span>
             <div>
               <p>Aparencia</p>
-              <h2>Cor do site</h2>
+              <h2>Cor secundaria</h2>
             </div>
           </div>
 
@@ -175,7 +175,7 @@ export default function Settings() {
             <div>
               <span className="settings-preview-dot" />
               <p>Painel Instalar+</p>
-              <strong>Previa da sua cor</strong>
+              <strong>Fundo preto, destaque na sua cor</strong>
             </div>
             <button type="button">Botao principal</button>
           </div>
