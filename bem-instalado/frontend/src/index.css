@@ -11628,6 +11628,209 @@ body {
   line-height: 1.55;
 }
 
+.client-app-request-panel--details {
+  border-color: transparent;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(var(--site-accent-rgb), 0.09), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.024), rgba(255, 255, 255, 0.006));
+  box-shadow: none;
+  gap: 1rem;
+}
+
+.client-app-detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.client-app-detail-heading h3 {
+  margin: 0;
+}
+
+.client-app-detail-heading span {
+  min-height: 2.3rem;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(var(--site-accent-rgb), 0.1);
+  color: var(--gold);
+  padding: 0.35rem 0.72rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.client-app-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.74fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.client-app-detail-section {
+  min-width: 0;
+  display: grid;
+  gap: 0.78rem;
+}
+
+.client-app-detail-titleline {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.client-app-detail-titleline > span {
+  width: 1.9rem;
+  height: 1.9rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--site-accent-strong), var(--site-accent));
+  color: #120d07;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.client-app-detail-titleline strong {
+  display: block;
+  color: #fff9ef;
+  font-size: 0.98rem;
+}
+
+.client-app-detail-titleline small {
+  display: block;
+  margin-top: 0.12rem;
+  color: rgba(255, 246, 232, 0.54);
+  font-size: 0.8rem;
+}
+
+.client-app-room-stream {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.46rem;
+}
+
+.client-app-room-stream button {
+  min-height: 2.55rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(255, 246, 232, 0.74);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.8rem 0.45rem 0.52rem;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.client-app-room-stream button span {
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--gold);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.client-app-room-stream button:hover,
+.client-app-material-list button:hover {
+  transform: translateY(-1px);
+}
+
+.client-app-room-stream button.is-selected {
+  background: linear-gradient(135deg, rgba(var(--site-accent-rgb), 0.22), rgba(var(--site-accent-rgb), 0.12));
+  color: #fff8ea;
+}
+
+.client-app-material-list {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.client-app-material-list button {
+  min-height: 2.65rem;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(var(--site-accent-rgb), 0.11);
+  background: transparent;
+  color: rgba(255, 246, 232, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.25rem 0;
+  text-align: left;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    color 180ms ease;
+}
+
+.client-app-material-list button span {
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--gold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.client-app-material-list button.is-selected {
+  color: #fff8ea;
+}
+
+.client-app-material-list button.is-selected span {
+  background: rgba(var(--site-accent-rgb), 0.18);
+}
+
+.client-app-detail-quick-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.client-app-request-field--line {
+  gap: 0.28rem;
+}
+
+.client-app-request-field--line input,
+.client-app-request-field--line textarea {
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(var(--site-accent-rgb), 0.23);
+  background: transparent;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.client-app-request-field--line input:focus,
+.client-app-request-field--line textarea:focus {
+  border-bottom-color: rgba(var(--site-accent-rgb), 0.66);
+}
+
+.client-app-detail-note textarea {
+  min-height: 5rem;
+}
+
 .client-app-service-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -11748,6 +11951,26 @@ body {
   resize: vertical;
 }
 
+.client-app-request-field.client-app-request-field--line input,
+.client-app-request-field.client-app-request-field--line textarea {
+  min-height: 3rem;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(var(--site-accent-rgb), 0.24);
+  background: transparent;
+  padding: 0.4rem 0 0.55rem;
+  box-shadow: none;
+}
+
+.client-app-request-field.client-app-request-field--line textarea {
+  min-height: 4.8rem;
+}
+
+.client-app-request-field.client-app-request-field--line input:focus,
+.client-app-request-field.client-app-request-field--line textarea:focus {
+  border-bottom-color: rgba(var(--site-accent-rgb), 0.68);
+}
+
 .client-app-request-estimate-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -11794,6 +12017,22 @@ body {
 .client-app-photo-drop span {
   color: rgba(255, 246, 232, 0.58);
   font-size: 0.84rem;
+}
+
+.client-app-photo-drop--compact {
+  min-height: 3.35rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  align-content: center;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.client-app-photo-drop--compact span {
+  justify-self: end;
+  color: var(--gold);
+  font-weight: 800;
 }
 
 .client-app-photo-grid {
@@ -12599,7 +12838,8 @@ body {
   .client-app-request-head,
   .client-app-request-location,
   .client-app-request-summary,
-  .client-app-request-receipt {
+  .client-app-request-receipt,
+  .client-app-detail-layout {
     grid-template-columns: 1fr;
   }
 
@@ -12749,10 +12989,30 @@ body {
     border-radius: 20px;
   }
 
+  .client-app-detail-heading {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .client-app-detail-heading span {
+    min-height: 2.1rem;
+  }
+
   .client-app-request-estimate-grid,
+  .client-app-detail-quick-fields,
   .client-app-request-receipt-grid,
   .client-request-profile-grid {
     grid-template-columns: 1fr;
+  }
+
+  .client-app-room-stream {
+    gap: 0.38rem;
+  }
+
+  .client-app-room-stream button {
+    min-height: 2.35rem;
+    padding-right: 0.66rem;
+    font-size: 0.84rem;
   }
 
   .client-app-service-grid {

@@ -24,7 +24,7 @@ export function writeStoredClientRequest(request) {
     savedAt: new Date().toISOString(),
     service: cleanText(request.service, 40),
     serviceLabel: cleanText(request.serviceLabel, 80),
-    room: cleanText(request.room, 60),
+    room: cleanText(request.room, 140),
     urgency: cleanText(request.urgency, 40),
     urgencyLabel: cleanText(request.urgencyLabel, 80),
     city: cleanText(request.city, 80),

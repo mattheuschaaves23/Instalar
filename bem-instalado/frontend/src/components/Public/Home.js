@@ -69,7 +69,7 @@ const SERVICE_REQUEST_OPTIONS = [
   },
 ];
 
-const ROOM_OPTIONS = ['Sala', 'Quarto', 'Cozinha', 'Comercial', 'Outro ambiente'];
+const ROOM_OPTIONS = ['Sala', 'Quarto', 'Cozinha', 'Banheiro', 'Corredor', 'Comercial', 'Outro ambiente'];
 const MATERIAL_STATUS_OPTIONS = [
   { value: 'bought', label: 'Ja comprei o papel' },
   { value: 'need-help', label: 'Preciso de ajuda para comprar' },
@@ -101,6 +101,7 @@ const REQUEST_STEPS = [
 const INITIAL_SERVICE_REQUEST = {
   service: '',
   room: '',
+  rooms: [],
   materialStatus: 'bought',
   wallSize: '',
   rollCount: '',
@@ -319,14 +320,23 @@ function optionLabel(options, value, fallback = '') {
   return options.find((item) => item.value === value)?.label || fallback;
 }
 
+function getRequestRooms(request) {
+  if (Array.isArray(request.rooms) && request.rooms.length > 0) {
+    return request.rooms;
+  }
+
+  return request.room ? [request.room] : [];
+}
+
 function buildClientRequestSnapshot(request) {
   const serviceOption = getServiceRequestOption(request.service);
   const regionState = String(request.state || '').trim().toUpperCase();
+  const rooms = getRequestRooms(request);
 
   return {
     service: request.service,
     serviceLabel: serviceOption?.title || '',
-    room: request.room,
+    room: rooms.join(', '),
     urgency: request.urgency,
     urgencyLabel: optionLabel(URGENCY_OPTIONS, request.urgency, 'Prazo flexivel'),
     city: String(request.city || '').trim(),
@@ -348,7 +358,7 @@ function buildClientRequestSnapshot(request) {
 function getRequestCompleteness(request) {
   const filled = [
     request.service,
-    request.room,
+    getRequestRooms(request).length > 0,
     request.materialStatus,
     request.city || request.state,
     request.urgency,
@@ -599,6 +609,10 @@ export default function Home() {
     () => buildClientRequestSnapshot(serviceRequest),
     [serviceRequest]
   );
+  const selectedRooms = useMemo(
+    () => getRequestRooms(serviceRequest),
+    [serviceRequest]
+  );
 
   const hasActiveFilters = useMemo(
     () => Boolean(filters.search.trim() || filters.city.trim() || filters.state.trim()),
@@ -803,6 +817,21 @@ export default function Home() {
 
   const updateServiceRequest = (field, value) => {
     setServiceRequest((current) => ({ ...current, [field]: value }));
+  };
+
+  const toggleRequestRoom = (room) => {
+    setServiceRequest((current) => {
+      const currentRooms = getRequestRooms(current);
+      const nextRooms = currentRooms.includes(room)
+        ? currentRooms.filter((item) => item !== room)
+        : [...currentRooms, room];
+
+      return {
+        ...current,
+        room: nextRooms.join(', '),
+        rooms: nextRooms,
+      };
+    });
   };
 
   const handleRequestPhotos = (event) => {
@@ -1120,66 +1149,102 @@ export default function Home() {
             ) : null}
 
             {requestStep === 1 ? (
-              <div className="client-app-request-panel">
-                <h3>Algum detalhe importante?</h3>
-                <p>Essas respostas ajudam o sistema a priorizar profissionais mais preparados para o seu pedido.</p>
-                <div className="client-app-chip-grid" role="group" aria-label="Ambiente do servico">
-                  {ROOM_OPTIONS.map((room) => (
-                    <button
-                      className={serviceRequest.room === room ? 'is-selected' : ''}
-                      key={room}
-                      onClick={() => updateServiceRequest('room', room)}
-                      type="button"
-                    >
-                      {room}
-                    </button>
-                  ))}
+              <div className="client-app-request-panel client-app-request-panel--details">
+                <div className="client-app-detail-heading">
+                  <div>
+                    <h3>Ambientes e material</h3>
+                    <p>Marque todos os lugares da casa. Se for sala e cozinha, selecione os dois.</p>
+                  </div>
+                  <span>{selectedRooms.length || 0} ambiente{selectedRooms.length === 1 ? '' : 's'}</span>
                 </div>
-                <div className="client-app-chip-grid" role="group" aria-label="Status do material">
-                  {MATERIAL_STATUS_OPTIONS.map((item) => (
-                    <button
-                      className={serviceRequest.materialStatus === item.value ? 'is-selected' : ''}
-                      key={item.value}
-                      onClick={() => updateServiceRequest('materialStatus', item.value)}
-                      type="button"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+
+                <div className="client-app-detail-layout">
+                  <section className="client-app-detail-section" aria-labelledby="rooms-heading">
+                    <div className="client-app-detail-titleline">
+                      <span>1</span>
+                      <div>
+                        <strong id="rooms-heading">Onde vai instalar?</strong>
+                        <small>Toque para adicionar ou remover.</small>
+                      </div>
+                    </div>
+                    <div className="client-app-room-stream" role="group" aria-label="Ambientes do servico">
+                      {ROOM_OPTIONS.map((room) => {
+                        const isSelected = selectedRooms.includes(room);
+
+                        return (
+                          <button
+                            className={isSelected ? 'is-selected' : ''}
+                            key={room}
+                            onClick={() => toggleRequestRoom(room)}
+                            type="button"
+                          >
+                            <span>{isSelected ? '✓' : '+'}</span>
+                            {room}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+
+                  <section className="client-app-detail-section" aria-labelledby="material-heading">
+                    <div className="client-app-detail-titleline">
+                      <span>2</span>
+                      <div>
+                        <strong id="material-heading">Material</strong>
+                        <small>Ajuda o profissional a entender a visita.</small>
+                      </div>
+                    </div>
+                    <div className="client-app-material-list" role="group" aria-label="Status do material">
+                      {MATERIAL_STATUS_OPTIONS.map((item) => (
+                        <button
+                          className={serviceRequest.materialStatus === item.value ? 'is-selected' : ''}
+                          key={item.value}
+                          onClick={() => updateServiceRequest('materialStatus', item.value)}
+                          type="button"
+                        >
+                          <span>{serviceRequest.materialStatus === item.value ? '✓' : ''}</span>
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                 </div>
-                <div className="client-app-request-estimate-grid">
-                  <label className="client-app-request-field">
+
+                <div className="client-app-detail-quick-fields">
+                  <label className="client-app-request-field client-app-request-field--line">
                     <span>Medida aproximada</span>
                     <input
                       onChange={(event) => updateServiceRequest('wallSize', event.target.value)}
-                      placeholder="Ex.: parede de 3m x 2,6m"
+                      placeholder="Ex.: sala 3m x 2,6m; cozinha 2m"
                       value={serviceRequest.wallSize}
                     />
                   </label>
-                  <label className="client-app-request-field">
+                  <label className="client-app-request-field client-app-request-field--line">
                     <span>Quantidade de rolos</span>
                     <input
                       inputMode="numeric"
                       onChange={(event) => updateServiceRequest('rollCount', event.target.value)}
-                      placeholder="Ex.: 2 rolos"
+                      placeholder="Ex.: 4 rolos no total"
                       value={serviceRequest.rollCount}
                     />
                   </label>
                 </div>
-                <label className="client-app-request-field">
-                  <span>Descreva em poucas palavras</span>
+
+                <label className="client-app-request-field client-app-request-field--line client-app-detail-note">
+                  <span>Observacao rapida</span>
                   <textarea
                     onChange={(event) => updateServiceRequest('details', event.target.value)}
-                    placeholder="Ex.: instalar papel de parede em uma sala, parede lisa, material ja comprado"
-                    rows="4"
+                    placeholder="Ex.: sala e cozinha, parede lisa, material ja comprado"
+                    rows="3"
                     value={serviceRequest.details}
                   />
                 </label>
+
                 <div className="client-app-photo-uploader">
-                  <label className="client-app-photo-drop">
+                  <label className="client-app-photo-drop client-app-photo-drop--compact">
                     <input accept="image/*" multiple onChange={handleRequestPhotos} type="file" />
-                    <strong>Adicionar fotos do ambiente</strong>
-                    <span>Opcional: ate {MAX_REQUEST_PHOTOS} imagens, 5 MB cada.</span>
+                    <strong>Fotos ajudam no orcamento</strong>
+                    <span>{serviceRequest.photos.length}/{MAX_REQUEST_PHOTOS} adicionadas</span>
                   </label>
                   {serviceRequest.photos.length > 0 ? (
                     <div className="client-app-photo-grid">
@@ -1274,7 +1339,7 @@ export default function Home() {
                 </div>
                 <div className="client-app-request-summary">
                   <span>{selectedServiceRequest?.title || 'Servico nao escolhido'}</span>
-                  <span>{serviceRequest.room || 'Ambiente nao informado'}</span>
+                  <span>{requestSnapshot.room || 'Ambientes nao informados'}</span>
                   <span>
                     {[serviceRequest.city, serviceRequest.state.toUpperCase()].filter(Boolean).join(' - ') ||
                       'Regiao nao informada'}
