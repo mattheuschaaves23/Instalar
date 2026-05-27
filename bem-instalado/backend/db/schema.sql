@@ -217,11 +217,17 @@ CREATE TABLE IF NOT EXISTS service_requests (
   budget_label VARCHAR(90),
   contact_preference VARCHAR(40),
   contact_preference_label VARCHAR(80),
+  zip_code VARCHAR(20),
+  neighborhood VARCHAR(120),
+  address_reference TEXT,
   city VARCHAR(120),
   state VARCHAR(20),
   details TEXT,
   photo_count INTEGER NOT NULL DEFAULT 0,
   photo_names JSONB NOT NULL DEFAULT '[]'::jsonb,
+  client_access_token VARCHAR(80),
+  selected_installer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  selected_at TIMESTAMP,
   status VARCHAR(20) NOT NULL DEFAULT 'open',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -231,11 +237,19 @@ CREATE TABLE IF NOT EXISTS service_request_interests (
   id SERIAL PRIMARY KEY,
   request_id INTEGER NOT NULL REFERENCES service_requests(id) ON DELETE CASCADE,
   installer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  status VARCHAR(20) NOT NULL DEFAULT 'accepted',
+  status VARCHAR(20) NOT NULL DEFAULT 'interested',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (request_id, installer_id)
 );
+
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS zip_code VARCHAR(20);
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS neighborhood VARCHAR(120);
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS address_reference TEXT;
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS client_access_token VARCHAR(80);
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS selected_installer_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS selected_at TIMESTAMP;
+ALTER TABLE service_request_interests ALTER COLUMN status SET DEFAULT 'interested';
 
 CREATE TABLE IF NOT EXISTS support_conversations (
   id SERIAL PRIMARY KEY,

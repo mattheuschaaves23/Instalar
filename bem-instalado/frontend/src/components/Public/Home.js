@@ -12,6 +12,7 @@ const AUTO_LOCATION_SESSION_KEY = 'bem_instalado_client_location_checked';
 const INSTALLERS_PER_PAGE = 6;
 const MAX_REQUEST_PHOTOS = 4;
 const MAX_REQUEST_PHOTO_SIZE = 5 * 1024 * 1024;
+const SHOW_PUBLIC_INSTALLER_DIRECTORY = false;
 const INITIAL_FILTERS = { search: '', city: '', state: '' };
 const POPULAR_LOCATION_OPTIONS = [
   { city: 'Sao Paulo', state: 'SP' },
@@ -78,7 +79,7 @@ const SERVICE_REQUEST_OPTIONS = [
   {
     value: 'all',
     title: 'Ainda estou decidindo',
-    description: 'Quero ver profissionais e conversar sobre possibilidades.',
+    description: 'Quero receber interessados e conversar sobre possibilidades.',
     icon: 'users',
   },
 ];
@@ -127,19 +128,22 @@ const REQUEST_STEPS = [
   { value: 'service', label: 'Servico' },
   { value: 'details', label: 'Detalhes' },
   { value: 'location', label: 'Local' },
-  { value: 'review', label: 'Resultados' },
+  { value: 'review', label: 'Publicar' },
 ];
 const INITIAL_SERVICE_REQUEST = {
   service: '',
   room: '',
   rooms: [],
-  materialStatus: 'bought',
-  measurementStatus: 'unknown',
+  materialStatus: '',
+  measurementStatus: '',
   wallSize: '',
   rollCount: '',
-  urgency: 'days',
-  budget: 'open',
-  contactPreference: 'whatsapp',
+  urgency: '',
+  budget: '',
+  contactPreference: '',
+  zipCode: '',
+  neighborhood: '',
+  addressReference: '',
   city: '',
   state: '',
   details: '',
@@ -396,6 +400,9 @@ function buildClientRequestSnapshot(request) {
     room: rooms.join(', '),
     urgency: request.urgency,
     urgencyLabel: optionLabel(URGENCY_OPTIONS, request.urgency, 'Prazo flexivel'),
+    zipCode: String(request.zipCode || '').trim(),
+    neighborhood: String(request.neighborhood || '').trim(),
+    addressReference: String(request.addressReference || '').trim(),
     city: String(request.city || '').trim(),
     state: regionState,
     materialStatus: request.materialStatus,
@@ -437,6 +444,7 @@ function getRequestCompleteness(request) {
     getRequestRooms(request).length > 0,
     request.materialStatus,
     request.city || request.state,
+    request.neighborhood || request.zipCode,
     request.urgency,
     request.budget,
     request.contactPreference,
@@ -444,7 +452,7 @@ function getRequestCompleteness(request) {
     String(request.details || '').trim().length >= 12,
   ].filter(Boolean).length;
 
-  return Math.round((filled / 9) * 100);
+  return Math.round((filled / 10) * 100);
 }
 
 function getInstallerMatchScore(installer, request) {
@@ -678,6 +686,9 @@ export default function Home() {
   const [requestContact, setRequestContact] = useState(INITIAL_REQUEST_CONTACT);
   const [publishingRequest, setPublishingRequest] = useState(false);
   const [publishedRequest, setPublishedRequest] = useState(null);
+  const [requestInterests, setRequestInterests] = useState([]);
+  const [loadingInterests, setLoadingInterests] = useState(false);
+  const [selectingInterestId, setSelectingInterestId] = useState(null);
   const [hasGuidedRequest, setHasGuidedRequest] = useState(false);
   const [noResultsSuggestions, setNoResultsSuggestions] = useState({
     loading: false,
@@ -741,6 +752,10 @@ export default function Home() {
       })
       .slice(0, 6);
   }, [directory.installers, locationPreviewCity, locationPreviewState]);
+  const selectedInterest = useMemo(
+    () => requestInterests.find((interest) => interest.selected) || null,
+    [requestInterests]
+  );
 
   const hasActiveFilters = useMemo(
     () => Boolean(filters.search.trim() || filters.city.trim() || filters.state.trim()),
@@ -908,7 +923,7 @@ export default function Home() {
   }, [category, quickFilter, sortBy]);
 
   useEffect(() => {
-    if (loading || !hasGuidedRequest) {
+    if (loading || !hasGuidedRequest || !SHOW_PUBLIC_INSTALLER_DIRECTORY) {
       return;
     }
 
@@ -971,6 +986,76 @@ export default function Home() {
     }));
   };
 
+  const loadRequestInterests = useCallback(async (request = publishedRequest) => {
+    if (!request?.id || !request?.client_access_token) {
+      setRequestInterests([]);
+      return;
+    }
+
+    setLoadingInterests(true);
+
+    try {
+      const response = await api.get(`/public/service-requests/${request.id}/interests`, {
+        params: { token: request.client_access_token },
+      });
+      setRequestInterests(response.data?.interests || []);
+      if (response.data?.request) {
+        setPublishedRequest((current) => (current ? { ...current, ...response.data.request } : current));
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Nao foi possivel carregar instaladores interessados.');
+    } finally {
+      setLoadingInterests(false);
+    }
+  }, [publishedRequest]);
+
+  const selectInterestedInstaller = async (interest) => {
+    if (!publishedRequest?.id || !publishedRequest?.client_access_token || !interest?.id) {
+      return;
+    }
+
+    setSelectingInterestId(interest.id);
+
+    try {
+      const response = await api.post(
+        `/public/service-requests/${publishedRequest.id}/interests/${interest.id}/select`,
+        { token: publishedRequest.client_access_token }
+      );
+      const selected = response.data?.selected_interest;
+
+      setRequestInterests((current) =>
+        current.map((item) => ({
+          ...item,
+          selected: selected?.id === item.id,
+          status: selected?.id === item.id ? 'selected' : 'interested',
+          whatsapp_url: selected?.id === item.id ? selected.whatsapp_url : null,
+        }))
+      );
+
+      if (response.data?.request) {
+        setPublishedRequest((current) => ({ ...current, ...response.data.request }));
+      }
+
+      toast.success('Instalador escolhido. O contato pelo WhatsApp foi liberado.');
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Nao foi possivel escolher o instalador.');
+    } finally {
+      setSelectingInterestId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!publishedRequest?.id || !publishedRequest?.client_access_token) {
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      loadRequestInterests(publishedRequest);
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [loadRequestInterests, publishedRequest]);
+
   const handlePublishServiceRequest = async () => {
     const phoneDigits = requestContact.phone.replace(/\D/g, '');
 
@@ -1013,6 +1098,9 @@ export default function Home() {
         budget_label: requestSnapshot.budgetLabel,
         contact_preference: requestSnapshot.contactPreference,
         contact_preference_label: requestSnapshot.contactPreferenceLabel,
+        zip_code: requestSnapshot.zipCode,
+        neighborhood: requestSnapshot.neighborhood,
+        address_reference: requestSnapshot.addressReference,
         city: requestSnapshot.city,
         state: requestSnapshot.state,
         details: requestSnapshot.details,
@@ -1020,8 +1108,13 @@ export default function Home() {
         photo_names: requestSnapshot.photoNames,
       });
 
-      setPublishedRequest(response.data?.service_request || null);
-      toast.success('Solicitacao publicada para instaladores da regiao.');
+      const nextRequest = response.data?.service_request || null;
+      setPublishedRequest(nextRequest);
+      setRequestInterests([]);
+      if (nextRequest) {
+        loadRequestInterests(nextRequest);
+      }
+      toast.success('Solicitacao publicada para instaladores proximos.');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Nao foi possivel publicar a solicitacao.');
     } finally {
@@ -1197,7 +1290,7 @@ export default function Home() {
 
     if (!serviceRequest.city.trim() && !serviceRequest.state.trim()) {
       setRequestStep(2);
-      toast.error('Informe a regiao do servico para ver profissionais compativeis.');
+      toast.error('Informe a regiao do servico para enviar aos instaladores proximos.');
       return;
     }
 
@@ -1214,12 +1307,12 @@ export default function Home() {
     setInstallersPage(1);
     setHasGuidedRequest(true);
     setPublishedRequest(null);
+    setRequestInterests([]);
     writeStoredClientRequest(requestSnapshot);
-    await loadDirectory(nextFilters);
 
     if (typeof document !== 'undefined') {
       window.requestAnimationFrame(() => {
-        document.getElementById('resultados')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('interessados')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }
   };
@@ -1231,6 +1324,7 @@ export default function Home() {
     setRequestStep(0);
     setHasGuidedRequest(false);
     setPublishedRequest(null);
+    setRequestInterests([]);
     clearStoredClientRequest();
     setCategory('all');
     setQuickFilter('all');
@@ -1291,10 +1385,10 @@ export default function Home() {
           <div className="client-app-request-head">
             <div>
               <p className="client-app-kicker">Pedido guiado</p>
-              <h2>Conte o que precisa e veja profissionais compativeis</h2>
+              <h2>Conte o que precisa e receba interessados</h2>
               <p>
-                O cliente informa o servico, a regiao e o prazo. Depois compara os instaladores e so entra
-                quando escolher quem quer chamar.
+                O cliente informa o servico, a localizacao e o prazo. Instaladores proximos enviam interesse
+                e voce escolhe com quem quer falar.
               </p>
             </div>
 
@@ -1453,7 +1547,7 @@ export default function Home() {
                         />
                       </label>
                     </div>
-                  ) : (
+                  ) : serviceRequest.measurementStatus ? (
                     <div className="client-app-measure-note">
                       <strong>
                         {serviceRequest.measurementStatus === 'visit'
@@ -1466,7 +1560,7 @@ export default function Home() {
                           : 'O instalador pode orientar a quantidade de papel e conferir as paredes pelo atendimento.'}
                       </span>
                     </div>
-                  )}
+                  ) : null}
                 </section>
 
                 <label className="client-app-request-field client-app-request-field--line client-app-detail-note">
@@ -1509,7 +1603,7 @@ export default function Home() {
             {requestStep === 2 ? (
               <div className="client-app-request-panel">
                 <h3>Onde sera o servico?</h3>
-                <p>Use a cidade e o estado para listar primeiro profissionais da regiao.</p>
+                <p>Informe cidade, estado e bairro para priorizar instaladores mais proximos.</p>
                 <div className="client-app-request-location">
                   <label className="client-app-request-field">
                     <span>Cidade</span>
@@ -1532,6 +1626,33 @@ export default function Home() {
                     <AppIcon name="target" />
                     Usar minha localizacao
                   </button>
+                </div>
+                <div className="client-app-request-location client-app-request-location--detail">
+                  <label className="client-app-request-field">
+                    <span>Bairro</span>
+                    <input
+                      onChange={(event) => updateServiceRequest('neighborhood', event.target.value)}
+                      placeholder="Ex.: Cambui"
+                      value={serviceRequest.neighborhood}
+                    />
+                  </label>
+                  <label className="client-app-request-field">
+                    <span>CEP opcional</span>
+                    <input
+                      inputMode="numeric"
+                      onChange={(event) => updateServiceRequest('zipCode', event.target.value)}
+                      placeholder="Ex.: 13000-000"
+                      value={serviceRequest.zipCode}
+                    />
+                  </label>
+                  <label className="client-app-request-field">
+                    <span>Referencia</span>
+                    <input
+                      onChange={(event) => updateServiceRequest('addressReference', event.target.value)}
+                      placeholder="Condominio, avenida ou ponto de referencia"
+                      value={serviceRequest.addressReference}
+                    />
+                  </label>
                 </div>
 
                 <div className="client-app-location-preview" aria-live="polite">
@@ -1580,8 +1701,8 @@ export default function Home() {
 
             {requestStep === 3 ? (
               <div className="client-app-request-panel">
-                <h3>Revise e veja os profissionais</h3>
-                <p>Voce ainda nao precisa criar conta. O login aparece so quando escolher um instalador.</p>
+                <h3>Revise e publique o pedido</h3>
+                <p>Os instaladores proximos veem a oportunidade e enviam interesse. Depois voce escolhe um.</p>
                 <div className="client-app-chip-grid" role="group" aria-label="Prazo desejado">
                   {URGENCY_OPTIONS.map((item) => (
                     <button
@@ -1622,7 +1743,7 @@ export default function Home() {
                   <span>{selectedServiceRequest?.title || 'Servico nao escolhido'}</span>
                   <span>{requestSnapshot.room || 'Ambientes nao informados'}</span>
                   <span>
-                    {[serviceRequest.city, serviceRequest.state.toUpperCase()].filter(Boolean).join(' - ') ||
+                    {[serviceRequest.neighborhood, serviceRequest.city, serviceRequest.state.toUpperCase()].filter(Boolean).join(' - ') ||
                       'Regiao nao informada'}
                   </span>
                   <span>{selectedUrgency?.label || 'Prazo flexivel'}</span>
@@ -1650,21 +1771,21 @@ export default function Home() {
                 </button>
               ) : (
                 <button className="client-app-search-submit" type="submit">
-                  Ver profissionais
+                  Continuar para publicar
                 </button>
               )}
             </div>
           </form>
         </section>
 
-        {hasGuidedRequest ? (
+        {SHOW_PUBLIC_INSTALLER_DIRECTORY && hasGuidedRequest ? (
           <>
             <section className="client-app-request-receipt fade-up">
               <div className="client-app-request-receipt-main">
                 <p className="client-app-kicker">Resumo do pedido</p>
                 <h3>{requestSnapshot.serviceLabel || 'Pedido de instalacao'}</h3>
                 <p>
-                  {[requestSnapshot.room, requestSnapshot.city, requestSnapshot.state].filter(Boolean).join(' - ') ||
+                  {[requestSnapshot.room, requestSnapshot.neighborhood, requestSnapshot.city, requestSnapshot.state].filter(Boolean).join(' - ') ||
                     'Regiao e ambiente informados pelo cliente'}
                 </p>
               </div>
@@ -1687,16 +1808,16 @@ export default function Home() {
             <section className="client-app-opportunity-publish fade-up">
               <div className="client-app-opportunity-copy">
                 <p className="client-app-kicker">Oportunidade para instaladores</p>
-                <h3>Publique seu pedido e deixe profissionais interessados chamarem voce.</h3>
+                <h3>Publique seu pedido e escolha entre os interessados.</h3>
                 <span>
-                  Os instaladores veem cidade, servico e detalhes. Seu WhatsApp completo so fica liberado para quem aceitar a oportunidade.
+                  Os instaladores proximos veem cidade, bairro, servico e detalhes. Seu WhatsApp completo so fica liberado para o escolhido.
                 </span>
               </div>
 
               {publishedRequest ? (
                 <div className="client-app-opportunity-success">
                   <strong>Solicitacao #{publishedRequest.id} publicada</strong>
-                  <span>Agora os instaladores podem aceitar no painel e chamar voce pelo WhatsApp.</span>
+                  <span>Agora os instaladores podem enviar interesse. Quando aparecerem abaixo, escolha o melhor para liberar o contato.</span>
                 </div>
               ) : (
                 <div className="client-app-opportunity-form">
@@ -1738,76 +1859,143 @@ export default function Home() {
               )}
             </section>
 
-            <section className="client-app-category-row fade-up">
-              {CATEGORY_OPTIONS.map((item) => (
-                <button
-                  className={`client-app-category ${category === item.value ? 'is-active' : ''}`}
-                  key={item.value}
-                  onClick={() => setCategory(item.value)}
-                  type="button"
-                >
-                  <span className="client-app-category-icon">
-                    <AppIcon
-                      name={
-                        item.value === 'all'
-                          ? 'users'
-                          : item.value === 'residential'
-                            ? 'home'
-                            : item.value === 'commercial'
-                              ? 'building'
-                              : item.value === 'textured'
-                                ? 'texture'
-                                : item.value === 'vinyl'
-                                  ? 'roller'
-                                  : 'smile'
-                      }
-                    />
-                  </span>
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </section>
+            {publishedRequest ? (
+              <section className="client-app-interest-board fade-up" id="interessados">
+                <div className="client-app-interest-head">
+                  <div>
+                    <p className="client-app-kicker">Instaladores interessados</p>
+                    <h3>{selectedInterest ? 'Instalador escolhido' : 'Escolha quem prefere chamar'}</h3>
+                    <span>
+                      {selectedInterest
+                        ? 'O WhatsApp do profissional escolhido esta liberado.'
+                        : 'Varios instaladores podem demonstrar interesse no mesmo pedido.'}
+                    </span>
+                  </div>
+                  <button className="client-app-ghost-button" onClick={() => loadRequestInterests()} type="button">
+                    {loadingInterests ? 'Atualizando...' : 'Atualizar'}
+                  </button>
+                </div>
 
-            <section className="client-app-toolbar fade-up">
-              <button className="client-app-toolbar-pill" onClick={() => requestLocationSearch()} type="button">
-                <AppIcon name="map-pin" />
-                <span>
-                  {filters.city
-                    ? `${filters.city}${filters.state ? `, ${filters.state}` : ''}`
-                    : 'Minha localizacao'}
-                </span>
-              </button>
+                {requestInterests.length === 0 ? (
+                  <div className="client-app-interest-empty">
+                    <strong>Aguardando interessados</strong>
+                    <span>Seu pedido ja esta no painel dos instaladores mais proximos da regiao informada.</span>
+                  </div>
+                ) : (
+                  <div className="client-app-interest-list">
+                    {requestInterests.map((interest) => (
+                      <article className={interest.selected ? 'is-selected' : ''} key={interest.id}>
+                        <div className="client-app-interest-avatar">
+                          {interest.installer_photo || interest.logo ? (
+                            <img alt={`Foto de ${interest.display_name}`} src={interest.installer_photo || interest.logo} />
+                          ) : (
+                            <span>{getInitials(interest.display_name)}</span>
+                          )}
+                        </div>
+                        <div className="client-app-interest-copy">
+                          <strong>{interest.display_name}</strong>
+                          <span>{[interest.city, interest.state].filter(Boolean).join(', ') || 'Regiao informada no perfil'}</span>
+                          <small>
+                            {Number(interest.average_rating || 0).toFixed(1)} estrelas - {interest.review_count || 0} avaliacoes
+                          </small>
+                        </div>
+                        <div className="client-app-interest-actions">
+                          {interest.selected && interest.whatsapp_url ? (
+                            <a className="gold-button" href={interest.whatsapp_url} rel="noreferrer" target="_blank">
+                              Chamar no WhatsApp
+                            </a>
+                          ) : (
+                            <button
+                              className="gold-button"
+                              disabled={Boolean(selectedInterest) || selectingInterestId === interest.id}
+                              onClick={() => selectInterestedInstaller(interest)}
+                              type="button"
+                            >
+                              {selectingInterestId === interest.id ? 'Escolhendo...' : 'Escolher'}
+                            </button>
+                          )}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : null}
 
-              <div className="client-app-toolbar-actions">
-                <button className="client-app-toolbar-action" onClick={cycleQuickFilter} type="button">
-                  <AppIcon name="filter" />
-                  <span>{QUICK_FILTER_OPTIONS.find((item) => item.value === quickFilter)?.label || 'Filtro'}</span>
-                </button>
+            {SHOW_PUBLIC_INSTALLER_DIRECTORY ? (
+              <>
+                <section className="client-app-category-row fade-up">
+                  {CATEGORY_OPTIONS.map((item) => (
+                    <button
+                      className={`client-app-category ${category === item.value ? 'is-active' : ''}`}
+                      key={item.value}
+                      onClick={() => setCategory(item.value)}
+                      type="button"
+                    >
+                      <span className="client-app-category-icon">
+                        <AppIcon
+                          name={
+                            item.value === 'all'
+                              ? 'users'
+                              : item.value === 'residential'
+                                ? 'home'
+                                : item.value === 'commercial'
+                                  ? 'building'
+                                  : item.value === 'textured'
+                                    ? 'texture'
+                                    : item.value === 'vinyl'
+                                      ? 'roller'
+                                      : 'smile'
+                          }
+                        />
+                      </span>
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </section>
 
-                <label className="client-app-toolbar-select">
-                  <AppIcon name="sort" />
-                  <select onChange={(event) => setSortBy(event.target.value)} value={sortBy}>
-                    <option value="match">Mais compativeis</option>
-                    <option value="rating">Melhor avaliados</option>
-                    <option value="reviews">Mais avaliacoes</option>
-                    <option value="available">Mais disponiveis</option>
-                    <option value="name">Ordem alfabetica</option>
-                  </select>
-                </label>
-              </div>
-            </section>
+                <section className="client-app-toolbar fade-up">
+                  <button className="client-app-toolbar-pill" onClick={() => requestLocationSearch()} type="button">
+                    <AppIcon name="map-pin" />
+                    <span>
+                      {filters.city
+                        ? `${filters.city}${filters.state ? `, ${filters.state}` : ''}`
+                        : 'Minha localizacao'}
+                    </span>
+                  </button>
+
+                  <div className="client-app-toolbar-actions">
+                    <button className="client-app-toolbar-action" onClick={cycleQuickFilter} type="button">
+                      <AppIcon name="filter" />
+                      <span>{QUICK_FILTER_OPTIONS.find((item) => item.value === quickFilter)?.label || 'Filtro'}</span>
+                    </button>
+
+                    <label className="client-app-toolbar-select">
+                      <AppIcon name="sort" />
+                      <select onChange={(event) => setSortBy(event.target.value)} value={sortBy}>
+                        <option value="match">Mais compativeis</option>
+                        <option value="rating">Melhor avaliados</option>
+                        <option value="reviews">Mais avaliacoes</option>
+                        <option value="available">Mais disponiveis</option>
+                        <option value="name">Ordem alfabetica</option>
+                      </select>
+                    </label>
+                  </div>
+                </section>
+              </>
+            ) : null}
           </>
         ) : (
           <section className="client-app-empty client-app-start-empty fade-up">
             <strong>Comece pelo pedido para receber indicacoes melhores.</strong>
             <p>
               O fluxo fica em etapas como um marketplace de servicos: primeiro voce explica o que precisa,
-              depois compara profissionais e escolhe com quem quer falar.
+              depois recebe interessados e escolhe com quem quer falar.
             </p>
           </section>
         )}
 
-        {hasGuidedRequest ? (
+        {SHOW_PUBLIC_INSTALLER_DIRECTORY && hasGuidedRequest ? (
           <section className="client-app-results-head fade-up" id="resultados">
             <div>
               <h2>Profissionais compativeis com seu pedido</h2>
@@ -1816,9 +2004,9 @@ export default function Home() {
           </section>
         ) : null}
 
-        {hasGuidedRequest && loading ? <div className="client-app-empty fade-up">Carregando instaladores...</div> : null}
+        {SHOW_PUBLIC_INSTALLER_DIRECTORY && hasGuidedRequest && loading ? <div className="client-app-empty fade-up">Carregando instaladores...</div> : null}
 
-        {hasGuidedRequest && !loading && filteredInstallers.length === 0 ? (
+        {SHOW_PUBLIC_INSTALLER_DIRECTORY && hasGuidedRequest && !loading && filteredInstallers.length === 0 ? (
           <div className="client-app-empty fade-up">
             <strong>Nenhum instalador encontrado com esse filtro.</strong>
             <p>
@@ -1832,7 +2020,7 @@ export default function Home() {
           </div>
         ) : null}
 
-        {hasGuidedRequest && !loading && filteredInstallers.length === 0 && hasActiveFilters && noResultsSuggestions.items.length > 0 ? (
+        {SHOW_PUBLIC_INSTALLER_DIRECTORY && hasGuidedRequest && !loading && filteredInstallers.length === 0 && hasActiveFilters && noResultsSuggestions.items.length > 0 ? (
           <section className="client-app-suggestion-box fade-up">
             <div className="client-app-section-copy">
               <p className="client-app-kicker">Sugestoes automaticas</p>
@@ -1864,7 +2052,7 @@ export default function Home() {
           </section>
         ) : null}
 
-        {hasGuidedRequest && favoriteInstallers.length > 0 ? (
+        {SHOW_PUBLIC_INSTALLER_DIRECTORY && hasGuidedRequest && favoriteInstallers.length > 0 ? (
           <section className="client-app-favorites fade-up" id="favoritos">
             <div className="client-app-results-head client-app-results-head--small">
               <div>
@@ -1956,7 +2144,7 @@ export default function Home() {
           </section>
         ) : null}
 
-        {hasGuidedRequest && !loading && filteredInstallers.length > 0 ? (
+        {SHOW_PUBLIC_INSTALLER_DIRECTORY && hasGuidedRequest && !loading && filteredInstallers.length > 0 ? (
           <section className="client-app-results-list fade-up">
             {paginatedInstallers.map((installer) => {
               const availability = getAvailabilityState(installer);
@@ -2051,7 +2239,7 @@ export default function Home() {
           </section>
         ) : null}
 
-        {hasGuidedRequest && !loading && filteredInstallers.length > 0 ? (
+        {SHOW_PUBLIC_INSTALLER_DIRECTORY && hasGuidedRequest && !loading && filteredInstallers.length > 0 ? (
           <PaginationControls
             currentPage={normalizedInstallersPage}
             onPageChange={setInstallersPage}

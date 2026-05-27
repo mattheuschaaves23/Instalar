@@ -6,8 +6,8 @@ import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 
 const FILTERS = [
   { value: 'open', label: 'Novas' },
-  { value: 'accepted', label: 'Aceitas por mim' },
-  { value: 'all', label: 'Todas' },
+  { value: 'interested', label: 'Meus interesses' },
+  { value: 'selected', label: 'Escolhidas' },
 ];
 
 function OpportunityIcon({ type }) {
@@ -50,7 +50,7 @@ function formatDate(value) {
 }
 
 function joinRegion(item) {
-  return [item.city, item.state].filter(Boolean).join(' - ') || 'Regiao nao informada';
+  return [item.neighborhood, item.city, item.state].filter(Boolean).join(' - ') || 'Regiao nao informada';
 }
 
 function getSummaryItems(item) {
@@ -67,9 +67,9 @@ function getSummaryItems(item) {
 export default function Opportunities() {
   const [filter, setFilter] = useState('open');
   const [opportunities, setOpportunities] = useState([]);
-  const [stats, setStats] = useState({ open: 0, accepted: 0, matched: 0 });
+  const [stats, setStats] = useState({ open: 0, interested: 0, selected: 0, matched: 0 });
   const [loading, setLoading] = useState(true);
-  const [acceptingId, setAcceptingId] = useState(null);
+  const [sendingInterestId, setSendingInterestId] = useState(null);
 
   const loadOpportunities = useCallback(async (nextFilter = filter) => {
     setLoading(true);
@@ -77,7 +77,7 @@ export default function Opportunities() {
     try {
       const response = await api.get('/opportunities', { params: { status: nextFilter } });
       setOpportunities(response.data?.opportunities || []);
-      setStats(response.data?.stats || { open: 0, accepted: 0, matched: 0 });
+      setStats(response.data?.stats || { open: 0, interested: 0, selected: 0, matched: 0 });
     } catch (error) {
       toast.error(error.response?.data?.error || 'Nao foi possivel carregar oportunidades.');
       setOpportunities([]);
@@ -92,42 +92,39 @@ export default function Opportunities() {
 
   const pageStats = useMemo(
     () => [
-      { label: 'Novas', value: stats.open || opportunities.filter((item) => !item.accepted_by_me).length, detail: 'Ainda nao aceitas por voce' },
-      { label: 'Aceitas', value: stats.accepted || opportunities.filter((item) => item.accepted_by_me).length, detail: 'Com WhatsApp liberado' },
+      { label: 'Novas', value: stats.open || opportunities.filter((item) => !item.interested_by_me).length, detail: 'Ainda sem seu interesse' },
+      { label: 'Interesses', value: stats.interested || opportunities.filter((item) => item.my_interest_status === 'interested').length, detail: 'Aguardando escolha do cliente' },
+      { label: 'Escolhidas', value: stats.selected || opportunities.filter((item) => item.selected_by_me).length, detail: 'WhatsApp liberado pelo cliente' },
       { label: 'Na sua regiao', value: stats.matched || opportunities.filter((item) => item.match_score >= 78).length, detail: 'Priorizadas por cidade/UF' },
     ],
     [opportunities, stats]
   );
 
-  const handleAccept = async (opportunity) => {
-    setAcceptingId(opportunity.id);
-    const wasOpen = !opportunity.accepted_by_me;
+  const handleInterest = async (opportunity) => {
+    setSendingInterestId(opportunity.id);
+    const wasOpen = !opportunity.interested_by_me;
 
     try {
-      const response = await api.post(`/opportunities/${opportunity.id}/accept`);
-      const accepted = response.data?.opportunity;
+      const response = await api.post(`/opportunities/${opportunity.id}/interest`);
+      const interested = response.data?.opportunity;
 
-      if (accepted) {
+      if (interested) {
         setOpportunities((current) =>
-          current.map((item) => (item.id === accepted.id ? { ...item, ...accepted } : item))
+          current.map((item) => (item.id === interested.id ? { ...item, ...interested } : item))
         );
         setStats((current) => ({
           ...current,
           open: wasOpen ? Math.max(0, Number(current.open || 0) - 1) : Number(current.open || 0),
-          accepted: wasOpen ? Number(current.accepted || 0) + 1 : Number(current.accepted || 0),
+          interested: wasOpen ? Number(current.interested || 0) + 1 : Number(current.interested || 0),
         }));
         notifyPanelBadgeCountsChanged();
-
-        if (accepted.whatsapp_url) {
-          window.open(accepted.whatsapp_url, '_blank', 'noopener,noreferrer');
-        }
       }
 
-      toast.success('Oportunidade aceita. O WhatsApp foi liberado.');
+      toast.success('Interesse enviado. O cliente vai escolher com quem quer falar.');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel aceitar a oportunidade.');
+      toast.error(error.response?.data?.error || 'Nao foi possivel enviar interesse.');
     } finally {
-      setAcceptingId(null);
+      setSendingInterestId(null);
     }
   };
 
@@ -136,7 +133,7 @@ export default function Opportunities() {
       <PageIntro
         eyebrow="Operacao"
         title="Oportunidades"
-        description="Solicitacoes publicadas por clientes aparecem aqui para voce escolher quais quer atender e chamar no WhatsApp."
+        description="Solicitacoes publicadas por clientes proximos aparecem aqui. Envie interesse e aguarde o cliente escolher quem prefere chamar."
         actions={(
           <button className="ghost-button" onClick={() => loadOpportunities(filter)} type="button">
             <OpportunityIcon type="filter" />
@@ -181,7 +178,7 @@ export default function Opportunities() {
               <article className="opportunity-row" key={opportunity.id}>
                 <div className="opportunity-row-main">
                   <div className="opportunity-icon">
-                    <OpportunityIcon type={opportunity.accepted_by_me ? 'check' : 'briefcase'} />
+                    <OpportunityIcon type={opportunity.selected_by_me ? 'check' : 'briefcase'} />
                   </div>
 
                   <div className="opportunity-copy">
@@ -196,8 +193,9 @@ export default function Opportunities() {
                     <div className="opportunity-meta">
                       <span><OpportunityIcon type="user" />{opportunity.client_name || 'Cliente interessado'}</span>
                       <span><OpportunityIcon type="map" />{joinRegion(opportunity)}</span>
-                      <span><OpportunityIcon type="phone" />{opportunity.client_phone || opportunity.client_phone_masked || 'WhatsApp apos aceitar'}</span>
+                      <span><OpportunityIcon type="phone" />{opportunity.client_phone || opportunity.client_phone_masked || 'WhatsApp se o cliente escolher voce'}</span>
                       <span><OpportunityIcon type="clock" />{opportunity.urgency_label || 'Prazo a combinar'}</span>
+                      <span>{opportunity.distance_label || 'Regiao priorizada'}</span>
                     </div>
 
                     {summaryItems.length > 0 ? (
@@ -213,22 +211,30 @@ export default function Opportunities() {
                 </div>
 
                 <div className="opportunity-actions">
-                  <span className={opportunity.accepted_by_me ? 'is-accepted' : ''}>
-                    {opportunity.accepted_by_me ? 'Aceita por voce' : 'Nova solicitacao'}
+                  <span className={opportunity.selected_by_me ? 'is-accepted' : opportunity.interested_by_me ? 'is-interested' : ''}>
+                    {opportunity.selected_by_me
+                      ? 'Cliente escolheu voce'
+                      : opportunity.interested_by_me
+                        ? 'Interesse enviado'
+                        : 'Nova solicitacao'}
                   </span>
 
-                  {opportunity.accepted_by_me && opportunity.whatsapp_url ? (
+                  {opportunity.selected_by_me && opportunity.whatsapp_url ? (
                     <a className="gold-button" href={opportunity.whatsapp_url} rel="noreferrer" target="_blank">
                       Chamar no WhatsApp
                     </a>
+                  ) : opportunity.interested_by_me ? (
+                    <button className="gold-button" disabled type="button">
+                      Aguardando cliente
+                    </button>
                   ) : (
                     <button
                       className="gold-button"
-                      disabled={acceptingId === opportunity.id}
-                      onClick={() => handleAccept(opportunity)}
+                      disabled={sendingInterestId === opportunity.id}
+                      onClick={() => handleInterest(opportunity)}
                       type="button"
                     >
-                      {acceptingId === opportunity.id ? 'Aceitando...' : 'Aceitar e chamar'}
+                      {sendingInterestId === opportunity.id ? 'Enviando...' : 'Tenho interesse'}
                     </button>
                   )}
                 </div>

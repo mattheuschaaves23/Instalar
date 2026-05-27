@@ -11,6 +11,7 @@ router.use(requireAccountType('installer'));
 router.use(hasSubscription);
 
 router.get('/', controller.getOpportunities);
-router.post('/:id/accept', controller.acceptOpportunity);
+router.post('/:id/interest', controller.expressInterest);
+router.post('/:id/accept', controller.expressInterest);
 
 module.exports = router;

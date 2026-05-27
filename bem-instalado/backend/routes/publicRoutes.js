@@ -30,6 +30,8 @@ router.get('/recommended-stores', publicSearchLimiter, controller.getRecommended
 router.get('/location/reverse', publicSearchLimiter, controller.reverseLocation);
 router.get('/installers/:id', publicSearchLimiter, controller.getInstallerProfile);
 router.post('/service-requests', serviceRequestLimiter, serviceRequestController.createPublicServiceRequest);
+router.get('/service-requests/:id/interests', publicSearchLimiter, serviceRequestController.getPublicServiceRequestInterests);
+router.post('/service-requests/:id/interests/:interestId/select', serviceRequestLimiter, serviceRequestController.selectServiceRequestInterest);
 router.post('/installers/:id/reviews', authMiddleware, reviewLimiter, controller.createReview);
 
 module.exports = router;

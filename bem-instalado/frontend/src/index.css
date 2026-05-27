@@ -12107,6 +12107,11 @@ body {
   color: var(--gold);
 }
 
+.client-app-request-location--detail {
+  grid-template-columns: minmax(0, 1fr) 160px minmax(0, 1.25fr);
+  margin-top: 0.75rem;
+}
+
 .client-app-location-preview {
   margin-top: 0.25rem;
   border-radius: 22px;
@@ -12398,6 +12403,119 @@ body {
 .client-app-opportunity-success span {
   color: rgba(255, 246, 232, 0.66);
   line-height: 1.45;
+}
+
+.client-app-interest-board {
+  border: 1px solid rgba(var(--site-accent-rgb), 0.13);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(var(--site-accent-rgb), 0.055), transparent 46%),
+    rgba(8, 8, 8, 0.92);
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.client-app-interest-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.client-app-interest-head h3 {
+  margin: 0.2rem 0 0;
+  color: #fff9ef;
+  font-size: clamp(1.12rem, 2.2vw, 1.4rem);
+}
+
+.client-app-interest-head span,
+.client-app-interest-empty span,
+.client-app-interest-copy span,
+.client-app-interest-copy small {
+  color: rgba(255, 246, 232, 0.64);
+}
+
+.client-app-interest-empty {
+  min-height: 7rem;
+  border: 1px dashed rgba(var(--site-accent-rgb), 0.2);
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  gap: 0.3rem;
+  text-align: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.client-app-interest-empty strong {
+  color: #fff9ef;
+}
+
+.client-app-interest-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.client-app-interest-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.11);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.34);
+  padding: 0.8rem;
+}
+
+.client-app-interest-list article.is-selected {
+  border-color: rgba(54, 223, 155, 0.34);
+  background: rgba(54, 223, 155, 0.075);
+}
+
+.client-app-interest-avatar {
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 16px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(var(--site-accent-rgb), 0.14);
+  color: var(--gold);
+  font-weight: 900;
+}
+
+.client-app-interest-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.client-app-interest-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.16rem;
+}
+
+.client-app-interest-copy strong {
+  color: #fff9ef;
+}
+
+.client-app-interest-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.client-app-interest-actions .gold-button {
+  min-height: 2.6rem;
+  border-radius: 0.85rem;
+  white-space: nowrap;
+}
+
+.client-app-interest-actions .gold-button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
 }
 
 .client-request-profile-card {
@@ -13318,6 +13436,22 @@ body {
   }
 
   .client-app-opportunity-form .client-app-search-submit {
+    width: 100%;
+  }
+
+  .client-app-interest-head {
+    display: grid;
+  }
+
+  .client-app-interest-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .client-app-interest-actions {
+    justify-content: stretch;
+  }
+
+  .client-app-interest-actions .gold-button {
     width: 100%;
   }
 
@@ -22469,6 +22603,11 @@ body,
 .opportunity-actions > span.is-accepted {
   background: rgba(24, 217, 149, 0.14);
   color: #36df9b;
+}
+
+.opportunity-actions > span.is-interested {
+  background: rgba(var(--site-accent-rgb), 0.14);
+  color: var(--ref-gold);
 }
 
 .opportunity-meta,

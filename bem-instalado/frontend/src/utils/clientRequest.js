@@ -27,6 +27,9 @@ export function writeStoredClientRequest(request) {
     room: cleanText(request.room, 140),
     urgency: cleanText(request.urgency, 40),
     urgencyLabel: cleanText(request.urgencyLabel, 80),
+    zipCode: cleanText(request.zipCode, 20),
+    neighborhood: cleanText(request.neighborhood, 80),
+    addressReference: cleanText(request.addressReference, 160),
     city: cleanText(request.city, 80),
     state: cleanText(request.state, 2).toUpperCase(),
     materialStatus: cleanText(request.materialStatus, 40),
@@ -74,11 +77,13 @@ export function formatClientRequestLines(request) {
     return [];
   }
 
-  const region = [request.city, request.state].filter(Boolean).join(' - ');
+  const region = [request.neighborhood, request.city, request.state].filter(Boolean).join(' - ');
   const lines = [
     ['Servico', request.serviceLabel],
     ['Ambiente', request.room],
     ['Regiao', region],
+    ['CEP', request.zipCode],
+    ['Referencia', request.addressReference],
     ['Prazo', request.urgencyLabel],
     ['Material', request.materialLabel],
     ['Medida', request.wallSize],
