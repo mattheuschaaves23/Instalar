@@ -4687,6 +4687,33 @@ body {
 }
 
 .clean-landing-shell {
+  --site-accent: #cda349;
+  --site-accent-strong: #f0d28a;
+  --site-accent-deep: #8d6922;
+  --site-accent-contrast: #100b03;
+  --site-accent-rgb: 205, 163, 73;
+  --site-accent-strong-rgb: 240, 210, 138;
+  --site-accent-deep-rgb: 141, 105, 34;
+  --site-accent-soft: rgba(205, 163, 73, 0.14);
+  --site-accent-line: rgba(205, 163, 73, 0.18);
+  --site-accent-line-strong: rgba(205, 163, 73, 0.34);
+  --site-bg: #000000;
+  --site-bg-rgb: 0, 0, 0;
+  --site-panel: #0d0b08;
+  --site-panel-soft: #14100b;
+  --site-panel-elevated: #1a140d;
+  --site-panel-rgb: 13, 11, 8;
+  --site-panel-soft-rgb: 20, 16, 11;
+  --site-panel-elevated-rgb: 26, 20, 13;
+  --gold: #cda349;
+  --gold-strong: #f0d28a;
+  --gold-soft: rgba(205, 163, 73, 0.14);
+  --line: rgba(205, 163, 73, 0.18);
+  --muted: rgba(240, 210, 138, 0.68);
+  --ref-line: rgba(205, 163, 73, 0.18);
+  --ref-gold: #cda349;
+  --ref-gold-strong: #f0d28a;
+  --route-line-gold: rgba(205, 163, 73, 0.22);
   width: 100%;
   max-width: 86rem;
   margin: 0 auto;
