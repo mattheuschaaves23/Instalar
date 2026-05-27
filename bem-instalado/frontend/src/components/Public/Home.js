@@ -14,20 +14,9 @@ const MAX_REQUEST_PHOTOS = 4;
 const MAX_REQUEST_PHOTO_SIZE = 5 * 1024 * 1024;
 const SHOW_PUBLIC_INSTALLER_DIRECTORY = false;
 const INITIAL_FILTERS = { search: '', city: '', state: '' };
-const POPULAR_LOCATION_OPTIONS = [
-  { city: 'Sao Paulo', state: 'SP' },
-  { city: 'Campinas', state: 'SP' },
-  { city: 'Santos', state: 'SP' },
-  { city: 'Rio de Janeiro', state: 'RJ' },
-  { city: 'Belo Horizonte', state: 'MG' },
-  { city: 'Curitiba', state: 'PR' },
-  { city: 'Porto Alegre', state: 'RS' },
-  { city: 'Brasilia', state: 'DF' },
-  { city: 'Goiania', state: 'GO' },
-  { city: 'Salvador', state: 'BA' },
-  { city: 'Recife', state: 'PE' },
-  { city: 'Fortaleza', state: 'CE' },
-];
+const BRAZILIAN_CITIES_API_URL = 'https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome';
+const VIA_CEP_API_URL = 'https://viacep.com.br/ws';
+const MIN_LOCATION_QUERY_LENGTH = 2;
 
 const CATEGORY_OPTIONS = [
   { value: 'all', label: 'Todos', keywords: [] },
@@ -338,6 +327,48 @@ function normalizeText(value) {
     .toLowerCase();
 }
 
+function onlyDigits(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function formatZipCode(value) {
+  const digits = onlyDigits(value).slice(0, 8);
+  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+}
+
+function getBrazilianCityState(item) {
+  return (
+    item?.microrregiao?.mesorregiao?.UF?.sigla ||
+    item?.['regiao-imediata']?.['regiao-intermediaria']?.UF?.sigla ||
+    ''
+  ).toUpperCase();
+}
+
+function getBrazilianRegionName(item) {
+  return (
+    item?.microrregiao?.mesorregiao?.UF?.regiao?.nome ||
+    item?.['regiao-imediata']?.['regiao-intermediaria']?.UF?.regiao?.nome ||
+    ''
+  );
+}
+
+function normalizeBrazilianCity(item) {
+  const city = String(item?.nome || '').trim();
+  const state = getBrazilianCityState(item);
+
+  if (!city || !state) {
+    return null;
+  }
+
+  return {
+    id: item.id,
+    city,
+    state,
+    region: getBrazilianRegionName(item),
+    searchText: normalizeText(`${city} ${state}`),
+  };
+}
+
 function installerTextBlob(installer) {
   const serviceParts = [
     installer.services,
@@ -641,15 +672,38 @@ function getRegionLabel(installer) {
   return [installer.city, installer.state].filter(Boolean).join(', ') || installer.service_region || 'Regiao nao informada';
 }
 
-function buildLocationOptions(installers) {
+function buildLocationOptions({ cities, installers, cityQuery, stateQuery, neighborhoodQuery, zipQuery }) {
   const seen = new Set();
   const options = [];
+  const normalizedCityQuery = normalizeText(cityQuery).trim();
+  const normalizedNeighborhoodQuery = normalizeText(neighborhoodQuery).trim();
+  const normalizedStateQuery = String(stateQuery || '').trim().toUpperCase();
+  const zipDigits = onlyDigits(zipQuery);
+  const canSearchCities =
+    normalizedCityQuery.length >= MIN_LOCATION_QUERY_LENGTH ||
+    normalizedStateQuery.length >= MIN_LOCATION_QUERY_LENGTH ||
+    zipDigits.length >= 3;
 
-  [...(installers || []), ...POPULAR_LOCATION_OPTIONS].forEach((item) => {
+  if (!canSearchCities) {
+    return options;
+  }
+
+  const sourceItems = cities.length > 0 ? cities : installers || [];
+
+  sourceItems.forEach((item) => {
     const city = String(item.city || '').trim();
     const state = String(item.state || '').trim().toUpperCase();
+    const searchText = item.searchText || normalizeText(`${city} ${state} ${item.service_region || ''}`);
 
     if (!city || !state) {
+      return;
+    }
+
+    if (normalizedStateQuery && !state.startsWith(normalizedStateQuery)) {
+      return;
+    }
+
+    if (normalizedCityQuery && !searchText.includes(normalizedCityQuery)) {
       return;
     }
 
@@ -659,10 +713,19 @@ function buildLocationOptions(installers) {
     }
 
     seen.add(key);
-    options.push({ city, state });
+    options.push({
+      id: item.id || key,
+      city,
+      state,
+      neighborhood: normalizedNeighborhoodQuery ? String(neighborhoodQuery || '').trim() : '',
+      region: item.region || item.service_region || '',
+      startsWithCity: normalizedCityQuery ? normalizeText(city).startsWith(normalizedCityQuery) : false,
+    });
   });
 
-  return options;
+  return options
+    .sort((left, right) => Number(right.startsWithCity) - Number(left.startsWithCity) || left.city.localeCompare(right.city))
+    .slice(0, 12);
 }
 
 function getServiceRequestOption(value) {
@@ -690,6 +753,10 @@ export default function Home() {
   const [requestStep, setRequestStep] = useState(0);
   const [detailStep, setDetailStep] = useState(0);
   const [serviceRequest, setServiceRequest] = useState(INITIAL_SERVICE_REQUEST);
+  const [brazilianCities, setBrazilianCities] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [locationLoadError, setLocationLoadError] = useState('');
+  const [zipLookupStatus, setZipLookupStatus] = useState('idle');
   const [requestContact, setRequestContact] = useState(INITIAL_REQUEST_CONTACT);
   const [publishingRequest, setPublishingRequest] = useState(false);
   const [publishedRequest, setPublishedRequest] = useState(null);
@@ -737,29 +804,32 @@ export default function Home() {
   );
   const locationPreviewCity = serviceRequest.city.trim();
   const locationPreviewState = serviceRequest.state.trim().toUpperCase();
-  const hasLocationPreviewInput = Boolean(locationPreviewCity || locationPreviewState);
+  const locationPreviewNeighborhood = serviceRequest.neighborhood.trim();
+  const locationPreviewZip = serviceRequest.zipCode.trim();
+  const locationPreviewZipDigits = onlyDigits(locationPreviewZip);
+  const hasLocationPreviewInput = Boolean(
+    locationPreviewCity.length >= MIN_LOCATION_QUERY_LENGTH ||
+      locationPreviewState.length >= MIN_LOCATION_QUERY_LENGTH ||
+      locationPreviewNeighborhood.length >= MIN_LOCATION_QUERY_LENGTH ||
+      locationPreviewZipDigits.length >= 3
+  );
   const locationOptions = useMemo(() => {
-    const cityFilter = normalizeText(locationPreviewCity);
-    const stateFilter = normalizeText(locationPreviewState);
-    const options = buildLocationOptions(directory.installers);
-
-    if (!cityFilter && !stateFilter) {
-      return options.slice(0, 6);
-    }
-
-    return options
-      .filter((option) => {
-        const city = normalizeText(option.city);
-        const state = normalizeText(option.state);
-        const label = normalizeText(`${option.city} ${option.state}`);
-
-        return (
-          (!cityFilter || city.includes(cityFilter) || label.includes(cityFilter)) &&
-          (!stateFilter || state.startsWith(stateFilter) || label.includes(stateFilter))
-        );
-      })
-      .slice(0, 6);
-  }, [directory.installers, locationPreviewCity, locationPreviewState]);
+    return buildLocationOptions({
+      cities: brazilianCities,
+      installers: directory.installers,
+      cityQuery: locationPreviewCity,
+      stateQuery: locationPreviewState,
+      neighborhoodQuery: locationPreviewNeighborhood,
+      zipQuery: locationPreviewZip,
+    });
+  }, [
+    brazilianCities,
+    directory.installers,
+    locationPreviewCity,
+    locationPreviewNeighborhood,
+    locationPreviewState,
+    locationPreviewZip,
+  ]);
   const selectedInterest = useMemo(
     () => requestInterests.find((interest) => interest.selected) || null,
     [requestInterests]
@@ -978,8 +1048,114 @@ export default function Home() {
     };
   }, [directory.installers.length, filters, hasActiveFilters, hasGuidedRequest, loading]);
 
+  useEffect(() => {
+    if (!hasLocationPreviewInput || brazilianCities.length > 0) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadBrazilianCities = async () => {
+      setLoadingLocations(true);
+      setLocationLoadError('');
+
+      try {
+        const response = await fetch(BRAZILIAN_CITIES_API_URL);
+        if (!response.ok) {
+          throw new Error('Erro ao carregar municipios.');
+        }
+
+        const data = await response.json();
+        const cities = (Array.isArray(data) ? data : [])
+          .map(normalizeBrazilianCity)
+          .filter(Boolean);
+
+        if (!cancelled) {
+          setBrazilianCities(cities);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setLocationLoadError('Nao foi possivel carregar todos os municipios agora.');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingLocations(false);
+        }
+      }
+    };
+
+    loadBrazilianCities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [brazilianCities.length, hasLocationPreviewInput]);
+
+  useEffect(() => {
+    if (locationPreviewZipDigits.length !== 8) {
+      setZipLookupStatus('idle');
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const lookupZipCode = async () => {
+      setZipLookupStatus('loading');
+
+      try {
+        const response = await fetch(`${VIA_CEP_API_URL}/${locationPreviewZipDigits}/json/`);
+        if (!response.ok) {
+          throw new Error('CEP indisponivel.');
+        }
+
+        const data = await response.json();
+        if (data?.erro) {
+          throw new Error('CEP nao encontrado.');
+        }
+
+        if (!cancelled) {
+          setServiceRequest((current) => ({
+            ...current,
+            zipCode: data.cep || current.zipCode,
+            neighborhood: current.neighborhood || data.bairro || '',
+            city: current.city || data.localidade || '',
+            state: current.state || data.uf || '',
+            addressReference:
+              current.addressReference ||
+              [data.logradouro, data.complemento].filter(Boolean).join(', '),
+          }));
+          setZipLookupStatus('resolved');
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setZipLookupStatus('error');
+        }
+      }
+    };
+
+    lookupZipCode();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [locationPreviewZipDigits]);
+
   const updateServiceRequest = (field, value) => {
     setServiceRequest((current) => ({ ...current, [field]: value }));
+  };
+
+  const updateLocationField = (field, value) => {
+    if (field === 'zipCode') {
+      updateServiceRequest(field, formatZipCode(value));
+      return;
+    }
+
+    if (field === 'state') {
+      updateServiceRequest(field, String(value || '').toUpperCase().slice(0, 2));
+      return;
+    }
+
+    updateServiceRequest(field, value);
   };
 
   const updateRequestContact = (field, value) => {
@@ -991,6 +1167,7 @@ export default function Home() {
       ...current,
       city: location.city,
       state: location.state,
+      neighborhood: location.neighborhood || current.neighborhood,
     }));
   };
 
@@ -1698,7 +1875,7 @@ export default function Home() {
                   <label className="client-app-request-field">
                     <span>Cidade</span>
                     <input
-                      onChange={(event) => updateServiceRequest('city', event.target.value)}
+                      onChange={(event) => updateLocationField('city', event.target.value)}
                       placeholder="Ex.: Sao Paulo"
                       value={serviceRequest.city}
                     />
@@ -1707,7 +1884,7 @@ export default function Home() {
                     <span>Estado</span>
                     <input
                       maxLength="2"
-                      onChange={(event) => updateServiceRequest('state', event.target.value)}
+                      onChange={(event) => updateLocationField('state', event.target.value)}
                       placeholder="SP"
                       value={serviceRequest.state}
                     />
@@ -1721,7 +1898,7 @@ export default function Home() {
                   <label className="client-app-request-field">
                     <span>Bairro</span>
                     <input
-                      onChange={(event) => updateServiceRequest('neighborhood', event.target.value)}
+                      onChange={(event) => updateLocationField('neighborhood', event.target.value)}
                       placeholder="Ex.: Cambui"
                       value={serviceRequest.neighborhood}
                     />
@@ -1730,7 +1907,7 @@ export default function Home() {
                     <span>CEP opcional</span>
                     <input
                       inputMode="numeric"
-                      onChange={(event) => updateServiceRequest('zipCode', event.target.value)}
+                      onChange={(event) => updateLocationField('zipCode', event.target.value)}
                       placeholder="Ex.: 13000-000"
                       value={serviceRequest.zipCode}
                     />
@@ -1745,18 +1922,21 @@ export default function Home() {
                   </label>
                 </div>
 
+                {hasLocationPreviewInput ? (
                 <div className="client-app-location-preview" aria-live="polite">
                   <div className="client-app-location-preview-head">
                     <div>
                       <strong>Locais sugeridos</strong>
                       <span>
-                        {hasLocationPreviewInput
-                          ? 'Escolha uma cidade e estado para preencher os campos.'
-                          : 'Selecione um local rapido ou digite sua cidade.'}
+                        {zipLookupStatus === 'loading'
+                          ? 'Buscando bairro, cidade e estado pelo CEP.'
+                          : locationPreviewNeighborhood
+                            ? 'O bairro digitado vai junto com a cidade escolhida.'
+                            : 'Escolha uma cidade e estado para preencher os campos.'}
                       </span>
                     </div>
                     <span className="client-app-location-preview-count">
-                      {locationOptions.length} loca{locationOptions.length === 1 ? 'l' : 'is'}
+                      {loadingLocations ? '...' : `${locationOptions.length} loca${locationOptions.length === 1 ? 'l' : 'is'}`}
                     </span>
                   </div>
 
@@ -1773,8 +1953,8 @@ export default function Home() {
                             <AppIcon name="map-pin" />
                           </span>
                           <span className="client-app-location-preview-copy">
-                            <strong>{location.city}</strong>
-                            <span>{location.state}</span>
+                            <strong>{location.neighborhood ? `${location.neighborhood} - ${location.city}` : location.city}</strong>
+                            <span>{[location.state, location.region].filter(Boolean).join(' - ')}</span>
                           </span>
                           <span className="client-app-location-use">Usar</span>
                         </button>
@@ -1782,10 +1962,16 @@ export default function Home() {
                     </div>
                   ) : (
                     <p className="client-app-location-preview-empty">
-                      Nenhum local encontrado. Digite a cidade e o estado manualmente ou use sua localizacao.
+                      {loadingLocations
+                        ? 'Carregando municipios do Brasil...'
+                        : locationLoadError ||
+                          (locationPreviewNeighborhood && !locationPreviewCity && !locationPreviewState && locationPreviewZipDigits.length < 3
+                            ? 'Digite tambem a cidade, estado ou CEP para localizar esse bairro.'
+                            : 'Digite cidade, estado ou CEP para encontrar locais do Brasil inteiro.')}
                     </p>
                   )}
                 </div>
+                ) : null}
               </div>
             ) : null}
 
