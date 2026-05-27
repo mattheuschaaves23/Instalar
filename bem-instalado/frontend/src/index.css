@@ -11263,7 +11263,6 @@ body {
 }
 
 .client-app-topbar,
-.client-app-hero,
 .client-app-request-card,
 .client-app-request-receipt,
 .client-app-search-card,
@@ -11376,32 +11375,6 @@ body {
   color: var(--gold);
 }
 
-.client-app-hero {
-  position: relative;
-  overflow: hidden;
-  border-radius: 34px;
-  padding: 1.45rem 1.4rem 1.25rem;
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) 280px;
-  gap: 1.2rem;
-  align-items: center;
-}
-
-.client-app-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 70% 30%, rgba(var(--site-accent-rgb), 0.18), transparent 26%),
-    linear-gradient(90deg, rgba(11, 9, 8, 0.9) 0%, rgba(11, 9, 8, 0.66) 45%, rgba(var(--site-accent-rgb), 0.04) 100%);
-  pointer-events: none;
-}
-
-.client-app-hero > * {
-  position: relative;
-  z-index: 1;
-}
-
 .client-app-kicker {
   margin: 0;
   font-size: 0.76rem;
@@ -11410,102 +11383,8 @@ body {
   color: var(--gold-strong);
 }
 
-.client-app-hero-copy h1 {
-  margin: 0.55rem 0 0;
-  font-family: 'Poppins', 'Segoe UI', sans-serif;
-  font-size: clamp(2.2rem, 4vw, 3.9rem);
-  line-height: 1.04;
-  letter-spacing: -0.05em;
-  color: #fffdf7;
-}
-
-.client-app-hero-copy h1 span {
-  color: var(--gold);
-}
-
-.client-app-hero-copy p {
-  margin: 0.85rem 0 0;
-  font-size: 1.05rem;
-  line-height: 1.5;
-  color: rgba(255, 246, 232, 0.76);
-}
-
-.client-app-hero-visual {
-  position: relative;
-  min-height: 190px;
-}
-
-.client-app-roll-shadow,
-.client-app-roll-sheet,
-.client-app-roll-core {
-  position: absolute;
-}
-
-.client-app-roll-shadow {
-  right: 0.6rem;
-  bottom: 1.6rem;
-  width: 12rem;
-  height: 3rem;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(var(--site-accent-rgb), 0.12), transparent 72%);
-  filter: blur(12px);
-}
-
-.client-app-roll-sheet {
-  right: 1.1rem;
-  bottom: 2rem;
-  width: 12rem;
-  height: 5rem;
-  border-radius: 2.4rem;
-  background:
-    linear-gradient(180deg, var(--site-accent-strong), var(--site-accent-strong)),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.05), transparent);
-  transform: rotate(-10deg);
-  box-shadow: inset -14px -12px 24px rgba(0, 0, 0, 0.07);
-}
-
-.client-app-roll-core {
-  right: 1.2rem;
-  bottom: 3.1rem;
-  width: 3.1rem;
-  height: 3.1rem;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at center, var(--site-accent) 0 22%, var(--site-accent-strong) 23% 55%, var(--site-accent) 56% 100%);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
-}
-
-.client-app-leaf {
-  position: absolute;
-  bottom: 3rem;
-  width: 1rem;
-  height: 3.5rem;
-  background: linear-gradient(180deg, #95b07a, #4a6240);
-  border-radius: 999px 999px 0 999px;
-  transform-origin: bottom center;
-}
-
-.client-app-leaf::after {
-  content: '';
-  position: absolute;
-  inset: 0.1rem 0.42rem;
-  background: rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-}
-
-.client-app-leaf--one {
-  right: 10.7rem;
-  transform: rotate(-16deg);
-}
-
-.client-app-leaf--two {
-  right: 9.3rem;
-  height: 3rem;
-  transform: rotate(14deg);
-}
-
 .client-app-request-card {
-  margin-top: -0.3rem;
+  margin-top: 0;
   border-radius: 30px;
   padding: 1rem;
   display: grid;
@@ -13010,10 +12889,6 @@ body {
     width: min(100%, calc(100% - 0.9rem));
   }
 
-  .client-app-hero {
-    grid-template-columns: 1fr;
-  }
-
   .client-app-request-head,
   .client-app-request-location,
   .client-app-request-summary,
@@ -13028,10 +12903,6 @@ body {
 
   .client-app-photo-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .client-app-hero-visual {
-    min-height: 150px;
   }
 
   .client-app-search-main {
@@ -13078,48 +12949,6 @@ body {
     display: none;
   }
 
-  .client-app-hero {
-    padding: 1.1rem 1rem 1rem;
-    border-radius: 28px;
-    gap: 0.8rem;
-  }
-
-  .client-app-hero-copy h1 {
-    font-size: clamp(2rem, 10vw, 3rem);
-    max-width: 9.5ch;
-  }
-
-  .client-app-hero-copy p {
-    font-size: 0.98rem;
-  }
-
-  .client-app-hero-visual {
-    min-height: 120px;
-  }
-
-  .client-app-roll-sheet {
-    width: 9.1rem;
-    height: 4rem;
-    bottom: 1.15rem;
-  }
-
-  .client-app-roll-core {
-    width: 2.5rem;
-    height: 2.5rem;
-    bottom: 2rem;
-    right: 1rem;
-  }
-
-  .client-app-leaf--one {
-    right: 7.9rem;
-    bottom: 2rem;
-  }
-
-  .client-app-leaf--two {
-    right: 6.8rem;
-    bottom: 2.05rem;
-  }
-
   .client-app-search-card {
     margin-top: -0.2rem;
     padding: 0.85rem;
@@ -13127,7 +12956,7 @@ body {
   }
 
   .client-app-request-card {
-    margin-top: -0.2rem;
+    margin-top: 0;
     padding: 0.85rem;
     border-radius: 24px;
   }
@@ -13453,10 +13282,6 @@ body {
     width: 3rem;
     height: 3rem;
     border-radius: 14px;
-  }
-
-  .client-app-hero-copy h1 {
-    max-width: 8.7ch;
   }
 
   .client-app-search-main {

@@ -1167,26 +1167,6 @@ export default function Home() {
           </div>
         </header>
 
-        <section className="client-app-hero fade-up">
-          <div className="client-app-hero-copy">
-            <p className="client-app-kicker">Area do cliente</p>
-            <h1>
-              Encontre instaladores
-              <br />
-              de <span>papel de parede</span>
-            </h1>
-            <p>Profissionais qualificados proximos de voce.</p>
-          </div>
-
-          <div className="client-app-hero-visual" aria-hidden="true">
-            <div className="client-app-roll-shadow" />
-            <div className="client-app-roll-sheet" />
-            <div className="client-app-roll-core" />
-            <span className="client-app-leaf client-app-leaf--one" />
-            <span className="client-app-leaf client-app-leaf--two" />
-          </div>
-        </section>
-
         <section className="client-app-request-card fade-up" id="busca">
           <div className="client-app-request-head">
             <div>
