@@ -11569,15 +11569,19 @@ body {
 
 .client-app-detail-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.74fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .client-app-detail-section {
   min-width: 0;
   display: grid;
   gap: 0.78rem;
+  align-content: start;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.024);
+  padding: 0.85rem;
 }
 
 .client-app-detail-titleline {
@@ -11614,21 +11618,23 @@ body {
 }
 
 .client-app-room-stream {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.46rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.52rem;
 }
 
 .client-app-room-stream button {
-  min-height: 2.55rem;
-  border: 0;
-  border-radius: 999px;
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.1);
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.045);
   color: rgba(255, 246, 232, 0.74);
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.45rem;
-  padding: 0.45rem 0.8rem 0.45rem 0.52rem;
+  padding: 0.5rem 0.68rem;
   font: inherit;
   font-size: 0.92rem;
   font-weight: 750;
@@ -11648,8 +11654,18 @@ body {
   justify-content: center;
   background: rgba(0, 0, 0, 0.22);
   color: var(--gold);
-  font-size: 0.76rem;
+  font-size: 0;
   font-weight: 900;
+}
+
+.client-app-room-stream button span::after {
+  content: '+';
+  font-size: 0.76rem;
+}
+
+.client-app-room-stream button.is-selected span::after {
+  content: 'OK';
+  font-size: 0.58rem;
 }
 
 .client-app-room-stream button:hover,
@@ -11664,20 +11680,19 @@ body {
 
 .client-app-material-list {
   display: grid;
-  gap: 0.16rem;
+  gap: 0.52rem;
 }
 
 .client-app-material-list button {
-  min-height: 2.65rem;
-  border: 0;
-  border-radius: 0;
-  border-bottom: 1px solid rgba(var(--site-accent-rgb), 0.11);
-  background: transparent;
+  min-height: 3rem;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
   color: rgba(255, 246, 232, 0.7);
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.25rem 0;
+  padding: 0.5rem 0.68rem;
   text-align: left;
   font: inherit;
   font-weight: 700;
@@ -11696,16 +11711,100 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
+  font-size: 0;
   font-weight: 900;
 }
 
+.client-app-material-list button.is-selected span::after {
+  content: 'OK';
+  font-size: 0.58rem;
+}
+
 .client-app-material-list button.is-selected {
+  border-color: rgba(var(--site-accent-rgb), 0.26);
+  background: rgba(var(--site-accent-rgb), 0.1);
   color: #fff8ea;
 }
 
 .client-app-material-list button.is-selected span {
   background: rgba(var(--site-accent-rgb), 0.18);
+}
+
+.client-app-measure-section {
+  gap: 0.85rem;
+}
+
+.client-app-measure-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.client-app-measure-options button {
+  min-width: 0;
+  min-height: 5.15rem;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.034);
+  color: rgba(255, 246, 232, 0.72);
+  display: grid;
+  align-content: start;
+  gap: 0.32rem;
+  padding: 0.75rem;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.client-app-measure-options button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--site-accent-rgb), 0.28);
+}
+
+.client-app-measure-options button.is-selected {
+  border-color: rgba(var(--site-accent-rgb), 0.38);
+  background:
+    linear-gradient(135deg, rgba(var(--site-accent-rgb), 0.17), rgba(var(--site-accent-rgb), 0.075)),
+    rgba(255, 255, 255, 0.03);
+  color: #fff8ea;
+}
+
+.client-app-measure-options strong {
+  font-size: 0.92rem;
+  line-height: 1.2;
+  color: inherit;
+}
+
+.client-app-measure-options span {
+  color: rgba(255, 246, 232, 0.58);
+  font-size: 0.78rem;
+  line-height: 1.36;
+}
+
+.client-app-measure-note {
+  min-height: 4.75rem;
+  border-radius: 18px;
+  background: rgba(var(--site-accent-rgb), 0.075);
+  display: grid;
+  align-content: center;
+  gap: 0.28rem;
+  padding: 0.85rem 0.95rem;
+}
+
+.client-app-measure-note strong {
+  color: #fff8ea;
+  font-size: 0.94rem;
+}
+
+.client-app-measure-note span {
+  color: rgba(255, 246, 232, 0.66);
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
 
 .client-app-detail-quick-fields {
@@ -13014,6 +13113,7 @@ body {
   }
 
   .client-app-room-stream {
+    grid-template-columns: 1fr;
     gap: 0.38rem;
   }
 
@@ -13021,6 +13121,21 @@ body {
     min-height: 2.35rem;
     padding-right: 0.66rem;
     font-size: 0.84rem;
+  }
+
+  .client-app-measure-options {
+    grid-template-columns: 1fr;
+    gap: 0.48rem;
+  }
+
+  .client-app-measure-options button {
+    min-height: 4.15rem;
+    padding: 0.68rem 0.72rem;
+  }
+
+  .client-app-measure-note {
+    min-height: 4.25rem;
+    padding: 0.78rem;
   }
 
   .client-app-location-preview {

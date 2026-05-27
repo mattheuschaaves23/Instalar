@@ -75,6 +75,23 @@ const MATERIAL_STATUS_OPTIONS = [
   { value: 'need-help', label: 'Preciso de ajuda para comprar' },
   { value: 'not-sure', label: 'Ainda nao sei o material' },
 ];
+const MEASUREMENT_OPTIONS = [
+  {
+    value: 'unknown',
+    label: 'Nao sei as medidas',
+    description: 'O profissional confirma antes do orcamento final.',
+  },
+  {
+    value: 'known',
+    label: 'Tenho as medidas',
+    description: 'Informe tamanho da parede ou quantidade de rolos.',
+  },
+  {
+    value: 'visit',
+    label: 'Quero visita tecnica',
+    description: 'Ideal quando precisa medir tudo no local.',
+  },
+];
 const URGENCY_OPTIONS = [
   { value: 'urgent', label: 'Urgente' },
   { value: 'week', label: 'Esta semana' },
@@ -103,6 +120,7 @@ const INITIAL_SERVICE_REQUEST = {
   room: '',
   rooms: [],
   materialStatus: 'bought',
+  measurementStatus: 'unknown',
   wallSize: '',
   rollCount: '',
   urgency: 'days',
@@ -346,6 +364,8 @@ function buildClientRequestSnapshot(request) {
   const serviceOption = getServiceRequestOption(request.service);
   const regionState = String(request.state || '').trim().toUpperCase();
   const rooms = getRequestRooms(request);
+  const measurementStatus = request.measurementStatus || 'unknown';
+  const measurementDetail = getMeasurementSummary(request);
 
   return {
     service: request.service,
@@ -357,6 +377,9 @@ function buildClientRequestSnapshot(request) {
     state: regionState,
     materialStatus: request.materialStatus,
     materialLabel: optionLabel(MATERIAL_STATUS_OPTIONS, request.materialStatus, 'Material nao informado'),
+    measurementStatus,
+    measurementLabel: optionLabel(MEASUREMENT_OPTIONS, measurementStatus, 'Medidas a confirmar'),
+    measurementDetail,
     wallSize: String(request.wallSize || '').trim(),
     rollCount: String(request.rollCount || '').trim(),
     budget: request.budget,
@@ -369,6 +392,22 @@ function buildClientRequestSnapshot(request) {
   };
 }
 
+function getMeasurementSummary(request) {
+  const measurementStatus = request.measurementStatus || 'unknown';
+  const wallSize = String(request.wallSize || '').trim();
+  const rollCount = String(request.rollCount || '').trim();
+
+  if (measurementStatus === 'visit') {
+    return 'Visita tecnica solicitada';
+  }
+
+  if (measurementStatus === 'known') {
+    return [wallSize, rollCount].filter(Boolean).join(' / ') || 'Medidas informadas depois';
+  }
+
+  return 'Medidas a confirmar pelo profissional';
+}
+
 function getRequestCompleteness(request) {
   const filled = [
     request.service,
@@ -378,7 +417,7 @@ function getRequestCompleteness(request) {
     request.urgency,
     request.budget,
     request.contactPreference,
-    request.wallSize || request.rollCount,
+    request.measurementStatus || request.wallSize || request.rollCount,
     String(request.details || '').trim().length >= 12,
   ].filter(Boolean).length;
 
@@ -919,6 +958,14 @@ export default function Home() {
     setServiceRequest((current) => ({ ...current, [field]: value }));
   };
 
+  const updateMeasurementStatus = (value) => {
+    setServiceRequest((current) => ({
+      ...current,
+      measurementStatus: value,
+      ...(value === 'known' ? {} : { wallSize: '', rollCount: '' }),
+    }));
+  };
+
   const toggleRequestRoom = (room) => {
     setServiceRequest((current) => {
       const currentRooms = getRequestRooms(current);
@@ -1232,8 +1279,8 @@ export default function Home() {
               <div className="client-app-request-panel client-app-request-panel--details">
                 <div className="client-app-detail-heading">
                   <div>
-                    <h3>Ambientes e material</h3>
-                    <p>Marque todos os lugares da casa. Se for sala e cozinha, selecione os dois.</p>
+                    <h3>Ambientes, material e medidas</h3>
+                    <p>Marque todos os lugares da casa e escolha se precisa de visita para medir.</p>
                   </div>
                   <span>{selectedRooms.length || 0} ambiente{selectedRooms.length === 1 ? '' : 's'}</span>
                 </div>
@@ -1290,31 +1337,70 @@ export default function Home() {
                   </section>
                 </div>
 
-                <div className="client-app-detail-quick-fields">
-                  <label className="client-app-request-field client-app-request-field--line">
-                    <span>Medida aproximada</span>
-                    <input
-                      onChange={(event) => updateServiceRequest('wallSize', event.target.value)}
-                      placeholder="Ex.: sala 3m x 2,6m; cozinha 2m"
-                      value={serviceRequest.wallSize}
-                    />
-                  </label>
-                  <label className="client-app-request-field client-app-request-field--line">
-                    <span>Quantidade de rolos</span>
-                    <input
-                      inputMode="numeric"
-                      onChange={(event) => updateServiceRequest('rollCount', event.target.value)}
-                      placeholder="Ex.: 4 rolos no total"
-                      value={serviceRequest.rollCount}
-                    />
-                  </label>
-                </div>
+                <section className="client-app-detail-section client-app-measure-section" aria-labelledby="measure-heading">
+                  <div className="client-app-detail-titleline">
+                    <span>3</span>
+                    <div>
+                      <strong id="measure-heading">Medidas ou visita</strong>
+                      <small>O cliente pode seguir mesmo sem saber o tamanho exato.</small>
+                    </div>
+                  </div>
+
+                  <div className="client-app-measure-options" role="group" aria-label="Situacao das medidas">
+                    {MEASUREMENT_OPTIONS.map((item) => (
+                      <button
+                        className={serviceRequest.measurementStatus === item.value ? 'is-selected' : ''}
+                        key={item.value}
+                        onClick={() => updateMeasurementStatus(item.value)}
+                        type="button"
+                      >
+                        <strong>{item.label}</strong>
+                        <span>{item.description}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {serviceRequest.measurementStatus === 'known' ? (
+                    <div className="client-app-detail-quick-fields">
+                      <label className="client-app-request-field client-app-request-field--line">
+                        <span>Medida aproximada</span>
+                        <input
+                          onChange={(event) => updateServiceRequest('wallSize', event.target.value)}
+                          placeholder="Ex.: sala 3m x 2,6m; cozinha 2m"
+                          value={serviceRequest.wallSize}
+                        />
+                      </label>
+                      <label className="client-app-request-field client-app-request-field--line">
+                        <span>Quantidade de rolos</span>
+                        <input
+                          inputMode="numeric"
+                          onChange={(event) => updateServiceRequest('rollCount', event.target.value)}
+                          placeholder="Ex.: 4 rolos no total"
+                          value={serviceRequest.rollCount}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="client-app-measure-note">
+                      <strong>
+                        {serviceRequest.measurementStatus === 'visit'
+                          ? 'Visita tecnica marcada como preferencia.'
+                          : 'Medidas ficam para confirmar depois.'}
+                      </strong>
+                      <span>
+                        {serviceRequest.measurementStatus === 'visit'
+                          ? 'Os profissionais vao ver que precisam combinar uma visita antes do orcamento final.'
+                          : 'O instalador pode orientar a quantidade de papel e conferir as paredes pelo atendimento.'}
+                      </span>
+                    </div>
+                  )}
+                </section>
 
                 <label className="client-app-request-field client-app-request-field--line client-app-detail-note">
                   <span>Observacao rapida</span>
                   <textarea
                     onChange={(event) => updateServiceRequest('details', event.target.value)}
-                    placeholder="Ex.: sala e cozinha, parede lisa, material ja comprado"
+                    placeholder="Ex.: sala e cozinha, parede lisa, material ja comprado, precisa medir no local"
                     rows="3"
                     value={serviceRequest.details}
                   />
@@ -1495,6 +1581,7 @@ export default function Home() {
                   </span>
                   <span>{selectedUrgency?.label || 'Prazo flexivel'}</span>
                   <span>{selectedMaterialStatus?.label || 'Material nao informado'}</span>
+                  <span>{requestSnapshot.measurementDetail}</span>
                   <span>{selectedBudget?.label || 'Orcamento a combinar'}</span>
                   <span>{selectedContactPreference?.label || 'WhatsApp'}</span>
                   <span>{serviceRequest.photos.length ? `${serviceRequest.photos.length} foto(s)` : 'Sem fotos'}</span>
@@ -1539,11 +1626,7 @@ export default function Home() {
                 <span>{requestSnapshot.materialLabel}</span>
                 <span>{requestSnapshot.urgencyLabel}</span>
                 <span>{requestSnapshot.budgetLabel}</span>
-                <span>
-                  {requestSnapshot.wallSize || requestSnapshot.rollCount
-                    ? [requestSnapshot.wallSize, requestSnapshot.rollCount].filter(Boolean).join(' / ')
-                    : 'Medida a confirmar'}
-                </span>
+                <span>{requestSnapshot.measurementDetail}</span>
               </div>
               <div className="client-app-request-receipt-actions">
                 <button className="client-app-ghost-button" onClick={() => setRequestStep(1)} type="button">
