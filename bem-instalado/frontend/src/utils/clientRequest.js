@@ -22,6 +22,8 @@ export function writeStoredClientRequest(request) {
   const payload = {
     version: 1,
     savedAt: new Date().toISOString(),
+    placeType: cleanText(request.placeType, 40),
+    placeLabel: cleanText(request.placeLabel, 80),
     service: cleanText(request.service, 40),
     serviceLabel: cleanText(request.serviceLabel, 80),
     room: cleanText(request.room, 140),
@@ -79,6 +81,7 @@ export function formatClientRequestLines(request) {
 
   const region = [request.neighborhood, request.city, request.state].filter(Boolean).join(' - ');
   const lines = [
+    ['Local', request.placeLabel],
     ['Servico', request.serviceLabel],
     ['Ambiente', request.room],
     ['Regiao', region],

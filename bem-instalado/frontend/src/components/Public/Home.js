@@ -24,7 +24,7 @@ const CATEGORY_OPTIONS = [
   { value: 'commercial', label: 'Comercial', keywords: ['comercial', 'empresa', 'escritorio', 'escritório', 'loja'] },
   { value: 'textured', label: 'Texturizados', keywords: ['textured', 'textura', 'texturizado', 'texturizados'] },
   { value: 'vinyl', label: 'Vinilicos', keywords: ['vinil', 'vinílico', 'vinilico', 'vinilicos', 'vinílicos'] },
-  { value: 'kids', label: 'Infantil', keywords: ['infantil', 'crianca', 'criança', 'kids', 'bebê', 'bebe'] },
+  { value: 'adhesive', label: 'Adesivos', keywords: ['adesivo', 'adesivos', 'autocolante', 'adesivacao'] },
 ];
 
 const QUICK_FILTER_OPTIONS = [
@@ -34,11 +34,11 @@ const QUICK_FILTER_OPTIONS = [
   { value: 'featured', label: 'Destaques' },
 ];
 
-const SERVICE_REQUEST_OPTIONS = [
+const PLACE_TYPE_OPTIONS = [
   {
     value: 'residential',
     title: 'Casa ou apartamento',
-    description: 'Instalacao em sala, quarto, cozinha ou corredor.',
+    description: 'Residencia, apartamento, sobrado ou area interna da casa.',
     icon: 'home',
   },
   {
@@ -47,6 +47,15 @@ const SERVICE_REQUEST_OPTIONS = [
     description: 'Ambientes comerciais, recepcao, vitrine ou escritorio.',
     icon: 'building',
   },
+  {
+    value: 'other',
+    title: 'Outro local',
+    description: 'Condominio, consultorio, area comum ou outro espaco.',
+    icon: 'map-pin',
+  },
+];
+
+const PAPER_TYPE_OPTIONS = [
   {
     value: 'vinyl',
     title: 'Papel vinilico',
@@ -60,15 +69,15 @@ const SERVICE_REQUEST_OPTIONS = [
     icon: 'texture',
   },
   {
-    value: 'kids',
-    title: 'Infantil',
-    description: 'Quarto de bebe, crianca, brinquedoteca ou tema infantil.',
-    icon: 'smile',
+    value: 'adhesive',
+    title: 'Adesivo',
+    description: 'Material autocolante, adesivo decorativo ou envelopamento leve.',
+    icon: 'sticker',
   },
   {
     value: 'all',
-    title: 'Ainda estou decidindo',
-    description: 'Quero receber interessados e conversar sobre possibilidades.',
+    title: 'Ainda nao sei',
+    description: 'Quero orientacao dos instaladores interessados.',
     icon: 'users',
   },
 ];
@@ -118,7 +127,12 @@ const DETAIL_STEPS = [
   { value: 'material', label: 'Material' },
   { value: 'measurements', label: 'Medidas' },
 ];
+const SERVICE_INTRO_STEPS = [
+  { value: 'place', label: 'Local' },
+  { value: 'paper', label: 'Tipo do papel' },
+];
 const INITIAL_SERVICE_REQUEST = {
+  placeType: '',
   service: '',
   room: '',
   rooms: [],
@@ -144,6 +158,7 @@ const INITIAL_REQUEST_CONTACT = {
 };
 const LAST_REQUEST_STEP = REQUEST_STEPS.length - 1;
 const LAST_DETAIL_STEP = DETAIL_STEPS.length - 1;
+const LAST_SERVICE_INTRO_STEP = SERVICE_INTRO_STEPS.length - 1;
 
 function AppIcon({ name, className = '' }) {
   const commonProps = {
@@ -239,6 +254,14 @@ function AppIcon({ name, className = '' }) {
           <path d="M5 7.5A1.5 1.5 0 0 1 6.5 6H16a2 2 0 0 1 2 2v2H9a2 2 0 0 0-2 2v6" />
           <path d="M9 18h4" />
           <path d="M13 18v2.5" />
+        </svg>
+      );
+    case 'sticker':
+      return (
+        <svg {...commonProps}>
+          <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H18a1 1 0 0 1 1 1v10.5A6.5 6.5 0 0 1 12.5 21h-5A2.5 2.5 0 0 1 5 18.5v-13Z" />
+          <path d="M12 21v-4.5A2.5 2.5 0 0 1 14.5 14H19" />
+          <path d="M8.5 8h7M8.5 11h4" />
         </svg>
       );
     case 'smile':
@@ -419,6 +442,7 @@ function getRequestRooms(request) {
 }
 
 function buildClientRequestSnapshot(request) {
+  const placeOption = getPlaceTypeOption(request.placeType);
   const serviceOption = getServiceRequestOption(request.service);
   const regionState = String(request.state || '').trim().toUpperCase();
   const rooms = getRequestRooms(request);
@@ -426,6 +450,8 @@ function buildClientRequestSnapshot(request) {
   const measurementDetail = getMeasurementSummary(request);
 
   return {
+    placeType: request.placeType,
+    placeLabel: placeOption?.title || '',
     service: request.service,
     serviceLabel: serviceOption?.title || '',
     room: rooms.join(', '),
@@ -471,6 +497,7 @@ function getMeasurementSummary(request) {
 
 function getRequestCompleteness(request) {
   const filled = [
+    request.placeType,
     request.service,
     getRequestRooms(request).length > 0,
     request.materialStatus,
@@ -482,7 +509,7 @@ function getRequestCompleteness(request) {
     String(request.details || '').trim().length >= 12,
   ].filter(Boolean).length;
 
-  return Math.round((filled / 9) * 100);
+  return Math.round((filled / 10) * 100);
 }
 
 function getInstallerMatchScore(installer, request) {
@@ -722,7 +749,11 @@ function buildLocationOptions({ cities, installers, cityQuery, stateQuery, neigh
 }
 
 function getServiceRequestOption(value) {
-  return SERVICE_REQUEST_OPTIONS.find((item) => item.value === value) || null;
+  return PAPER_TYPE_OPTIONS.find((item) => item.value === value) || null;
+}
+
+function getPlaceTypeOption(value) {
+  return PLACE_TYPE_OPTIONS.find((item) => item.value === value) || null;
 }
 
 export default function Home() {
@@ -744,6 +775,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('rating');
   const [favorites, setFavorites] = useState({});
   const [requestStep, setRequestStep] = useState(0);
+  const [serviceIntroStep, setServiceIntroStep] = useState(0);
   const [detailStep, setDetailStep] = useState(0);
   const [serviceRequest, setServiceRequest] = useState(INITIAL_SERVICE_REQUEST);
   const [brazilianCities, setBrazilianCities] = useState([]);
@@ -762,6 +794,10 @@ export default function Home() {
     label: '',
     items: [],
   });
+  const selectedPlaceType = useMemo(
+    () => getPlaceTypeOption(serviceRequest.placeType),
+    [serviceRequest.placeType]
+  );
   const selectedServiceRequest = useMemo(
     () => getServiceRequestOption(serviceRequest.service),
     [serviceRequest.service]
@@ -778,6 +814,7 @@ export default function Home() {
     () => CONTACT_PREFERENCE_OPTIONS.find((item) => item.value === serviceRequest.contactPreference),
     [serviceRequest.contactPreference]
   );
+  const serviceIntroOptions = serviceIntroStep === 0 ? PLACE_TYPE_OPTIONS : PAPER_TYPE_OPTIONS;
   const selectedDetailStep = DETAIL_STEPS[detailStep] || DETAIL_STEPS[0];
   const requestCompleteness = useMemo(
     () => getRequestCompleteness(serviceRequest),
@@ -1256,6 +1293,8 @@ export default function Home() {
         client_name: requestContact.name,
         client_phone: requestContact.phone,
         client_email: requestContact.email,
+        place_type: requestSnapshot.placeType,
+        place_label: requestSnapshot.placeLabel,
         service: requestSnapshot.service,
         service_label: requestSnapshot.serviceLabel,
         rooms: selectedRooms,
@@ -1277,7 +1316,9 @@ export default function Home() {
         address_reference: requestSnapshot.addressReference,
         city: requestSnapshot.city,
         state: requestSnapshot.state,
-        details: requestSnapshot.details,
+        details: [requestSnapshot.placeLabel ? `Local: ${requestSnapshot.placeLabel}` : '', requestSnapshot.details]
+          .filter(Boolean)
+          .join(' | '),
         photo_count: requestSnapshot.photoCount,
         photo_names: requestSnapshot.photoNames,
       });
@@ -1397,8 +1438,13 @@ export default function Home() {
   }, [hasGuidedRequest, serviceRequest]);
 
   const canAdvanceRequest = () => {
-    if (requestStep === 0 && !serviceRequest.service) {
-      toast.error('Escolha o tipo de instalacao para continuar.');
+    if (requestStep === 0 && serviceIntroStep === 0 && !serviceRequest.placeType) {
+      toast.error('Escolha onde o servico sera feito para continuar.');
+      return false;
+    }
+
+    if (requestStep === 0 && serviceIntroStep === 1 && !serviceRequest.service) {
+      toast.error('Escolha o tipo do papel para continuar.');
       return false;
     }
 
@@ -1430,6 +1476,11 @@ export default function Home() {
       return;
     }
 
+    if (requestStep === 0 && serviceIntroStep < LAST_SERVICE_INTRO_STEP) {
+      setServiceIntroStep((current) => Math.min(current + 1, LAST_SERVICE_INTRO_STEP));
+      return;
+    }
+
     if (requestStep === 1 && detailStep < LAST_DETAIL_STEP) {
       setDetailStep((current) => Math.min(current + 1, LAST_DETAIL_STEP));
       return;
@@ -1443,9 +1494,18 @@ export default function Home() {
   };
 
   const handleRequestBack = () => {
+    if (requestStep === 0 && serviceIntroStep > 0) {
+      setServiceIntroStep((current) => Math.max(current - 1, 0));
+      return;
+    }
+
     if (requestStep === 1 && detailStep > 0) {
       setDetailStep((current) => Math.max(current - 1, 0));
       return;
+    }
+
+    if (requestStep === 1) {
+      setServiceIntroStep(LAST_SERVICE_INTRO_STEP);
     }
 
     if (requestStep === 2) {
@@ -1489,9 +1549,17 @@ export default function Home() {
   const handleGuidedSearch = async (event) => {
     event.preventDefault();
 
+    if (!serviceRequest.placeType) {
+      setRequestStep(0);
+      setServiceIntroStep(0);
+      toast.error('Escolha onde o servico sera feito primeiro.');
+      return;
+    }
+
     if (!serviceRequest.service) {
       setRequestStep(0);
-      toast.error('Escolha o tipo de instalacao primeiro.');
+      setServiceIntroStep(1);
+      toast.error('Escolha o tipo do papel primeiro.');
       return;
     }
 
@@ -1529,6 +1597,7 @@ export default function Home() {
     setFilters(nextFilters);
     setServiceRequest(INITIAL_SERVICE_REQUEST);
     setRequestStep(0);
+    setServiceIntroStep(0);
     setDetailStep(0);
     setHasGuidedRequest(false);
     setPublishedRequest(null);
@@ -1608,6 +1677,9 @@ export default function Home() {
                     disabled={index > requestStep}
                     key={step.value}
                     onClick={() => {
+                      if (index === 0 && requestStep !== 0) {
+                        setServiceIntroStep(0);
+                      }
                       if (index === 1 && requestStep < 1) {
                         setDetailStep(0);
                       }
@@ -1638,23 +1710,47 @@ export default function Home() {
           <form className="client-app-request-form" onSubmit={handleGuidedSearch}>
             {requestStep === 0 ? (
               <div className="client-app-request-panel">
-                <h3>Qual servico voce precisa?</h3>
-                <p>Escolha a opcao mais proxima. Ela vai ser usada para priorizar os instaladores certos.</p>
-                <div className="client-app-service-grid">
-                  {SERVICE_REQUEST_OPTIONS.map((item) => (
+                <h3>{serviceIntroStep === 0 ? 'Onde sera instalado?' : 'Qual tipo de papel?'}</h3>
+                <p>
+                  {serviceIntroStep === 0
+                    ? 'Primeiro informe o tipo de local. Depois escolha o material para direcionar os instaladores certos.'
+                    : 'Agora escolha o tipo de papel mais proximo do seu caso.'}
+                </p>
+
+                <div className="client-app-detail-steps client-app-service-steps" aria-label="Subetapas do servico">
+                  {SERVICE_INTRO_STEPS.map((step, index) => (
                     <button
-                      className={serviceRequest.service === item.value ? 'is-selected' : ''}
-                      key={item.value}
-                      onClick={() => updateServiceRequest('service', item.value)}
+                      className={index === serviceIntroStep ? 'is-active' : index < serviceIntroStep ? 'is-done' : ''}
+                      disabled={index === 1 && !serviceRequest.placeType}
+                      key={step.value}
+                      onClick={() => setServiceIntroStep(index)}
                       type="button"
                     >
-                      <span className="client-app-service-icon">
-                        <AppIcon name={item.icon} />
-                      </span>
-                      <strong>{item.title}</strong>
-                      <span>{item.description}</span>
+                      <span>{index + 1}</span>
+                      {step.label}
                     </button>
                   ))}
+                </div>
+
+                <div className="client-app-service-grid">
+                  {serviceIntroOptions.map((item) => {
+                    const selectedValue = serviceIntroStep === 0 ? serviceRequest.placeType : serviceRequest.service;
+
+                    return (
+                      <button
+                        className={selectedValue === item.value ? 'is-selected' : ''}
+                        key={item.value}
+                        onClick={() => updateServiceRequest(serviceIntroStep === 0 ? 'placeType' : 'service', item.value)}
+                        type="button"
+                      >
+                        <span className="client-app-service-icon">
+                          <AppIcon name={item.icon} />
+                        </span>
+                        <strong>{item.title}</strong>
+                        <span>{item.description}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ) : null}
@@ -2018,7 +2114,8 @@ export default function Home() {
                 </div>
 
                 <div className="client-app-request-summary">
-                  <span>{selectedServiceRequest?.title || 'Servico nao escolhido'}</span>
+                  <span>{selectedPlaceType?.title || 'Local nao escolhido'}</span>
+                  <span>{selectedServiceRequest?.title || 'Tipo do papel nao escolhido'}</span>
                   <span>{requestSnapshot.room || 'Ambientes nao informados'}</span>
                   <span>
                     {[serviceRequest.neighborhood, serviceRequest.city, serviceRequest.state.toUpperCase()].filter(Boolean).join(' - ') ||
@@ -2036,7 +2133,7 @@ export default function Home() {
             <div className="client-app-request-actions">
               <button
                 className="client-app-ghost-button"
-                disabled={requestStep === 0}
+                disabled={requestStep === 0 && serviceIntroStep === 0}
                 onClick={handleRequestBack}
                 type="button"
               >
@@ -2044,7 +2141,9 @@ export default function Home() {
               </button>
               {requestStep < LAST_REQUEST_STEP ? (
                 <button className="client-app-search-submit" onClick={handleRequestNext} type="button">
-                  {requestStep === 1 && detailStep < LAST_DETAIL_STEP
+                  {requestStep === 0 && serviceIntroStep < LAST_SERVICE_INTRO_STEP
+                    ? `Continuar para ${SERVICE_INTRO_STEPS[serviceIntroStep + 1].label}`
+                    : requestStep === 1 && detailStep < LAST_DETAIL_STEP
                     ? `Continuar para ${DETAIL_STEPS[detailStep + 1].label}`
                     : 'Continuar'}
                 </button>
@@ -2224,7 +2323,7 @@ export default function Home() {
                                     ? 'texture'
                                     : item.value === 'vinyl'
                                       ? 'roller'
-                                      : 'smile'
+                                      : 'sticker'
                           }
                         />
                       </span>
