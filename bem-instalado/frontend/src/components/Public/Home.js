@@ -97,21 +97,15 @@ const MEASUREMENT_OPTIONS = [
   },
 ];
 const URGENCY_OPTIONS = [
-  { value: 'urgent', label: 'Urgente' },
-  { value: 'week', label: 'Esta semana' },
-  { value: 'days', label: 'Proximos dias' },
-  { value: 'quote', label: 'So quero orcar' },
-];
-const BUDGET_OPTIONS = [
-  { value: 'open', label: 'Quero receber proposta' },
-  { value: 'small', label: 'Ate R$ 300' },
-  { value: 'medium', label: 'R$ 300 a R$ 700' },
-  { value: 'large', label: 'Acima de R$ 700' },
+  { value: 'urgent', label: 'Urgente', description: 'Preciso resolver o quanto antes.' },
+  { value: 'week', label: 'Esta semana', description: 'Quero tentar agendar ainda nesta semana.' },
+  { value: 'days', label: 'Proximos dias', description: 'Tenho alguma flexibilidade de data.' },
+  { value: 'quote', label: 'Ainda estou orcando', description: 'Quero receber interessados e comparar antes.' },
 ];
 const CONTACT_PREFERENCE_OPTIONS = [
-  { value: 'whatsapp', label: 'WhatsApp' },
-  { value: 'phone', label: 'Ligacao' },
-  { value: 'any', label: 'Qualquer contato' },
+  { value: 'whatsapp', label: 'WhatsApp', description: 'Mais rapido para combinar fotos e detalhes.' },
+  { value: 'phone', label: 'Ligacao', description: 'Prefiro conversar por chamada.' },
+  { value: 'any', label: 'Qualquer contato', description: 'Pode ser WhatsApp ou ligacao.' },
 ];
 const REQUEST_STEPS = [
   { value: 'service', label: 'Servico' },
@@ -449,8 +443,8 @@ function buildClientRequestSnapshot(request) {
     measurementDetail,
     wallSize: String(request.wallSize || '').trim(),
     rollCount: String(request.rollCount || '').trim(),
-    budget: request.budget,
-    budgetLabel: optionLabel(BUDGET_OPTIONS, request.budget, 'Orcamento a combinar'),
+    budget: 'open',
+    budgetLabel: 'Receber propostas',
     contactPreference: request.contactPreference,
     contactPreferenceLabel: optionLabel(CONTACT_PREFERENCE_OPTIONS, request.contactPreference, 'WhatsApp'),
     details: String(request.details || '').trim(),
@@ -483,13 +477,12 @@ function getRequestCompleteness(request) {
     request.city || request.state,
     request.neighborhood || request.zipCode,
     request.urgency,
-    request.budget,
     request.contactPreference,
     request.measurementStatus || request.wallSize || request.rollCount,
     String(request.details || '').trim().length >= 12,
   ].filter(Boolean).length;
 
-  return Math.round((filled / 10) * 100);
+  return Math.round((filled / 9) * 100);
 }
 
 function getInstallerMatchScore(installer, request) {
@@ -780,10 +773,6 @@ export default function Home() {
   const selectedMaterialStatus = useMemo(
     () => MATERIAL_STATUS_OPTIONS.find((item) => item.value === serviceRequest.materialStatus),
     [serviceRequest.materialStatus]
-  );
-  const selectedBudget = useMemo(
-    () => BUDGET_OPTIONS.find((item) => item.value === serviceRequest.budget),
-    [serviceRequest.budget]
   );
   const selectedContactPreference = useMemo(
     () => CONTACT_PREFERENCE_OPTIONS.find((item) => item.value === serviceRequest.contactPreference),
@@ -1979,42 +1968,55 @@ export default function Home() {
               <div className="client-app-request-panel">
                 <h3>Revise e publique o pedido</h3>
                 <p>Os instaladores proximos veem a oportunidade e enviam interesse. Depois voce escolhe um.</p>
-                <div className="client-app-chip-grid" role="group" aria-label="Prazo desejado">
-                  {URGENCY_OPTIONS.map((item) => (
-                    <button
-                      className={serviceRequest.urgency === item.value ? 'is-selected' : ''}
-                      key={item.value}
-                      onClick={() => updateServiceRequest('urgency', item.value)}
-                      type="button"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+
+                <div className="client-app-review-layout">
+                  <section className="client-app-review-block">
+                    <div>
+                      <strong>Quando precisa?</strong>
+                      <span>Isso ajuda os instaladores a entenderem a prioridade.</span>
+                    </div>
+                    <div className="client-app-option-list" role="group" aria-label="Prazo desejado">
+                      {URGENCY_OPTIONS.map((item) => (
+                        <button
+                          className={serviceRequest.urgency === item.value ? 'is-selected' : ''}
+                          key={item.value}
+                          onClick={() => updateServiceRequest('urgency', item.value)}
+                          type="button"
+                        >
+                          <span className="client-app-option-dot" aria-hidden="true" />
+                          <span>
+                            <strong>{item.label}</strong>
+                            <small>{item.description}</small>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="client-app-review-block">
+                    <div>
+                      <strong>Como prefere falar?</strong>
+                      <span>O contato completo so fica liberado para o instalador escolhido.</span>
+                    </div>
+                    <div className="client-app-option-list" role="group" aria-label="Preferencia de contato">
+                      {CONTACT_PREFERENCE_OPTIONS.map((item) => (
+                        <button
+                          className={serviceRequest.contactPreference === item.value ? 'is-selected' : ''}
+                          key={item.value}
+                          onClick={() => updateServiceRequest('contactPreference', item.value)}
+                          type="button"
+                        >
+                          <span className="client-app-option-dot" aria-hidden="true" />
+                          <span>
+                            <strong>{item.label}</strong>
+                            <small>{item.description}</small>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                 </div>
-                <div className="client-app-chip-grid" role="group" aria-label="Orcamento estimado">
-                  {BUDGET_OPTIONS.map((item) => (
-                    <button
-                      className={serviceRequest.budget === item.value ? 'is-selected' : ''}
-                      key={item.value}
-                      onClick={() => updateServiceRequest('budget', item.value)}
-                      type="button"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="client-app-chip-grid" role="group" aria-label="Preferencia de contato">
-                  {CONTACT_PREFERENCE_OPTIONS.map((item) => (
-                    <button
-                      className={serviceRequest.contactPreference === item.value ? 'is-selected' : ''}
-                      key={item.value}
-                      onClick={() => updateServiceRequest('contactPreference', item.value)}
-                      type="button"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
+
                 <div className="client-app-request-summary">
                   <span>{selectedServiceRequest?.title || 'Servico nao escolhido'}</span>
                   <span>{requestSnapshot.room || 'Ambientes nao informados'}</span>
@@ -2025,7 +2027,6 @@ export default function Home() {
                   <span>{selectedUrgency?.label || 'Prazo flexivel'}</span>
                   <span>{selectedMaterialStatus?.label || 'Material nao informado'}</span>
                   <span>{requestSnapshot.measurementDetail}</span>
-                  <span>{selectedBudget?.label || 'Orcamento a combinar'}</span>
                   <span>{selectedContactPreference?.label || 'WhatsApp'}</span>
                   <span>{serviceRequest.photos.length ? `${serviceRequest.photos.length} foto(s)` : 'Sem fotos'}</span>
                 </div>

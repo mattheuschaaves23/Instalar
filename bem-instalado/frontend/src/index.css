@@ -12006,6 +12006,111 @@ body {
     background 200ms ease;
 }
 
+.client-app-review-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.client-app-review-block {
+  min-width: 0;
+  display: grid;
+  gap: 0.72rem;
+}
+
+.client-app-review-block > div:first-child {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.client-app-review-block > div:first-child strong {
+  color: #fff9ef;
+  font-size: 0.98rem;
+}
+
+.client-app-review-block > div:first-child span {
+  color: rgba(255, 246, 232, 0.56);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.client-app-option-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.client-app-option-list button {
+  width: 100%;
+  min-height: 4.35rem;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.026);
+  color: rgba(255, 246, 232, 0.76);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.68rem;
+  padding: 0.72rem 0.78rem;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.client-app-option-list button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--site-accent-rgb), 0.3);
+}
+
+.client-app-option-list button.is-selected {
+  border-color: rgba(var(--site-accent-rgb), 0.44);
+  background: rgba(var(--site-accent-rgb), 0.09);
+  color: #fff8ea;
+}
+
+.client-app-option-dot {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.36);
+  background: rgba(0, 0, 0, 0.22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.client-app-option-dot::after {
+  content: '';
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: inherit;
+  background: transparent;
+}
+
+.client-app-option-list button.is-selected .client-app-option-dot::after {
+  background: var(--site-accent-strong);
+}
+
+.client-app-option-list button strong {
+  display: block;
+  color: inherit;
+  font-size: 0.94rem;
+  line-height: 1.2;
+}
+
+.client-app-option-list button small {
+  display: block;
+  margin-top: 0.18rem;
+  color: rgba(255, 246, 232, 0.58);
+  font-size: 0.78rem;
+  line-height: 1.34;
+}
+
 .client-app-request-field {
   display: grid;
   gap: 0.42rem;
@@ -13240,6 +13345,7 @@ body {
 
   .client-app-request-head,
   .client-app-request-location,
+  .client-app-review-layout,
   .client-app-request-summary,
   .client-app-request-receipt,
   .client-app-opportunity-publish,
