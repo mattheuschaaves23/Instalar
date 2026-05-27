@@ -55,6 +55,7 @@ function joinRegion(item) {
 
 function getSummaryItems(item) {
   return [
+    item.place_label,
     item.rooms?.length ? item.rooms.join(', ') : '',
     item.measurement_detail,
     item.material_label,

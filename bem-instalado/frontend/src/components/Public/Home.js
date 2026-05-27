@@ -1587,7 +1587,7 @@ export default function Home() {
 
     if (typeof document !== 'undefined') {
       window.requestAnimationFrame(() => {
-        document.getElementById('interessados')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('publicar-pedido')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }
   };
@@ -2156,7 +2156,7 @@ export default function Home() {
           </form>
         </section>
 
-        {SHOW_PUBLIC_INSTALLER_DIRECTORY && hasGuidedRequest ? (
+        {hasGuidedRequest ? (
           <>
             <section className="client-app-request-receipt fade-up">
               <div className="client-app-request-receipt-main">
@@ -2183,7 +2183,7 @@ export default function Home() {
               </div>
             </section>
 
-            <section className="client-app-opportunity-publish fade-up">
+            <section className="client-app-opportunity-publish fade-up" id="publicar-pedido">
               <div className="client-app-opportunity-copy">
                 <p className="client-app-kicker">Oportunidade para instaladores</p>
                 <h3>Publique seu pedido e escolha entre os interessados.</h3>

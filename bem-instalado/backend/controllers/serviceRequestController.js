@@ -86,6 +86,8 @@ function serializeOpportunity(row) {
     client_phone: selectedByMe ? row.client_phone : null,
     client_phone_masked: maskPhone(row.client_phone),
     client_email: selectedByMe ? row.client_email : null,
+    place_type: row.place_type,
+    place_label: row.place_label,
     service: row.service,
     service_label: row.service_label,
     rooms: row.rooms || [],
@@ -127,6 +129,8 @@ function serializeOpportunity(row) {
 function serializeClientRequest(row) {
   return {
     id: row.id,
+    place_type: row.place_type,
+    place_label: row.place_label,
     service: row.service,
     service_label: row.service_label,
     rooms: row.rooms || [],
@@ -203,6 +207,8 @@ exports.createPublicServiceRequest = async (req, res) => {
     const clientName = normalizeText(req.body.client_name, 120);
     const clientPhone = normalizePhone(req.body.client_phone);
     const clientEmail = normalizeOptionalText(req.body.client_email, 150);
+    const placeType = normalizeOptionalText(req.body.place_type, 60);
+    const placeLabel = normalizeOptionalText(req.body.place_label, 120);
     const service = normalizeText(req.body.service, 60);
     const serviceLabel = normalizeOptionalText(req.body.service_label, 120);
     const city = normalizeOptionalText(req.body.city, 120);
@@ -233,6 +239,8 @@ exports.createPublicServiceRequest = async (req, res) => {
           client_name,
           client_phone,
           client_email,
+          place_type,
+          place_label,
           service,
           service_label,
           rooms,
@@ -260,12 +268,14 @@ exports.createPublicServiceRequest = async (req, res) => {
           client_access_token
         )
         VALUES (
-          $1, $2, $3, $4, $5, $6::TEXT[], $7, $8, $9, $10, $11, $12, $13,
-          $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27::JSONB, $28
+          $1, $2, $3, $4, $5, $6, $7, $8::TEXT[], $9, $10, $11, $12, $13, $14, $15,
+          $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29::JSONB, $30
         )
         RETURNING
           id,
           client_name,
+          place_type,
+          place_label,
           service,
           service_label,
           rooms,
@@ -285,6 +295,8 @@ exports.createPublicServiceRequest = async (req, res) => {
         clientName,
         clientPhone,
         clientEmail,
+        placeType,
+        placeLabel,
         service,
         serviceLabel,
         rooms,
@@ -314,7 +326,8 @@ exports.createPublicServiceRequest = async (req, res) => {
     );
 
     return res.status(201).json({ service_request: result.rows[0] });
-  } catch (_error) {
+  } catch (error) {
+    console.error('Failed to create public service request:', error);
     return res.status(500).json({ error: 'Nao foi possivel publicar a solicitacao agora.' });
   }
 };
