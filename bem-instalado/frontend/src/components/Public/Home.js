@@ -130,6 +130,11 @@ const REQUEST_STEPS = [
   { value: 'location', label: 'Local' },
   { value: 'review', label: 'Publicar' },
 ];
+const DETAIL_STEPS = [
+  { value: 'rooms', label: 'Ambientes' },
+  { value: 'material', label: 'Material' },
+  { value: 'measurements', label: 'Medidas' },
+];
 const INITIAL_SERVICE_REQUEST = {
   service: '',
   room: '',
@@ -155,6 +160,7 @@ const INITIAL_REQUEST_CONTACT = {
   email: '',
 };
 const LAST_REQUEST_STEP = REQUEST_STEPS.length - 1;
+const LAST_DETAIL_STEP = DETAIL_STEPS.length - 1;
 
 function AppIcon({ name, className = '' }) {
   const commonProps = {
@@ -682,6 +688,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('rating');
   const [favorites, setFavorites] = useState({});
   const [requestStep, setRequestStep] = useState(0);
+  const [detailStep, setDetailStep] = useState(0);
   const [serviceRequest, setServiceRequest] = useState(INITIAL_SERVICE_REQUEST);
   const [requestContact, setRequestContact] = useState(INITIAL_REQUEST_CONTACT);
   const [publishingRequest, setPublishingRequest] = useState(false);
@@ -715,6 +722,7 @@ export default function Home() {
     () => CONTACT_PREFERENCE_OPTIONS.find((item) => item.value === serviceRequest.contactPreference),
     [serviceRequest.contactPreference]
   );
+  const selectedDetailStep = DETAIL_STEPS[detailStep] || DETAIL_STEPS[0];
   const requestCompleteness = useMemo(
     () => getRequestCompleteness(serviceRequest),
     [serviceRequest]
@@ -1228,6 +1236,21 @@ export default function Home() {
       return false;
     }
 
+    if (requestStep === 1 && detailStep === 0 && selectedRooms.length === 0) {
+      toast.error('Escolha pelo menos um ambiente para continuar.');
+      return false;
+    }
+
+    if (requestStep === 1 && detailStep === 1 && !serviceRequest.materialStatus) {
+      toast.error('Informe a situacao do material para continuar.');
+      return false;
+    }
+
+    if (requestStep === 1 && detailStep === 2 && !serviceRequest.measurementStatus) {
+      toast.error('Escolha se ja sabe as medidas ou se prefere visita tecnica.');
+      return false;
+    }
+
     if (requestStep === 2 && !serviceRequest.city.trim() && !serviceRequest.state.trim()) {
       toast.error('Informe sua cidade ou estado para encontrar profissionais proximos.');
       return false;
@@ -1241,10 +1264,28 @@ export default function Home() {
       return;
     }
 
+    if (requestStep === 1 && detailStep < LAST_DETAIL_STEP) {
+      setDetailStep((current) => Math.min(current + 1, LAST_DETAIL_STEP));
+      return;
+    }
+
+    if (requestStep === 0) {
+      setDetailStep(0);
+    }
+
     setRequestStep((current) => Math.min(current + 1, LAST_REQUEST_STEP));
   };
 
   const handleRequestBack = () => {
+    if (requestStep === 1 && detailStep > 0) {
+      setDetailStep((current) => Math.max(current - 1, 0));
+      return;
+    }
+
+    if (requestStep === 2) {
+      setDetailStep(LAST_DETAIL_STEP);
+    }
+
     setRequestStep((current) => Math.max(current - 1, 0));
   };
 
@@ -1322,6 +1363,7 @@ export default function Home() {
     setFilters(nextFilters);
     setServiceRequest(INITIAL_SERVICE_REQUEST);
     setRequestStep(0);
+    setDetailStep(0);
     setHasGuidedRequest(false);
     setPublishedRequest(null);
     setRequestInterests([]);
@@ -1397,8 +1439,17 @@ export default function Home() {
                 {REQUEST_STEPS.map((step, index) => (
                   <button
                     className={index === requestStep ? 'is-active' : index < requestStep ? 'is-done' : ''}
+                    disabled={index > requestStep}
                     key={step.value}
-                    onClick={() => setRequestStep(index)}
+                    onClick={() => {
+                      if (index === 1 && requestStep < 1) {
+                        setDetailStep(0);
+                      }
+                      if (index === 1 && requestStep > 1) {
+                        setDetailStep(LAST_DETAIL_STEP);
+                      }
+                      setRequestStep(index);
+                    }}
                     type="button"
                   >
                     <span>{index + 1}</span>
@@ -1446,14 +1497,39 @@ export default function Home() {
               <div className="client-app-request-panel client-app-request-panel--details">
                 <div className="client-app-detail-heading">
                   <div>
-                    <h3>Ambientes, material e medidas</h3>
-                    <p>Marque todos os lugares da casa e escolha se precisa de visita para medir.</p>
+                    <h3>{selectedDetailStep.label}</h3>
+                    <p>
+                      {detailStep === 0
+                        ? 'Escolha todos os ambientes da casa onde o servico sera feito.'
+                        : detailStep === 1
+                          ? 'Informe apenas a situacao do material agora.'
+                          : 'Diga se ja sabe as medidas ou se prefere uma visita tecnica.'}
+                    </p>
                   </div>
-                  <span>{selectedRooms.length || 0} ambiente{selectedRooms.length === 1 ? '' : 's'}</span>
+                  <span>Detalhe {detailStep + 1} de {DETAIL_STEPS.length}</span>
+                </div>
+
+                <div className="client-app-detail-steps" aria-label="Subetapas dos detalhes">
+                  {DETAIL_STEPS.map((step, index) => (
+                    <button
+                      className={index === detailStep ? 'is-active' : index < detailStep ? 'is-done' : ''}
+                      disabled={
+                        (index === 1 && selectedRooms.length === 0) ||
+                        (index === 2 && (selectedRooms.length === 0 || !serviceRequest.materialStatus))
+                      }
+                      key={step.value}
+                      onClick={() => setDetailStep(index)}
+                      type="button"
+                    >
+                      <span>{index + 1}</span>
+                      {step.label}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="client-app-detail-layout">
-                  <section className="client-app-detail-section" aria-labelledby="rooms-heading">
+                  {detailStep === 0 ? (
+                    <section className="client-app-detail-section client-app-detail-single" aria-labelledby="rooms-heading">
                     <div className="client-app-detail-titleline">
                       <span>1</span>
                       <div>
@@ -1472,15 +1548,22 @@ export default function Home() {
                             onClick={() => toggleRequestRoom(room)}
                             type="button"
                           >
-                            <span>{isSelected ? '✓' : '+'}</span>
+                            <span aria-hidden="true" />
                             {room}
                           </button>
                         );
                       })}
                     </div>
-                  </section>
+                    <div className="client-app-detail-hint">
+                      {selectedRooms.length > 0
+                        ? `${selectedRooms.length} ambiente${selectedRooms.length === 1 ? '' : 's'} selecionado${selectedRooms.length === 1 ? '' : 's'}`
+                        : 'Nenhum ambiente selecionado ainda'}
+                    </div>
+                    </section>
+                  ) : null}
 
-                  <section className="client-app-detail-section" aria-labelledby="material-heading">
+                  {detailStep === 1 ? (
+                    <section className="client-app-detail-section client-app-detail-single" aria-labelledby="material-heading">
                     <div className="client-app-detail-titleline">
                       <span>2</span>
                       <div>
@@ -1496,15 +1579,17 @@ export default function Home() {
                           onClick={() => updateServiceRequest('materialStatus', item.value)}
                           type="button"
                         >
-                          <span>{serviceRequest.materialStatus === item.value ? '✓' : ''}</span>
+                          <span aria-hidden="true" />
                           {item.label}
                         </button>
                       ))}
                     </div>
-                  </section>
+                    </section>
+                  ) : null}
                 </div>
 
-                <section className="client-app-detail-section client-app-measure-section" aria-labelledby="measure-heading">
+                {detailStep === 2 ? (
+                  <section className="client-app-detail-section client-app-detail-single client-app-measure-section" aria-labelledby="measure-heading">
                   <div className="client-app-detail-titleline">
                     <span>3</span>
                     <div>
@@ -1561,19 +1646,22 @@ export default function Home() {
                       </span>
                     </div>
                   ) : null}
-                </section>
+                  </section>
+                ) : null}
 
-                <label className="client-app-request-field client-app-request-field--line client-app-detail-note">
-                  <span>Observacao rapida</span>
+                {detailStep === 2 ? (
+                  <>
+                    <label className="client-app-request-field client-app-request-field--line client-app-detail-note">
+                      <span>Observacao rapida opcional</span>
                   <textarea
                     onChange={(event) => updateServiceRequest('details', event.target.value)}
                     placeholder="Ex.: sala e cozinha, parede lisa, material ja comprado, precisa medir no local"
                     rows="3"
                     value={serviceRequest.details}
                   />
-                </label>
+                    </label>
 
-                <div className="client-app-photo-uploader">
+                    <div className="client-app-photo-uploader">
                   <label className="client-app-photo-drop client-app-photo-drop--compact">
                     <input accept="image/*" multiple onChange={handleRequestPhotos} type="file" />
                     <strong>Fotos ajudam no orcamento</strong>
@@ -1596,7 +1684,9 @@ export default function Home() {
                       ))}
                     </div>
                   ) : null}
-                </div>
+                    </div>
+                  </>
+                ) : null}
               </div>
             ) : null}
 
@@ -1767,7 +1857,9 @@ export default function Home() {
               </button>
               {requestStep < LAST_REQUEST_STEP ? (
                 <button className="client-app-search-submit" onClick={handleRequestNext} type="button">
-                  Continuar
+                  {requestStep === 1 && detailStep < LAST_DETAIL_STEP
+                    ? `Continuar para ${DETAIL_STEPS[detailStep + 1].label}`
+                    : 'Continuar'}
                 </button>
               ) : (
                 <button className="client-app-search-submit" type="submit">
