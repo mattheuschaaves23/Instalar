@@ -3,12 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { clearStoredClientRequest, writeStoredClientRequest } from '../../utils/clientRequest';
 import { safeSessionStorage } from '../../utils/safeStorage';
 import BrandMark from '../Layout/BrandMark';
 import PaginationControls from '../Layout/PaginationControls';
 
 const AUTO_LOCATION_SESSION_KEY = 'bem_instalado_client_location_checked';
 const INSTALLERS_PER_PAGE = 6;
+const MAX_REQUEST_PHOTOS = 4;
+const MAX_REQUEST_PHOTO_SIZE = 5 * 1024 * 1024;
 const INITIAL_FILTERS = { search: '', city: '', state: '' };
 
 const CATEGORY_OPTIONS = [
@@ -67,11 +70,27 @@ const SERVICE_REQUEST_OPTIONS = [
 ];
 
 const ROOM_OPTIONS = ['Sala', 'Quarto', 'Cozinha', 'Comercial', 'Outro ambiente'];
+const MATERIAL_STATUS_OPTIONS = [
+  { value: 'bought', label: 'Ja comprei o papel' },
+  { value: 'need-help', label: 'Preciso de ajuda para comprar' },
+  { value: 'not-sure', label: 'Ainda nao sei o material' },
+];
 const URGENCY_OPTIONS = [
   { value: 'urgent', label: 'Urgente' },
   { value: 'week', label: 'Esta semana' },
   { value: 'days', label: 'Proximos dias' },
   { value: 'quote', label: 'So quero orcar' },
+];
+const BUDGET_OPTIONS = [
+  { value: 'open', label: 'Quero receber proposta' },
+  { value: 'small', label: 'Ate R$ 300' },
+  { value: 'medium', label: 'R$ 300 a R$ 700' },
+  { value: 'large', label: 'Acima de R$ 700' },
+];
+const CONTACT_PREFERENCE_OPTIONS = [
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'phone', label: 'Ligacao' },
+  { value: 'any', label: 'Qualquer contato' },
 ];
 const REQUEST_STEPS = [
   { value: 'service', label: 'Servico' },
@@ -82,10 +101,16 @@ const REQUEST_STEPS = [
 const INITIAL_SERVICE_REQUEST = {
   service: '',
   room: '',
+  materialStatus: 'bought',
+  wallSize: '',
+  rollCount: '',
   urgency: 'days',
+  budget: 'open',
+  contactPreference: 'whatsapp',
   city: '',
   state: '',
   details: '',
+  photos: [],
 };
 const LAST_REQUEST_STEP = REQUEST_STEPS.length - 1;
 
@@ -290,6 +315,129 @@ function matchesCategory(installer, categoryValue) {
   return category.keywords.some((keyword) => text.includes(normalizeText(keyword)));
 }
 
+function optionLabel(options, value, fallback = '') {
+  return options.find((item) => item.value === value)?.label || fallback;
+}
+
+function buildClientRequestSnapshot(request) {
+  const serviceOption = getServiceRequestOption(request.service);
+  const regionState = String(request.state || '').trim().toUpperCase();
+
+  return {
+    service: request.service,
+    serviceLabel: serviceOption?.title || '',
+    room: request.room,
+    urgency: request.urgency,
+    urgencyLabel: optionLabel(URGENCY_OPTIONS, request.urgency, 'Prazo flexivel'),
+    city: String(request.city || '').trim(),
+    state: regionState,
+    materialStatus: request.materialStatus,
+    materialLabel: optionLabel(MATERIAL_STATUS_OPTIONS, request.materialStatus, 'Material nao informado'),
+    wallSize: String(request.wallSize || '').trim(),
+    rollCount: String(request.rollCount || '').trim(),
+    budget: request.budget,
+    budgetLabel: optionLabel(BUDGET_OPTIONS, request.budget, 'Orcamento a combinar'),
+    contactPreference: request.contactPreference,
+    contactPreferenceLabel: optionLabel(CONTACT_PREFERENCE_OPTIONS, request.contactPreference, 'WhatsApp'),
+    details: String(request.details || '').trim(),
+    photoCount: request.photos?.length || 0,
+    photoNames: (request.photos || []).map((photo) => photo.name).filter(Boolean),
+  };
+}
+
+function getRequestCompleteness(request) {
+  const filled = [
+    request.service,
+    request.room,
+    request.materialStatus,
+    request.city || request.state,
+    request.urgency,
+    request.budget,
+    request.contactPreference,
+    request.wallSize || request.rollCount,
+    String(request.details || '').trim().length >= 12,
+  ].filter(Boolean).length;
+
+  return Math.round((filled / 9) * 100);
+}
+
+function getInstallerMatchScore(installer, request) {
+  if (!request?.service) {
+    return 0;
+  }
+
+  const hasAvailability = Boolean((installer.availability_slots || []).length || (installer.available_dates || []).length);
+  const isVerified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
+  const sameCity =
+    request.city &&
+    installer.city &&
+    normalizeText(installer.city) === normalizeText(request.city);
+  const sameState =
+    request.state &&
+    installer.state &&
+    normalizeText(installer.state) === normalizeText(request.state);
+
+  let score = 52;
+
+  if (request.service === 'all' || matchesCategory(installer, request.service)) {
+    score += 18;
+  }
+
+  if (sameCity) {
+    score += 14;
+  } else if (sameState) {
+    score += 9;
+  }
+
+  if (hasAvailability) {
+    score += request.urgency === 'urgent' ? 10 : 7;
+  }
+
+  if (isVerified) {
+    score += 5;
+  }
+
+  if (Number(installer.average_rating || 0) >= 4.7) {
+    score += 4;
+  } else if (Number(installer.average_rating || 0) >= 4.2) {
+    score += 2;
+  }
+
+  return Math.min(98, score);
+}
+
+function getInstallerMatchReasons(installer, request) {
+  const reasons = [];
+
+  if (request?.service && (request.service === 'all' || matchesCategory(installer, request.service))) {
+    reasons.push('Servico compativel');
+  }
+
+  if (
+    request?.city &&
+    installer.city &&
+    normalizeText(installer.city) === normalizeText(request.city)
+  ) {
+    reasons.push('Atende sua cidade');
+  } else if (
+    request?.state &&
+    installer.state &&
+    normalizeText(installer.state) === normalizeText(request.state)
+  ) {
+    reasons.push('Mesmo estado');
+  }
+
+  if ((installer.availability_slots || []).length || (installer.available_dates || []).length) {
+    reasons.push('Agenda disponivel');
+  }
+
+  if (installer.certificate_verified || installer.safety?.document_masked) {
+    reasons.push('Perfil verificado');
+  }
+
+  return reasons.slice(0, 3);
+}
+
 function deriveInstallerTags(installer) {
   const matched = CATEGORY_OPTIONS.filter((item) => item.value !== 'all' && matchesCategory(installer, item.value)).map(
     (item) => item.label
@@ -318,10 +466,14 @@ function getAvailabilityState(installer) {
   return { label: 'Agenda cheia', tone: 'busy' };
 }
 
-function sortInstallers(items, sortBy) {
+function sortInstallers(items, sortBy, request) {
   const nextItems = [...items];
 
   nextItems.sort((left, right) => {
+    if (sortBy === 'match') {
+      return getInstallerMatchScore(right, request) - getInstallerMatchScore(left, request);
+    }
+
     if (sortBy === 'reviews') {
       return Number(right.review_count || 0) - Number(left.review_count || 0);
     }
@@ -427,6 +579,26 @@ export default function Home() {
     () => URGENCY_OPTIONS.find((item) => item.value === serviceRequest.urgency),
     [serviceRequest.urgency]
   );
+  const selectedMaterialStatus = useMemo(
+    () => MATERIAL_STATUS_OPTIONS.find((item) => item.value === serviceRequest.materialStatus),
+    [serviceRequest.materialStatus]
+  );
+  const selectedBudget = useMemo(
+    () => BUDGET_OPTIONS.find((item) => item.value === serviceRequest.budget),
+    [serviceRequest.budget]
+  );
+  const selectedContactPreference = useMemo(
+    () => CONTACT_PREFERENCE_OPTIONS.find((item) => item.value === serviceRequest.contactPreference),
+    [serviceRequest.contactPreference]
+  );
+  const requestCompleteness = useMemo(
+    () => getRequestCompleteness(serviceRequest),
+    [serviceRequest]
+  );
+  const requestSnapshot = useMemo(
+    () => buildClientRequestSnapshot(serviceRequest),
+    [serviceRequest]
+  );
 
   const hasActiveFilters = useMemo(
     () => Boolean(filters.search.trim() || filters.city.trim() || filters.state.trim()),
@@ -452,8 +624,8 @@ export default function Home() {
       return true;
     });
 
-    return sortInstallers(quickFiltered, sortBy);
-  }, [category, directory.installers, quickFilter, sortBy]);
+    return sortInstallers(quickFiltered, sortBy, serviceRequest);
+  }, [category, directory.installers, quickFilter, serviceRequest, sortBy]);
 
   const favoriteInstallers = useMemo(
     () => filteredInstallers.filter((installer) => favorites[installer.id]),
@@ -633,6 +805,83 @@ export default function Home() {
     setServiceRequest((current) => ({ ...current, [field]: value }));
   };
 
+  const handleRequestPhotos = (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+
+    if (!files.length) {
+      return;
+    }
+
+    const availableSlots = MAX_REQUEST_PHOTOS - serviceRequest.photos.length;
+
+    if (availableSlots <= 0) {
+      toast.error(`Adicione no maximo ${MAX_REQUEST_PHOTOS} fotos.`);
+      return;
+    }
+
+    const selectedFiles = files
+      .filter((file) => {
+        if (!file.type.startsWith('image/')) {
+          toast.error(`${file.name} nao parece ser uma imagem.`);
+          return false;
+        }
+
+        if (file.size > MAX_REQUEST_PHOTO_SIZE) {
+          toast.error(`${file.name} passa de 5 MB.`);
+          return false;
+        }
+
+        return true;
+      })
+      .slice(0, availableSlots);
+
+    if (files.length > availableSlots) {
+      toast(`Vamos usar as primeiras ${availableSlots} fotos para manter o app leve.`);
+    }
+
+    selectedFiles.forEach((file) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        setServiceRequest((current) => {
+          if (current.photos.length >= MAX_REQUEST_PHOTOS) {
+            return current;
+          }
+
+          return {
+            ...current,
+            photos: [
+              ...current.photos,
+              {
+                id: `${Date.now()}-${file.name}-${current.photos.length}`,
+                name: file.name,
+                preview: String(reader.result || ''),
+              },
+            ],
+          };
+        });
+      };
+
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeRequestPhoto = (photoId) => {
+    setServiceRequest((current) => ({
+      ...current,
+      photos: current.photos.filter((photo) => photo.id !== photoId),
+    }));
+  };
+
+  const persistCurrentRequest = useCallback(() => {
+    if (!hasGuidedRequest) {
+      return;
+    }
+
+    writeStoredClientRequest(buildClientRequestSnapshot(serviceRequest));
+  }, [hasGuidedRequest, serviceRequest]);
+
   const canAdvanceRequest = () => {
     if (requestStep === 0 && !serviceRequest.service) {
       toast.error('Escolha o tipo de instalacao para continuar.');
@@ -714,9 +963,10 @@ export default function Home() {
     setFilters(nextFilters);
     setCategory(serviceRequest.service || 'all');
     setQuickFilter('available');
-    setSortBy('rating');
+    setSortBy('match');
     setInstallersPage(1);
     setHasGuidedRequest(true);
+    writeStoredClientRequest(requestSnapshot);
     await loadDirectory(nextFilters);
 
     if (typeof document !== 'undefined') {
@@ -732,6 +982,7 @@ export default function Home() {
     setServiceRequest(INITIAL_SERVICE_REQUEST);
     setRequestStep(0);
     setHasGuidedRequest(false);
+    clearStoredClientRequest();
     setCategory('all');
     setQuickFilter('all');
     setSortBy('rating');
@@ -818,18 +1069,29 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="client-app-request-progress" aria-label="Etapas do pedido">
-              {REQUEST_STEPS.map((step, index) => (
-                <button
-                  className={index === requestStep ? 'is-active' : index < requestStep ? 'is-done' : ''}
-                  key={step.value}
-                  onClick={() => setRequestStep(index)}
-                  type="button"
-                >
-                  <span>{index + 1}</span>
-                  {step.label}
-                </button>
-              ))}
+            <div className="client-app-request-side">
+              <div className="client-app-request-progress" aria-label="Etapas do pedido">
+                {REQUEST_STEPS.map((step, index) => (
+                  <button
+                    className={index === requestStep ? 'is-active' : index < requestStep ? 'is-done' : ''}
+                    key={step.value}
+                    onClick={() => setRequestStep(index)}
+                    type="button"
+                  >
+                    <span>{index + 1}</span>
+                    {step.label}
+                  </button>
+                ))}
+              </div>
+              <div className="client-app-request-score" aria-label={`Pedido ${requestCompleteness}% completo`}>
+                <div>
+                  <strong>{requestCompleteness}% completo</strong>
+                  <span>Quanto mais detalhes, melhor a indicacao.</span>
+                </div>
+                <div className="client-app-request-score-bar">
+                  <span style={{ width: `${requestCompleteness}%` }} />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -860,7 +1122,7 @@ export default function Home() {
             {requestStep === 1 ? (
               <div className="client-app-request-panel">
                 <h3>Algum detalhe importante?</h3>
-                <p>Essas respostas ajudam o cliente a comparar melhor antes de abrir o perfil.</p>
+                <p>Essas respostas ajudam o sistema a priorizar profissionais mais preparados para o seu pedido.</p>
                 <div className="client-app-chip-grid" role="group" aria-label="Ambiente do servico">
                   {ROOM_OPTIONS.map((room) => (
                     <button
@@ -873,6 +1135,37 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
+                <div className="client-app-chip-grid" role="group" aria-label="Status do material">
+                  {MATERIAL_STATUS_OPTIONS.map((item) => (
+                    <button
+                      className={serviceRequest.materialStatus === item.value ? 'is-selected' : ''}
+                      key={item.value}
+                      onClick={() => updateServiceRequest('materialStatus', item.value)}
+                      type="button"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="client-app-request-estimate-grid">
+                  <label className="client-app-request-field">
+                    <span>Medida aproximada</span>
+                    <input
+                      onChange={(event) => updateServiceRequest('wallSize', event.target.value)}
+                      placeholder="Ex.: parede de 3m x 2,6m"
+                      value={serviceRequest.wallSize}
+                    />
+                  </label>
+                  <label className="client-app-request-field">
+                    <span>Quantidade de rolos</span>
+                    <input
+                      inputMode="numeric"
+                      onChange={(event) => updateServiceRequest('rollCount', event.target.value)}
+                      placeholder="Ex.: 2 rolos"
+                      value={serviceRequest.rollCount}
+                    />
+                  </label>
+                </div>
                 <label className="client-app-request-field">
                   <span>Descreva em poucas palavras</span>
                   <textarea
@@ -882,6 +1175,30 @@ export default function Home() {
                     value={serviceRequest.details}
                   />
                 </label>
+                <div className="client-app-photo-uploader">
+                  <label className="client-app-photo-drop">
+                    <input accept="image/*" multiple onChange={handleRequestPhotos} type="file" />
+                    <strong>Adicionar fotos do ambiente</strong>
+                    <span>Opcional: ate {MAX_REQUEST_PHOTOS} imagens, 5 MB cada.</span>
+                  </label>
+                  {serviceRequest.photos.length > 0 ? (
+                    <div className="client-app-photo-grid">
+                      {serviceRequest.photos.map((photo) => (
+                        <figure key={photo.id}>
+                          <img alt={`Referencia ${photo.name}`} src={photo.preview} />
+                          <figcaption>{photo.name}</figcaption>
+                          <button
+                            aria-label={`Remover ${photo.name}`}
+                            onClick={() => removeRequestPhoto(photo.id)}
+                            type="button"
+                          >
+                            Remover
+                          </button>
+                        </figure>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             ) : null}
 
@@ -931,6 +1248,30 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
+                <div className="client-app-chip-grid" role="group" aria-label="Orcamento estimado">
+                  {BUDGET_OPTIONS.map((item) => (
+                    <button
+                      className={serviceRequest.budget === item.value ? 'is-selected' : ''}
+                      key={item.value}
+                      onClick={() => updateServiceRequest('budget', item.value)}
+                      type="button"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="client-app-chip-grid" role="group" aria-label="Preferencia de contato">
+                  {CONTACT_PREFERENCE_OPTIONS.map((item) => (
+                    <button
+                      className={serviceRequest.contactPreference === item.value ? 'is-selected' : ''}
+                      key={item.value}
+                      onClick={() => updateServiceRequest('contactPreference', item.value)}
+                      type="button"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
                 <div className="client-app-request-summary">
                   <span>{selectedServiceRequest?.title || 'Servico nao escolhido'}</span>
                   <span>{serviceRequest.room || 'Ambiente nao informado'}</span>
@@ -939,6 +1280,10 @@ export default function Home() {
                       'Regiao nao informada'}
                   </span>
                   <span>{selectedUrgency?.label || 'Prazo flexivel'}</span>
+                  <span>{selectedMaterialStatus?.label || 'Material nao informado'}</span>
+                  <span>{selectedBudget?.label || 'Orcamento a combinar'}</span>
+                  <span>{selectedContactPreference?.label || 'WhatsApp'}</span>
+                  <span>{serviceRequest.photos.length ? `${serviceRequest.photos.length} foto(s)` : 'Sem fotos'}</span>
                 </div>
               </div>
             ) : null}
@@ -967,6 +1312,35 @@ export default function Home() {
 
         {hasGuidedRequest ? (
           <>
+            <section className="client-app-request-receipt fade-up">
+              <div className="client-app-request-receipt-main">
+                <p className="client-app-kicker">Resumo do pedido</p>
+                <h3>{requestSnapshot.serviceLabel || 'Pedido de instalacao'}</h3>
+                <p>
+                  {[requestSnapshot.room, requestSnapshot.city, requestSnapshot.state].filter(Boolean).join(' - ') ||
+                    'Regiao e ambiente informados pelo cliente'}
+                </p>
+              </div>
+              <div className="client-app-request-receipt-grid">
+                <span>{requestSnapshot.materialLabel}</span>
+                <span>{requestSnapshot.urgencyLabel}</span>
+                <span>{requestSnapshot.budgetLabel}</span>
+                <span>
+                  {requestSnapshot.wallSize || requestSnapshot.rollCount
+                    ? [requestSnapshot.wallSize, requestSnapshot.rollCount].filter(Boolean).join(' / ')
+                    : 'Medida a confirmar'}
+                </span>
+              </div>
+              <div className="client-app-request-receipt-actions">
+                <button className="client-app-ghost-button" onClick={() => setRequestStep(1)} type="button">
+                  Editar detalhes
+                </button>
+                <button className="client-app-ghost-button" onClick={clearFilters} type="button">
+                  Novo pedido
+                </button>
+              </div>
+            </section>
+
             <section className="client-app-category-row fade-up">
               {CATEGORY_OPTIONS.map((item) => (
                 <button
@@ -1016,6 +1390,7 @@ export default function Home() {
                 <label className="client-app-toolbar-select">
                   <AppIcon name="sort" />
                   <select onChange={(event) => setSortBy(event.target.value)} value={sortBy}>
+                    <option value="match">Mais compativeis</option>
                     <option value="rating">Melhor avaliados</option>
                     <option value="reviews">Mais avaliacoes</option>
                     <option value="available">Mais disponiveis</option>
@@ -1069,7 +1444,12 @@ export default function Home() {
 
             <div className="client-app-suggestion-grid">
               {noResultsSuggestions.items.map((installer) => (
-                <Link className="client-app-suggestion-card" key={`suggestion-${installer.id}`} to={`/installers/${installer.id}`}>
+                <Link
+                  className="client-app-suggestion-card"
+                  key={`suggestion-${installer.id}`}
+                  onClick={persistCurrentRequest}
+                  to={`/installers/${installer.id}`}
+                >
                   {installer.installer_photo ? (
                     <img alt={`Foto de ${installer.display_name}`} src={installer.installer_photo} />
                   ) : installer.logo ? (
@@ -1101,6 +1481,8 @@ export default function Home() {
                 const availability = getAvailabilityState(installer);
                 const tags = deriveInstallerTags(installer);
                 const isVerified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
+                const matchScore = getInstallerMatchScore(installer, serviceRequest);
+                const matchReasons = getInstallerMatchReasons(installer, serviceRequest);
 
                 return (
                   <article className="client-app-installer-card" key={`favorite-${installer.id}`}>
@@ -1141,6 +1523,13 @@ export default function Home() {
                           <span>({installer.review_count || 0} avaliacoes)</span>
                         </div>
 
+                        <div className="client-app-match-row">
+                          <span className="client-app-match-pill">{matchScore}% compativel</span>
+                          {matchReasons.map((reason) => (
+                            <span key={`favorite-${installer.id}-${reason}`}>{reason}</span>
+                          ))}
+                        </div>
+
                         <div className="client-app-tag-row">
                           {tags.map((tag) => (
                             <span className="client-app-tag" key={`${installer.id}-${tag}`}>
@@ -1159,7 +1548,7 @@ export default function Home() {
                     </div>
 
                     <div className="client-app-installer-footer">
-                      <Link className="client-app-primary-link" to={`/installers/${installer.id}`}>
+                      <Link className="client-app-primary-link" onClick={persistCurrentRequest} to={`/installers/${installer.id}`}>
                         Ver perfil
                       </Link>
                     </div>
@@ -1176,6 +1565,8 @@ export default function Home() {
               const availability = getAvailabilityState(installer);
               const tags = deriveInstallerTags(installer);
               const isVerified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
+              const matchScore = getInstallerMatchScore(installer, serviceRequest);
+              const matchReasons = getInstallerMatchReasons(installer, serviceRequest);
 
               return (
                 <article className="client-app-installer-card" key={installer.id}>
@@ -1224,6 +1615,13 @@ export default function Home() {
                         <span>({installer.review_count || 0} avaliacoes)</span>
                       </div>
 
+                      <div className="client-app-match-row">
+                        <span className="client-app-match-pill">{matchScore}% compativel</span>
+                        {matchReasons.map((reason) => (
+                          <span key={`${installer.id}-${reason}`}>{reason}</span>
+                        ))}
+                      </div>
+
                       <div className="client-app-tag-row">
                         {tags.map((tag) => (
                           <span className="client-app-tag" key={`${installer.id}-${tag}`}>
@@ -1246,7 +1644,7 @@ export default function Home() {
                   </div>
 
                   <div className="client-app-installer-footer">
-                    <Link className="client-app-primary-link" to={`/installers/${installer.id}`}>
+                    <Link className="client-app-primary-link" onClick={persistCurrentRequest} to={`/installers/${installer.id}`}>
                       Ver perfil
                     </Link>
                   </div>

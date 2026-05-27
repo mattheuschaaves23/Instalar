@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { formatClientRequestLines, readStoredClientRequest } from '../../utils/clientRequest';
 import { formatCurrency, formatLongDate, formatShortDate } from '../../utils/formatters';
 import { formatInstallationDays } from '../../utils/installerDays';
 
@@ -71,10 +72,41 @@ function getClientLoginPath(nextPath) {
   return `/cliente/entrar?next=${encodeURIComponent(nextPath)}`;
 }
 
+function buildWhatsAppLinkWithRequest(baseLink, request) {
+  if (!baseLink || !request) {
+    return baseLink;
+  }
+
+  const requestLines = formatClientRequestLines(request);
+
+  if (!requestLines.length) {
+    return baseLink;
+  }
+
+  try {
+    const url = new URL(baseLink);
+    const previousMessage = url.searchParams.get('text') || '';
+    const nextMessage = [
+      previousMessage,
+      previousMessage ? '' : null,
+      'Ola, vim pelo Instalar+ e quero falar sobre este pedido:',
+      ...requestLines,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    url.searchParams.set('text', nextMessage);
+    return url.toString();
+  } catch (_error) {
+    return baseLink;
+  }
+}
+
 export default function InstallerProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const storedClientRequest = useMemo(() => readStoredClientRequest(), []);
   const [payload, setPayload] = useState(null);
   const [reviewForm, setReviewForm] = useState(emptyReviewForm);
   const [sendingReview, setSendingReview] = useState(false);
@@ -171,6 +203,7 @@ export default function InstallerProfile() {
     left.localeCompare(right)
   );
   const isOwnInstallerProfile = Boolean(user && Number(user.id) === Number(installer.id));
+  const installerWhatsappLink = buildWhatsAppLinkWithRequest(installer.whatsapp_link, storedClientRequest);
 
   return (
     <div className="auth-scene min-h-screen overflow-x-hidden px-4 py-8 md:px-6 lg:px-8">
@@ -345,11 +378,28 @@ export default function InstallerProfile() {
               </article>
             </div>
 
+              {storedClientRequest ? (
+                <article className="client-request-profile-card mt-8">
+                  <div>
+                    <p className="eyebrow">Seu pedido</p>
+                    <h2>{storedClientRequest.serviceLabel || 'Pedido de instalacao'}</h2>
+                    <p>
+                      O instalador recebe esse resumo quando voce continuar pelo WhatsApp depois do login.
+                    </p>
+                  </div>
+                  <div className="client-request-profile-grid">
+                    {formatClientRequestLines(storedClientRequest).slice(0, 8).map((line) => (
+                      <span key={line}>{line}</span>
+                    ))}
+                  </div>
+                </article>
+              ) : null}
+
               <div className="mt-8 flex flex-wrap gap-3">
-                {installer.whatsapp_link ? (
+                {installerWhatsappLink ? (
                   <a
                     className="gold-button"
-                    href={installer.whatsapp_link}
+                    href={installerWhatsappLink}
                     onClick={(event) =>
                       requireClientLogin(
                         event,
