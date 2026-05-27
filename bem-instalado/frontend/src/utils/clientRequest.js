@@ -38,8 +38,6 @@ export function writeStoredClientRequest(request) {
     materialLabel: cleanText(request.materialLabel, 90),
     wallSize: cleanText(request.wallSize, 60),
     rollCount: cleanText(request.rollCount, 40),
-    budget: cleanText(request.budget, 40),
-    budgetLabel: cleanText(request.budgetLabel, 90),
     contactPreference: cleanText(request.contactPreference, 40),
     contactPreferenceLabel: cleanText(request.contactPreferenceLabel, 80),
     details: cleanText(request.details, 360),
@@ -91,7 +89,6 @@ export function formatClientRequestLines(request) {
     ['Material', request.materialLabel],
     ['Medida', request.wallSize],
     ['Rolos', request.rollCount],
-    ['Orcamento', request.budgetLabel],
     ['Preferencia de contato', request.contactPreferenceLabel],
     ['Detalhes', request.details],
   ];

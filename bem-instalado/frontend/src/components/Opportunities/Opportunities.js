@@ -59,7 +59,6 @@ function getSummaryItems(item) {
     item.rooms?.length ? item.rooms.join(', ') : '',
     item.measurement_detail,
     item.material_label,
-    item.budget_label,
     item.urgency_label,
     item.photo_count > 0 ? `${item.photo_count} foto(s) de referencia` : '',
   ].filter(Boolean);

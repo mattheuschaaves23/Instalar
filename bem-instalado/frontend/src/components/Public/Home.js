@@ -141,7 +141,6 @@ const INITIAL_SERVICE_REQUEST = {
   wallSize: '',
   rollCount: '',
   urgency: '',
-  budget: '',
   contactPreference: '',
   zipCode: '',
   neighborhood: '',
@@ -469,8 +468,6 @@ function buildClientRequestSnapshot(request) {
     measurementDetail,
     wallSize: String(request.wallSize || '').trim(),
     rollCount: String(request.rollCount || '').trim(),
-    budget: 'open',
-    budgetLabel: 'Receber propostas',
     contactPreference: request.contactPreference,
     contactPreferenceLabel: optionLabel(CONTACT_PREFERENCE_OPTIONS, request.contactPreference, 'WhatsApp'),
     details: String(request.details || '').trim(),
@@ -1307,8 +1304,6 @@ export default function Home() {
         roll_count: requestSnapshot.rollCount,
         urgency: requestSnapshot.urgency,
         urgency_label: requestSnapshot.urgencyLabel,
-        budget: requestSnapshot.budget,
-        budget_label: requestSnapshot.budgetLabel,
         contact_preference: requestSnapshot.contactPreference,
         contact_preference_label: requestSnapshot.contactPreferenceLabel,
         zip_code: requestSnapshot.zipCode,
@@ -2170,7 +2165,6 @@ export default function Home() {
               <div className="client-app-request-receipt-grid">
                 <span>{requestSnapshot.materialLabel}</span>
                 <span>{requestSnapshot.urgencyLabel}</span>
-                <span>{requestSnapshot.budgetLabel}</span>
                 <span>{requestSnapshot.measurementDetail}</span>
               </div>
               <div className="client-app-request-receipt-actions">
