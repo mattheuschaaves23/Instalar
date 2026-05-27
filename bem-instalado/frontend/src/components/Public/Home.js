@@ -13,6 +13,20 @@ const INSTALLERS_PER_PAGE = 6;
 const MAX_REQUEST_PHOTOS = 4;
 const MAX_REQUEST_PHOTO_SIZE = 5 * 1024 * 1024;
 const INITIAL_FILTERS = { search: '', city: '', state: '' };
+const POPULAR_LOCATION_OPTIONS = [
+  { city: 'Sao Paulo', state: 'SP' },
+  { city: 'Campinas', state: 'SP' },
+  { city: 'Santos', state: 'SP' },
+  { city: 'Rio de Janeiro', state: 'RJ' },
+  { city: 'Belo Horizonte', state: 'MG' },
+  { city: 'Curitiba', state: 'PR' },
+  { city: 'Porto Alegre', state: 'RS' },
+  { city: 'Brasilia', state: 'DF' },
+  { city: 'Goiania', state: 'GO' },
+  { city: 'Salvador', state: 'BA' },
+  { city: 'Recife', state: 'PE' },
+  { city: 'Fortaleza', state: 'CE' },
+];
 
 const CATEGORY_OPTIONS = [
   { value: 'all', label: 'Todos', keywords: [] },
@@ -604,20 +618,28 @@ function getRegionLabel(installer) {
   return [installer.city, installer.state].filter(Boolean).join(', ') || installer.service_region || 'Regiao nao informada';
 }
 
-function getInstallerDisplayName(installer) {
-  return (
-    installer.display_name ||
-    installer.displayName ||
-    installer.name ||
-    installer.businessName ||
-    installer.business_name ||
-    installer.company_name ||
-    'Instalador'
-  );
-}
+function buildLocationOptions(installers) {
+  const seen = new Set();
+  const options = [];
 
-function getInstallerRating(installer) {
-  return Number(installer.average_rating ?? installer.rating ?? 0);
+  [...(installers || []), ...POPULAR_LOCATION_OPTIONS].forEach((item) => {
+    const city = String(item.city || '').trim();
+    const state = String(item.state || '').trim().toUpperCase();
+
+    if (!city || !state) {
+      return;
+    }
+
+    const key = `${normalizeText(city)}-${state}`;
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    options.push({ city, state });
+  });
+
+  return options;
 }
 
 function getServiceRequestOption(value) {
@@ -648,11 +670,6 @@ export default function Home() {
   const [noResultsSuggestions, setNoResultsSuggestions] = useState({
     loading: false,
     label: '',
-    items: [],
-  });
-  const [locationPreview, setLocationPreview] = useState({
-    loading: false,
-    hasSearched: false,
     items: [],
   });
   const selectedServiceRequest = useMemo(
@@ -690,6 +707,28 @@ export default function Home() {
   const locationPreviewCity = serviceRequest.city.trim();
   const locationPreviewState = serviceRequest.state.trim().toUpperCase();
   const hasLocationPreviewInput = Boolean(locationPreviewCity || locationPreviewState);
+  const locationOptions = useMemo(() => {
+    const cityFilter = normalizeText(locationPreviewCity);
+    const stateFilter = normalizeText(locationPreviewState);
+    const options = buildLocationOptions(directory.installers);
+
+    if (!cityFilter && !stateFilter) {
+      return options.slice(0, 6);
+    }
+
+    return options
+      .filter((option) => {
+        const city = normalizeText(option.city);
+        const state = normalizeText(option.state);
+        const label = normalizeText(`${option.city} ${option.state}`);
+
+        return (
+          (!cityFilter || city.includes(cityFilter) || label.includes(cityFilter)) &&
+          (!stateFilter || state.startsWith(stateFilter) || label.includes(stateFilter))
+        );
+      })
+      .slice(0, 6);
+  }, [directory.installers, locationPreviewCity, locationPreviewState]);
 
   const hasActiveFilters = useMemo(
     () => Boolean(filters.search.trim() || filters.city.trim() || filters.state.trim()),
@@ -892,70 +931,16 @@ export default function Home() {
     };
   }, [directory.installers.length, filters, hasActiveFilters, hasGuidedRequest, loading]);
 
-  useEffect(() => {
-    if (requestStep !== 2 || !hasLocationPreviewInput) {
-      setLocationPreview({ loading: false, hasSearched: false, items: [] });
-      return;
-    }
-
-    let cancelled = false;
-
-    const timer = window.setTimeout(async () => {
-      setLocationPreview((current) => ({
-        ...current,
-        loading: true,
-        hasSearched: true,
-      }));
-
-      try {
-        const response = await api.get('/public/installers', {
-          params: {
-            search: '',
-            city: locationPreviewCity,
-            state: locationPreviewState,
-          },
-        });
-
-        const regionInstallers = response.data?.installers || [];
-        const installers = [...regionInstallers]
-          .sort(
-            (left, right) =>
-              getInstallerMatchScore(right, serviceRequest) - getInstallerMatchScore(left, serviceRequest)
-          )
-          .slice(0, 4);
-
-        if (!cancelled) {
-          setLocationPreview({
-            loading: false,
-            hasSearched: true,
-            items: installers,
-          });
-        }
-      } catch (_error) {
-        if (!cancelled) {
-          setLocationPreview({
-            loading: false,
-            hasSearched: true,
-            items: [],
-          });
-        }
-      }
-    }, 320);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [
-    hasLocationPreviewInput,
-    locationPreviewCity,
-    locationPreviewState,
-    requestStep,
-    serviceRequest,
-  ]);
-
   const updateServiceRequest = (field, value) => {
     setServiceRequest((current) => ({ ...current, [field]: value }));
+  };
+
+  const selectLocationOption = (location) => {
+    setServiceRequest((current) => ({
+      ...current,
+      city: location.city,
+      state: location.state,
+    }));
   };
 
   const updateMeasurementStatus = (value) => {
@@ -1464,70 +1449,43 @@ export default function Home() {
                 <div className="client-app-location-preview" aria-live="polite">
                   <div className="client-app-location-preview-head">
                     <div>
-                      <strong>Profissionais nessa regiao</strong>
+                      <strong>Locais sugeridos</strong>
                       <span>
                         {hasLocationPreviewInput
-                          ? 'A lista atualiza conforme voce preenche cidade e estado.'
-                          : 'Digite a cidade ou use sua localizacao para ver a lista.'}
+                          ? 'Escolha uma cidade e estado para preencher os campos.'
+                          : 'Selecione um local rapido ou digite sua cidade.'}
                       </span>
                     </div>
-                    {hasLocationPreviewInput ? (
-                      <span className="client-app-location-preview-count">
-                        {locationPreview.loading
-                          ? 'Buscando'
-                          : `${locationPreview.items.length} encontrado${locationPreview.items.length === 1 ? '' : 's'}`}
-                      </span>
-                    ) : null}
+                    <span className="client-app-location-preview-count">
+                      {locationOptions.length} loca{locationOptions.length === 1 ? 'l' : 'is'}
+                    </span>
                   </div>
 
-                  {!hasLocationPreviewInput ? (
-                    <p className="client-app-location-preview-empty">
-                      A lista aparece aqui antes de voce continuar.
-                    </p>
-                  ) : locationPreview.loading ? (
-                    <p className="client-app-location-preview-empty">Buscando profissionais da regiao...</p>
-                  ) : locationPreview.items.length > 0 ? (
+                  {locationOptions.length > 0 ? (
                     <div className="client-app-location-preview-list">
-                      {locationPreview.items.map((installer) => {
-                        const availability = getAvailabilityState(installer);
-                        const displayName = getInstallerDisplayName(installer);
-                        const isVerified = Boolean(
-                          installer.certificate_verified ||
-                          installer.verified ||
-                          installer.safety?.document_masked
-                        );
-
-                        return (
-                          <article className="client-app-location-preview-item" key={`location-${installer.id}`}>
-                            <div className="client-app-location-preview-avatar">
-                              {installer.installer_photo ? (
-                                <img alt={`Foto de ${displayName}`} src={installer.installer_photo} />
-                              ) : installer.logo ? (
-                                <img alt={`Logo de ${displayName}`} src={installer.logo} />
-                              ) : (
-                                <span>{getInitials(displayName)}</span>
-                              )}
-                            </div>
-                            <div className="client-app-location-preview-copy">
-                              <strong>
-                                {displayName}
-                                {isVerified ? <AppIcon name="check-badge" /> : null}
-                              </strong>
-                              <span>{getRegionLabel(installer)}</span>
-                            </div>
-                            <div className="client-app-location-preview-meta">
-                              <span>{getInstallerRating(installer).toFixed(1)} nota</span>
-                              <span data-tone={availability.tone}>{availability.label}</span>
-                            </div>
-                          </article>
-                        );
-                      })}
+                      {locationOptions.map((location) => (
+                        <button
+                          className="client-app-location-preview-item client-app-location-option"
+                          key={`${location.city}-${location.state}`}
+                          onClick={() => selectLocationOption(location)}
+                          type="button"
+                        >
+                          <span className="client-app-location-pin">
+                            <AppIcon name="map-pin" />
+                          </span>
+                          <span className="client-app-location-preview-copy">
+                            <strong>{location.city}</strong>
+                            <span>{location.state}</span>
+                          </span>
+                          <span className="client-app-location-use">Usar</span>
+                        </button>
+                      ))}
                     </div>
-                  ) : locationPreview.hasSearched ? (
+                  ) : (
                     <p className="client-app-location-preview-empty">
-                      Nenhum profissional encontrado nessa regiao ainda. Ao continuar, mostramos alternativas proximas.
+                      Nenhum local encontrado. Digite a cidade e o estado manualmente ou use sua localizacao.
                     </p>
-                  ) : null}
+                  )}
                 </div>
               </div>
             ) : null}
