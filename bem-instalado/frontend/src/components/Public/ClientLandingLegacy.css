@@ -265,6 +265,7 @@
 }
 
 .literal-landing .landing-match-map {
+  --match-connector-width: clamp(8.6rem, 8vw, 9.2rem);
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 26rem) 24rem minmax(0, 26rem);
@@ -288,6 +289,21 @@
   align-items: center;
   min-height: 8.2rem;
   animation: landing-reveal-up 0.72s cubic-bezier(0.25, 0.4, 0.25, 1) both;
+}
+
+.literal-landing .landing-match-list-left .landing-match-item {
+  grid-template-columns: minmax(0, 1fr) 7.6rem;
+}
+
+.literal-landing .landing-match-list-left .landing-match-copy {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.literal-landing .landing-match-list-left .landing-match-orb {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
 }
 
 .literal-landing .landing-match-list-left .landing-match-item:nth-child(1) { animation-delay: 0.06s; }
@@ -724,6 +740,7 @@
   }
 
   .literal-landing .landing-match-item,
+  .literal-landing .landing-match-list-left .landing-match-item,
   .literal-landing .landing-match-list-right .landing-match-item {
     grid-template-columns: 5.2rem minmax(0, 1fr);
     gap: 1rem;
@@ -734,6 +751,13 @@
     background: rgba(255, 255, 255, 0.028);
     -webkit-backdrop-filter: blur(18px);
     backdrop-filter: blur(18px);
+  }
+
+  .literal-landing .landing-match-list-left .landing-match-copy,
+  .literal-landing .landing-match-list-left .landing-match-orb {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: auto;
   }
 
   .literal-landing .landing-match-list-left .landing-match-item::before,
