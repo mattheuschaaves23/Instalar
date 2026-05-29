@@ -650,51 +650,6 @@ function Hero() {
           ))}
         </StaggerContainer>
 
-        <AnimatedSection className="relative mx-auto mt-20 max-w-4xl" delay={0.7}>
-          <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
-          <div className="absolute -inset-4 bg-gradient-to-r from-[#cda349]/20 via-[#d8ad55]/20 to-[#cda349]/20 blur-3xl opacity-50" />
-          <div className="relative rounded-3xl p-2 shadow-2xl glass gradient-border-gold">
-            <div className="rounded-2xl bg-[#0a0a0a] p-4 sm:p-8">
-              <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="h-2.5 w-2.5 rounded-full bg-red-500/80 sm:h-3 sm:w-3" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/80 sm:h-3 sm:w-3" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-green-500/80 sm:h-3 sm:w-3" />
-                </div>
-                <div className="text-[10px] text-white/30 sm:text-xs">instalar.plus/meus-projetos</div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                {[1, 2, 3].map((item) => (
-                  <div className="animate-float rounded-lg bg-white/5 p-2 sm:rounded-xl sm:p-4" key={item} style={{ animationDelay: `${item * 0.5}s` }}>
-                    <div className="mb-2 h-1.5 w-10 rounded bg-white/10 sm:mb-3 sm:h-2 sm:w-16" />
-                    <div className="h-6 w-full rounded bg-gradient-to-r from-[#cda349]/20 to-[#d8ad55]/20 sm:h-8" />
-                    <div className="mt-2 h-1.5 w-14 rounded bg-white/5 sm:mt-3 sm:h-2 sm:w-24" />
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-6 sm:gap-4">
-                <div className="animate-float-delay rounded-lg bg-white/5 p-2 sm:rounded-xl sm:p-4">
-                  <div className="mb-2 flex items-center gap-2 sm:mb-3 sm:gap-3">
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55] sm:h-10 sm:w-10" />
-                    <div>
-                      <div className="h-1.5 w-14 rounded bg-white/20 sm:h-2 sm:w-20" />
-                      <div className="mt-1 h-1.5 w-10 rounded bg-white/10 sm:h-2 sm:w-16" />
-                    </div>
-                  </div>
-                  <div className="h-1.5 w-full rounded bg-white/5 sm:h-2" />
-                  <div className="mt-1 h-1.5 w-3/4 rounded bg-white/5 sm:mt-2 sm:h-2" />
-                </div>
-                <div className="animate-float-slow rounded-lg bg-white/5 p-2 sm:rounded-xl sm:p-4">
-                  <div className="mb-2 h-1.5 w-8 rounded bg-white/10 sm:mb-3 sm:h-2 sm:w-12" />
-                  <div className="text-xl font-bold gradient-text-gold sm:text-2xl">98%</div>
-                  <div className="mt-1 h-1.5 w-16 rounded bg-white/5 sm:mt-2 sm:h-2 sm:w-24" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </AnimatedSection>
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a0a] to-transparent" />
