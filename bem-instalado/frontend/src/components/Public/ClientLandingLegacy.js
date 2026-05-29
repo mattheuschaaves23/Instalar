@@ -7,21 +7,21 @@ const REQUEST_PATH = '/cliente';
 const navLinks = [
   { href: '#como-funciona', label: 'Como Funciona' },
   { href: '#beneficios', label: 'Benefícios' },
-  { href: '#avaliacoes', label: 'Avaliações' },
+  { href: '#avaliacoes', label: 'Escolha segura' },
   { href: '#faq', label: 'FAQ' },
 ];
 
 const heroStats = [
-  { icon: 'shield', value: '500+', label: 'Profissionais Verificados' },
-  { icon: 'sparkles', value: '10.000+', label: 'Projetos Realizados' },
-  { icon: 'clock', value: '24h', label: 'Tempo Médio de Resposta' },
+  { icon: 'clipboard', value: 'Pedido guiado', label: 'Você informa ambiente, material, medidas e localização.' },
+  { icon: 'users', value: 'Interesse dos instaladores', label: 'Profissionais próximos podem demonstrar interesse no pedido.' },
+  { icon: 'message-circle', value: 'Contato pelo WhatsApp', label: 'Você escolhe com quem quer conversar antes de fechar.' },
 ];
 
 const trustStats = [
-  { value: '98%', label: 'Satisfação dos clientes' },
-  { value: '24h', label: 'Resposta média' },
-  { value: '500+', label: 'Cidades atendidas' },
-  { value: '50k+', label: 'Orçamentos realizados' },
+  { value: 'Pedido por região', label: 'A localização ajuda a priorizar instaladores próximos.' },
+  { value: 'Sem preço fixo', label: 'Valor, prazo e visita são combinados direto com o profissional.' },
+  { value: 'Cliente escolhe', label: 'Mais de um instalador pode demonstrar interesse no mesmo pedido.' },
+  { value: 'WhatsApp direto', label: 'A conversa só começa depois que o cliente escolhe quem chamar.' },
 ];
 
 const steps = [
@@ -34,8 +34,8 @@ const steps = [
   {
     number: '02',
     icon: 'users',
-    title: 'Receba Propostas',
-    description: 'Profissionais qualificados da sua região demonstram interesse.',
+    title: 'Receba Interessados',
+    description: 'Profissionais da sua região podem demonstrar interesse no pedido.',
   },
   {
     number: '03',
@@ -65,124 +65,112 @@ const steps = [
 
 const features = [
   {
-    icon: 'search',
-    title: 'Busca Inteligente',
-    description: 'Encontre profissionais qualificados na sua região com nosso algoritmo de matching avançado.',
+    icon: 'map-pin',
+    title: 'Pedido por região',
+    description: 'Cidade, estado e bairro ajudam o pedido a aparecer para instaladores mais próximos.',
   },
   {
-    icon: 'shield',
-    title: 'Perfis Verificados',
-    description: 'Todos os profissionais passam por verificação rigorosa de documentos e histórico.',
+    icon: 'clipboard',
+    title: 'Informações do pedido',
+    description: 'O cliente descreve o ambiente, o tipo de papel e se precisa de visita para medir.',
   },
   {
     icon: 'star',
-    title: 'Avaliações Reais',
-    description: 'Veja avaliações e fotos de trabalhos anteriores feitos por clientes verificados.',
+    title: 'Avaliações quando disponíveis',
+    description: 'Quando houver avaliações no perfil, elas ajudam a comparar atendimento e acabamento.',
   },
   {
     icon: 'message-circle',
     title: 'Contato Direto',
-    description: 'Converse diretamente pelo WhatsApp com os profissionais que mais te interessam.',
+    description: 'Depois de escolher um interessado, o cliente pode chamar o profissional no WhatsApp.',
   },
   {
-    icon: 'zap',
-    title: 'Resposta Rápida',
-    description: 'Receba propostas em até 24 horas de profissionais disponíveis na sua área.',
+    icon: 'users',
+    title: 'Instaladores interessados',
+    description: 'Os profissionais visualizam oportunidades compatíveis e decidem se querem participar.',
   },
   {
     icon: 'check-circle',
-    title: 'Garantia de Qualidade',
-    description: 'Suporte dedicado e garantia de satisfação em todos os serviços realizados.',
+    title: 'Decisão do cliente',
+    description: 'O cliente compara os interessados e decide com quem quer seguir a conversa.',
   },
 ];
 
 const demoStats = [
-  { icon: 'users', value: '12', label: 'Propostas' },
-  { icon: 'star', value: '4.9', label: 'Avaliação' },
-  { icon: 'trending-up', value: '98%', label: 'Match' },
+  { icon: 'users', value: 'Interesse', label: 'Instaladores' },
+  { icon: 'star', value: 'Perfil', label: 'Avaliações' },
+  { icon: 'trending-up', value: 'Região', label: 'Prioridade' },
 ];
 
-const testimonials = [
+const choiceGuides = [
   {
     id: 1,
-    name: 'Marina Silva',
-    role: 'Arquiteta',
-    location: 'São Paulo, SP',
-    rating: 5,
-    text: 'Plataforma incrível! Encontrei um profissional excelente em menos de 24 horas. O processo foi super simples e o resultado ficou perfeito.',
-    image: 'MS',
+    icon: 'map-pin',
+    title: 'Confira a região atendida',
+    text: 'Antes de conversar, veja se o profissional atende a cidade, o bairro e o tipo de deslocamento necessário.',
+    detail: 'Evita contato com quem está longe do serviço.',
   },
   {
     id: 2,
-    name: 'Roberto Almeida',
-    role: 'Empresário',
-    location: 'Rio de Janeiro, RJ',
-    rating: 5,
-    text: 'Usei o Instalar+ para decorar meu escritório. A qualidade dos profissionais é impressionante, e as avaliações realmente ajudam na escolha.',
-    image: 'RA',
+    icon: 'star',
+    title: 'Veja avaliações disponíveis',
+    text: 'Quando o perfil tiver avaliações, use os comentários para comparar pontualidade, acabamento e atendimento.',
+    detail: 'Avaliação ajuda, mas não substitui uma boa conversa.',
   },
   {
     id: 3,
-    name: 'Carla Santos',
-    role: 'Designer de Interiores',
-    location: 'Belo Horizonte, MG',
-    rating: 5,
-    text: 'Como designer, preciso de parceiros confiáveis. O Instalar+ se tornou minha primeira opção para indicar aos meus clientes.',
-    image: 'CS',
+    icon: 'clipboard',
+    title: 'Explique bem o ambiente',
+    text: 'Informe sala, quarto, cozinha, comércio ou mais de um ambiente para o instalador entender o tamanho do trabalho.',
+    detail: 'Quanto mais claro o pedido, melhor a conversa inicial.',
   },
   {
     id: 4,
-    name: 'Fernando Costa',
-    role: 'Proprietário',
-    location: 'Curitiba, PR',
-    rating: 5,
-    text: 'Reformei toda a casa usando a plataforma. Foram 5 ambientes diferentes e todos os instaladores foram excelentes profissionais.',
-    image: 'FC',
+    icon: 'message-circle',
+    title: 'Converse antes de fechar',
+    text: 'Use o WhatsApp para alinhar data, visita, material, preparação da parede e condições do serviço.',
+    detail: 'O combinado final acontece entre cliente e profissional.',
   },
   {
     id: 5,
-    name: 'Ana Beatriz',
-    role: 'Corretora de Imóveis',
-    location: 'Brasília, DF',
-    rating: 5,
-    text: 'Indico para todos os meus clientes. A facilidade de encontrar bons profissionais faz toda diferença no fechamento de negócios.',
-    image: 'AB',
+    icon: 'users',
+    title: 'Compare interessados',
+    text: 'Se mais de um instalador demonstrar interesse, escolha quem parece mais adequado para o seu pedido.',
+    detail: 'Você não precisa chamar todos.',
   },
   {
     id: 6,
-    name: 'Lucas Mendes',
-    role: 'Engenheiro',
-    location: 'Porto Alegre, RS',
-    rating: 5,
-    text: 'Tecnologia de primeira! A interface é intuitiva e os filtros de busca são muito precisos. Achei exatamente o que precisava.',
-    image: 'LM',
+    icon: 'check-circle',
+    title: 'Combine detalhes por escrito',
+    text: 'Deixe claro no WhatsApp o que será instalado, o prazo, a necessidade de visita e qualquer preparação do local.',
+    detail: 'Isso reduz erro de entendimento no dia do serviço.',
   },
 ];
 
 const faqs = [
   {
     question: 'Como funciona o processo de solicitação?',
-    answer: 'É simples: você preenche um formulário rápido com os detalhes do projeto. Em seguida, instaladores verificados da sua região recebem sua solicitação e demonstram interesse. Você analisa os perfis, avaliações e escolhe com quem quer conversar pelo WhatsApp.',
+    answer: 'Você preenche o pedido com ambiente, material, medidas ou necessidade de visita e localização. Instaladores próximos podem demonstrar interesse. Depois, você escolhe com quem quer conversar pelo WhatsApp.',
   },
   {
-    question: 'Quanto custa usar a plataforma?',
-    answer: 'O uso da plataforma é gratuito para clientes. Você não paga para solicitar orçamentos, comparar profissionais ou entrar em contato. O valor final do serviço é negociado diretamente entre você e o instalador escolhido.',
+    question: 'A solicitação tem custo para o cliente?',
+    answer: 'A solicitação pelo site é gratuita para o cliente. O valor final do serviço, prazo e visita são combinados diretamente entre você e o instalador escolhido.',
   },
   {
-    question: 'Como vocês verificam os instaladores?',
-    answer: 'Os profissionais passam por um processo de verificação com validação de documentos, análise de portfólio, referências e monitoramento contínuo das avaliações recebidas na plataforma.',
+    question: 'Como escolher um instalador com mais segurança?',
+    answer: 'Analise as informações disponíveis no perfil, avaliações quando existirem, região atendida e conversa pelo WhatsApp. Antes de fechar, confirme material, prazo, visita e detalhes do local.',
   },
   {
-    question: 'E se eu não gostar do serviço prestado?',
-    answer: 'A plataforma mantém avaliações transparentes e suporte dedicado. Se houver problema, a equipe pode ajudar na mediação. Profissionais com avaliações negativas recorrentes podem ser removidos.',
+    question: 'E se eu não souber as medidas?',
+    answer: 'Você pode informar que precisa de visita técnica. Assim o instalador entende que a medição deve ser confirmada antes do orçamento final.',
   },
   {
-    question: 'Vocês atendem em todo o Brasil?',
-    answer: 'Sim. A rede cobre capitais, regiões metropolitanas e cidades em expansão. A solicitação prioriza instaladores próximos da localização informada.',
+    question: 'Aparece para instaladores de qualquer lugar?',
+    answer: 'A localização informada no pedido ajuda a priorizar profissionais mais próximos. A disponibilidade depende dos instaladores cadastrados em cada região.',
   },
   {
     question: 'Posso escolher mais de um instalador para avaliar?',
-    answer: 'Sim. Você pode comparar quantos profissionais quiser antes de decidir. Recomendamos conversar com mais de um instalador para comparar proposta, prazo e condições.',
+    answer: 'Você pode comparar os interessados antes de decidir quem chamar. O contato direto acontece com o profissional que você escolher.',
   },
 ];
 
@@ -190,27 +178,21 @@ const footerLinks = {
   produto: [
     { label: 'Como Funciona', href: '#como-funciona' },
     { label: 'Benefícios', href: '#beneficios' },
-    { label: 'Avaliações', href: '#avaliacoes' },
+    { label: 'Escolha segura', href: '#avaliacoes' },
     { label: 'FAQ', href: '#faq' },
   ],
-  empresa: [
-    { label: 'Sobre Nós', href: '#' },
-    { label: 'Blog', href: '#' },
-    { label: 'Carreiras', href: '#' },
-    { label: 'Imprensa', href: '#' },
+  pedido: [
+    { label: 'Solicitar pedido', href: REQUEST_PATH },
+    { label: 'Informar localização', href: REQUEST_PATH },
+    { label: 'Receber interessados', href: REQUEST_PATH },
+    { label: 'Escolher profissional', href: REQUEST_PATH },
   ],
-  legal: [
-    { label: 'Termos de Uso', href: '#' },
-    { label: 'Privacidade', href: '#' },
-    { label: 'Cookies', href: '#' },
+  processo: [
+    { label: 'Pedido guiado', href: '#como-funciona' },
+    { label: 'Comparar perfis', href: '#avaliacoes' },
+    { label: 'Contato pelo WhatsApp', href: '#beneficios' },
   ],
 };
-
-const socialLinks = [
-  { icon: 'instagram', href: '#', label: 'Instagram' },
-  { icon: 'twitter', href: '#', label: 'Twitter' },
-  { icon: 'linkedin', href: '#', label: 'LinkedIn' },
-];
 
 function Icon({ name, className = '', filled = false, size = 24 }) {
   const commonProps = {
@@ -598,15 +580,10 @@ function Hero() {
       />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 py-24 text-center">
-        <AnimatedSection className="mb-8 inline-flex items-center gap-2 rounded-full glass-gold px-4 py-2" delay={0}>
-          <Icon className="h-4 w-4 text-[#cda349]" name="sparkles" size={16} />
-          <span className="text-sm text-white/80">A plataforma #1 do Brasil</span>
-        </AnimatedSection>
-
         <AnimatedSection delay={0.1}>
           <h1 className="mx-auto max-w-5xl text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-7xl">
-            <span className="text-balance">Encontre o profissional </span>
-            <span className="gradient-text-gold">perfeito</span>
+            <span className="text-balance">Encontre um profissional </span>
+            <span className="gradient-text-gold">compatível</span>
             <br className="hidden sm:block" />
             <span className="text-balance"> para seu projeto</span>
           </h1>
@@ -614,8 +591,8 @@ function Hero() {
 
         <AnimatedSection delay={0.2}>
           <p className="mx-auto mt-6 max-w-2xl text-base text-white/60 sm:text-xl text-pretty">
-            Conectamos você aos melhores profissionais de instalação de papel de parede.
-            Segurança garantida, resultados extraordinários.
+            Crie uma solicitação, informe sua região e deixe instaladores interessados
+            aparecerem para você escolher com quem quer conversar.
           </p>
         </AnimatedSection>
 
@@ -643,8 +620,8 @@ function Hero() {
             <div className="group relative" key={stat.label}>
               <div className="glass rounded-2xl p-6 transition-all hover:bg-white/5">
                 <Icon className="mx-auto mb-3 h-8 w-8 text-[#cda349]" name={stat.icon} size={32} />
-                <div className="text-3xl font-bold gradient-text-gold">{stat.value}</div>
-                <div className="mt-1 text-sm text-white/50">{stat.label}</div>
+                <div className="text-xl font-bold leading-tight gradient-text-gold sm:text-2xl">{stat.value}</div>
+                <div className="mt-2 text-sm leading-relaxed text-white/50">{stat.label}</div>
               </div>
             </div>
           ))}
@@ -667,10 +644,10 @@ function TrustSection() {
             <div className="group relative" key={stat.label}>
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#cda349]/10 to-[#d8ad55]/10 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
               <div className="relative rounded-2xl p-6 text-center glass card-premium sm:p-8">
-                <div className="mb-2 text-3xl font-bold gradient-text-gold sm:text-4xl lg:text-5xl">
+                <div className="mb-3 text-xl font-bold leading-tight gradient-text-gold sm:text-2xl">
                   {stat.value}
                 </div>
-                <div className="text-sm text-white/50">{stat.label}</div>
+                <div className="text-sm leading-relaxed text-white/50">{stat.label}</div>
               </div>
             </div>
           ))}
@@ -756,13 +733,13 @@ function FeaturesSection() {
 
       <div className="relative z-10 mx-auto max-w-7xl px-6">
         <AnimatedSection className="landing-match-header mb-16 text-center sm:mb-20">
-          <SectionBadge icon="zap">Recursos Premium</SectionBadge>
+          <SectionBadge icon="zap">Recursos do pedido</SectionBadge>
           <h2 className="mb-6 text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl text-balance">
             Tudo que você precisa para <span className="gradient-text-gold">encontrar o profissional ideal</span>
           </h2>
           <p className="mx-auto max-w-3xl text-base leading-relaxed text-white/60 sm:text-xl text-pretty">
-            Nossa plataforma oferece ferramentas avançadas para garantir que você encontre
-            o profissional perfeito com <strong>segurança e praticidade.</strong>
+            A plataforma organiza localização, detalhes do pedido e interessados
+            para você escolher com <strong>mais segurança e praticidade.</strong>
           </p>
         </AnimatedSection>
 
@@ -809,7 +786,7 @@ function FeaturesSection() {
                   <Icon filled key={index} name="star" size={18} />
                 ))}
               </div>
-              <strong>MATCH PERFEITO</strong>
+              <strong>PEDIDO COMPATÍVEL</strong>
             </div>
           </div>
 
@@ -834,8 +811,8 @@ function FeaturesSection() {
             <Icon name="shield" size={34} />
           </div>
           <div>
-            <strong>Mais <span>segurança</span>, mais <span>praticidade</span>, os melhores profissionais para você.</strong>
-            <p>É assim que conectamos você ao profissional ideal.</p>
+            <strong>Mais <span>clareza</span>, mais <span>praticidade</span>, para você escolher com segurança.</strong>
+            <p>É assim que o pedido chega a instaladores compatíveis com a região e o serviço.</p>
           </div>
         </AnimatedSection>
       </div>
@@ -976,7 +953,7 @@ function TestimonialsSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const itemsPerPage = 3;
-  const totalPages = Math.ceil(testimonials.length / itemsPerPage);
+  const totalPages = Math.ceil(choiceGuides.length / itemsPerPage);
 
   const nextSlide = useCallback(() => {
     setCurrentIndex((previous) => (previous + 1) % totalPages);
@@ -995,7 +972,7 @@ function TestimonialsSection() {
     return () => window.clearInterval(interval);
   }, [isAutoPlaying, nextSlide]);
 
-  const currentTestimonials = testimonials.slice(
+  const currentGuides = choiceGuides.slice(
     currentIndex * itemsPerPage,
     (currentIndex + 1) * itemsPerPage
   );
@@ -1008,15 +985,15 @@ function TestimonialsSection() {
       <div className="relative z-10 mx-auto max-w-7xl px-6">
         <AnimatedSection className="mb-16 text-center">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full glass-gold px-4 py-2 text-sm text-white/70">
-            <Icon className="h-4 w-4 text-[#cda349]" filled name="star" size={16} />
-            Avaliações Reais
+            <Icon className="h-4 w-4 text-[#cda349]" name="check-circle" size={16} />
+            Escolha segura
           </span>
           <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
-            O que nossos clientes <span className="gradient-text-gold">dizem sobre nós</span>
+            Compare informações antes de <span className="gradient-text-gold">chamar um instalador</span>
           </h2>
           <p className="mx-auto max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
-            Mais de 10.000 projetos realizados com sucesso. Veja o que dizem
-            os clientes que já usaram nossa plataforma.
+            Esta área mostra critérios práticos para o cliente decidir com mais segurança,
+            sem depender de número inventado ou promessa sem confirmação.
           </p>
         </AnimatedSection>
 
@@ -1027,29 +1004,21 @@ function TestimonialsSection() {
         >
           <div className="overflow-hidden">
             <div className="landing-carousel-page grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" key={currentIndex}>
-              {currentTestimonials.map((testimonial) => (
-                <div className="group relative" key={testimonial.id}>
+              {currentGuides.map((guide) => (
+                <div className="group relative" key={guide.id}>
                   <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-[#cda349]/20 to-[#d8ad55]/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
                   <div className="relative h-full rounded-2xl p-6 glass card-premium sm:p-8">
-                    <Icon className="absolute right-6 top-6 h-8 w-8 text-white/5" name="quote" size={32} />
-                    <div className="mb-4 flex gap-1">
-                      {Array.from({ length: testimonial.rating }).map((_, index) => (
-                        <Icon className="h-4 w-4 text-[#cda349]" filled key={index} name="star" size={16} />
-                      ))}
+                    <Icon className="absolute right-6 top-6 h-8 w-8 text-white/5" name={guide.icon} size={32} />
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#cda349]/15 text-[#d8ad55]">
+                      <Icon className="h-6 w-6" name={guide.icon} size={24} />
                     </div>
-                    <p className="mb-6 text-sm leading-relaxed text-white/70 sm:text-base">
-                      &ldquo;{testimonial.text}&rdquo;
+                    <h3 className="mb-3 text-lg font-semibold text-white">{guide.title}</h3>
+                    <p className="mb-6 text-sm leading-relaxed text-white/60 sm:text-base">
+                      {guide.text}
                     </p>
-                    <div className="flex items-center gap-4 border-t border-white/5 pt-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55] font-semibold text-black">
-                        {testimonial.image}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-white">{testimonial.name}</div>
-                        <div className="text-sm text-white/40">
-                          {testimonial.role} • {testimonial.location}
-                        </div>
-                      </div>
+                    <div className="flex items-start gap-3 border-t border-white/5 pt-4 text-sm leading-relaxed text-white/45">
+                      <Icon className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#cda349]" name="check-circle" size={16} />
+                      <span>{guide.detail}</span>
                     </div>
                   </div>
                 </div>
@@ -1164,12 +1133,12 @@ function CtaSection() {
           </div>
 
           <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-6xl text-balance">
-            Pronto para encontrar o <span className="gradient-text-gold">instalador perfeito</span>?
+            Pronto para encontrar um <span className="gradient-text-gold">instalador compatível</span>?
           </h2>
 
           <p className="mx-auto mb-10 max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
-            Junte-se a milhares de clientes satisfeitos. Solicite seu orçamento
-            gratuitamente e receba propostas em até 24 horas.
+            Solicite gratuitamente, informe sua localização e acompanhe os instaladores
+            interessados para escolher com quem quer conversar.
           </p>
 
           <SmartLink
@@ -1181,7 +1150,7 @@ function CtaSection() {
           </SmartLink>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-white/40 sm:gap-8">
-            {['100% Gratuito', 'Sem compromisso', 'Resposta em 24h'].map((item) => (
+            {['Gratuito para solicitar', 'Sem compromisso', 'Você escolhe o profissional'].map((item) => (
               <div className="flex items-center gap-2" key={item}>
                 <div className="h-2 w-2 rounded-full bg-green-500" />
                 {item}
@@ -1205,22 +1174,22 @@ function Footer() {
             <LogoMark />
 
             <p className="mb-6 mt-6 max-w-sm leading-relaxed text-white/40">
-              A plataforma que conecta você aos melhores instaladores de papel de parede do Brasil.
-              Tecnologia, segurança e qualidade em um só lugar.
+              Plataforma para clientes criarem pedidos de instalação de papel de parede
+              e conversarem com instaladores interessados.
             </p>
 
             <div className="space-y-3 text-sm">
               <div className="flex items-center gap-3 text-white/40">
-                <Icon className="h-4 w-4 text-[#cda349]" name="mail" size={16} />
-                contato@instalarmais.com.br
+                <Icon className="h-4 w-4 text-[#cda349]" name="clipboard" size={16} />
+                Solicitação organizada pelo painel
               </div>
               <div className="flex items-center gap-3 text-white/40">
-                <Icon className="h-4 w-4 text-[#cda349]" name="phone" size={16} />
-                (11) 99999-9999
+                <Icon className="h-4 w-4 text-[#cda349]" name="message-circle" size={16} />
+                Contato pelo WhatsApp após a escolha
               </div>
               <div className="flex items-center gap-3 text-white/40">
                 <Icon className="h-4 w-4 text-[#cda349]" name="map-pin" size={16} />
-                São Paulo, Brasil
+                Pedidos organizados por cidade, estado e bairro
               </div>
             </div>
           </div>
@@ -1230,7 +1199,7 @@ function Footer() {
               {Object.entries(footerLinks).map(([group, links]) => (
                 <div key={group}>
                   <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white">
-                    {group === 'produto' ? 'Produto' : group === 'empresa' ? 'Empresa' : 'Legal'}
+                    {group === 'produto' ? 'Produto' : group === 'pedido' ? 'Pedido' : 'Processo'}
                   </h4>
                   <ul className="space-y-3">
                     {links.map((link) => (
@@ -1252,18 +1221,9 @@ function Footer() {
             © {new Date().getFullYear()} Instalar+. Todos os direitos reservados.
           </p>
 
-          <div className="flex items-center gap-4">
-            {socialLinks.map((social) => (
-              <SmartLink
-                aria-label={social.label}
-                className="flex h-10 w-10 items-center justify-center rounded-full glass transition-colors hover:bg-white/10"
-                href={social.href}
-                key={social.label}
-              >
-                <Icon className="h-5 w-5 text-white/50 transition-colors hover:text-white" name={social.icon} size={20} />
-              </SmartLink>
-            ))}
-          </div>
+          <p className="text-sm text-white/30">
+            Dados comerciais e prazos são combinados diretamente entre cliente e instalador.
+          </p>
         </div>
       </div>
     </footer>
