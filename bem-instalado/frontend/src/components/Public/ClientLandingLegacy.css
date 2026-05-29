@@ -488,20 +488,26 @@
 }
 
 .literal-landing .landing-match-core {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   z-index: 1;
   display: grid;
-  justify-items: center;
-  gap: 1rem;
+  width: 10.8rem;
+  height: 10.8rem;
+  place-items: center;
   color: #f0d28a;
   text-align: center;
   text-shadow: 0 0 28px rgba(205, 163, 73, 0.36);
+  transform: translate(-50%, -50%);
 }
 
 .literal-landing .landing-match-core > svg {
-  width: 8.8rem;
-  height: 8.8rem;
-  padding: 1.8rem;
+  position: absolute;
+  inset: 0;
+  width: 10.8rem;
+  height: 10.8rem;
+  padding: 2.2rem;
   border: 4px solid rgba(240, 210, 138, 0.92);
   border-radius: 999px;
   background: rgba(205, 163, 73, 0.08);
@@ -511,16 +517,25 @@
 }
 
 .literal-landing .landing-match-stars {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.85rem);
   display: flex;
   gap: 0.35rem;
   color: #f0c45c;
+  transform: translateX(-50%);
 }
 
 .literal-landing .landing-match-core strong {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 2.3rem);
+  width: max-content;
   color: #f0d28a;
   font-size: 1rem;
   font-weight: 900;
   letter-spacing: 0;
+  transform: translateX(-50%);
 }
 
 .literal-landing .landing-match-note {
@@ -693,10 +708,15 @@
     height: 22rem;
   }
 
+  .literal-landing .landing-match-core {
+    width: 8rem;
+    height: 8rem;
+  }
+
   .literal-landing .landing-match-core > svg {
-    width: 7.2rem;
-    height: 7.2rem;
-    padding: 1.45rem;
+    width: 8rem;
+    height: 8rem;
+    padding: 1.65rem;
   }
 
   .literal-landing .landing-match-list {
@@ -795,12 +815,14 @@
 
   .literal-landing .landing-match-core {
     gap: 0.72rem;
+    width: 6.7rem;
+    height: 6.7rem;
   }
 
   .literal-landing .landing-match-core > svg {
-    width: 5.8rem;
-    height: 5.8rem;
-    padding: 1.15rem;
+    width: 6.7rem;
+    height: 6.7rem;
+    padding: 1.3rem;
     border-width: 3px;
   }
 
@@ -810,6 +832,7 @@
   }
 
   .literal-landing .landing-match-core strong {
+    top: calc(100% + 1.8rem);
     font-size: 0.78rem;
   }
 
