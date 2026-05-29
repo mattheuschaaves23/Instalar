@@ -875,6 +875,12 @@ function FeaturesSection() {
 }
 
 function DemoSection() {
+  const shouldRenderDemoSection = false;
+
+  if (!shouldRenderDemoSection) {
+    return null;
+  }
+
   return (
     <section className="relative overflow-hidden py-24 sm:py-32">
       <div className="absolute inset-0 grid-pattern opacity-20" />
