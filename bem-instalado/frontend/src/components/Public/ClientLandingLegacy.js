@@ -788,39 +788,87 @@ function HowItWorksSection() {
 }
 
 function FeaturesSection() {
+  const leftFeatures = features.slice(0, 3);
+  const rightFeatures = features.slice(3);
+
   return (
-    <section className="relative overflow-hidden py-24 sm:py-32" id="beneficios">
+    <section className="landing-match-section relative overflow-hidden py-24 sm:py-32" id="beneficios">
       <div className="absolute inset-0 grid-pattern opacity-20" />
-      <div className="absolute left-0 top-1/2 h-96 w-96 rounded-full bg-[#cda349]/5 blur-[150px]" />
-      <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-[#d8ad55]/5 blur-[150px]" />
+      <div className="landing-match-arc landing-match-arc-left" />
+      <div className="landing-match-arc landing-match-arc-right" />
+      <div className="absolute left-0 top-1/3 h-[520px] w-[520px] rounded-full bg-[#cda349]/10 blur-[180px]" />
+      <div className="absolute bottom-0 right-0 h-[520px] w-[520px] rounded-full bg-[#d8ad55]/10 blur-[180px]" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6">
-        <AnimatedSection className="mb-16 text-center sm:mb-20">
+        <AnimatedSection className="landing-match-header mb-16 text-center sm:mb-20">
           <SectionBadge icon="zap">Recursos Premium</SectionBadge>
-          <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
+          <h2 className="mb-6 text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl text-balance">
             Tudo que você precisa para <span className="gradient-text-gold">encontrar o profissional ideal</span>
           </h2>
-          <p className="mx-auto max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
+          <p className="mx-auto max-w-3xl text-base leading-relaxed text-white/60 sm:text-xl text-pretty">
             Nossa plataforma oferece ferramentas avançadas para garantir que você encontre
-            o profissional perfeito com segurança e praticidade.
+            o profissional perfeito com <strong>segurança e praticidade.</strong>
           </p>
         </AnimatedSection>
 
-        <StaggerContainer className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature) => (
-            <div className="group relative h-full" key={feature.title}>
-              <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-[#cda349]/20 to-[#d8ad55]/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
-              <div className="relative h-full rounded-2xl p-6 glass card-premium sm:p-8">
-                <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r from-[#cda349] to-[#d8ad55]">
-                  <Icon className="h-7 w-7 text-black" name={feature.icon} size={28} />
+        <div className="landing-match-map">
+          <div className="landing-match-list landing-match-list-left">
+            {leftFeatures.map((feature, index) => (
+              <article className="landing-match-item" data-side="left" key={feature.title}>
+                <div className="landing-match-orb">
+                  <Icon name={feature.icon} size={42} />
                 </div>
-                <h3 className="mb-3 text-xl font-semibold text-white">{feature.title}</h3>
-                <p className="leading-relaxed text-white/50">{feature.description}</p>
-                <div className="absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r from-[#cda349] to-[#d8ad55] opacity-0 transition-opacity group-hover:opacity-50" />
-              </div>
+                <div className="landing-match-copy">
+                  <span>{String(index + 1).padStart(2, '0')}</span>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.description}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="landing-match-center" aria-hidden="true">
+            <div className="landing-match-radar">
+              <span />
+              <span />
+              <span />
             </div>
-          ))}
-        </StaggerContainer>
+            <div className="landing-match-core">
+              <Icon name="users" size={70} />
+              <div className="landing-match-stars">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Icon filled key={index} name="star" size={18} />
+                ))}
+              </div>
+              <strong>MATCH PERFEITO</strong>
+            </div>
+          </div>
+
+          <div className="landing-match-list landing-match-list-right">
+            {rightFeatures.map((feature, index) => (
+              <article className="landing-match-item" data-side="right" key={feature.title}>
+                <div className="landing-match-orb">
+                  <Icon name={feature.icon} size={42} />
+                </div>
+                <div className="landing-match-copy">
+                  <span>{String(index + 4).padStart(2, '0')}</span>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.description}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <AnimatedSection className="landing-match-note" delay={0.18}>
+          <div className="landing-match-note-icon">
+            <Icon name="shield" size={34} />
+          </div>
+          <div>
+            <strong>Mais <span>segurança</span>, mais <span>praticidade</span>, os melhores profissionais para você.</strong>
+            <p>É assim que conectamos você ao profissional ideal.</p>
+          </div>
+        </AnimatedSection>
       </div>
     </section>
   );
