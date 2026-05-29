@@ -1,1564 +1,1268 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../../services/api';
-import BrandMark from '../Layout/BrandMark';
-import BrandWordmark from '../Layout/BrandWordmark';
+import './ClientLandingLegacy.css';
 
-const HERO_IMAGE_URL = '/landing/instalando-mapa-do-brasil.png';
-const STORY_IMAGE_URL = '/landing/instaladores-profissionais.png';
-const INSTALLER_CARDS_PER_VIEW = 4;
-const REVIEW_CARDS_PER_VIEW = 4;
-const STORE_CAROUSEL_INTERVAL_MS = 5200;
-const INSTALLER_CAROUSEL_INTERVAL_MS = 4200;
-const REVIEW_CAROUSEL_INTERVAL_MS = 5600;
+const REQUEST_PATH = '/cliente';
 
-const HOW_IT_WORKS = [
+const navLinks = [
+  { href: '#como-funciona', label: 'Como Funciona' },
+  { href: '#beneficios', label: 'Benefícios' },
+  { href: '#avaliacoes', label: 'Avaliações' },
+  { href: '#faq', label: 'FAQ' },
+];
+
+const heroStats = [
+  { icon: 'shield', value: '500+', label: 'Profissionais Verificados' },
+  { icon: 'sparkles', value: '10.000+', label: 'Projetos Realizados' },
+  { icon: 'clock', value: '24h', label: 'Tempo Médio de Resposta' },
+];
+
+const trustStats = [
+  { value: '98%', label: 'Satisfação dos clientes' },
+  { value: '24h', label: 'Resposta média' },
+  { value: '500+', label: 'Cidades atendidas' },
+  { value: '50k+', label: 'Orçamentos realizados' },
+];
+
+const steps = [
   {
-    step: '01',
-    title: 'Busque sua região',
-    copy: 'Digite cidade, estado ou estilo de instalação.',
+    number: '01',
+    icon: 'clipboard',
+    title: 'Descreva seu Projeto',
+    description: 'Informe os detalhes do serviço: tipo de papel, metragem e localização.',
   },
   {
-    step: '02',
-    title: 'Compare perfis',
-    copy: 'Veja nota, experiência e fotos de instalações.',
+    number: '02',
+    icon: 'users',
+    title: 'Receba Propostas',
+    description: 'Profissionais qualificados da sua região demonstram interesse.',
   },
   {
-    step: '03',
-    title: 'Fale e agende',
-    copy: 'Converse no WhatsApp e marque o melhor horário.',
+    number: '03',
+    icon: 'star',
+    title: 'Compare Perfis',
+    description: 'Veja avaliações, portfólio e experiência de cada profissional.',
+  },
+  {
+    number: '04',
+    icon: 'message-circle',
+    title: 'Converse no WhatsApp',
+    description: 'Escolha os que mais te interessam e negocie diretamente.',
+  },
+  {
+    number: '05',
+    icon: 'handshake',
+    title: 'Feche o Negócio',
+    description: 'Combine valores, data e detalhes com o profissional escolhido.',
+  },
+  {
+    number: '06',
+    icon: 'check-circle',
+    title: 'Avalie o Serviço',
+    description: 'Compartilhe sua experiência e ajude outros clientes.',
   },
 ];
 
-const STORY_POINTS = [
-  'Instaladores de papel de parede especializados',
-  'Comparação simples entre opções',
-  'Contato direto sem intermediários',
-  'Fotos para validar o acabamento',
-];
-
-const MOBILE_FEATURE_ITEMS = [
+const features = [
+  {
+    icon: 'search',
+    title: 'Busca Inteligente',
+    description: 'Encontre profissionais qualificados na sua região com nosso algoritmo de matching avançado.',
+  },
   {
     icon: 'shield',
-    title: 'Instaladores especializados',
-    copy: 'Profissionais avaliados e experientes',
+    title: 'Perfis Verificados',
+    description: 'Todos os profissionais passam por verificação rigorosa de documentos e histórico.',
   },
-  {
-    icon: 'verified',
-    title: 'Perfis verificados',
-    copy: 'Segurança e confiança na contratação',
-  },
-  {
-    icon: 'star',
-    title: 'Avaliações reais de clientes',
-    copy: 'Decida com base em experiências reais',
-  },
-  {
-    icon: 'whatsapp',
-    title: 'Contato direto no WhatsApp',
-    copy: 'Fale com o instalador sem intermediários',
-  },
-  {
-    icon: 'headset',
-    title: 'Suporte antes e depois',
-    copy: 'Acompanhamento em todas as etapas',
-  },
-];
-
-const MOBILE_HERO_STATS = [
   {
     icon: 'users',
-    value: '+8.000',
-    title: 'Instaladores cadastrados',
+    title: 'Avaliações Reais',
+    description: 'Veja avaliações e fotos de trabalhos anteriores feitos por clientes verificados.',
   },
   {
-    icon: 'award',
-    value: '4,9/5',
-    title: 'Avaliação média dos clientes',
+    icon: 'message-circle',
+    title: 'Contato Direto',
+    description: 'Converse diretamente pelo WhatsApp com os profissionais que mais te interessam.',
   },
   {
-    icon: 'pin',
-    value: 'Todo o Brasil',
-    title: 'Presença em todos os estados',
+    icon: 'zap',
+    title: 'Resposta Rápida',
+    description: 'Receba propostas em até 24 horas de profissionais disponíveis na sua área.',
   },
   {
-    icon: 'shield',
-    value: '100% Seguro',
-    title: 'Profissionais verificados',
+    icon: 'check-circle',
+    title: 'Garantia de Qualidade',
+    description: 'Suporte dedicado e garantia de satisfação em todos os serviços realizados.',
   },
 ];
 
-const HOW_IT_WORKS_MOBILE = [
+const demoStats = [
+  { icon: 'users', value: '12', label: 'Propostas' },
+  { icon: 'star', value: '4.9', label: 'Avaliação' },
+  { icon: 'trending-up', value: '98%', label: 'Match' },
+];
+
+const testimonials = [
   {
-    step: '01',
-    title: 'Busque',
-    copy: 'Digite cidade ou estado.',
+    id: 1,
+    name: 'Marina Silva',
+    role: 'Arquiteta',
+    location: 'São Paulo, SP',
+    rating: 5,
+    text: 'Plataforma incrível! Encontrei um profissional excelente em menos de 24 horas. O processo foi super simples e o resultado ficou perfeito.',
+    image: 'MS',
   },
   {
-    step: '02',
-    title: 'Compare',
-    copy: 'Veja nota e fotos reais.',
+    id: 2,
+    name: 'Roberto Almeida',
+    role: 'Empresário',
+    location: 'Rio de Janeiro, RJ',
+    rating: 5,
+    text: 'Usei o Instalar+ para decorar meu escritório. A qualidade dos profissionais é impressionante, e as avaliações realmente ajudam na escolha.',
+    image: 'RA',
   },
   {
-    step: '03',
-    title: 'Agende',
-    copy: 'Fale no WhatsApp.',
+    id: 3,
+    name: 'Carla Santos',
+    role: 'Designer de Interiores',
+    location: 'Belo Horizonte, MG',
+    rating: 5,
+    text: 'Como designer, preciso de parceiros confiáveis. O Instalar+ se tornou minha primeira opção para indicar aos meus clientes.',
+    image: 'CS',
+  },
+  {
+    id: 4,
+    name: 'Fernando Costa',
+    role: 'Proprietário',
+    location: 'Curitiba, PR',
+    rating: 5,
+    text: 'Reformei toda a casa usando a plataforma. Foram 5 ambientes diferentes e todos os instaladores foram excelentes profissionais.',
+    image: 'FC',
+  },
+  {
+    id: 5,
+    name: 'Ana Beatriz',
+    role: 'Corretora de Imóveis',
+    location: 'Brasília, DF',
+    rating: 5,
+    text: 'Indico para todos os meus clientes. A facilidade de encontrar bons profissionais faz toda diferença no fechamento de negócios.',
+    image: 'AB',
+  },
+  {
+    id: 6,
+    name: 'Lucas Mendes',
+    role: 'Engenheiro',
+    location: 'Porto Alegre, RS',
+    rating: 5,
+    text: 'Tecnologia de primeira! A interface é intuitiva e os filtros de busca são muito precisos. Achei exatamente o que precisava.',
+    image: 'LM',
   },
 ];
 
-const DESKTOP_NAV_ITEMS = [
-  { label: 'Início', href: '#inicio' },
-  { label: 'Lojas recomendadas', href: '#lojas-recomendadas' },
-  { label: 'Por que escolher', href: '#por-que-escolher' },
-  { label: 'Instaladores', href: '#landing-installers' },
-  { label: 'Avaliações', href: '#landing-reviews' },
-  { label: 'Como funciona', href: '#como-funciona' },
-];
-
-const DESKTOP_TRUST_ITEMS = [
+const faqs = [
   {
-    icon: 'shield',
-    title: 'Profissionais verificados',
-    copy: 'Todos passam por análise',
+    question: 'Como funciona o processo de solicitação?',
+    answer: 'É simples: você preenche um formulário rápido com os detalhes do projeto. Em seguida, instaladores verificados da sua região recebem sua solicitação e demonstram interesse. Você analisa os perfis, avaliações e escolhe com quem quer conversar pelo WhatsApp.',
   },
   {
-    icon: 'star',
-    title: 'Avaliações reais',
-    copy: 'Baseadas em clientes',
+    question: 'Quanto custa usar a plataforma?',
+    answer: 'O uso da plataforma é gratuito para clientes. Você não paga para solicitar orçamentos, comparar profissionais ou entrar em contato. O valor final do serviço é negociado diretamente entre você e o instalador escolhido.',
   },
   {
-    icon: 'pin',
-    title: 'Atendimento em',
-    copy: 'todo o Brasil',
-  },
-];
-
-const DESKTOP_WHY_POINTS = [
-  {
-    icon: 'verified',
-    title: 'Profissionais verificados',
-    copy: 'Todos os instaladores passam por uma análise completa.',
+    question: 'Como vocês verificam os instaladores?',
+    answer: 'Os profissionais passam por um processo de verificação com validação de documentos, análise de portfólio, referências e monitoramento contínuo das avaliações recebidas na plataforma.',
   },
   {
-    icon: 'star',
-    title: 'Avaliações reais de clientes',
-    copy: 'Decida com base na experiência de quem já contratou.',
+    question: 'E se eu não gostar do serviço prestado?',
+    answer: 'A plataforma mantém avaliações transparentes e suporte dedicado. Se houver problema, a equipe pode ajudar na mediação. Profissionais com avaliações negativas recorrentes podem ser removidos.',
   },
   {
-    icon: 'whatsapp',
-    title: 'Contato direto no WhatsApp',
-    copy: 'Fale direto com o instalador, sem intermediários.',
+    question: 'Vocês atendem em todo o Brasil?',
+    answer: 'Sim. A rede cobre capitais, regiões metropolitanas e cidades em expansão. A solicitação prioriza instaladores próximos da localização informada.',
   },
   {
-    icon: 'image',
-    title: 'Fotos reais dos serviços',
-    copy: 'Veja acabamentos reais e tenha mais segurança na escolha.',
+    question: 'Posso escolher mais de um instalador para avaliar?',
+    answer: 'Sim. Você pode comparar quantos profissionais quiser antes de decidir. Recomendamos conversar com mais de um instalador para comparar proposta, prazo e condições.',
   },
 ];
 
-const DESKTOP_PLATFORM_METRICS = [
-  {
-    icon: 'users',
-    value: '+8.000',
-    copyLines: ['instalações', 'realizadas'],
-  },
-  {
-    icon: 'star',
-    value: '4,9/5',
-    copyLines: ['avaliação média', 'dos clientes'],
-  },
-  {
-    icon: 'brazil',
-    value: 'Todo o Brasil',
-    copyLines: ['instaladores presentes', 'em todo o país'],
-    textOnly: true,
-  },
-];
-
-const DESKTOP_STORE_FEATURES = [
-  {
-    icon: 'shield',
-    title: 'Produtos originais',
-  },
-  {
-    icon: 'truck',
-    title: 'Entrega em todo Brasil',
-  },
-  {
-    icon: 'award',
-    title: 'Qualidade garantida',
-  },
-];
-
-const STORE_RATING_FALLBACKS = {
-  'Leroy Merlin': '4,8',
-  'Novo Ambiente': '4,7',
-  'Papel & Cia': '4,9',
-  'Casa do Papel': '4,8',
+const footerLinks = {
+  produto: [
+    { label: 'Como Funciona', href: '#como-funciona' },
+    { label: 'Benefícios', href: '#beneficios' },
+    { label: 'Avaliações', href: '#avaliacoes' },
+    { label: 'FAQ', href: '#faq' },
+  ],
+  empresa: [
+    { label: 'Sobre Nós', href: '#' },
+    { label: 'Blog', href: '#' },
+    { label: 'Carreiras', href: '#' },
+    { label: 'Imprensa', href: '#' },
+  ],
+  legal: [
+    { label: 'Termos de Uso', href: '#' },
+    { label: 'Privacidade', href: '#' },
+    { label: 'Cookies', href: '#' },
+  ],
 };
 
-const moneyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
+const socialLinks = [
+  { icon: 'instagram', href: '#', label: 'Instagram' },
+  { icon: 'twitter', href: '#', label: 'Twitter' },
+  { icon: 'linkedin', href: '#', label: 'LinkedIn' },
+];
 
-function formatReviewDate(date) {
-  if (!date) {
-    return '';
-  }
-
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) {
-    return '';
-  }
-
-  return parsed.toLocaleDateString('pt-BR');
-}
-
-function formatMoney(value) {
-  const amount = Number(value || 0);
-  if (!Number.isFinite(amount)) {
-    return moneyFormatter.format(0);
-  }
-  return moneyFormatter.format(amount);
-}
-
-function formatRating(value) {
-  const amount = Number(value || 0);
-  if (!Number.isFinite(amount)) {
-    return '0,0';
-  }
-
-  return amount.toLocaleString('pt-BR', {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
-}
-
-function getInitials(name) {
-  return (name || 'IL')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
-}
-
-function getStoreBrandModifier(name) {
-  const normalized = String(name || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-
-  if (normalized.includes('leroy')) {
-    return 'is-leroy';
-  }
-
-  if (normalized.includes('novo ambiente')) {
-    return 'is-novo-ambiente';
-  }
-
-  if (normalized.includes('papel') && normalized.includes('cia')) {
-    return 'is-papel-cia';
-  }
-
-  if (normalized.includes('casa do papel')) {
-    return 'is-casa-papel';
-  }
-
-  return '';
-}
-
-function getTouchPointX(event) {
-  const touch = event.changedTouches?.[0] || event.touches?.[0];
-  return typeof touch?.clientX === 'number' ? touch.clientX : null;
-}
-
-function buildSwipeHandlers(startRef, onPrevious, onNext) {
-  return {
-    onTouchStart: (event) => {
-      startRef.current = getTouchPointX(event);
-    },
-    onTouchCancel: () => {
-      startRef.current = null;
-    },
-    onTouchEnd: (event) => {
-      const startX = startRef.current;
-      const endX = getTouchPointX(event);
-
-      startRef.current = null;
-
-      if (startX === null || endX === null) {
-        return;
-      }
-
-      const delta = endX - startX;
-      if (Math.abs(delta) < 42) {
-        return;
-      }
-
-      if (delta > 0) {
-        onPrevious();
-        return;
-      }
-
-      onNext();
-    },
-  };
-}
-
-function getStoreCardsPerView() {
-  if (typeof window === 'undefined') {
-    return 4;
-  }
-
-  if (window.innerWidth <= 680) {
-    return 1;
-  }
-
-  if (window.innerWidth <= 1024) {
-    return 2;
-  }
-
-  if (window.innerWidth <= 1180) {
-    return 3;
-  }
-
-  return 4;
-}
-
-function getInstallerCardsPerView() {
-  if (typeof window === 'undefined') {
-    return INSTALLER_CARDS_PER_VIEW;
-  }
-
-  if (window.innerWidth <= 680) {
-    return 1;
-  }
-
-  if (window.innerWidth <= 1080) {
-    return 2;
-  }
-
-  if (window.innerWidth <= 1380) {
-    return 3;
-  }
-
-  return INSTALLER_CARDS_PER_VIEW;
-}
-
-function getReviewCardsPerView() {
-  if (typeof window === 'undefined') {
-    return REVIEW_CARDS_PER_VIEW;
-  }
-
-  if (window.innerWidth <= 680) {
-    return 1;
-  }
-
-  if (window.innerWidth <= 1080) {
-    return 2;
-  }
-
-  if (window.innerWidth <= 1380) {
-    return 3;
-  }
-
-  return REVIEW_CARDS_PER_VIEW;
-}
-
-function RatingDots({ value }) {
-  const rounded = Math.max(1, Math.round(Number(value || 0)));
-
-  return (
-    <div className="clean-stars">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <span className={index < rounded ? 'is-on' : ''} key={index} />
-      ))}
-    </div>
-  );
-}
-
-function ReferenceHeroIcon({ name }) {
-  const common = {
-    fill: 'none',
+function Icon({ name, className = '', filled = false, size = 24 }) {
+  const commonProps = {
+    className,
+    fill: filled ? 'currentColor' : 'none',
+    height: size,
     stroke: 'currentColor',
     strokeLinecap: 'round',
     strokeLinejoin: 'round',
-    strokeWidth: '1.8',
+    strokeWidth: 1.8,
+    viewBox: '0 0 24 24',
+    width: size,
+    xmlns: 'http://www.w3.org/2000/svg',
   };
 
   switch (name) {
-    case 'play':
+    case 'menu':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="9" {...common} />
-          <path d="M10 8.8 16 12l-6 3.2Z" fill="currentColor" stroke="none" />
+        <svg {...commonProps}>
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      );
+    case 'x':
+      return (
+        <svg {...commonProps}>
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      );
+    case 'arrow-right':
+      return (
+        <svg {...commonProps}>
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      );
+    case 'sparkles':
+      return (
+        <svg {...commonProps}>
+          <path d="m12 3 1.65 4.35L18 9l-4.35 1.65L12 15l-1.65-4.35L6 9l4.35-1.65L12 3Z" />
+          <path d="m19 14 .82 2.18L22 17l-2.18.82L19 20l-.82-2.18L16 17l2.18-.82L19 14Z" />
+          <path d="m5 13 1 2.7L9 17l-3 1.3L5 21l-1-2.7L1 17l3-1.3L5 13Z" />
         </svg>
       );
     case 'shield':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M12 3.5 18.5 6v5.9c0 4.1-2.7 7.2-6.5 8.6-3.8-1.4-6.5-4.5-6.5-8.6V6z" {...common} />
+        <svg {...commonProps}>
+          <path d="M12 3.2 5.4 5.9v5.2c0 4.2 2.8 8 6.6 9.7 3.8-1.7 6.6-5.5 6.6-9.7V5.9L12 3.2Z" />
+          <path d="m9.5 12 1.7 1.8 3.4-3.8" />
         </svg>
       );
-    case 'star':
+    case 'clock':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="m12 3.9 2.5 5.1 5.7.8-4.1 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4.1-4 5.7-.8z" {...common} />
+        <svg {...commonProps}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 7.2V12l3 1.8" />
         </svg>
       );
-    case 'pin':
+    case 'clipboard':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M12 20s6-5.6 6-10.2a6 6 0 1 0-12 0C6 14.4 12 20 12 20Z" {...common} />
-          <circle cx="12" cy="9.5" r="2.1" {...common} />
+        <svg {...commonProps}>
+          <path d="M9 4h6l1 2h2a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 18 20H6a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 6 6h2l1-2Z" />
+          <path d="M9 6h6M8 11h8M8 15h5" />
         </svg>
       );
     case 'users':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <circle cx="9" cy="9" r="3.2" {...common} />
-          <path d="M3.8 18c1.1-2.7 3-4 5.2-4s4.1 1.3 5.2 4" {...common} />
-          <circle cx="17.2" cy="8.3" r="2.4" {...common} />
-          <path d="M15.2 16.2c1.2.2 2.3.8 3.4 1.8" {...common} />
+        <svg {...commonProps}>
+          <path d="M16 21v-1.3A4.7 4.7 0 0 0 11.3 15H7.7A4.7 4.7 0 0 0 3 19.7V21" />
+          <circle cx="9.5" cy="8" r="3.2" />
+          <path d="M21 21v-1.3a4.3 4.3 0 0 0-3.1-4.15" />
+          <path d="M15.8 4.9a3.2 3.2 0 0 1 0 6.2" />
         </svg>
       );
-    case 'award':
+    case 'message-circle':
+    case 'message-square':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <circle cx="12" cy="10" r="4.6" {...common} />
-          <path d="m9.4 14 1.1 5.1L12 18l1.5 1.1 1.1-5.1" {...common} />
-          <path d="m12 7.7.8 1.6 1.8.3-1.3 1.2.3 1.8-1.6-.9-1.6.9.3-1.8-1.3-1.2 1.8-.3z" fill="currentColor" stroke="none" />
+        <svg {...commonProps}>
+          <path d="M5 6.5h14A1.5 1.5 0 0 1 20.5 8v8A1.5 1.5 0 0 1 19 17.5H9L4.5 20v-4A1.5 1.5 0 0 1 3.5 14.5V8A1.5 1.5 0 0 1 5 6.5Z" />
         </svg>
       );
-    case 'truck':
+    case 'handshake':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M3.8 6.5h10.4v8.2H3.8z" {...common} />
-          <path d="M14.2 9.2h3.1l2.5 2.7v2.8h-5.6" {...common} />
-          <circle cx="8" cy="17.2" r="1.7" {...common} />
-          <circle cx="17.1" cy="17.2" r="1.7" {...common} />
-          <path d="M5 17.2h1.3m3.4 0h5.7" {...common} />
+        <svg {...commonProps}>
+          <path d="M7.5 12.5 10 15a2 2 0 0 0 2.8 0l1.1-1.1" />
+          <path d="m14 8 2.5 2.5a2.2 2.2 0 0 1 0 3.1l-3.6 3.6a3 3 0 0 1-4.2 0L4 12.5" />
+          <path d="m20 12-4-4-2.4 2.4a2 2 0 0 1-2.8 0L10 9.6 13.6 6H16l4 4" />
+          <path d="M3 11 7 7" />
         </svg>
       );
-    case 'brazil':
+    case 'star':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="m7.1 4.3 2.8.6 1.4-.8 2.2.7 1.7 1.6 2.4.5.4 1.6-.6 1.3.4 1.3-.9 1.3.5 1.4-1.2 1.6-1.4.5-.6 1.9-1.7.6-1.3-.9-1.5.7-1.1-1-1.8-.2-.7-1.4-1.5-.6-.4-1.6 1.1-1 .2-1.7 1.3-1.3-.4-1.6Z" {...common} />
+        <svg {...commonProps}>
+          <path d="m12 3.8 2.45 4.96 5.48.8-3.97 3.86.94 5.46L12 16.5l-4.9 2.58.94-5.46-3.97-3.86 5.48-.8L12 3.8Z" />
         </svg>
       );
-    case 'group':
+    case 'check-circle':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <circle cx="8.5" cy="9" r="2.2" {...common} />
-          <circle cx="15.7" cy="9.6" r="1.9" {...common} />
-          <path d="M4.2 17.4c.8-2.1 2.3-3.4 4.3-3.4 2 0 3.5 1.3 4.3 3.4" {...common} />
-          <path d="M13.6 16.6c.6-1.4 1.6-2.3 3-2.3 1.1 0 2 .5 2.8 1.5" {...common} />
+        <svg {...commonProps}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="m8.6 12.2 2.2 2.2 4.8-5" />
         </svg>
       );
     case 'search':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <circle cx="10.5" cy="10.5" r="5.7" {...common} />
-          <path d="m15 15 4.7 4.7" {...common} />
+        <svg {...commonProps}>
+          <circle cx="11" cy="11" r="6.8" />
+          <path d="m20 20-3.7-3.7" />
         </svg>
       );
-    case 'whatsapp':
+    case 'zap':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M20 11.4a8 8 0 0 1-11.8 7l-3.4 1 1.1-3.2A8 8 0 1 1 20 11.4Z" {...common} />
-          <path d="M9.4 8.6c.2-.4.4-.5.7-.5h.6c.2 0 .4 0 .5.4l.6 1.4c.1.3.1.4-.1.7l-.4.5c-.2.2-.1.4 0 .6.5 1 1.3 1.9 2.3 2.4.2.1.4.1.6 0l.6-.4c.2-.2.4-.2.7-.1l1.3.6c.3.1.4.3.4.5v.6c0 .3-.2.5-.5.7-.4.2-1 .3-1.6.1-2.8-.9-5.3-3.4-6.2-6.2-.2-.6-.1-1.2.1-1.6Z" {...common} />
+        <svg {...commonProps}>
+          <path d="m13 2-8 12h6l-1 8 9-13h-6l1-7Z" />
         </svg>
       );
-    case 'camera':
+    case 'bell':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M4.8 7.8h3l1.2-1.8h6l1.2 1.8h3a1.8 1.8 0 0 1 1.8 1.8v7.6A1.8 1.8 0 0 1 19.2 19H4.8A1.8 1.8 0 0 1 3 17.2V9.6a1.8 1.8 0 0 1 1.8-1.8Z" {...common} />
-          <circle cx="12" cy="13" r="3.3" {...common} />
+        <svg {...commonProps}>
+          <path d="M6 9a6 6 0 0 1 12 0v4.2l1.6 2.4a1 1 0 0 1-.83 1.55H5.23a1 1 0 0 1-.83-1.55L6 13.2V9Z" />
+          <path d="M10 18a2 2 0 0 0 4 0" />
         </svg>
       );
-    case 'image':
+    case 'trending-up':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <rect x="4" y="5.5" width="16" height="13" rx="2.4" {...common} />
-          <circle cx="9" cy="10" r="1.2" {...common} />
-          <path d="m6.8 16 3.2-3.3 2.7 2.6 2.6-2.5 2.2 3.2" {...common} />
+        <svg {...commonProps}>
+          <path d="m3 17 6-6 4 4 7-8" />
+          <path d="M14 7h6v6" />
         </svg>
       );
-    case 'lock':
+    case 'quote':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M7.6 10.2V8.4a4.4 4.4 0 1 1 8.8 0v1.8" {...common} />
-          <rect x="5.4" y="10.2" width="13.2" height="9.4" rx="2.2" {...common} />
-          <path d="M12 13.3v3.2" {...common} />
+        <svg {...commonProps}>
+          <path d="M9 7H5.5A2.5 2.5 0 0 0 3 9.5V14h5v-4H5.5" />
+          <path d="M21 7h-3.5A2.5 2.5 0 0 0 15 9.5V14h5v-4h-2.5" />
         </svg>
       );
-    case 'verified':
+    case 'chevron-left':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M12 3.7 18 6.1v5.4c0 4-2.5 7.1-6 8.7-3.5-1.6-6-4.7-6-8.7V6.1Z" {...common} />
-          <path d="m8.8 11.9 2 2 4.4-4.4" {...common} />
+        <svg {...commonProps}>
+          <path d="m15 18-6-6 6-6" />
         </svg>
       );
-    case 'headset':
+    case 'chevron-right':
       return (
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M5.2 13.4v-1.1a6.8 6.8 0 1 1 13.6 0v1.1" {...common} />
-          <path d="M5.6 13h1.9a1.4 1.4 0 0 1 1.4 1.4v3.2A1.4 1.4 0 0 1 7.5 19H5.6A1.6 1.6 0 0 1 4 17.4v-2.8A1.6 1.6 0 0 1 5.6 13Z" {...common} />
-          <path d="M16.5 13h1.9a1.6 1.6 0 0 1 1.6 1.6v2.8a1.6 1.6 0 0 1-1.6 1.6h-1.9a1.4 1.4 0 0 1-1.4-1.4v-3.2a1.4 1.4 0 0 1 1.4-1.4Z" {...common} />
-          <path d="M9.5 19.2c.7.8 1.6 1.1 2.6 1.1h1.5" {...common} />
+        <svg {...commonProps}>
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      );
+    case 'chevron-down':
+      return (
+        <svg {...commonProps}>
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      );
+    case 'help-circle':
+      return (
+        <svg {...commonProps}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M9.8 9.4a2.4 2.4 0 1 1 3.6 2.1c-.9.5-1.4 1-1.4 2" />
+          <path d="M12 17h.01" />
+        </svg>
+      );
+    case 'instagram':
+      return (
+        <svg {...commonProps}>
+          <rect height="15" rx="4" width="15" x="4.5" y="4.5" />
+          <circle cx="12" cy="12" r="3.3" />
+          <path d="M16.8 7.2h.01" />
+        </svg>
+      );
+    case 'twitter':
+      return (
+        <svg {...commonProps}>
+          <path d="M22 5.9c-.7.3-1.4.5-2.2.6.8-.5 1.3-1.2 1.6-2.1-.7.4-1.5.8-2.4 1A3.75 3.75 0 0 0 12.6 8.8c0 .3 0 .6.1.9A10.6 10.6 0 0 1 5 5.8a3.75 3.75 0 0 0 1.2 5 3.6 3.6 0 0 1-1.7-.5v.1a3.75 3.75 0 0 0 3 3.7 3.8 3.8 0 0 1-1.7.1 3.76 3.76 0 0 0 3.5 2.6A7.5 7.5 0 0 1 3 18.3 10.6 10.6 0 0 0 8.7 20c6.9 0 10.7-5.7 10.7-10.7v-.5A7.6 7.6 0 0 0 22 5.9Z" />
+        </svg>
+      );
+    case 'linkedin':
+      return (
+        <svg {...commonProps}>
+          <path d="M16 8a5 5 0 0 1 5 5v6h-3v-6a2 2 0 0 0-4 0v6h-3V9h3v1.4A4 4 0 0 1 16 8Z" />
+          <path d="M4 9h3v10H4z" />
+          <circle cx="5.5" cy="5.5" r="1.5" />
+        </svg>
+      );
+    case 'mail':
+      return (
+        <svg {...commonProps}>
+          <path d="M4.5 6.5h15v11h-15z" />
+          <path d="m5 7 7 6 7-6" />
+        </svg>
+      );
+    case 'map-pin':
+      return (
+        <svg {...commonProps}>
+          <path d="M12 21s6-5.33 6-11a6 6 0 1 0-12 0c0 5.67 6 11 6 11Z" />
+          <circle cx="12" cy="10" r="2.4" />
+        </svg>
+      );
+    case 'phone':
+      return (
+        <svg {...commonProps}>
+          <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.7 19.7 0 0 1 3.1 5.2 2 2 0 0 1 5.1 3h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.45 2.1L9 10.5a16 16 0 0 0 4.5 4.5l1.2-1.25a2 2 0 0 1 2.1-.45c.8.3 1.6.5 2.5.6a2 2 0 0 1 1.7 2Z" />
         </svg>
       );
     default:
-      return null;
+      return (
+        <svg {...commonProps}>
+          <circle cx="12" cy="12" r="8" />
+        </svg>
+      );
   }
 }
 
-export default function ClientLanding() {
-  const [installers, setInstallers] = useState([]);
-  const [reviews, setReviews] = useState([]);
-  const [recommendedStores, setRecommendedStores] = useState([]);
-  const [storesPerView, setStoresPerView] = useState(getStoreCardsPerView);
-  const [isMobileLayout, setIsMobileLayout] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    return window.innerWidth <= 760;
-  });
-  const [installerCardsPerView, setInstallerCardsPerView] = useState(getInstallerCardsPerView);
-  const [reviewCardsPerView, setReviewCardsPerView] = useState(getReviewCardsPerView);
-  const [activeStoreIndex, setActiveStoreIndex] = useState(0);
-  const [activeStorePage, setActiveStorePage] = useState(0);
-  const [activeInstallerIndex, setActiveInstallerIndex] = useState(0);
-  const [activeReviewIndex, setActiveReviewIndex] = useState(0);
-  const [openedStoreCardId, setOpenedStoreCardId] = useState(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const storeTouchStartRef = useRef(null);
-  const installerTouchStartRef = useRef(null);
-  const reviewTouchStartRef = useRef(null);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadLandingData = async () => {
-      try {
-        const response = await api.get('/public/installers');
-        const allInstallers = response.data?.installers || [];
-        const recentReviews = response.data?.reviews || [];
-        const stores = response.data?.recommended_stores || [];
-
-        const positiveReviews = recentReviews
-          .filter((review) => Number(review.rating || 0) >= 4)
-          .slice(0, 6);
-
-        if (!mounted) {
-          return;
-        }
-
-        setInstallers(allInstallers);
-        setReviews(positiveReviews);
-        setRecommendedStores(stores);
-      } catch (_error) {
-        if (!mounted) {
-          return;
-        }
-
-        setInstallers([]);
-        setReviews([]);
-        setRecommendedStores([]);
-      }
-    };
-
-    loadLandingData();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setStoresPerView(getStoreCardsPerView());
-      setIsMobileLayout(window.innerWidth <= 760);
-      setInstallerCardsPerView(getInstallerCardsPerView());
-      setReviewCardsPerView(getReviewCardsPerView());
-      if (window.innerWidth > 760) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
-  const topInstallers = useMemo(() => {
-    const sorted = [...installers].sort((a, b) => {
-        const featuredDiff = Number(Boolean(b.featured_installer)) - Number(Boolean(a.featured_installer));
-        if (featuredDiff !== 0) {
-          return featuredDiff;
-        }
-
-        const reviewedDiff = Number(Number(b.review_count || 0) > 0) - Number(Number(a.review_count || 0) > 0);
-        if (reviewedDiff !== 0) {
-          return reviewedDiff;
-        }
-
-        const ratingDiff = Number(b.average_rating || 0) - Number(a.average_rating || 0);
-        if (ratingDiff !== 0) {
-          return ratingDiff;
-        }
-
-        const reviewCountDiff = Number(b.review_count || 0) - Number(a.review_count || 0);
-        if (reviewCountDiff !== 0) {
-          return reviewCountDiff;
-        }
-
-        const completedJobsDiff = Number(b.completed_jobs || 0) - Number(a.completed_jobs || 0);
-        if (completedJobsDiff !== 0) {
-          return completedJobsDiff;
-        }
-
-        const approvedJobsDiff = Number(b.approved_jobs || 0) - Number(a.approved_jobs || 0);
-        if (approvedJobsDiff !== 0) {
-          return approvedJobsDiff;
-        }
-
-        return Number(b.years_experience || 0) - Number(a.years_experience || 0);
-      });
-
-    return sorted.slice(0, 8);
-  }, [installers]);
-
-  const activeStores = useMemo(
-    () => recommendedStores.filter((store) => Boolean(store?.is_active)),
-    [recommendedStores]
-  );
-
-  const isTouchDevice = useMemo(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    return window.matchMedia('(hover: none), (pointer: coarse)').matches;
-  }, []);
-  const storeCardWidth = 100 / Math.max(storesPerView, 1);
-  const maxStoreIndex = useMemo(
-    () => Math.max(0, activeStores.length - storesPerView),
-    [activeStores.length, storesPerView]
-  );
-  const storeSlidePositions = useMemo(
-    () => Array.from({ length: maxStoreIndex + 1 }, (_, index) => index),
-    [maxStoreIndex]
-  );
-
-  const maxInstallerIndex = useMemo(
-    () => Math.max(0, topInstallers.length - installerCardsPerView),
-    [topInstallers.length, installerCardsPerView]
-  );
-  const installerSlidePositions = useMemo(
-    () => Array.from({ length: maxInstallerIndex + 1 }, (_, index) => index),
-    [maxInstallerIndex]
-  );
-  const installerCardWidth = 100 / Math.max(installerCardsPerView, 1);
-  const maxReviewIndex = useMemo(
-    () => Math.max(0, reviews.length - reviewCardsPerView),
-    [reviews.length, reviewCardsPerView]
-  );
-  const reviewSlidePositions = useMemo(
-    () => Array.from({ length: maxReviewIndex + 1 }, (_, index) => index),
-    [maxReviewIndex]
-  );
-  const reviewCardWidth = 100 / Math.max(reviewCardsPerView, 1);
-  const storyPoints = STORY_POINTS;
-  const howItWorksItems = isMobileLayout ? HOW_IT_WORKS_MOBILE : HOW_IT_WORKS;
-  const desktopShowcaseStores = useMemo(
-    () =>
-      activeStores.map((store, index) => ({
-        ...store,
-        id: store.id || `desktop-store-${index}`,
-        rating:
-          typeof store.rating === 'string' || typeof store.rating === 'number'
-            ? String(store.rating).replace('.', ',')
-            : STORE_RATING_FALLBACKS[store.name] || '4,8',
-      })),
-    [activeStores]
-  );
-  const desktopStorePages = useMemo(() => {
-    const storesPerPage = Math.max(storesPerView, 1);
-    const pages = [];
-
-    for (let index = 0; index < desktopShowcaseStores.length; index += storesPerPage) {
-      pages.push(desktopShowcaseStores.slice(index, index + storesPerPage));
-    }
-
-    return pages;
-  }, [desktopShowcaseStores, storesPerView]);
-  const maxStorePageIndex = Math.max(0, desktopStorePages.length - 1);
-  useEffect(() => {
-    if (!isMobileLayout) {
-      setActiveStoreIndex(0);
-      return;
-    }
-
-    if (maxStoreIndex <= 0) {
-      setActiveStoreIndex(0);
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setActiveStoreIndex((current) => (current >= maxStoreIndex ? 0 : current + 1));
-    }, STORE_CAROUSEL_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [isMobileLayout, maxStoreIndex]);
-
-  useEffect(() => {
-    if (isMobileLayout) {
-      setActiveStorePage(0);
-      return;
-    }
-
-    if (maxStorePageIndex <= 0) {
-      setActiveStorePage(0);
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setActiveStorePage((current) => (current >= maxStorePageIndex ? 0 : current + 1));
-    }, STORE_CAROUSEL_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [isMobileLayout, maxStorePageIndex]);
-
-  useEffect(() => {
-    if (activeStoreIndex > maxStoreIndex) {
-      setActiveStoreIndex(0);
-    }
-  }, [activeStoreIndex, maxStoreIndex]);
-
-  useEffect(() => {
-    if (activeStorePage > maxStorePageIndex) {
-      setActiveStorePage(0);
-    }
-  }, [activeStorePage, maxStorePageIndex]);
-
-  useEffect(() => {
-    if (maxInstallerIndex <= 0) {
-      setActiveInstallerIndex(0);
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setActiveInstallerIndex((current) => (current >= maxInstallerIndex ? 0 : current + 1));
-    }, INSTALLER_CAROUSEL_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [maxInstallerIndex]);
-
-  useEffect(() => {
-    if (activeInstallerIndex > maxInstallerIndex) {
-      setActiveInstallerIndex(0);
-    }
-  }, [activeInstallerIndex, maxInstallerIndex]);
-
-  useEffect(() => {
-    if (maxReviewIndex <= 0) {
-      setActiveReviewIndex(0);
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setActiveReviewIndex((current) => (current >= maxReviewIndex ? 0 : current + 1));
-    }, REVIEW_CAROUSEL_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [maxReviewIndex]);
-
-  useEffect(() => {
-    if (activeReviewIndex > maxReviewIndex) {
-      setActiveReviewIndex(0);
-    }
-  }, [activeReviewIndex, maxReviewIndex]);
-
-  const goToPreviousStore = () => {
-    setActiveStoreIndex((current) => (current <= 0 ? maxStoreIndex : current - 1));
-  };
-
-  const goToNextStore = () => {
-    setActiveStoreIndex((current) => (current >= maxStoreIndex ? 0 : current + 1));
-  };
-
-  const goToPreviousStorePage = () => {
-    setActiveStorePage((current) => (current <= 0 ? maxStorePageIndex : current - 1));
-  };
-
-  const goToNextStorePage = () => {
-    setActiveStorePage((current) => (current >= maxStorePageIndex ? 0 : current + 1));
-  };
-
-  const goToPreviousInstaller = () => {
-    setActiveInstallerIndex((current) => (current <= 0 ? maxInstallerIndex : current - 1));
-  };
-
-  const goToNextInstaller = () => {
-    setActiveInstallerIndex((current) => (current >= maxInstallerIndex ? 0 : current + 1));
-  };
-
-  const goToPreviousReview = () => {
-    setActiveReviewIndex((current) => (current <= 0 ? maxReviewIndex : current - 1));
-  };
-
-  const goToNextReview = () => {
-    setActiveReviewIndex((current) => (current >= maxReviewIndex ? 0 : current + 1));
-  };
-
-  const storeSwipeHandlers = buildSwipeHandlers(storeTouchStartRef, goToPreviousStore, goToNextStore);
-  const desktopStoreSwipeHandlers = buildSwipeHandlers(storeTouchStartRef, goToPreviousStorePage, goToNextStorePage);
-  const installerSwipeHandlers = buildSwipeHandlers(
-    installerTouchStartRef,
-    goToPreviousInstaller,
-    goToNextInstaller
-  );
-  const reviewSwipeHandlers = buildSwipeHandlers(reviewTouchStartRef, goToPreviousReview, goToNextReview);
+function SmartLink({ href, children, className = '', onClick, ...props }) {
+  if (href?.startsWith('/')) {
+    return (
+      <Link className={className} onClick={onClick} to={href} {...props}>
+        {children}
+      </Link>
+    );
+  }
 
   return (
-    <div className="auth-scene min-h-screen overflow-x-hidden">
-      <div className="clean-landing-shell">
-        {isMobileLayout ? (
-          <>
-            <header className="clean-landing-topbar fade-up">
-              <div className="clean-mobile-ref-header">
-                <div className="clean-mobile-ref-brand">
-                  <BrandMark className="client-brand-mark clean-mobile-ref-mark" />
-                  <BrandWordmark className="client-topbar-wordmark clean-mobile-ref-wordmark" size="lg" />
-                </div>
+    <a className={className} href={href || '#'} onClick={onClick} {...props}>
+      {children}
+    </a>
+  );
+}
 
-                <button
-                  aria-expanded={isMobileMenuOpen}
-                  aria-label="Abrir menu"
-                  className={`clean-mobile-ref-burger ${isMobileMenuOpen ? 'is-open' : ''}`}
-                  onClick={() => setIsMobileMenuOpen((current) => !current)}
-                  type="button"
-                >
-                  <span />
-                  <span />
-                  <span />
-                </button>
-              </div>
+function AnimatedSection({ children, className = '', delay = 0, direction = 'up' }) {
+  return (
+    <div
+      className={`landing-reveal landing-reveal-${direction} ${className}`}
+      style={{ '--landing-delay': `${delay}s` }}
+    >
+      {children}
+    </div>
+  );
+}
 
-              {isMobileMenuOpen ? (
-                <nav className="clean-mobile-ref-menu">
-                  {DESKTOP_NAV_ITEMS.map((item) => (
-                    <a href={item.href} key={item.label} onClick={() => setIsMobileMenuOpen(false)}>
-                      {item.label}
-                    </a>
-                  ))}
-                  <div className="clean-mobile-ref-menu-actions">
-                    <Link className="ghost-button" onClick={() => setIsMobileMenuOpen(false)} to="/cliente/entrar">
-                      Entrar
-                    </Link>
-                    <Link className="gold-button" onClick={() => setIsMobileMenuOpen(false)} to="/instalador/cadastro">
-                      Cadastre-se
-                    </Link>
-                  </div>
-                </nav>
-              ) : null}
-            </header>
+function StaggerContainer({ children, className = '' }) {
+  return <div className={`landing-stagger ${className}`}>{children}</div>;
+}
 
-            <section className="clean-hero fade-up" style={{ animationDelay: '0.05s' }}>
-              <img
-                alt="Instalador aplicando papel de parede com mapa do Brasil"
-                className="clean-hero-image"
-                decoding="async"
-                fetchpriority="high"
-                loading="eager"
-                src={HERO_IMAGE_URL}
-              />
-              <div className="clean-hero-overlay" />
-
-              <div className="clean-hero-content">
-                <div className="clean-mobile-ref-badge">
-                  <ReferenceHeroIcon name="group" />
-                  <span>Para clientes</span>
-                </div>
-                <h1 className="clean-hero-title">
-                  <span className="clean-mobile-ref-title-line">Encontre</span>
-                  <span className="clean-mobile-ref-title-line gold-keyword">instaladores</span>
-                  <span className="clean-mobile-ref-title-line">de papel de parede</span>
-                  <span className="clean-mobile-ref-title-line gold-keyword">com mais segurança.</span>
-                </h1>
-                <p className="clean-hero-description">
-                  <span className="clean-mobile-ref-copy-line">
-                    Encontre <span className="gold-keyword">instaladores especializados</span>,
-                  </span>
-                  <span className="clean-mobile-ref-copy-line">
-                    compare avaliações e fale direto no <span className="gold-keyword">WhatsApp</span>.
-                  </span>
-                </p>
-
-                <div className="clean-mobile-ref-actions">
-                  <Link className="clean-mobile-ref-primary-cta" to="/cliente">
-                    <span className="clean-mobile-ref-primary-icon">
-                      <ReferenceHeroIcon name="search" />
-                    </span>
-                    <span>Encontrar instalador agora</span>
-                  </Link>
-
-                  <a className="clean-mobile-ref-secondary-cta" href="#landing-installers">
-                    <span className="clean-mobile-ref-secondary-icon">
-                      <ReferenceHeroIcon name="group" />
-                    </span>
-                    <span>Ver instaladores mais bem avaliados</span>
-                    <strong aria-hidden="true">›</strong>
-                  </a>
-                </div>
-
-                <ul className="clean-mobile-ref-feature-list">
-                  {MOBILE_FEATURE_ITEMS.map((item, index) => (
-                    <li className="clean-mobile-ref-feature-item" key={item.title} style={{ animationDelay: `${0.14 + index * 0.07}s` }}>
-                      <span className="clean-mobile-ref-feature-icon">
-                        <ReferenceHeroIcon name={item.icon} />
-                      </span>
-                      <div>
-                        <strong>{item.title}</strong>
-                        <span>{item.copy}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="clean-mobile-ref-metrics-card">
-                  {MOBILE_HERO_STATS.map((item) => (
-                    <article className="clean-mobile-ref-metric" key={item.title}>
-                      <span className="clean-mobile-ref-metric-icon">
-                        <ReferenceHeroIcon name={item.icon} />
-                      </span>
-                      <strong>{item.value}</strong>
-                      <span>{item.title}</span>
-                    </article>
-                  ))}
-                </div>
-
-                <div className="clean-mobile-ref-assurance">
-                  <ReferenceHeroIcon name="shield" />
-                  <span>Sua instalação com mais tranquilidade do início ao fim.</span>
-                </div>
-              </div>
-            </section>
-          </>
-        ) : (
-          <>
-            <header className="clean-landing-reference-topbar fade-up">
-              <div className="clean-reference-brand">
-                <BrandMark className="client-brand-mark clean-reference-brand-mark" />
-                <BrandWordmark className="clean-reference-wordmark" size="sm" />
-              </div>
-
-              <nav className="clean-reference-nav" aria-label="Navegação principal">
-                {DESKTOP_NAV_ITEMS.map((item) => (
-                  <a href={item.href} key={item.label}>
-                    {item.label}
-                  </a>
-                ))}
-              </nav>
-
-              <div className="clean-reference-actions">
-                <Link className="ghost-button clean-reference-ghost" to="/cliente/entrar">
-                  Entrar
-                </Link>
-                <Link className="gold-button clean-reference-gold" to="/instalador/cadastro">
-                  Cadastre-se
-                </Link>
-              </div>
-            </header>
-
-            <section className="clean-reference-hero fade-up" id="inicio" style={{ animationDelay: '0.05s' }}>
-              <div className="clean-reference-hero-copy">
-                <div className="clean-reference-badge">
-                  <ReferenceHeroIcon name="group" />
-                  <span>Para clientes</span>
-                </div>
-
-                <h1 className="clean-reference-title">
-                  <span className="is-light">Encontre</span>
-                  <span className="is-gold">instaladores</span>
-                  <span className="is-gold">de papel de parede</span>
-                  <span className="is-light">com mais</span>
-                  <span className="is-gold">segurança.</span>
-                </h1>
-
-                <p className="clean-reference-description">
-                  Compare avaliações reais, veja portfólios e fale direto no WhatsApp sem perder tempo procurando.
-                </p>
-
-                <div className="clean-reference-actions-row">
-                  <Link className="clean-reference-cta-primary" to="/cliente">
-                    <span>Encontrar instaladores agora</span>
-                    <span aria-hidden="true">→</span>
-                  </Link>
-                </div>
-
-                <div className="clean-reference-trust-row">
-                  {DESKTOP_TRUST_ITEMS.map((item) => (
-                    <article className="clean-reference-trust-item" key={item.title}>
-                      <div className="clean-reference-trust-icon">
-                        <ReferenceHeroIcon name={item.icon} />
-                      </div>
-                      <div>
-                        <strong>{item.title}</strong>
-                        <span>{item.copy}</span>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </div>
-
-              <div className="clean-reference-hero-media">
-                <img
-                  alt="Instalador aplicando papel de parede com mapa do Brasil"
-                  className="clean-reference-hero-image"
-                  decoding="async"
-                  fetchpriority="high"
-                  loading="eager"
-                  src={HERO_IMAGE_URL}
-                />
-                <div className="clean-reference-hero-glow" />
-              </div>
-
-            </section>
-          </>
-        )}
-
-        {isMobileLayout ? (
-          <section className="clean-stores clean-priority-stores fade-up" id="lojas-recomendadas" style={{ animationDelay: '0.07s' }}>
-            <div className="clean-section-head">
-              <p className="eyebrow">Lojas recomendadas</p>
-              <h2>Lojas para comprar com segurança</h2>
-              <p>Opções recomendadas pela plataforma.</p>
-            </div>
-
-            {activeStores.length > 0 ? (
-              <div className="clean-stores-carousel" {...(isTouchDevice ? storeSwipeHandlers : {})}>
-                <div
-                  className="clean-stores-track"
-                  style={{ transform: `translateX(-${activeStoreIndex * storeCardWidth}%)` }}
-                >
-                  {activeStores.map((store, index) => (
-                    <article
-                      className="clean-store-slide"
-                      key={store.id || `${store.name}-${index}`}
-                      style={{ flex: `0 0 ${storeCardWidth}%` }}
-                    >
-                      <div
-                        className={`clean-store-card ${
-                          openedStoreCardId === store.id ? 'is-open' : ''
-                        }`}
-                        onClick={() => {
-                          if (!isTouchDevice) {
-                            return;
-                          }
-                          setOpenedStoreCardId((current) => (current === store.id ? null : store.id));
-                        }}
-                        onKeyDown={(event) => {
-                          if (!isTouchDevice) {
-                            return;
-                          }
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            setOpenedStoreCardId((current) => (current === store.id ? null : store.id));
-                          }
-                        }}
-                        role={isTouchDevice ? 'button' : undefined}
-                        tabIndex={isTouchDevice ? 0 : undefined}
-                      >
-                        <div className="clean-store-media">
-                          {store.image_url ? (
-                            <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
-                          ) : (
-                            <div className="clean-store-fallback">{getInitials(store.name || 'Loja')}</div>
-                          )}
-                        </div>
-
-                        <div className="clean-store-content">
-                          <h3 className="clean-store-title">{store.name}</h3>
-                          <div className="clean-store-reveal">
-                            <p>{store.description || 'Loja recomendada para papel de parede e composição do ambiente.'}</p>
-                          </div>
-                          {store.link_url ? (
-                            <a
-                              className="clean-store-link"
-                              href={store.link_url}
-                              rel="noopener noreferrer"
-                              target="_blank"
-                            >
-                              {store.cta_label || 'Ir ao site'}
-                            </a>
-                          ) : null}
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                {maxStoreIndex > 0 ? (
-                  <div className="clean-stores-dots">
-                    {storeSlidePositions.map((index) => (
-                      <button
-                        aria-label={`Mostrar grupo ${index + 1} de lojas recomendadas`}
-                        className={index === activeStoreIndex ? 'is-active' : ''}
-                        key={`store-dot-${index}`}
-                        onClick={() => setActiveStoreIndex(index)}
-                        type="button"
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="empty-state !p-4 text-sm">As lojas recomendadas aparecerão aqui automaticamente.</div>
-            )}
-          </section>
-        ) : (
-          <section className="clean-reference-store-panel fade-up" id="lojas-recomendadas" style={{ animationDelay: '0.07s' }}>
-            <div className="clean-reference-store-layout">
-              <div className="clean-reference-store-copy">
-                <div className="clean-reference-panel-head">
-                  <h2 className="clean-reference-store-title-only">
-                    Lojas <span className="is-gold">recomendadas</span>
-                  </h2>
-                </div>
-              </div>
-
-              {desktopShowcaseStores.length > 0 ? (
-                <>
-                  <div className={`clean-reference-store-shell ${maxStorePageIndex <= 0 ? 'is-static no-nav' : ''}`}>
-                    {maxStorePageIndex > 0 ? (
-                      <button
-                        aria-label="Mostrar lojas recomendadas anteriores"
-                        className="clean-reference-arrow"
-                        onClick={goToPreviousStorePage}
-                        type="button"
-                      >
-                        ‹
-                      </button>
-                    ) : null}
-
-                    <div className="clean-reference-store-window" {...(isTouchDevice ? desktopStoreSwipeHandlers : {})}>
-                      {maxStorePageIndex > 0 ? (
-                        <div
-                          className="clean-reference-store-track"
-                          style={{ transform: `translateX(-${activeStorePage * 100}%)` }}
-                        >
-                          {desktopStorePages.map((storePage, pageIndex) => (
-                            <div className="clean-reference-store-page" key={`desktop-store-page-${pageIndex}`}>
-                              <div
-                                className="clean-reference-store-grid"
-                                style={{ '--store-columns': storesPerView }}
-                              >
-                                {storePage.map((store, index) => (
-                                  <article className="clean-reference-store-slide" key={store.id || `${store.name}-${index}`}>
-                                    <div className="clean-reference-store-card">
-                                      <div className="clean-reference-store-logo">
-                                        {store.image_url ? (
-                                          <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
-                                            <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
-                                          </div>
-                                        ) : (
-                                          <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
-                                            <span>{store.name || getInitials(store.name || 'Loja')}</span>
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      <h3>{store.name}</h3>
-
-                                      {store.link_url ? (
-                                        <a
-                                          className="clean-reference-store-link"
-                                          href={store.link_url}
-                                          rel="noopener noreferrer"
-                                          target="_blank"
-                                        >
-                                          {(store.cta_label || 'Ver loja').replace(/ir ao site/i, 'Ver loja')} →
-                                        </a>
-                                      ) : (
-                                        <span className="clean-reference-store-link is-disabled">Ver loja →</span>
-                                      )}
-                                    </div>
-                                  </article>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div
-                          className="clean-reference-store-grid"
-                          style={{ '--store-columns': Math.min(desktopShowcaseStores.length, storesPerView) }}
-                        >
-                          {desktopShowcaseStores.map((store, index) => (
-                            <article className="clean-reference-store-slide" key={store.id || `${store.name}-${index}`}>
-                              <div className="clean-reference-store-card">
-                                <div className="clean-reference-store-logo">
-                                  {store.image_url ? (
-                                    <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
-                                      <img alt={store.name || 'Loja recomendada'} loading="lazy" src={store.image_url} />
-                                    </div>
-                                  ) : (
-                                    <div className={`clean-reference-brand-logo ${getStoreBrandModifier(store.name)}`}>
-                                      <span>{store.name || getInitials(store.name || 'Loja')}</span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <h3>{store.name}</h3>
-
-                                {store.link_url ? (
-                                  <a
-                                    className="clean-reference-store-link"
-                                    href={store.link_url}
-                                    rel="noopener noreferrer"
-                                    target="_blank"
-                                  >
-                                    {(store.cta_label || 'Ver loja').replace(/ir ao site/i, 'Ver loja')} →
-                                  </a>
-                                ) : (
-                                  <span className="clean-reference-store-link is-disabled">Ver loja →</span>
-                                )}
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {maxStorePageIndex > 0 ? (
-                      <button
-                        aria-label="Mostrar próximas lojas recomendadas"
-                        className="clean-reference-arrow"
-                        onClick={goToNextStorePage}
-                        type="button"
-                      >
-                        ›
-                      </button>
-                    ) : null}
-                  </div>
-
-                  {maxStorePageIndex > 0 ? (
-                    <div className="clean-reference-pager">
-                      {desktopStorePages.map((_, index) => (
-                        <button
-                          aria-label={`Mostrar grupo ${index + 1} de lojas recomendadas`}
-                          className={index === activeStorePage ? 'is-active' : ''}
-                          key={`desktop-store-dot-${index}`}
-                          onClick={() => setActiveStorePage(index)}
-                          type="button"
-                        />
-                      ))}
-                    </div>
-                  ) : null}
-                </>
-              ) : (
-                <div className="clean-reference-empty-state">
-                  <strong>Lojas recomendadas em atualização</strong>
-                  <p>As lojas que você cadastrar e ativar no painel do administrador aparecerão aqui automaticamente.</p>
-                </div>
-              )}
-
-              <div className="clean-reference-store-benefits" aria-label="Benefícios das lojas recomendadas">
-                {DESKTOP_STORE_FEATURES.map((item) => (
-                  <article className="clean-reference-store-benefit" key={item.title}>
-                    <div className="clean-reference-mini-icon">
-                      <ReferenceHeroIcon name={item.icon} />
-                    </div>
-                    <strong>{item.title}</strong>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {isMobileLayout ? (
-          <section className="clean-story clean-priority-story fade-up" id="por-que-escolher" style={{ animationDelay: '0.08s' }}>
-            <div className="clean-story-text">
-              <p className="eyebrow">Por que escolher</p>
-              <h2>Mais clareza para decidir, mais segurança para contratar.</h2>
-              <p>
-                A plataforma foi feita para ser objetiva: você encontra os melhores profissionais, compara rápido e conversa direto com quem vai fazer a instalação.
-              </p>
-
-              <ul>
-                {storyPoints.map((point) => (
-                  <li key={point}>{point}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="clean-story-media">
-              <img alt="Instaladores de papel de parede profissionais" src={STORY_IMAGE_URL} />
-            </div>
-          </section>
-        ) : (
-          <section className="clean-desktop-why-showcase fade-up" id="por-que-escolher" style={{ animationDelay: '0.08s' }}>
-            <div className="clean-desktop-why-copy">
-              <p className="clean-desktop-why-eyebrow">POR QUE ESCOLHER</p>
-
-              <h2 className="clean-desktop-why-title">
-                <span className="is-light">Mais </span>
-                <span className="is-gold">clareza</span>
-                <span className="is-light"> para decidir.</span>
-                <br />
-                <span className="is-light">Mais </span>
-                <span className="is-gold">segurança</span>
-                <span className="is-light"> para contratar.</span>
-              </h2>
-
-              <p className="clean-desktop-why-description">
-                Nossa plataforma conecta você aos melhores instaladores de papel de parede da sua região. Compare, converse e contrate sem intermediários.
-              </p>
-
-              <span className="clean-desktop-why-rule" />
-
-              <ul className="clean-desktop-why-list">
-                {DESKTOP_WHY_POINTS.map((point) => (
-                  <li key={point.title}>
-                    <span className="clean-desktop-why-icon">
-                      <ReferenceHeroIcon name={point.icon} />
-                    </span>
-
-                    <div className="clean-desktop-why-list-copy">
-                      <strong>{point.title}</strong>
-                      <p>{point.copy}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-
-              <Link className="clean-desktop-why-cta" to="/cliente">
-                <span>ENCONTRAR INSTALADOR</span>
-                <span className="clean-desktop-why-cta-arrow">→</span>
-              </Link>
-
-              <div className="clean-desktop-why-note">
-                <span className="clean-desktop-why-note-icon">
-                  <ReferenceHeroIcon name="lock" />
-                </span>
-                <span>Sua segurança é a nossa prioridade.</span>
-              </div>
-            </div>
-
-            <div className="clean-desktop-why-media-shell">
-              <div className="clean-desktop-why-photo">
-                <img alt="Equipe de instaladores de papel de parede" src={STORY_IMAGE_URL} />
-              </div>
-
-              <div className="clean-desktop-why-stats">
-                {DESKTOP_PLATFORM_METRICS.map((metric, index) => (
-                  <article className={`clean-desktop-why-stat${metric.textOnly ? ' is-text-heavy' : ''}`} key={metric.value}>
-                    <span className="clean-desktop-why-stat-icon">
-                      <ReferenceHeroIcon name={metric.icon} />
-                    </span>
-                    <strong>{metric.value}</strong>
-                    <p>
-                      {metric.copyLines.map((line) => (
-                        <span key={line}>{line}</span>
-                      ))}
-                    </p>
-                    {index < DESKTOP_PLATFORM_METRICS.length - 1 ? <span className="clean-desktop-why-stat-divider" /> : null}
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        <section className="clean-installers clean-priority-installers fade-up" id="landing-installers" style={{ animationDelay: '0.14s' }}>
-          <div className="clean-section-head">
-            <p className="eyebrow">Em destaque</p>
-            <h2>
-              {isMobileLayout
-                ? 'Instaladores de papel de parede em destaque'
-                : 'Melhores instaladores de papel de parede da plataforma'}
-            </h2>
-            <p>{isMobileLayout ? 'Perfis com nota, cidade e experiência.' : 'Perfis organizados com nota, cidade, portfólio e contato direto.'}</p>
-          </div>
-
-          <div className="clean-installers-grid">
-            {topInstallers.length > 0 ? (
-              <div className="clean-installers-carousel" {...(isTouchDevice ? installerSwipeHandlers : {})}>
-                <div
-                  className="clean-installers-track"
-                  style={{ transform: `translateX(-${activeInstallerIndex * installerCardWidth}%)` }}
-                >
-                  {topInstallers.map((installer) => (
-                    <article
-                      className="clean-installer-slide"
-                      key={installer.id}
-                      style={{ flex: `0 0 ${installerCardWidth}%` }}
-                    >
-                      <div className="clean-installer-card">
-                        <div className="clean-installer-top">
-                          {installer.installer_photo ? (
-                            <img
-                              alt={`Foto de ${installer.display_name}`}
-                              className="clean-installer-avatar"
-                              src={installer.installer_photo}
-                            />
-                          ) : installer.logo ? (
-                            <img alt={`Logo de ${installer.display_name}`} className="clean-installer-avatar" src={installer.logo} />
-                          ) : (
-                            <div className="clean-installer-avatar clean-installer-fallback">{getInitials(installer.display_name)}</div>
-                          )}
-                          <div>
-                            <h3>{installer.display_name}</h3>
-                            <p>{[installer.city, installer.state].filter(Boolean).join(' - ') || 'Região não informada'}</p>
-                          </div>
-                        </div>
-
-                        <div className="clean-installer-rating">
-                          <RatingDots value={installer.average_rating} />
-                          <span>
-                            {formatRating(installer.average_rating)} • {installer.review_count} avaliações
-                          </span>
-                        </div>
-
-                        {isMobileLayout ? (
-                          <p className="clean-installer-mobile-bio">
-                            {installer.installation_method || 'Instalação profissional com acabamento limpo e cuidadoso.'}
-                          </p>
-                        ) : null}
-
-                        <div className="clean-installer-details">
-                          <p>
-                            <span>Método</span>
-                            {installer.installation_method || 'Instalação profissional por ambiente'}
-                          </p>
-                          <p>
-                            <span>Experiência</span>
-                            {Number(installer.years_experience || 0) > 0
-                              ? `${installer.years_experience} anos`
-                              : 'Em atualização'}
-                          </p>
-                          <p>
-                            <span>Atendimento</span>
-                            {installer.service_hours || 'Horário informado no perfil completo'}
-                          </p>
-                          <p>
-                            <span>Preço base</span>
-                            {formatMoney(installer.base_service_cost)}
-                          </p>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                {maxInstallerIndex > 0 ? (
-                  <div className="clean-installers-dots">
-                    {installerSlidePositions.map((index) => (
-                      <button
-                        aria-label={`Mostrar grupo ${index + 1} de instaladores`}
-                        className={index === activeInstallerIndex ? 'is-active' : ''}
-                        key={`dot-${index}`}
-                        onClick={() => setActiveInstallerIndex(index)}
-                        type="button"
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="empty-state !p-4 text-sm">Ainda não há instaladores públicos disponíveis no momento.</div>
-            )}
-          </div>
-        </section>
-
-        <section className="clean-reviews clean-priority-reviews fade-up" id="landing-reviews" style={{ animationDelay: '0.17s' }}>
-          <div className="clean-section-head">
-            <p className="eyebrow">Avaliações</p>
-            <h2>{isMobileLayout ? 'Clientes satisfeitos' : 'Clientes satisfeitos com a experiência'}</h2>
-          </div>
-
-          <div className="clean-reviews-grid">
-            {reviews.length > 0 ? (
-              <div className="clean-reviews-carousel" {...(isTouchDevice ? reviewSwipeHandlers : {})}>
-                <div
-                  className="clean-reviews-track"
-                  style={{ transform: `translateX(-${activeReviewIndex * reviewCardWidth}%)` }}
-                >
-                  {reviews.map((review) => (
-                    <article
-                      className="clean-review-slide"
-                      key={review.id}
-                      style={{ flex: `0 0 ${reviewCardWidth}%` }}
-                    >
-                      <div className="clean-review-item">
-                        <div className="clean-review-head">
-                          <div className="clean-review-person">
-                            <div className="clean-review-avatar">{getInitials(review.reviewer_name || 'CV')}</div>
-                            <div className="clean-review-person-copy">
-                              <strong>{review.reviewer_name || 'Cliente verificado'}</strong>
-                              <p className="clean-review-meta">
-                                {review.installer_name}
-                                {review.reviewer_region ? ` • ${review.reviewer_region}` : ''}
-                              </p>
-                            </div>
-                          </div>
-                          <span>{review.rating}/5</span>
-                        </div>
-                        <p className="clean-review-text">{review.comment || 'Atendimento excelente e instalação impecável.'}</p>
-                        <p className="clean-review-date">{formatReviewDate(review.created_at)}</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                {maxReviewIndex > 0 ? (
-                  <div className="clean-reviews-dots">
-                    {reviewSlidePositions.map((index) => (
-                      <button
-                        aria-label={`Mostrar grupo ${index + 1} de avaliações`}
-                        className={index === activeReviewIndex ? 'is-active' : ''}
-                        key={`review-dot-${index}`}
-                        onClick={() => setActiveReviewIndex(index)}
-                        type="button"
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="empty-state !p-4 text-sm">As avaliações positivas aparecerão aqui automaticamente.</div>
-            )}
-          </div>
-        </section>
-
-        <section className="clean-how clean-priority-how fade-up" id="como-funciona" style={{ animationDelay: '0.2s' }}>
-          {howItWorksItems.map((item) => (
-            <article key={item.step}>
-              <span>{item.step}</span>
-              <h4>{item.title}</h4>
-              <p>{item.copy}</p>
-            </article>
-          ))}
-        </section>
-
-        {null}
+function LogoMark({ compact = false }) {
+  return (
+    <SmartLink href="/" className="group inline-flex items-center gap-2">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#cda349] to-[#f0d28a] blur-lg opacity-50 transition-opacity group-hover:opacity-75" />
+        <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-[#cda349] to-[#d8ad55]">
+          <span className="text-lg font-bold text-black">I+</span>
+        </div>
       </div>
+      {!compact ? (
+        <span className="text-xl font-bold text-white">
+          Instalar<span className="text-[#cda349]">+</span>
+        </span>
+      ) : null}
+    </SmartLink>
+  );
+}
+
+function Navbar() {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <>
+      <nav className={`landing-navbar fixed left-0 right-0 top-0 z-50 transition-all duration-500 ${isScrolled ? 'glass-strong py-3' : 'py-5'}`}>
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="flex items-center justify-between">
+            <LogoMark />
+
+            <div className="hidden items-center gap-8 md:flex">
+              {navLinks.map((link) => (
+                <SmartLink
+                  className="group relative text-sm text-white/70 transition-colors hover:text-white"
+                  href={link.href}
+                  key={link.href}
+                >
+                  {link.label}
+                  <span className="absolute -bottom-1 left-0 h-px w-0 bg-gradient-to-r from-[#cda349] to-[#f0d28a] transition-all group-hover:w-full" />
+                </SmartLink>
+              ))}
+            </div>
+
+            <div className="hidden md:block">
+              <SmartLink
+                className="btn-shine relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55] px-6 py-2.5 text-sm font-semibold text-black shadow-lg shadow-[#cda349]/25 transition-all hover:scale-105 hover:shadow-[#cda349]/40"
+                href={REQUEST_PATH}
+              >
+                Solicitar Orçamento
+              </SmartLink>
+            </div>
+
+            <button
+              aria-label={isMobileOpen ? 'Fechar menu' : 'Abrir menu'}
+              className="relative z-50 p-2 text-white md:hidden"
+              onClick={() => setIsMobileOpen((current) => !current)}
+              type="button"
+            >
+              <Icon name={isMobileOpen ? 'x' : 'menu'} />
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {isMobileOpen ? (
+        <div className="landing-mobile-menu fixed inset-0 z-40 md:hidden">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+          <div className="absolute right-0 top-0 h-full w-4/5 max-w-sm bg-[#0a0a0a] p-6 pt-24 shadow-2xl shadow-black">
+            <div className="flex flex-col gap-6">
+              {navLinks.map((link) => (
+                <SmartLink
+                  className="text-2xl font-medium text-white/80 transition-colors hover:text-[#cda349]"
+                  href={link.href}
+                  key={link.href}
+                  onClick={() => setIsMobileOpen(false)}
+                >
+                  {link.label}
+                </SmartLink>
+              ))}
+              <SmartLink
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55] px-6 py-3 text-base font-semibold text-black"
+                href={REQUEST_PATH}
+                onClick={() => setIsMobileOpen(false)}
+              >
+                Solicitar Orçamento
+              </SmartLink>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function Hero() {
+  const containerRef = useRef(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return undefined;
+    }
+
+    const handleMouseMove = (event) => {
+      const rect = container.getBoundingClientRect();
+      setMousePosition({
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      });
+    };
+
+    container.addEventListener('mousemove', handleMouseMove);
+    return () => container.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  return (
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20" ref={containerRef}>
+      <div
+        className="pointer-events-none absolute hidden h-[600px] w-[600px] rounded-full opacity-30 md:block"
+        style={{
+          background: 'radial-gradient(circle, rgba(205, 163, 73, 0.15), transparent 70%)',
+          left: mousePosition.x - 300,
+          top: mousePosition.y - 300,
+          transition: 'left 0.3s ease-out, top 0.3s ease-out',
+        }}
+      />
+
+      <div className="absolute inset-0 grid-pattern opacity-30" />
+      <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-[#cda349]/10 blur-[100px] animate-pulse-glow" />
+      <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#d8ad55]/10 blur-[120px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
+      <div
+        className="landing-hero-photo"
+        aria-hidden="true"
+        style={{ '--landing-hero-image': 'url("/landing/instaladores-profissionais.png")' }}
+      />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-6 py-24 text-center">
+        <AnimatedSection className="mb-8 inline-flex items-center gap-2 rounded-full glass-gold px-4 py-2" delay={0}>
+          <Icon className="h-4 w-4 text-[#cda349]" name="sparkles" size={16} />
+          <span className="text-sm text-white/80">A plataforma #1 do Brasil</span>
+        </AnimatedSection>
+
+        <AnimatedSection delay={0.1}>
+          <h1 className="mx-auto max-w-5xl text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-7xl">
+            <span className="text-balance">Encontre o profissional </span>
+            <span className="gradient-text-gold">perfeito</span>
+            <br className="hidden sm:block" />
+            <span className="text-balance"> para seu projeto</span>
+          </h1>
+        </AnimatedSection>
+
+        <AnimatedSection delay={0.2}>
+          <p className="mx-auto mt-6 max-w-2xl text-base text-white/60 sm:text-xl text-pretty">
+            Conectamos você aos melhores profissionais de instalação de papel de parede.
+            Segurança garantida, resultados extraordinários.
+          </p>
+        </AnimatedSection>
+
+        <AnimatedSection
+          className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+          delay={0.3}
+        >
+          <SmartLink
+            className="btn-shine group relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#cda349] via-[#d8ad55] to-[#cda349] bg-[length:200%_100%] px-8 py-4 text-base font-semibold text-black shadow-lg shadow-[#cda349]/25 transition-all hover:bg-right hover:shadow-[#cda349]/40"
+            href={REQUEST_PATH}
+          >
+            Solicitar Orçamento Grátis
+            <Icon className="h-5 w-5 transition-transform group-hover:translate-x-1" name="arrow-right" size={20} />
+          </SmartLink>
+          <SmartLink
+            className="group inline-flex items-center gap-2 rounded-full glass px-8 py-4 text-base font-semibold text-white/90 transition-all hover:bg-white/10"
+            href="#como-funciona"
+          >
+            Ver Como Funciona
+          </SmartLink>
+        </AnimatedSection>
+
+        <StaggerContainer className="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
+          {heroStats.map((stat) => (
+            <div className="group relative" key={stat.label}>
+              <div className="glass rounded-2xl p-6 transition-all hover:bg-white/5">
+                <Icon className="mx-auto mb-3 h-8 w-8 text-[#cda349]" name={stat.icon} size={32} />
+                <div className="text-3xl font-bold gradient-text-gold">{stat.value}</div>
+                <div className="mt-1 text-sm text-white/50">{stat.label}</div>
+              </div>
+            </div>
+          ))}
+        </StaggerContainer>
+
+        <AnimatedSection className="relative mx-auto mt-20 max-w-4xl" delay={0.7}>
+          <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
+          <div className="absolute -inset-4 bg-gradient-to-r from-[#cda349]/20 via-[#d8ad55]/20 to-[#cda349]/20 blur-3xl opacity-50" />
+          <div className="relative rounded-3xl p-2 shadow-2xl glass gradient-border-gold">
+            <div className="rounded-2xl bg-[#0a0a0a] p-4 sm:p-8">
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="h-2.5 w-2.5 rounded-full bg-red-500/80 sm:h-3 sm:w-3" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/80 sm:h-3 sm:w-3" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-green-500/80 sm:h-3 sm:w-3" />
+                </div>
+                <div className="text-[10px] text-white/30 sm:text-xs">instalar.plus/meus-projetos</div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                {[1, 2, 3].map((item) => (
+                  <div className="animate-float rounded-lg bg-white/5 p-2 sm:rounded-xl sm:p-4" key={item} style={{ animationDelay: `${item * 0.5}s` }}>
+                    <div className="mb-2 h-1.5 w-10 rounded bg-white/10 sm:mb-3 sm:h-2 sm:w-16" />
+                    <div className="h-6 w-full rounded bg-gradient-to-r from-[#cda349]/20 to-[#d8ad55]/20 sm:h-8" />
+                    <div className="mt-2 h-1.5 w-14 rounded bg-white/5 sm:mt-3 sm:h-2 sm:w-24" />
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-6 sm:gap-4">
+                <div className="animate-float-delay rounded-lg bg-white/5 p-2 sm:rounded-xl sm:p-4">
+                  <div className="mb-2 flex items-center gap-2 sm:mb-3 sm:gap-3">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55] sm:h-10 sm:w-10" />
+                    <div>
+                      <div className="h-1.5 w-14 rounded bg-white/20 sm:h-2 sm:w-20" />
+                      <div className="mt-1 h-1.5 w-10 rounded bg-white/10 sm:h-2 sm:w-16" />
+                    </div>
+                  </div>
+                  <div className="h-1.5 w-full rounded bg-white/5 sm:h-2" />
+                  <div className="mt-1 h-1.5 w-3/4 rounded bg-white/5 sm:mt-2 sm:h-2" />
+                </div>
+                <div className="animate-float-slow rounded-lg bg-white/5 p-2 sm:rounded-xl sm:p-4">
+                  <div className="mb-2 h-1.5 w-8 rounded bg-white/10 sm:mb-3 sm:h-2 sm:w-12" />
+                  <div className="text-xl font-bold gradient-text-gold sm:text-2xl">98%</div>
+                  <div className="mt-1 h-1.5 w-16 rounded bg-white/5 sm:mt-2 sm:h-2 sm:w-24" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </AnimatedSection>
+      </div>
+
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a0a] to-transparent" />
+    </section>
+  );
+}
+
+function TrustSection() {
+  return (
+    <section className="relative overflow-hidden py-24">
+      <div className="absolute inset-0 grid-pattern opacity-20" />
+      <div className="relative z-10 mx-auto max-w-7xl px-6">
+        <StaggerContainer className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+          {trustStats.map((stat) => (
+            <div className="group relative" key={stat.label}>
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#cda349]/10 to-[#d8ad55]/10 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
+              <div className="relative rounded-2xl p-6 text-center glass card-premium sm:p-8">
+                <div className="mb-2 text-3xl font-bold gradient-text-gold sm:text-4xl lg:text-5xl">
+                  {stat.value}
+                </div>
+                <div className="text-sm text-white/50">{stat.label}</div>
+              </div>
+            </div>
+          ))}
+        </StaggerContainer>
+      </div>
+    </section>
+  );
+}
+
+function SectionBadge({ icon, children }) {
+  return (
+    <span className="mb-6 inline-flex items-center gap-2 rounded-full glass-gold px-4 py-2 text-sm text-white/70">
+      <Icon className="h-4 w-4 text-[#cda349]" name={icon} size={16} />
+      {children}
+    </span>
+  );
+}
+
+function HowItWorksSection() {
+  return (
+    <section className="relative overflow-hidden py-24 sm:py-32" id="como-funciona">
+      <div className="absolute inset-0 grid-pattern opacity-20" />
+      <div className="absolute left-1/4 top-0 h-[600px] w-[600px] rounded-full bg-[#cda349]/5 blur-[200px]" />
+      <div className="absolute bottom-0 right-1/4 h-[500px] w-[500px] rounded-full bg-[#d8ad55]/5 blur-[200px]" />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-6">
+        <AnimatedSection className="mb-16 text-center sm:mb-20">
+          <SectionBadge icon="clipboard">Processo Simples</SectionBadge>
+          <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
+            Como funciona o <span className="gradient-text-gold">Instalar+</span>
+          </h2>
+          <p className="mx-auto max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
+            Em apenas 6 passos simples você encontra o profissional ideal para seu projeto.
+            Rápido, seguro e sem complicação.
+          </p>
+        </AnimatedSection>
+
+        <StaggerContainer className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {steps.map((step, index) => (
+            <div className="group relative h-full" key={step.number}>
+              {index < steps.length - 1 && (index + 1) % 3 !== 0 ? (
+                <div className="absolute left-full top-14 z-0 hidden h-px w-full bg-gradient-to-r from-[#cda349]/20 to-transparent lg:block" />
+              ) : null}
+
+              <div className="relative h-full overflow-hidden rounded-2xl p-6 glass card-premium sm:p-8">
+                <div className="absolute -right-4 -top-4 select-none text-[120px] font-bold leading-none text-[#cda349]/[0.03]">
+                  {step.number}
+                </div>
+
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#cda349] to-[#d8ad55] opacity-30 blur-xl transition-opacity group-hover:opacity-50" />
+                  <div className="relative inline-flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r from-[#cda349] to-[#d8ad55]">
+                    <Icon className="h-7 w-7 text-black" name={step.icon} size={28} />
+                  </div>
+                </div>
+
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#cda349]/20 bg-[#cda349]/10 px-3 py-1 text-xs font-medium">
+                  <span className="text-[#cda349]">Passo {step.number}</span>
+                </div>
+
+                <h3 className="mb-3 text-xl font-semibold text-white">{step.title}</h3>
+                <p className="leading-relaxed text-white/50">{step.description}</p>
+              </div>
+            </div>
+          ))}
+        </StaggerContainer>
+      </div>
+    </section>
+  );
+}
+
+function FeaturesSection() {
+  return (
+    <section className="relative overflow-hidden py-24 sm:py-32" id="beneficios">
+      <div className="absolute inset-0 grid-pattern opacity-20" />
+      <div className="absolute left-0 top-1/2 h-96 w-96 rounded-full bg-[#cda349]/5 blur-[150px]" />
+      <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-[#d8ad55]/5 blur-[150px]" />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-6">
+        <AnimatedSection className="mb-16 text-center sm:mb-20">
+          <SectionBadge icon="zap">Recursos Premium</SectionBadge>
+          <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
+            Tudo que você precisa para <span className="gradient-text-gold">encontrar o profissional ideal</span>
+          </h2>
+          <p className="mx-auto max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
+            Nossa plataforma oferece ferramentas avançadas para garantir que você encontre
+            o profissional perfeito com segurança e praticidade.
+          </p>
+        </AnimatedSection>
+
+        <StaggerContainer className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => (
+            <div className="group relative h-full" key={feature.title}>
+              <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-[#cda349]/20 to-[#d8ad55]/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
+              <div className="relative h-full rounded-2xl p-6 glass card-premium sm:p-8">
+                <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r from-[#cda349] to-[#d8ad55]">
+                  <Icon className="h-7 w-7 text-black" name={feature.icon} size={28} />
+                </div>
+                <h3 className="mb-3 text-xl font-semibold text-white">{feature.title}</h3>
+                <p className="leading-relaxed text-white/50">{feature.description}</p>
+                <div className="absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r from-[#cda349] to-[#d8ad55] opacity-0 transition-opacity group-hover:opacity-50" />
+              </div>
+            </div>
+          ))}
+        </StaggerContainer>
+      </div>
+    </section>
+  );
+}
+
+function DemoSection() {
+  return (
+    <section className="relative overflow-hidden py-24 sm:py-32">
+      <div className="absolute inset-0 grid-pattern opacity-20" />
+      <div className="absolute right-0 top-1/4 h-[500px] w-[500px] rounded-full bg-[#cda349]/10 blur-[150px]" />
+      <div className="absolute bottom-1/4 left-0 h-[400px] w-[400px] rounded-full bg-[#d8ad55]/10 blur-[150px]" />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-6">
+        <AnimatedSection className="mb-16 text-center">
+          <SectionBadge icon="zap">Interface Moderna</SectionBadge>
+          <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
+            Uma experiência <span className="gradient-text-gold">completamente nova</span>
+          </h2>
+          <p className="mx-auto max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
+            Dashboard intuitivo que coloca você no controle de todo o processo,
+            do primeiro contato até a conclusão do projeto.
+          </p>
+        </AnimatedSection>
+
+        <AnimatedSection delay={0.2}>
+          <div className="relative mx-auto max-w-5xl">
+            <div className="absolute -inset-4 bg-gradient-to-r from-[#cda349]/20 via-[#d8ad55]/20 to-[#f0d28a]/20 opacity-60 blur-3xl" />
+            <div className="relative overflow-hidden rounded-3xl gradient-border-gold">
+              <div className="bg-[#0a0a0a]/90 p-4 backdrop-blur-xl sm:p-6 lg:p-8">
+                <div className="mb-6 flex items-center justify-between border-b border-white/5 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-3 w-3 rounded-full bg-red-500" />
+                    <div className="h-3 w-3 rounded-full bg-yellow-500" />
+                    <div className="h-3 w-3 rounded-full bg-green-500" />
+                  </div>
+                  <div className="hidden items-center gap-4 sm:flex">
+                    <div className="h-8 w-32 rounded-lg bg-white/5" />
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55]" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+                  <div className="space-y-4 sm:space-y-6 lg:col-span-2">
+                    <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                      {demoStats.map((stat, index) => (
+                        <div className="rounded-xl p-3 glass sm:p-4 landing-rise" key={stat.label} style={{ '--landing-delay': `${0.5 + index * 0.1}s` }}>
+                          <Icon className="mb-2 h-5 w-5 text-[#cda349]" name={stat.icon} size={20} />
+                          <div className="text-xl font-bold text-white sm:text-2xl">{stat.value}</div>
+                          <div className="text-xs text-white/40">{stat.label}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="rounded-xl p-4 glass landing-rise sm:p-6" style={{ '--landing-delay': '0.8s' }}>
+                      <div className="mb-4 flex items-start justify-between">
+                        <div>
+                          <h4 className="text-base font-semibold text-white sm:text-lg">Instalação Sala de Estar</h4>
+                          <p className="text-sm text-white/40">São Paulo, SP</p>
+                        </div>
+                        <span className="inline-flex items-center rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-400">
+                          Em andamento
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                          <div className="text-lg font-semibold text-white sm:text-xl">25m²</div>
+                          <div className="text-xs text-white/40">Área</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-semibold text-white sm:text-xl">12</div>
+                          <div className="text-xs text-white/40">Interessados</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-semibold text-white sm:text-xl">3 dias</div>
+                          <div className="text-xs text-white/40">Prazo</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 sm:space-y-6">
+                    <div className="rounded-xl p-4 glass landing-rise" style={{ '--landing-delay': '0.9s' }}>
+                      <div className="mb-4 flex items-center gap-2">
+                        <Icon className="h-4 w-4 text-[#cda349]" name="bell" size={16} />
+                        <span className="text-sm font-medium text-white">Notificações</span>
+                      </div>
+                      <div className="space-y-3">
+                        {[1, 2].map((item) => (
+                          <div className="flex items-start gap-3 rounded-lg bg-white/5 p-2" key={item}>
+                            <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55]" />
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-1 h-2 w-20 rounded bg-white/20" />
+                              <div className="h-2 w-full rounded bg-white/10" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl p-4 glass landing-rise" style={{ '--landing-delay': '1s' }}>
+                      <div className="mb-4 flex items-center gap-2">
+                        <Icon className="h-4 w-4 text-[#cda349]" name="message-square" size={16} />
+                        <span className="text-sm font-medium text-white">Mensagens</span>
+                        <span className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#cda349] text-xs text-black">3</span>
+                      </div>
+                      <div className="space-y-2">
+                        {[1, 2, 3].map((item) => (
+                          <div className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-white/5" key={item}>
+                            <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55]" />
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-1 h-2 w-16 rounded bg-white/20" />
+                              <div className="h-2 w-24 rounded bg-white/10" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </AnimatedSection>
+      </div>
+    </section>
+  );
+}
+
+function TestimonialsSection() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const itemsPerPage = 3;
+  const totalPages = Math.ceil(testimonials.length / itemsPerPage);
+
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((previous) => (previous + 1) % totalPages);
+  }, [totalPages]);
+
+  const prevSlide = () => {
+    setCurrentIndex((previous) => (previous - 1 + totalPages) % totalPages);
+  };
+
+  useEffect(() => {
+    if (!isAutoPlaying) {
+      return undefined;
+    }
+
+    const interval = window.setInterval(nextSlide, 5000);
+    return () => window.clearInterval(interval);
+  }, [isAutoPlaying, nextSlide]);
+
+  const currentTestimonials = testimonials.slice(
+    currentIndex * itemsPerPage,
+    (currentIndex + 1) * itemsPerPage
+  );
+
+  return (
+    <section className="relative overflow-hidden py-24 sm:py-32" id="avaliacoes">
+      <div className="absolute inset-0 grid-pattern opacity-20" />
+      <div className="absolute left-0 top-1/2 h-[500px] w-[500px] -translate-y-1/2 rounded-full bg-[#cda349]/5 blur-[200px]" />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-6">
+        <AnimatedSection className="mb-16 text-center">
+          <span className="mb-6 inline-flex items-center gap-2 rounded-full glass-gold px-4 py-2 text-sm text-white/70">
+            <Icon className="h-4 w-4 text-[#cda349]" filled name="star" size={16} />
+            Avaliações Reais
+          </span>
+          <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
+            O que nossos clientes <span className="gradient-text-gold">dizem sobre nós</span>
+          </h2>
+          <p className="mx-auto max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
+            Mais de 10.000 projetos realizados com sucesso. Veja o que dizem
+            os clientes que já usaram nossa plataforma.
+          </p>
+        </AnimatedSection>
+
+        <div
+          className="relative"
+          onMouseEnter={() => setIsAutoPlaying(false)}
+          onMouseLeave={() => setIsAutoPlaying(true)}
+        >
+          <div className="overflow-hidden">
+            <div className="landing-carousel-page grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" key={currentIndex}>
+              {currentTestimonials.map((testimonial) => (
+                <div className="group relative" key={testimonial.id}>
+                  <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-[#cda349]/20 to-[#d8ad55]/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
+                  <div className="relative h-full rounded-2xl p-6 glass card-premium sm:p-8">
+                    <Icon className="absolute right-6 top-6 h-8 w-8 text-white/5" name="quote" size={32} />
+                    <div className="mb-4 flex gap-1">
+                      {Array.from({ length: testimonial.rating }).map((_, index) => (
+                        <Icon className="h-4 w-4 text-[#cda349]" filled key={index} name="star" size={16} />
+                      ))}
+                    </div>
+                    <p className="mb-6 text-sm leading-relaxed text-white/70 sm:text-base">
+                      &ldquo;{testimonial.text}&rdquo;
+                    </p>
+                    <div className="flex items-center gap-4 border-t border-white/5 pt-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55] font-semibold text-black">
+                        {testimonial.image}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-white">{testimonial.name}</div>
+                        <div className="text-sm text-white/40">
+                          {testimonial.role} • {testimonial.location}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-10 flex items-center justify-center gap-4">
+            <button
+              aria-label="Anterior"
+              className="group flex h-12 w-12 items-center justify-center rounded-full glass transition-all hover:bg-white/10"
+              onClick={prevSlide}
+              type="button"
+            >
+              <Icon className="h-5 w-5 text-white/70 transition-colors group-hover:text-white" name="chevron-left" size={20} />
+            </button>
+
+            <div className="flex gap-2">
+              {Array.from({ length: totalPages }).map((_, index) => (
+                <button
+                  aria-label={`Ir para página ${index + 1}`}
+                  className={`h-2 rounded-full transition-all ${index === currentIndex ? 'w-8 bg-gradient-to-r from-[#cda349] to-[#d8ad55]' : 'w-2 bg-white/20 hover:bg-white/40'}`}
+                  key={index}
+                  onClick={() => setCurrentIndex(index)}
+                  type="button"
+                />
+              ))}
+            </div>
+
+            <button
+              aria-label="Próximo"
+              className="group flex h-12 w-12 items-center justify-center rounded-full glass transition-all hover:bg-white/10"
+              onClick={nextSlide}
+              type="button"
+            >
+              <Icon className="h-5 w-5 text-white/70 transition-colors group-hover:text-white" name="chevron-right" size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FaqSection() {
+  const [openIndex, setOpenIndex] = useState(0);
+
+  return (
+    <section className="relative overflow-hidden py-24 sm:py-32" id="faq">
+      <div className="absolute inset-0 grid-pattern opacity-20" />
+      <div className="absolute right-0 top-1/4 h-[500px] w-[500px] rounded-full bg-[#cda349]/5 blur-[200px]" />
+
+      <div className="relative z-10 mx-auto max-w-4xl px-6">
+        <AnimatedSection className="mb-16 text-center">
+          <SectionBadge icon="help-circle">Perguntas Frequentes</SectionBadge>
+          <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
+            Tire suas <span className="gradient-text-gold">dúvidas</span>
+          </h2>
+          <p className="mx-auto max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
+            Encontre respostas para as perguntas mais comuns sobre nossa plataforma.
+          </p>
+        </AnimatedSection>
+
+        <StaggerContainer className="space-y-4">
+          {faqs.map((faq, index) => (
+            <div className="group" key={faq.question}>
+              <button
+                className="w-full rounded-2xl p-6 text-left transition-all glass hover:bg-white/5"
+                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                type="button"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="pr-4 text-base font-semibold text-white sm:text-lg">{faq.question}</h3>
+                  <Icon
+                    className={`h-5 w-5 flex-shrink-0 text-white/50 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`}
+                    name="chevron-down"
+                    size={20}
+                  />
+                </div>
+                {openIndex === index ? (
+                  <div className="landing-faq-answer overflow-hidden">
+                    <p className="mt-4 border-t border-white/5 pt-4 leading-relaxed text-white/50">
+                      {faq.answer}
+                    </p>
+                  </div>
+                ) : null}
+              </button>
+            </div>
+          ))}
+        </StaggerContainer>
+      </div>
+    </section>
+  );
+}
+
+function CtaSection() {
+  return (
+    <section className="relative overflow-hidden py-24 sm:py-32" id="solicitar">
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#cda349]/5 to-[#cda349]/10" />
+        <div className="absolute inset-0 grid-pattern opacity-30" />
+      </div>
+
+      <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-[#cda349]/20 blur-[120px] animate-pulse-glow" />
+      <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#d8ad55]/20 blur-[150px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
+
+      <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
+        <AnimatedSection>
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full glass-gold px-4 py-2">
+            <Icon className="h-4 w-4 text-[#cda349]" name="sparkles" size={16} />
+            <span className="text-sm text-white/80">Comece agora mesmo</span>
+          </div>
+
+          <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-6xl text-balance">
+            Pronto para encontrar o <span className="gradient-text-gold">instalador perfeito</span>?
+          </h2>
+
+          <p className="mx-auto mb-10 max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
+            Junte-se a milhares de clientes satisfeitos. Solicite seu orçamento
+            gratuitamente e receba propostas em até 24 horas.
+          </p>
+
+          <SmartLink
+            className="btn-shine group relative inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-[#cda349] via-[#d8ad55] to-[#f0d28a] px-10 py-5 text-lg font-semibold text-black shadow-xl shadow-[#cda349]/25 transition-all hover:scale-105 hover:shadow-[#cda349]/40"
+            href={REQUEST_PATH}
+          >
+            Solicitar Orçamento Grátis
+            <Icon className="h-5 w-5 transition-transform group-hover:translate-x-1" name="arrow-right" size={20} />
+          </SmartLink>
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-white/40 sm:gap-8">
+            {['100% Gratuito', 'Sem compromisso', 'Resposta em 24h'].map((item) => (
+              <div className="flex items-center gap-2" key={item}>
+                <div className="h-2 w-2 rounded-full bg-green-500" />
+                {item}
+              </div>
+            ))}
+          </div>
+        </AnimatedSection>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="relative border-t border-white/5">
+      <div className="absolute inset-0 grid-pattern opacity-10" />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-6 py-16 sm:py-20">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
+          <div className="lg:col-span-4">
+            <LogoMark />
+
+            <p className="mb-6 mt-6 max-w-sm leading-relaxed text-white/40">
+              A plataforma que conecta você aos melhores instaladores de papel de parede do Brasil.
+              Tecnologia, segurança e qualidade em um só lugar.
+            </p>
+
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-3 text-white/40">
+                <Icon className="h-4 w-4 text-[#cda349]" name="mail" size={16} />
+                contato@instalarmais.com.br
+              </div>
+              <div className="flex items-center gap-3 text-white/40">
+                <Icon className="h-4 w-4 text-[#cda349]" name="phone" size={16} />
+                (11) 99999-9999
+              </div>
+              <div className="flex items-center gap-3 text-white/40">
+                <Icon className="h-4 w-4 text-[#cda349]" name="map-pin" size={16} />
+                São Paulo, Brasil
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-8">
+            <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+              {Object.entries(footerLinks).map(([group, links]) => (
+                <div key={group}>
+                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white">
+                    {group === 'produto' ? 'Produto' : group === 'empresa' ? 'Empresa' : 'Legal'}
+                  </h4>
+                  <ul className="space-y-3">
+                    {links.map((link) => (
+                      <li key={link.label}>
+                        <SmartLink className="text-sm text-white/40 transition-colors hover:text-white" href={link.href}>
+                          {link.label}
+                        </SmartLink>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 sm:flex-row">
+          <p className="text-sm text-white/30">
+            © {new Date().getFullYear()} Instalar+. Todos os direitos reservados.
+          </p>
+
+          <div className="flex items-center gap-4">
+            {socialLinks.map((social) => (
+              <SmartLink
+                aria-label={social.label}
+                className="flex h-10 w-10 items-center justify-center rounded-full glass transition-colors hover:bg-white/10"
+                href={social.href}
+                key={social.label}
+              >
+                <Icon className="h-5 w-5 text-white/50 transition-colors hover:text-white" name={social.icon} size={20} />
+              </SmartLink>
+            ))}
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+export default function ClientLandingLegacy() {
+  return (
+    <div className="literal-landing min-h-screen overflow-hidden bg-[#0a0a0a] text-white">
+      <div className="aurora-bg" />
+      <Navbar />
+      <main>
+        <Hero />
+        <TrustSection />
+        <HowItWorksSection />
+        <FeaturesSection />
+        <DemoSection />
+        <TestimonialsSection />
+        <FaqSection />
+        <CtaSection />
+      </main>
+      <Footer />
     </div>
   );
 }
