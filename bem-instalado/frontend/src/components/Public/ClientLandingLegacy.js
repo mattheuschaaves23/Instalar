@@ -75,7 +75,7 @@ const features = [
     description: 'Todos os profissionais passam por verificação rigorosa de documentos e histórico.',
   },
   {
-    icon: 'users',
+    icon: 'star',
     title: 'Avaliações Reais',
     description: 'Veja avaliações e fotos de trabalhos anteriores feitos por clientes verificados.',
   },
