@@ -277,8 +277,30 @@
 }
 
 .literal-landing .landing-match-list {
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+.literal-landing .landing-match-connectors {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.literal-landing .landing-match-connector-path {
+  fill: none;
+  stroke: rgba(205, 163, 73, 0.8);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25;
+  filter: drop-shadow(0 0 9px rgba(205, 163, 73, 0.32));
+  vector-effect: non-scaling-stroke;
 }
 
 .literal-landing .landing-match-item {
@@ -347,6 +369,13 @@
   border-radius: 999px;
   background: #f0d28a;
   box-shadow: 0 0 16px rgba(240, 210, 138, 0.92), 0 0 40px rgba(205, 163, 73, 0.48);
+}
+
+.literal-landing .landing-match-list-left .landing-match-item::before,
+.literal-landing .landing-match-list-right .landing-match-item::before,
+.literal-landing .landing-match-list-left .landing-match-item::after,
+.literal-landing .landing-match-list-right .landing-match-item::after {
+  display: none;
 }
 
 .literal-landing .landing-match-list-left .landing-match-item::after {
@@ -451,6 +480,7 @@
 
 .literal-landing .landing-match-center {
   position: relative;
+  z-index: 1;
   display: grid;
   justify-self: center;
   place-items: center;

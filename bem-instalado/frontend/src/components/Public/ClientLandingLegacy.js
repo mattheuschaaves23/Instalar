@@ -767,6 +767,20 @@ function FeaturesSection() {
         </AnimatedSection>
 
         <div className="landing-match-map">
+          <svg
+            aria-hidden="true"
+            className="landing-match-connectors"
+            preserveAspectRatio="none"
+            viewBox="0 0 1217 581"
+          >
+            <path className="landing-match-connector-path" d="M391 75 C468 75 452 290 522 290" />
+            <path className="landing-match-connector-path" d="M391 290 H522" />
+            <path className="landing-match-connector-path" d="M391 505 C468 505 452 290 522 290" />
+            <path className="landing-match-connector-path" d="M826 75 C749 75 765 290 695 290" />
+            <path className="landing-match-connector-path" d="M826 290 H695" />
+            <path className="landing-match-connector-path" d="M826 505 C749 505 765 290 695 290" />
+          </svg>
+
           <div className="landing-match-list landing-match-list-left">
             {leftFeatures.map((feature, index) => (
               <article className="landing-match-item" data-side="left" key={feature.title}>
