@@ -12,10 +12,43 @@ const navLinks = [
 ];
 
 const trustStats = [
-  { value: 'Pedido por região', label: 'A localização ajuda a priorizar instaladores próximos.' },
-  { value: 'Sem preço fixo', label: 'Valor, prazo e visita são combinados direto com o profissional.' },
-  { value: 'Cliente escolhe', label: 'Mais de um instalador pode demonstrar interesse no mesmo pedido.' },
-  { value: 'WhatsApp direto', label: 'A conversa só começa depois que o cliente escolhe quem chamar.' },
+  {
+    icon: 'map-pin-filled',
+    number: '01',
+    title: [
+      { text: 'Pedido por ' },
+      { accent: true, text: 'região' },
+    ],
+    label: 'A localização ajuda a priorizar instaladores próximos.',
+  },
+  {
+    icon: 'tag',
+    number: '02',
+    title: [
+      { text: 'Sem ' },
+      { accent: true, text: 'preço' },
+      { text: ' fixo' },
+    ],
+    label: 'Valor, prazo e visita são combinados direto com o profissional.',
+  },
+  {
+    icon: 'user-check',
+    number: '03',
+    title: [
+      { text: 'Cliente ' },
+      { accent: true, text: 'escolhe' },
+    ],
+    label: 'Mais de um instalador pode demonstrar interesse no mesmo pedido.',
+  },
+  {
+    icon: 'whatsapp',
+    number: '04',
+    title: [
+      { accent: true, text: 'WhatsApp' },
+      { text: ' direto' },
+    ],
+    label: 'A conversa só começa depois que o cliente escolhe quem chamar.',
+  },
 ];
 
 const steps = [
@@ -250,6 +283,15 @@ function Icon({ name, className = '', filled = false, size = 24 }) {
           <path d="M9 6h6M8 11h8M8 15h5" />
         </svg>
       );
+    case 'tag':
+      return (
+        <svg {...commonProps} fill="currentColor" stroke="none">
+          <path d="M4.6 12.3 12.3 4.6h6.2v6.2l-7.7 7.7a2 2 0 0 1-2.8 0l-3.4-3.4a2 2 0 0 1 0-2.8Z" />
+          <circle cx="16.2" cy="7.8" fill="#0a0a0a" r="1.05" />
+          <path d="M9.3 12.8c.7 1.1 2.4 1 2.8 0 .5-1.1-.5-1.7-1.7-2.1-1.2-.4-2.1-1-1.6-2.1.5-1 2.1-1.1 2.8 0" fill="none" stroke="#0a0a0a" strokeLinecap="round" strokeWidth="1.45" />
+          <path d="M10.4 7.4v6.6" fill="none" stroke="#0a0a0a" strokeLinecap="round" strokeWidth="1.45" />
+        </svg>
+      );
     case 'users':
       return (
         <svg {...commonProps}>
@@ -257,6 +299,15 @@ function Icon({ name, className = '', filled = false, size = 24 }) {
           <circle cx="9.5" cy="8" r="3.2" />
           <path d="M21 21v-1.3a4.3 4.3 0 0 0-3.1-4.15" />
           <path d="M15.8 4.9a3.2 3.2 0 0 1 0 6.2" />
+        </svg>
+      );
+    case 'user-check':
+      return (
+        <svg {...commonProps} fill="currentColor" stroke="none">
+          <circle cx="9" cy="7.5" r="3.55" />
+          <path d="M3.1 20.2c.35-3.95 2.75-6.2 5.9-6.2s5.55 2.25 5.9 6.2H3.1Z" />
+          <circle cx="17.4" cy="16.6" r="4.05" />
+          <path d="m15.6 16.55 1.18 1.18 2.45-2.86" fill="none" stroke="#0a0a0a" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.65" />
         </svg>
       );
     case 'message-circle':
@@ -377,6 +428,14 @@ function Icon({ name, className = '', filled = false, size = 24 }) {
           <path d="m5 7 7 6 7-6" />
         </svg>
       );
+    case 'map-pin-filled':
+      return (
+        <svg {...commonProps} fill="currentColor" strokeWidth={1.2}>
+          <path d="M12 21s6.3-5.7 6.3-11.2a6.3 6.3 0 1 0-12.6 0C5.7 15.3 12 21 12 21Z" />
+          <circle cx="12" cy="9.8" fill="#0a0a0a" r="2.35" stroke="none" />
+          <path d="M6.5 20.2c1.3.9 3.2 1.35 5.5 1.35s4.2-.45 5.5-1.35" fill="none" stroke="currentColor" />
+        </svg>
+      );
     case 'map-pin':
       return (
         <svg {...commonProps}>
@@ -388,6 +447,13 @@ function Icon({ name, className = '', filled = false, size = 24 }) {
       return (
         <svg {...commonProps}>
           <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.7 19.7 0 0 1 3.1 5.2 2 2 0 0 1 5.1 3h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.45 2.1L9 10.5a16 16 0 0 0 4.5 4.5l1.2-1.25a2 2 0 0 1 2.1-.45c.8.3 1.6.5 2.5.6a2 2 0 0 1 1.7 2Z" />
+        </svg>
+      );
+    case 'whatsapp':
+      return (
+        <svg {...commonProps}>
+          <path d="M4.6 20.1 5.9 16A8 8 0 1 1 9 18.7l-4.4 1.4Z" />
+          <path d="M8.9 8.2c.2-.5.4-.6.8-.6h.6c.2 0 .4.1.5.4l.8 1.9c.1.3.1.5-.1.7l-.5.6c-.2.2-.2.4 0 .7.6 1 1.5 1.8 2.6 2.4.3.2.5.2.7-.1l.7-.8c.2-.2.4-.3.7-.2l1.9.9c.3.1.4.3.4.6 0 .7-.2 1.3-.7 1.8-.5.4-1.3.5-2.2.3-2.3-.5-5.7-3-6.8-6.1-.4-1-.3-1.9.1-2.5Z" />
         </svg>
       );
     default:
@@ -618,22 +684,46 @@ function Hero() {
 
 function TrustSection() {
   return (
-    <section className="relative overflow-hidden py-24">
-      <div className="absolute inset-0 grid-pattern opacity-20" />
+    <section className="landing-trust-section relative overflow-hidden" aria-label="Fluxo de contratação">
+      <div className="landing-trust-bg" aria-hidden="true" />
       <div className="relative z-10 mx-auto max-w-7xl px-6">
-        <StaggerContainer className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+        <div className="landing-trust-timeline">
+          <svg
+            aria-hidden="true"
+            className="landing-trust-connectors"
+            preserveAspectRatio="none"
+            viewBox="0 0 1000 120"
+          >
+            <path d="M188 64 C226 36 270 36 318 64" />
+            <circle cx="318" cy="64" r="4.2" />
+            <path d="M438 64 C476 36 520 36 568 64" />
+            <circle cx="568" cy="64" r="4.2" />
+            <path d="M688 64 C726 36 770 36 818 64" />
+            <circle cx="688" cy="64" r="4.2" />
+          </svg>
+
+          <StaggerContainer className="landing-trust-grid">
           {trustStats.map((stat) => (
-            <div className="group relative" key={stat.label}>
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#cda349]/10 to-[#d8ad55]/10 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
-              <div className="relative rounded-2xl p-6 text-center glass card-premium sm:p-8">
-                <div className="mb-3 text-xl font-bold leading-tight gradient-text-gold sm:text-2xl">
-                  {stat.value}
-                </div>
-                <div className="text-sm leading-relaxed text-white/50">{stat.label}</div>
+            <article className="landing-trust-item" key={stat.number}>
+              <div className="landing-trust-orb">
+                <Icon name={stat.icon} size={76} />
               </div>
-            </div>
+              <div className="landing-trust-copy">
+                <span>{stat.number}</span>
+                <h3>
+                  {stat.title.map((part, index) => (
+                    <span className={part.accent ? 'landing-trust-accent' : undefined} key={`${stat.number}-${index}`}>
+                      {part.text}
+                    </span>
+                  ))}
+                </h3>
+                <p>{stat.label}</p>
+                <i aria-hidden="true" />
+              </div>
+            </article>
           ))}
-        </StaggerContainer>
+          </StaggerContainer>
+        </div>
       </div>
     </section>
   );
