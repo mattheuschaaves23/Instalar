@@ -340,11 +340,18 @@
   z-index: 1;
   width: clamp(3.9rem, 5.2vw, 4.8rem);
   height: clamp(3.9rem, 5.2vw, 4.8rem);
+  display: block;
+  overflow: visible;
   filter: drop-shadow(0 8px 18px rgba(240, 210, 138, 0.35));
 }
 
+.literal-landing .landing-trust-orb .landing-trust-icon {
+  width: clamp(4.25rem, 5.35vw, 5rem);
+  height: clamp(4.25rem, 5.35vw, 5rem);
+}
+
 .literal-landing .landing-trust-copy {
-  width: min(100%, 17.6rem);
+  width: min(100%, 19.5rem);
   margin: 0 auto;
   text-align: left;
 }
@@ -361,9 +368,10 @@
 .literal-landing .landing-trust-copy h3 {
   margin: 0;
   color: #f7f2e8;
-  font-size: clamp(1.55rem, 2.05vw, 2rem);
+  font-size: clamp(1.42rem, 1.72vw, 1.82rem);
   font-weight: 850;
   line-height: 1.12;
+  white-space: nowrap;
 }
 
 .literal-landing .landing-trust-accent {
@@ -908,7 +916,7 @@
   }
 
   .literal-landing .landing-trust-copy {
-    width: min(100%, 18rem);
+    width: min(100%, 19.5rem);
   }
 }
 
@@ -1092,6 +1100,7 @@
 
   .literal-landing .landing-trust-copy h3 {
     font-size: 1.28rem;
+    white-space: normal;
   }
 
   .literal-landing .landing-trust-copy p {

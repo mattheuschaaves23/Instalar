@@ -285,11 +285,27 @@ function Icon({ name, className = '', filled = false, size = 24 }) {
       );
     case 'tag':
       return (
-        <svg {...commonProps} fill="currentColor" stroke="none">
-          <path d="M4.6 12.3 12.3 4.6h6.2v6.2l-7.7 7.7a2 2 0 0 1-2.8 0l-3.4-3.4a2 2 0 0 1 0-2.8Z" />
-          <circle cx="16.2" cy="7.8" fill="#0a0a0a" r="1.05" />
-          <path d="M9.3 12.8c.7 1.1 2.4 1 2.8 0 .5-1.1-.5-1.7-1.7-2.1-1.2-.4-2.1-1-1.6-2.1.5-1 2.1-1.1 2.8 0" fill="none" stroke="#0a0a0a" strokeLinecap="round" strokeWidth="1.45" />
-          <path d="M10.4 7.4v6.6" fill="none" stroke="#0a0a0a" strokeLinecap="round" strokeWidth="1.45" />
+        <svg {...commonProps} fill="none" stroke="none" viewBox="0 0 64 64">
+          <path
+            d="M13.6 35.2 35.2 13.6h15.3v15.3L28.9 50.5a5.4 5.4 0 0 1-7.6 0l-7.7-7.7a5.4 5.4 0 0 1 0-7.6Z"
+            fill="currentColor"
+          />
+          <circle cx="45.5" cy="21.2" fill="#0a0a0a" r="3.4" />
+          <path
+            d="M27.6 39.8c3.5 2.6 9.6-.5 6-4.8-1.8-2.2-6.9-.8-6.9-4.5 0-3.4 5.3-5.3 8.8-2.6"
+            fill="none"
+            stroke="#0a0a0a"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="3.4"
+          />
+          <path
+            d="M31.5 25.4v17"
+            fill="none"
+            stroke="#0a0a0a"
+            strokeLinecap="round"
+            strokeWidth="3.4"
+          />
         </svg>
       );
     case 'users':
@@ -303,11 +319,21 @@ function Icon({ name, className = '', filled = false, size = 24 }) {
       );
     case 'user-check':
       return (
-        <svg {...commonProps} fill="currentColor" stroke="none">
-          <circle cx="9" cy="7.5" r="3.55" />
-          <path d="M3.1 20.2c.35-3.95 2.75-6.2 5.9-6.2s5.55 2.25 5.9 6.2H3.1Z" />
-          <circle cx="17.4" cy="16.6" r="4.05" />
-          <path d="m15.6 16.55 1.18 1.18 2.45-2.86" fill="none" stroke="#0a0a0a" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.65" />
+        <svg {...commonProps} fill="none" stroke="none" viewBox="0 0 64 64">
+          <circle cx="27.5" cy="21" fill="currentColor" r="10.5" />
+          <path
+            d="M10 54c1.4-11.8 8-18.1 17.5-18.1 7.1 0 12.7 3.5 15.6 10.3A13 13 0 0 0 36.5 54H10Z"
+            fill="currentColor"
+          />
+          <circle cx="46" cy="45" fill="currentColor" r="11" />
+          <path
+            d="m40.8 45.2 3.5 3.5 7-8"
+            fill="none"
+            stroke="#0a0a0a"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="4"
+          />
         </svg>
       );
     case 'message-circle':
@@ -430,10 +456,13 @@ function Icon({ name, className = '', filled = false, size = 24 }) {
       );
     case 'map-pin-filled':
       return (
-        <svg {...commonProps} fill="currentColor" strokeWidth={1.2}>
-          <path d="M12 21s6.3-5.7 6.3-11.2a6.3 6.3 0 1 0-12.6 0C5.7 15.3 12 21 12 21Z" />
-          <circle cx="12" cy="9.8" fill="#0a0a0a" r="2.35" stroke="none" />
-          <path d="M6.5 20.2c1.3.9 3.2 1.35 5.5 1.35s4.2-.45 5.5-1.35" fill="none" stroke="currentColor" />
+        <svg {...commonProps} fill="none" stroke="none" viewBox="0 0 64 64">
+          <path
+            d="M32 8c-10.2 0-18.5 8-18.5 18 0 13.2 18.5 30 18.5 30s18.5-16.8 18.5-30C50.5 16 42.2 8 32 8Z"
+            fill="currentColor"
+          />
+          <circle cx="32" cy="26" fill="#0a0a0a" r="6.2" />
+          <ellipse cx="32" cy="54" fill="currentColor" opacity="0.76" rx="12.5" ry="4" />
         </svg>
       );
     case 'map-pin':
@@ -451,9 +480,19 @@ function Icon({ name, className = '', filled = false, size = 24 }) {
       );
     case 'whatsapp':
       return (
-        <svg {...commonProps}>
-          <path d="M4.6 20.1 5.9 16A8 8 0 1 1 9 18.7l-4.4 1.4Z" />
-          <path d="M8.9 8.2c.2-.5.4-.6.8-.6h.6c.2 0 .4.1.5.4l.8 1.9c.1.3.1.5-.1.7l-.5.6c-.2.2-.2.4 0 .7.6 1 1.5 1.8 2.6 2.4.3.2.5.2.7-.1l.7-.8c.2-.2.4-.3.7-.2l1.9.9c.3.1.4.3.4.6 0 .7-.2 1.3-.7 1.8-.5.4-1.3.5-2.2.3-2.3-.5-5.7-3-6.8-6.1-.4-1-.3-1.9.1-2.5Z" />
+        <svg {...commonProps} fill="none" viewBox="0 0 64 64">
+          <path
+            d="M12.5 54 15.8 43.7A21.5 21.5 0 1 1 24 51.5L12.5 54Z"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="5"
+          />
+          <path
+            d="M24.5 22.5c.5-1.2 1-1.5 1.8-1.5h2c.6 0 1.1.4 1.4 1.1l2 4.7c.3.7.2 1.3-.3 1.9l-1.4 1.6c-.5.6-.5 1.1 0 1.8 1.6 2.7 4 4.9 7 6.5.8.4 1.3.3 1.9-.4l1.6-1.9c.5-.6 1.2-.8 1.9-.5l4.7 2.2c.7.3 1 .8 1 1.5-.1 2-.8 3.7-2.1 4.9-1.4 1.3-3.5 1.7-6.1 1-6.1-1.6-14.5-7.7-17.1-15.6-1-3-.5-5.6 1.7-7.3Z"
+            fill="currentColor"
+            stroke="none"
+          />
         </svg>
       );
     default:
@@ -706,7 +745,7 @@ function TrustSection() {
           {trustStats.map((stat) => (
             <article className="landing-trust-item" key={stat.number}>
               <div className="landing-trust-orb">
-                <Icon name={stat.icon} size={76} />
+                <Icon className="landing-trust-icon" name={stat.icon} size={76} />
               </div>
               <div className="landing-trust-copy">
                 <span>{stat.number}</span>
