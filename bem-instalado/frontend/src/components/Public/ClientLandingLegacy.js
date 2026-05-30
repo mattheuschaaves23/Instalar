@@ -11,12 +11,6 @@ const navLinks = [
   { href: '#faq', label: 'FAQ' },
 ];
 
-const heroStats = [
-  { icon: 'clipboard', value: 'Pedido guiado', label: 'Você informa ambiente, material, medidas e localização.' },
-  { icon: 'users', value: 'Interesse dos instaladores', label: 'Profissionais próximos podem demonstrar interesse no pedido.' },
-  { icon: 'message-circle', value: 'Contato pelo WhatsApp', label: 'Você escolhe com quem quer conversar antes de fechar.' },
-];
-
 const trustStats = [
   { value: 'Pedido por região', label: 'A localização ajuda a priorizar instaladores próximos.' },
   { value: 'Sem preço fixo', label: 'Valor, prazo e visita são combinados direto com o profissional.' },
@@ -614,18 +608,6 @@ function Hero() {
             Ver Como Funciona
           </SmartLink>
         </AnimatedSection>
-
-        <StaggerContainer className="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
-          {heroStats.map((stat) => (
-            <div className="group relative" key={stat.label}>
-              <div className="glass rounded-2xl p-6 transition-all hover:bg-white/5">
-                <Icon className="mx-auto mb-3 h-8 w-8 text-[#cda349]" name={stat.icon} size={32} />
-                <div className="text-xl font-bold leading-tight gradient-text-gold sm:text-2xl">{stat.value}</div>
-                <div className="mt-2 text-sm leading-relaxed text-white/50">{stat.label}</div>
-              </div>
-            </div>
-          ))}
-        </StaggerContainer>
 
       </div>
 
