@@ -106,6 +106,109 @@
   background-size: 60px 60px;
 }
 
+.literal-landing .landing-hero {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(205, 163, 73, 0.07), transparent 24%),
+    radial-gradient(circle at 18% 34%, rgba(240, 210, 138, 0.055), transparent 28%),
+    #0a0a0a;
+}
+
+.literal-landing .landing-hero::before,
+.literal-landing .landing-hero::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.literal-landing .landing-hero::before {
+  left: max(-18rem, -12vw);
+  top: 7rem;
+  width: min(58vw, 54rem);
+  height: min(58vw, 54rem);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, transparent 0 23%, rgba(240, 210, 138, 0.09) 23.4% 23.75%, transparent 24.15% 37%),
+    radial-gradient(circle, transparent 0 47%, rgba(205, 163, 73, 0.07) 47.4% 47.75%, transparent 48.15% 61%),
+    radial-gradient(circle, transparent 0 70%, rgba(240, 210, 138, 0.055) 70.4% 70.7%, transparent 71%);
+  filter: blur(0.2px);
+  mask-image: radial-gradient(circle, #000 18%, rgba(0, 0, 0, 0.62) 48%, transparent 72%);
+  opacity: 0.84;
+  animation: landing-slow-orbit 36s linear infinite;
+}
+
+.literal-landing .landing-hero::after {
+  inset: 7rem auto 8rem 6vw;
+  width: min(64vw, 60rem);
+  background:
+    linear-gradient(115deg, transparent 0 16%, rgba(240, 210, 138, 0.08) 16.2% 16.55%, transparent 17% 42%, rgba(205, 163, 73, 0.055) 42.2% 42.55%, transparent 43%),
+    linear-gradient(65deg, transparent 0 28%, rgba(240, 210, 138, 0.045) 28.2% 28.5%, transparent 29%),
+    repeating-linear-gradient(90deg, transparent 0 8rem, rgba(205, 163, 73, 0.035) 8.08rem 8.16rem, transparent 8.24rem 16rem);
+  clip-path: polygon(0 0, 84% 0, 100% 22%, 72% 100%, 0 100%);
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.48) 55%, transparent 100%);
+  opacity: 0.75;
+}
+
+.literal-landing .landing-hero-material {
+  position: absolute;
+  inset: 6rem 0 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.literal-landing .landing-hero-material span {
+  position: absolute;
+  display: block;
+  border: 1px solid rgba(240, 210, 138, 0.08);
+  background:
+    linear-gradient(135deg, rgba(240, 210, 138, 0.09), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0));
+  box-shadow: 0 0 70px rgba(205, 163, 73, 0.06);
+  opacity: 0.68;
+}
+
+.literal-landing .landing-hero-material span:nth-child(1) {
+  left: 11vw;
+  top: 11%;
+  width: min(16vw, 15rem);
+  height: min(38vw, 31rem);
+  border-radius: 999px 999px 3rem 3rem;
+  transform: rotate(-16deg);
+}
+
+.literal-landing .landing-hero-material span:nth-child(2) {
+  left: 27vw;
+  top: 19%;
+  width: min(11vw, 10rem);
+  height: min(30vw, 25rem);
+  border-radius: 999px;
+  transform: rotate(13deg);
+  opacity: 0.46;
+}
+
+.literal-landing .landing-hero-material span:nth-child(3) {
+  right: 27vw;
+  bottom: 6%;
+  width: min(20vw, 18rem);
+  height: min(20vw, 18rem);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 40%, rgba(240, 210, 138, 0.09) 40.5% 41.5%, transparent 42%),
+    radial-gradient(circle at 50% 50%, transparent 0 66%, rgba(205, 163, 73, 0.055) 66.4% 67%, transparent 67.4%);
+  opacity: 0.54;
+}
+
+.literal-landing .landing-hero-material span:nth-child(4) {
+  right: 8vw;
+  top: 16%;
+  width: min(14vw, 13rem);
+  height: min(14vw, 13rem);
+  border-radius: 2.8rem;
+  transform: rotate(28deg);
+  opacity: 0.34;
+}
+
 .literal-landing .card-premium {
   transition:
     transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
@@ -886,6 +989,11 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes landing-slow-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @keyframes landing-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-20px); }
@@ -921,6 +1029,24 @@
 }
 
 @media (max-width: 1024px) {
+  .literal-landing .landing-hero::before {
+    left: -18rem;
+    width: 42rem;
+    height: 42rem;
+    opacity: 0.55;
+  }
+
+  .literal-landing .landing-hero::after {
+    inset: 7rem auto 8rem 4vw;
+    width: 74vw;
+    opacity: 0.46;
+  }
+
+  .literal-landing .landing-hero-material span:nth-child(1),
+  .literal-landing .landing-hero-material span:nth-child(2) {
+    opacity: 0.32;
+  }
+
   .literal-landing .landing-hero-photo {
     inset: 7rem -16rem auto auto;
     width: 760px;
@@ -1039,6 +1165,44 @@
 }
 
 @media (max-width: 640px) {
+  .literal-landing .landing-hero::before {
+    left: -16rem;
+    top: 5.5rem;
+    width: 31rem;
+    height: 31rem;
+    opacity: 0.46;
+  }
+
+  .literal-landing .landing-hero::after {
+    inset: 5.5rem 0 auto -9rem;
+    width: 36rem;
+    height: 34rem;
+    opacity: 0.35;
+  }
+
+  .literal-landing .landing-hero-material {
+    opacity: 0.72;
+  }
+
+  .literal-landing .landing-hero-material span:nth-child(1) {
+    left: -2rem;
+    top: 18%;
+    width: 8rem;
+    height: 20rem;
+  }
+
+  .literal-landing .landing-hero-material span:nth-child(2),
+  .literal-landing .landing-hero-material span:nth-child(4) {
+    display: none;
+  }
+
+  .literal-landing .landing-hero-material span:nth-child(3) {
+    right: -4rem;
+    bottom: 12%;
+    width: 12rem;
+    height: 12rem;
+  }
+
   .literal-landing .landing-hero-photo {
     inset: 7rem -9rem auto auto;
     width: 420px;
@@ -1223,6 +1387,7 @@
   .literal-landing .landing-stagger > *,
   .literal-landing .landing-carousel-page,
   .literal-landing .landing-faq-answer,
+  .literal-landing .landing-hero::before,
   .literal-landing .animate-float,
   .literal-landing .animate-float-slow,
   .literal-landing .animate-float-delay,

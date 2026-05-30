@@ -658,7 +658,7 @@ function Hero() {
   }, []);
 
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20" ref={containerRef}>
+    <section className="landing-hero relative flex min-h-screen items-center justify-center overflow-hidden pt-20" ref={containerRef}>
       <div
         className="pointer-events-none absolute hidden h-[600px] w-[600px] rounded-full opacity-30 md:block"
         style={{
@@ -669,6 +669,12 @@ function Hero() {
         }}
       />
 
+      <div className="landing-hero-material" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
       <div className="absolute inset-0 grid-pattern opacity-30" />
       <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-[#cda349]/10 blur-[100px] animate-pulse-glow" />
       <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#d8ad55]/10 blur-[120px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
