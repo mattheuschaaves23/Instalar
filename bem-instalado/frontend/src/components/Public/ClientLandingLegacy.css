@@ -305,7 +305,7 @@
 .literal-landing .landing-stagger > *:nth-child(6) { animation-delay: 0.4s; }
 
 .literal-landing .landing-carousel-page {
-  animation: landing-carousel-in 0.48s cubic-bezier(0.25, 0.4, 0.25, 1) both;
+  animation: landing-carousel-in 0.68s cubic-bezier(0.22, 0.72, 0.24, 1) both;
 }
 
 .literal-landing .landing-faq-answer {
@@ -980,7 +980,7 @@
 }
 
 @keyframes landing-carousel-in {
-  from { opacity: 0; transform: translateX(44px); }
+  from { opacity: 0; transform: translateX(32px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
@@ -1809,15 +1809,16 @@
   }
 
   .literal-landing .landing-guides-grid {
-    display: flex;
+    display: grid;
     grid-template-columns: none;
-    gap: 0.9rem;
-    overflow-x: auto;
-    overflow-y: visible;
-    margin-inline: -1.05rem;
-    padding: 0 1.05rem 0.35rem;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
+    place-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 0;
+    overflow: visible;
+    margin-inline: 0;
+    padding: 0;
+    animation: landing-carousel-in 0.86s cubic-bezier(0.2, 0.72, 0.24, 1) both;
   }
 
   .literal-landing .landing-guides-grid::-webkit-scrollbar {
@@ -1825,8 +1826,9 @@
   }
 
   .literal-landing .landing-guide-card-shell {
-    flex: 0 0 min(84vw, 20.25rem);
-    scroll-snap-align: start;
+    justify-self: center;
+    width: min(100%, 21rem);
+    min-width: 0;
   }
 
   .literal-landing .landing-guide-card {
@@ -1870,10 +1872,22 @@
     gap: 0.78rem;
   }
 
-  .literal-landing .landing-guide-controls button {
+  .literal-landing .landing-guide-controls > button {
     width: 2.75rem;
     height: 2.75rem;
     min-height: 2.75rem;
+  }
+
+  .literal-landing .landing-guide-controls .landing-guide-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    min-width: 0;
+    min-height: 0.55rem;
+    padding: 0;
+  }
+
+  .literal-landing .landing-guide-controls .landing-guide-dot-active {
+    width: 1.9rem;
   }
 
   .literal-landing .landing-faq-list {
@@ -1968,7 +1982,6 @@
   .literal-landing .landing-reveal,
   .literal-landing .landing-rise,
   .literal-landing .landing-stagger > *,
-  .literal-landing .landing-carousel-page,
   .literal-landing .landing-faq-answer,
   .literal-landing .btn-shine::after,
   .literal-landing .animate-pulse-glow {

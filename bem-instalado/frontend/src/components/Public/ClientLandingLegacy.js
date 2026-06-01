@@ -1069,7 +1069,8 @@ function DemoSection() {
 function TestimonialsSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const itemsPerPage = 3;
+  const [isMobileCarousel, setIsMobileCarousel] = useState(false);
+  const itemsPerPage = isMobileCarousel ? 1 : 3;
   const totalPages = Math.ceil(choiceGuides.length / itemsPerPage);
 
   const nextSlide = useCallback(() => {
@@ -1085,9 +1086,33 @@ function TestimonialsSection() {
       return undefined;
     }
 
-    const interval = window.setInterval(nextSlide, 5000);
+    const interval = window.setInterval(nextSlide, isMobileCarousel ? 4200 : 5000);
     return () => window.clearInterval(interval);
-  }, [isAutoPlaying, nextSlide]);
+  }, [isAutoPlaying, isMobileCarousel, nextSlide]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    const syncCarouselMode = () => setIsMobileCarousel(mediaQuery.matches);
+
+    syncCarouselMode();
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', syncCarouselMode);
+    } else {
+      mediaQuery.addListener(syncCarouselMode);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', syncCarouselMode);
+      } else {
+        mediaQuery.removeListener(syncCarouselMode);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    setCurrentIndex((previous) => Math.min(previous, totalPages - 1));
+  }, [totalPages]);
 
   const currentGuides = choiceGuides.slice(
     currentIndex * itemsPerPage,
@@ -1157,7 +1182,7 @@ function TestimonialsSection() {
               {Array.from({ length: totalPages }).map((_, index) => (
                 <button
                   aria-label={`Ir para página ${index + 1}`}
-                  className={`h-2 rounded-full transition-all ${index === currentIndex ? 'w-8 bg-gradient-to-r from-[#cda349] to-[#d8ad55]' : 'w-2 bg-white/20 hover:bg-white/40'}`}
+                  className={`landing-guide-dot h-2 rounded-full transition-all ${index === currentIndex ? 'landing-guide-dot-active w-8 bg-gradient-to-r from-[#cda349] to-[#d8ad55]' : 'w-2 bg-white/20 hover:bg-white/40'}`}
                   key={index}
                   onClick={() => setCurrentIndex(index)}
                   type="button"
