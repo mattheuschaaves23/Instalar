@@ -1597,77 +1597,64 @@
   }
 
   .literal-landing .landing-process-grid {
-    display: flex;
-    gap: 0.88rem;
-    overflow-x: auto;
-    overflow-y: visible;
-    margin-inline: -1.05rem;
-    padding: 0 1.05rem 0.32rem;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-
-  .literal-landing .landing-process-grid::-webkit-scrollbar {
-    display: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.72rem;
+    overflow: visible;
+    margin-inline: 0;
+    padding: 0;
   }
 
   .literal-landing .landing-process-step {
-    flex: 0 0 min(83vw, 20rem);
-    scroll-snap-align: start;
+    min-width: 0;
   }
 
   .literal-landing .landing-process-card {
-    display: grid;
-    grid-template-columns: 3.25rem minmax(0, 1fr);
-    gap: 0.32rem 0.85rem;
-    align-items: start;
+    display: block;
     min-height: 0;
-    padding: 1rem;
+    padding: 0.82rem 0.68rem;
     border-radius: 1.05rem;
+    text-align: center;
   }
 
   .literal-landing .landing-process-watermark {
-    right: -0.25rem;
-    top: -0.35rem;
-    font-size: 4.7rem;
+    right: -0.18rem;
+    top: -0.22rem;
+    font-size: 4.25rem;
   }
 
   .literal-landing .landing-process-card > .relative.mb-6 {
-    grid-column: 1;
-    grid-row: 1 / span 3;
-    margin-bottom: 0;
+    margin: 0 auto 0.55rem;
   }
 
   .literal-landing .landing-process-card > .relative.mb-6 > .relative {
-    width: 3.05rem;
-    height: 3.05rem;
+    width: 2.7rem;
+    height: 2.7rem;
     border-radius: 0.88rem;
   }
 
   .literal-landing .landing-process-card > .relative.mb-6 svg {
-    width: 1.35rem;
-    height: 1.35rem;
+    width: 1.18rem;
+    height: 1.18rem;
   }
 
   .literal-landing .landing-process-card > .inline-flex {
-    grid-column: 2;
     width: max-content;
-    margin-bottom: 0.12rem;
-    padding: 0.18rem 0.55rem;
-    font-size: 0.68rem;
+    max-width: 100%;
+    margin: 0 auto 0.42rem;
+    padding: 0.16rem 0.48rem;
+    font-size: 0.62rem;
   }
 
   .literal-landing .landing-process-card h3 {
-    grid-column: 2;
-    margin-bottom: 0.16rem;
-    font-size: 1.02rem;
-    line-height: 1.2;
+    margin-bottom: 0.24rem;
+    font-size: clamp(0.84rem, 3.55vw, 0.96rem);
+    line-height: 1.18;
   }
 
   .literal-landing .landing-process-card p {
-    grid-column: 2;
-    font-size: 0.82rem;
-    line-height: 1.48;
+    font-size: clamp(0.68rem, 2.9vw, 0.76rem);
+    line-height: 1.36;
   }
 
   .literal-landing .landing-match-section {
