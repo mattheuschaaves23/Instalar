@@ -684,7 +684,7 @@ function Hero() {
         style={{ '--landing-hero-image': 'url("/landing/instaladores-profissionais.png")' }}
       />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-6 py-24 text-center">
+      <div className="landing-hero-content relative z-10 mx-auto max-w-7xl px-6 py-24 text-center">
         <AnimatedSection delay={0.1}>
           <h1 className="mx-auto max-w-5xl text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-7xl">
             <span className="text-balance">Encontre um profissional </span>
@@ -702,18 +702,18 @@ function Hero() {
         </AnimatedSection>
 
         <AnimatedSection
-          className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+          className="landing-hero-actions mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
           delay={0.3}
         >
           <SmartLink
-            className="btn-shine group relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#cda349] via-[#d8ad55] to-[#cda349] bg-[length:200%_100%] px-8 py-4 text-base font-semibold text-black shadow-lg shadow-[#cda349]/25 transition-all hover:bg-right hover:shadow-[#cda349]/40"
+            className="landing-hero-primary btn-shine group relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#cda349] via-[#d8ad55] to-[#cda349] bg-[length:200%_100%] px-8 py-4 text-base font-semibold text-black shadow-lg shadow-[#cda349]/25 transition-all hover:bg-right hover:shadow-[#cda349]/40"
             href={REQUEST_PATH}
           >
             Solicitar Orçamento Grátis
             <Icon className="h-5 w-5 transition-transform group-hover:translate-x-1" name="arrow-right" size={20} />
           </SmartLink>
           <SmartLink
-            className="group inline-flex items-center gap-2 rounded-full glass px-8 py-4 text-base font-semibold text-white/90 transition-all hover:bg-white/10"
+            className="landing-hero-secondary group inline-flex items-center gap-2 rounded-full glass px-8 py-4 text-base font-semibold text-white/90 transition-all hover:bg-white/10"
             href="#como-funciona"
           >
             Ver Como Funciona
@@ -785,13 +785,13 @@ function SectionBadge({ icon, children }) {
 
 function HowItWorksSection() {
   return (
-    <section className="relative overflow-hidden py-24 sm:py-32" id="como-funciona">
+    <section className="landing-process-section relative overflow-hidden py-24 sm:py-32" id="como-funciona">
       <div className="absolute inset-0 grid-pattern opacity-20" />
       <div className="absolute left-1/4 top-0 h-[600px] w-[600px] rounded-full bg-[#cda349]/5 blur-[200px]" />
       <div className="absolute bottom-0 right-1/4 h-[500px] w-[500px] rounded-full bg-[#d8ad55]/5 blur-[200px]" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6">
-        <AnimatedSection className="mb-16 text-center sm:mb-20">
+        <AnimatedSection className="landing-section-head mb-16 text-center sm:mb-20">
           <SectionBadge icon="clipboard">Processo Simples</SectionBadge>
           <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
             Como funciona o <span className="gradient-text-gold">Instalar+</span>
@@ -802,15 +802,15 @@ function HowItWorksSection() {
           </p>
         </AnimatedSection>
 
-        <StaggerContainer className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <StaggerContainer className="landing-process-grid grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
           {steps.map((step, index) => (
-            <div className="group relative h-full" key={step.number}>
+            <div className="landing-process-step group relative h-full" key={step.number}>
               {index < steps.length - 1 && (index + 1) % 3 !== 0 ? (
                 <div className="absolute left-full top-14 z-0 hidden h-px w-full bg-gradient-to-r from-[#cda349]/20 to-transparent lg:block" />
               ) : null}
 
-              <div className="relative h-full overflow-hidden rounded-2xl p-6 glass card-premium sm:p-8">
-                <div className="absolute -right-4 -top-4 select-none text-[120px] font-bold leading-none text-[#cda349]/[0.03]">
+              <div className="landing-process-card relative h-full overflow-hidden rounded-2xl p-6 glass card-premium sm:p-8">
+                <div className="landing-process-watermark absolute -right-4 -top-4 select-none text-[120px] font-bold leading-none text-[#cda349]/[0.03]">
                   {step.number}
                 </div>
 
@@ -849,7 +849,7 @@ function FeaturesSection() {
       <div className="absolute bottom-0 right-0 h-[520px] w-[520px] rounded-full bg-[#d8ad55]/10 blur-[180px]" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6">
-        <AnimatedSection className="landing-match-header mb-16 text-center sm:mb-20">
+        <AnimatedSection className="landing-section-head landing-match-header mb-16 text-center sm:mb-20">
           <SectionBadge icon="zap">Recursos do pedido</SectionBadge>
           <h2 className="mb-6 text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl text-balance">
             Tudo que você precisa para <span className="gradient-text-gold">encontrar o profissional ideal</span>
@@ -1095,12 +1095,12 @@ function TestimonialsSection() {
   );
 
   return (
-    <section className="relative overflow-hidden py-24 sm:py-32" id="avaliacoes">
+    <section className="landing-guides-section relative overflow-hidden py-24 sm:py-32" id="avaliacoes">
       <div className="absolute inset-0 grid-pattern opacity-20" />
       <div className="absolute left-0 top-1/2 h-[500px] w-[500px] -translate-y-1/2 rounded-full bg-[#cda349]/5 blur-[200px]" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6">
-        <AnimatedSection className="mb-16 text-center">
+        <AnimatedSection className="landing-section-head mb-16 text-center">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full glass-gold px-4 py-2 text-sm text-white/70">
             <Icon className="h-4 w-4 text-[#cda349]" name="check-circle" size={16} />
             Escolha segura
@@ -1120,11 +1120,11 @@ function TestimonialsSection() {
           onMouseLeave={() => setIsAutoPlaying(true)}
         >
           <div className="overflow-hidden">
-            <div className="landing-carousel-page grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" key={currentIndex}>
+            <div className="landing-guides-grid landing-carousel-page grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" key={currentIndex}>
               {currentGuides.map((guide) => (
-                <div className="group relative" key={guide.id}>
+                <div className="landing-guide-card-shell group relative" key={guide.id}>
                   <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-[#cda349]/20 to-[#d8ad55]/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
-                  <div className="relative h-full rounded-2xl p-6 glass card-premium sm:p-8">
+                  <div className="landing-guide-card relative h-full rounded-2xl p-6 glass card-premium sm:p-8">
                     <Icon className="absolute right-6 top-6 h-8 w-8 text-white/5" name={guide.icon} size={32} />
                     <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#cda349]/15 text-[#d8ad55]">
                       <Icon className="h-6 w-6" name={guide.icon} size={24} />
@@ -1143,7 +1143,7 @@ function TestimonialsSection() {
             </div>
           </div>
 
-          <div className="mt-10 flex items-center justify-center gap-4">
+          <div className="landing-guide-controls mt-10 flex items-center justify-center gap-4">
             <button
               aria-label="Anterior"
               className="group flex h-12 w-12 items-center justify-center rounded-full glass transition-all hover:bg-white/10"
@@ -1184,12 +1184,12 @@ function FaqSection() {
   const [openIndex, setOpenIndex] = useState(0);
 
   return (
-    <section className="relative overflow-hidden py-24 sm:py-32" id="faq">
+    <section className="landing-faq-section relative overflow-hidden py-24 sm:py-32" id="faq">
       <div className="absolute inset-0 grid-pattern opacity-20" />
       <div className="absolute right-0 top-1/4 h-[500px] w-[500px] rounded-full bg-[#cda349]/5 blur-[200px]" />
 
       <div className="relative z-10 mx-auto max-w-4xl px-6">
-        <AnimatedSection className="mb-16 text-center">
+        <AnimatedSection className="landing-section-head mb-16 text-center">
           <SectionBadge icon="help-circle">Perguntas Frequentes</SectionBadge>
           <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
             Tire suas <span className="gradient-text-gold">dúvidas</span>
@@ -1199,11 +1199,11 @@ function FaqSection() {
           </p>
         </AnimatedSection>
 
-        <StaggerContainer className="space-y-4">
+        <StaggerContainer className="landing-faq-list space-y-4">
           {faqs.map((faq, index) => (
             <div className="group" key={faq.question}>
               <button
-                className="w-full rounded-2xl p-6 text-left transition-all glass hover:bg-white/5"
+                className="landing-faq-item w-full rounded-2xl p-6 text-left transition-all glass hover:bg-white/5"
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
                 type="button"
               >
@@ -1233,7 +1233,7 @@ function FaqSection() {
 
 function CtaSection() {
   return (
-    <section className="relative overflow-hidden py-24 sm:py-32" id="solicitar">
+    <section className="landing-cta-section relative overflow-hidden py-24 sm:py-32" id="solicitar">
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#cda349]/5 to-[#cda349]/10" />
         <div className="absolute inset-0 grid-pattern opacity-30" />
@@ -1266,7 +1266,7 @@ function CtaSection() {
             <Icon className="h-5 w-5 transition-transform group-hover:translate-x-1" name="arrow-right" size={20} />
           </SmartLink>
 
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-white/40 sm:gap-8">
+          <div className="landing-cta-points mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-white/40 sm:gap-8">
             {['Gratuito para solicitar', 'Sem compromisso', 'Você escolhe o profissional'].map((item) => (
               <div className="flex items-center gap-2" key={item}>
                 <div className="h-2 w-2 rounded-full bg-green-500" />
@@ -1282,7 +1282,7 @@ function CtaSection() {
 
 function Footer() {
   return (
-    <footer className="relative border-t border-white/5">
+    <footer className="landing-footer relative border-t border-white/5">
       <div className="absolute inset-0 grid-pattern opacity-10" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 py-16 sm:py-20">
