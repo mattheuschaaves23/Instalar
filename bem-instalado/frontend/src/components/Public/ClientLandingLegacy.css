@@ -1723,6 +1723,7 @@
 
   .literal-landing .landing-match-stars {
     gap: 0.22rem;
+    top: calc(100% + 0.62rem);
   }
 
   .literal-landing .landing-match-stars svg {
@@ -1731,8 +1732,9 @@
   }
 
   .literal-landing .landing-match-core strong {
-    top: calc(100% + 1.05rem);
+    top: calc(100% + 1.62rem);
     font-size: 0.64rem;
+    line-height: 1;
   }
 
   .literal-landing .landing-match-list {
