@@ -1206,7 +1206,7 @@ function TestimonialsSection() {
 }
 
 function FaqSection() {
-  const [openIndex, setOpenIndex] = useState(0);
+  const [openIndex, setOpenIndex] = useState(null);
 
   return (
     <section className="landing-faq-section relative overflow-hidden py-24 sm:py-32" id="faq">
@@ -1228,6 +1228,7 @@ function FaqSection() {
           {faqs.map((faq, index) => (
             <div className="group" key={faq.question}>
               <button
+                aria-expanded={openIndex === index}
                 className="landing-faq-item w-full rounded-2xl p-6 text-left transition-all glass hover:bg-white/5"
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
                 type="button"
