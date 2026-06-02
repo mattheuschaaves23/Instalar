@@ -1534,21 +1534,43 @@
   }
 
   .literal-landing .landing-trust-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.8rem;
+    display: grid;
+    grid-auto-columns: minmax(12.9rem, 62vw);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    gap: 0.82rem;
+    overflow-x: auto;
+    overflow-y: visible;
+    margin-inline: -1.05rem;
+    padding: 0.25rem 1.05rem 0.6rem;
+    scroll-padding-inline: 1.05rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .literal-landing .landing-trust-grid::-webkit-scrollbar {
+    display: none;
   }
 
   .literal-landing .landing-trust-item {
-    display: block;
+    display: grid;
+    grid-template-rows: auto 1fr;
     min-width: 0;
-    padding: 0.9rem 0.72rem;
-    border: 1px solid rgba(240, 210, 138, 0.1);
-    border-radius: 1.1rem;
-    background: rgba(255, 255, 255, 0.025);
+    padding: 0.35rem 0.15rem 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    scroll-snap-align: start;
   }
 
   .literal-landing .landing-trust-item:not(:last-child)::after {
-    display: none;
+    display: block;
+    left: calc(100% - 0.62rem);
+    top: 1.82rem;
+    width: 1.28rem;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(240, 210, 138, 0.48), rgba(240, 210, 138, 0));
+    transform: none;
   }
 
   .literal-landing .landing-trust-orb {
@@ -1569,8 +1591,9 @@
 
   .literal-landing .landing-trust-copy {
     width: 100%;
-    padding-top: 0;
-    text-align: center;
+    margin-top: 0.15rem;
+    padding: 0.82rem 0.24rem 0;
+    text-align: left;
   }
 
   .literal-landing .landing-trust-copy > span {
@@ -1579,30 +1602,42 @@
   }
 
   .literal-landing .landing-trust-copy h3 {
-    min-height: 2.25em;
-    font-size: clamp(0.94rem, 4.2vw, 1.08rem);
+    min-height: 0;
+    font-size: clamp(1.04rem, 4.2vw, 1.16rem);
     line-height: 1.12;
   }
 
   .literal-landing .landing-trust-copy p {
+    max-width: 11.4rem;
     margin-top: 0.5rem;
-    font-size: 0.75rem;
-    line-height: 1.42;
+    font-size: 0.78rem;
+    line-height: 1.48;
   }
 
   .literal-landing .landing-trust-copy i {
     width: 2.15rem;
     height: 0.16rem;
-    margin: 0.72rem auto 0;
+    margin: 0.72rem 0 0;
   }
 
   .literal-landing .landing-process-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.72rem;
+    grid-template-columns: 1fr;
+    gap: 0.82rem;
     overflow: visible;
     margin-inline: 0;
-    padding: 0;
+    padding: 0 0 0 0.42rem;
+    position: relative;
+  }
+
+  .literal-landing .landing-process-grid::before {
+    content: "";
+    position: absolute;
+    left: 1.96rem;
+    top: 1.1rem;
+    bottom: 1.1rem;
+    width: 1px;
+    background: linear-gradient(180deg, rgba(216, 173, 85, 0), rgba(216, 173, 85, 0.42), rgba(216, 173, 85, 0));
   }
 
   .literal-landing .landing-process-step {
@@ -1610,11 +1645,14 @@
   }
 
   .literal-landing .landing-process-card {
-    display: block;
+    display: grid;
+    grid-template-columns: 3.35rem minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.84rem;
     min-height: 0;
-    padding: 0.82rem 0.68rem;
+    padding: 0.72rem 0.78rem 0.72rem 0.62rem;
     border-radius: 1.05rem;
-    text-align: center;
+    text-align: left;
   }
 
   .literal-landing .landing-process-watermark {
@@ -1624,7 +1662,8 @@
   }
 
   .literal-landing .landing-process-card > .relative.mb-6 {
-    margin: 0 auto 0.55rem;
+    grid-row: 1 / span 3;
+    margin: 0;
   }
 
   .literal-landing .landing-process-card > .relative.mb-6 > .relative {
@@ -1641,20 +1680,20 @@
   .literal-landing .landing-process-card > .inline-flex {
     width: max-content;
     max-width: 100%;
-    margin: 0 auto 0.42rem;
+    margin: 0 0 0.28rem;
     padding: 0.16rem 0.48rem;
     font-size: 0.62rem;
   }
 
   .literal-landing .landing-process-card h3 {
     margin-bottom: 0.24rem;
-    font-size: clamp(0.84rem, 3.55vw, 0.96rem);
+    font-size: clamp(0.9rem, 3.65vw, 1rem);
     line-height: 1.18;
   }
 
   .literal-landing .landing-process-card p {
-    font-size: clamp(0.68rem, 2.9vw, 0.76rem);
-    line-height: 1.36;
+    font-size: clamp(0.72rem, 2.9vw, 0.8rem);
+    line-height: 1.42;
   }
 
   .literal-landing .landing-match-section {
@@ -1671,9 +1710,14 @@
   }
 
   .literal-landing .landing-match-map {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.8rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.7rem;
+    width: min(100%, calc(100vw - 2.1rem));
+    max-width: 100%;
+    min-width: 0;
     min-height: 0;
+    margin-left: auto;
+    margin-right: auto;
     margin-top: 0;
   }
 
@@ -1684,8 +1728,10 @@
   .literal-landing .landing-match-center {
     grid-column: 1 / -1;
     order: -1;
-    min-height: 10.75rem;
-    margin-bottom: 0.4rem;
+    width: 100%;
+    min-width: 0;
+    min-height: 9.8rem;
+    margin-bottom: 0.25rem;
   }
 
   .literal-landing .landing-match-radar::before {
@@ -1738,23 +1784,45 @@
   }
 
   .literal-landing .landing-match-list {
-    display: contents;
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    gap: 0.64rem;
   }
 
   .literal-landing .landing-match-item,
   .literal-landing .landing-match-list-right .landing-match-item,
   .literal-landing .landing-match-list-left .landing-match-item {
-    display: block;
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.72rem;
     min-height: 0;
-    padding: 0.74rem 0.62rem;
-    border-radius: 1rem;
-    text-align: center;
+    width: 100%;
+    max-width: 21rem;
+    padding: 0.62rem 0.78rem;
+    border-radius: 1.25rem;
+    text-align: left;
+  }
+
+  .literal-landing .landing-match-list-left .landing-match-item:nth-child(2),
+  .literal-landing .landing-match-list-right .landing-match-item:nth-child(2) {
+    justify-self: end;
+  }
+
+  .literal-landing .landing-match-item[data-side="right"] {
+    grid-template-columns: minmax(0, 1fr) 3rem;
+    text-align: right;
   }
 
   .literal-landing .landing-match-orb {
     width: 2.72rem;
     height: 2.72rem;
-    margin: 0 auto 0.5rem;
+    margin: 0;
+  }
+
+  .literal-landing .landing-match-item[data-side="right"] .landing-match-orb {
+    order: 2;
   }
 
   .literal-landing .landing-match-orb svg {
@@ -1763,19 +1831,20 @@
   }
 
   .literal-landing .landing-match-copy span {
+    display: inline-flex;
     margin-bottom: 0.25rem;
     font-size: 0.72rem;
   }
 
   .literal-landing .landing-match-copy h3 {
     margin-bottom: 0.22rem;
-    font-size: 0.92rem;
+    font-size: 0.96rem;
     line-height: 1.2;
   }
 
   .literal-landing .landing-match-copy p {
-    font-size: 0.7rem;
-    line-height: 1.34;
+    font-size: 0.73rem;
+    line-height: 1.38;
   }
 
   .literal-landing .landing-match-note {
@@ -2001,18 +2070,21 @@
   }
 
   .literal-landing .landing-trust-item {
-    padding: 0.82rem 0.56rem;
+    padding: 0.35rem 0.15rem 0;
   }
 
   .literal-landing .landing-trust-copy p {
     font-size: 0.72rem;
   }
 
-  .literal-landing .landing-process-card,
+  .literal-landing .landing-process-card {
+    padding: 0.68rem 0.72rem 0.68rem 0.58rem;
+  }
+
   .literal-landing .landing-match-item,
   .literal-landing .landing-match-list-right .landing-match-item,
   .literal-landing .landing-match-list-left .landing-match-item {
-    padding: 0.78rem;
+    padding: 0.62rem 0.72rem;
   }
 }
 
