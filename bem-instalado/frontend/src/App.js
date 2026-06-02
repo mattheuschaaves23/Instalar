@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import ClientLanding from './components/Public/ClientLanding';
 
 const ClientLogin = lazy(() => import('./components/Auth/ClientLogin'));
 const Login = lazy(() => import('./components/Auth/Login'));
@@ -19,7 +20,6 @@ const SubscriptionGate = lazy(() => import('./components/Layout/SubscriptionGate
 const Notifications = lazy(() => import('./components/Notifications/Notifications'));
 const Opportunities = lazy(() => import('./components/Opportunities/Opportunities'));
 const Profile = lazy(() => import('./components/Profile/Profile'));
-const ClientLanding = lazy(() => import('./components/Public/ClientLanding'));
 const Home = lazy(() => import('./components/Public/Home'));
 const InstallerProfile = lazy(() => import('./components/Public/InstallerProfile'));
 const ReviewsDashboard = lazy(() => import('./components/Reviews/ReviewsDashboard'));
@@ -27,21 +27,10 @@ const Settings = lazy(() => import('./components/Settings/Settings'));
 const SupportChat = lazy(() => import('./components/Support/SupportChat'));
 const Subscription = lazy(() => import('./components/Subscription/Subscription'));
 
-function AppLoadingFallback() {
-  return (
-    <div className="auth-scene flex min-h-screen items-center justify-center px-6">
-      <div className="lux-panel max-w-sm p-7 text-center">
-        <p className="eyebrow">Carregando</p>
-        <h1 className="page-title mt-3 text-[2rem]">Preparando tela</h1>
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   return (
     <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-      <Suspense fallback={<AppLoadingFallback />}>
+      <Suspense fallback={null}>
         <Routes>
           <Route element={<ClientLanding />} path="/" />
           <Route element={<ClientLogin />} path="/cliente/entrar" />
