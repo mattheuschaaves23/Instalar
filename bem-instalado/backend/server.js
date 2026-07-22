@@ -439,14 +439,14 @@ async function ensureRuntimeSchema() {
     `,
     `
       UPDATE users
-      SET business_name = 'Luiz Instalar+'
+      SET business_name = 'Luiz InstalaPro'
       WHERE business_name = ('Luiz ' || 'Paper' || ' Pro')
     `,
     `
       UPDATE recommended_stores
       SET
-        name = REPLACE(name, 'Bem' || ' Instalado', 'Instalar+'),
-        description = REPLACE(description, 'Bem' || ' Instalado', 'Instalar+')
+        name = REPLACE(name, 'Bem' || ' Instalado', 'InstalaPro'),
+        description = REPLACE(description, 'Bem' || ' Instalado', 'InstalaPro')
       WHERE
         name LIKE ('%' || 'Bem' || ' Instalado' || '%')
         OR description LIKE ('%' || 'Bem' || ' Instalado' || '%')
@@ -461,7 +461,7 @@ async function ensureRuntimeSchema() {
 async function startServer() {
   const port = Number(process.env.PORT || 5000);
   app.listen(port, () => {
-    console.log(`Instalar+ backend rodando na porta ${port}`);
+    console.log(`InstalaPro backend rodando na porta ${port}`);
     if (isProduction) {
       console.log('Commit atual:', gitCommit || 'nao informado');
     }

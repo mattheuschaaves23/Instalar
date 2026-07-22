@@ -157,7 +157,7 @@ function drawMainHeader(doc, budget, user) {
     }
   }
 
-  doc.fillColor(COLORS.goldSoft).font('Helvetica-Bold').fontSize(19).text('Instalar+', leftX, 28);
+  doc.fillColor(COLORS.goldSoft).font('Helvetica-Bold').fontSize(19).text('InstalaPro', leftX, 28);
   doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(13).text('Proposta comercial de instalação', leftX, 52);
   doc.fillColor(COLORS.muted).font('Helvetica').fontSize(10).text('Documento profissional para apresentação e fechamento.', leftX, 70);
 
@@ -471,7 +471,7 @@ function drawFooter(doc, pageNumber, pageCount, budgetId, user) {
   doc.moveTo(MARGIN, footerY - 8).lineTo(doc.page.width - MARGIN, footerY - 8).lineWidth(1).stroke(COLORS.line);
   doc.restore();
 
-  const leftText = `Instalar+ • Orçamento #${budgetId}`;
+  const leftText = `InstalaPro • Orçamento #${budgetId}`;
   const centerText = toText(user?.phone) ? `Contato: ${toText(user.phone)}` : 'Documento gerado automaticamente';
   const rightText = `Página ${pageNumber} de ${pageCount}`;
 

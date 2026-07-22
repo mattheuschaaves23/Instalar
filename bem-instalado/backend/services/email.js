@@ -50,7 +50,7 @@ async function sendPasswordResetEmail({ to, resetUrl, expiresInMinutes }) {
   }
 
   const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER');
-  const appName = firstEnvValue('APP_NAME') || 'Instalar+';
+  const appName = firstEnvValue('APP_NAME') || 'InstalaPro';
   const transporter = createTransporter();
 
   await transporter.sendMail({
@@ -89,7 +89,7 @@ async function sendServiceRequestInterestEmail({ to, clientName, installerName, 
   }
 
   const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER');
-  const appName = firstEnvValue('APP_NAME') || 'Instalar+';
+  const appName = firstEnvValue('APP_NAME') || 'InstalaPro';
   const transporter = createTransporter();
   const safeClientName = escapeHtml(clientName || 'cliente');
   const safeInstallerName = escapeHtml(installerName || 'Um instalador');

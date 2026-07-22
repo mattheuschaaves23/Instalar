@@ -1,15 +1,15 @@
-# Instalar+ e PapelPerto
+# InstalaPro e PapelPerto
 
 O projeto reúne os dois lados do marketplace de instalação de papel de parede:
 
 - **PapelPerto** é a experiência pública do cliente. O cliente descreve o serviço, informa a localização, compara profissionais e escolhe com quem conversar.
-- **Instalar+** é a área do profissional. O instalador mantém o perfil público, recebe oportunidades, cria orçamentos e organiza clientes e agenda.
+- **InstalaPro** é a área do profissional. O instalador mantém o perfil público, recebe oportunidades, cria orçamentos e organiza clientes e agenda.
 
 Os dois lados usam o mesmo backend e o mesmo banco PostgreSQL. Assim, um perfil publicado pelo instalador aparece diretamente na busca do PapelPerto.
 
 ## Rotas principais
 
-- `/` — apresentação da plataforma Instalar+;
+- `/` — apresentação da plataforma InstalaPro;
 - `/papelperto` — busca pública de instaladores para clientes;
 - `/cliente` — endereço compatível da área do cliente;
 - `/cliente/pedidos` — histórico persistente de pedidos do cliente;

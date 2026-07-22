@@ -541,18 +541,12 @@ function StaggerContainer({ children, className = '' }) {
 
 function LogoMark({ compact = false }) {
   return (
-    <SmartLink href="/" className="group inline-flex items-center gap-2">
-      <div className="relative">
-        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#cda349] to-[#f0d28a] blur-lg opacity-50 transition-opacity group-hover:opacity-75" />
-        <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-[#cda349] to-[#d8ad55]">
-          <span className="text-lg font-bold text-black">I+</span>
-        </div>
-      </div>
-      {!compact ? (
-        <span className="text-xl font-bold text-white">
-          Instalar<span className="text-[#cda349]">+</span>
-        </span>
-      ) : null}
+    <SmartLink aria-label="InstalaPro - inicio" href="/" className="group inline-flex items-center">
+      <img
+        alt="Logo InstalaPro"
+        className={compact ? 'h-auto w-12' : 'h-auto w-[clamp(10.5rem,18vw,13.5rem)]'}
+        src={compact ? '/brand/instalapro-mark.png' : '/brand/instalapro-logo.png'}
+      />
     </SmartLink>
   );
 }
@@ -844,7 +838,7 @@ function HowItWorksSection() {
         <AnimatedSection className="landing-section-head mb-16 text-center sm:mb-20">
           <SectionBadge icon="clipboard">Processo Simples</SectionBadge>
           <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
-            Como funciona o <span className="gradient-text-gold">Instalar+</span>
+            Como funciona o <span className="gradient-text-gold">InstalaPro</span>
           </h2>
           <p className="mx-auto max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
             Em apenas 6 passos simples você encontra o profissional ideal para seu projeto.
@@ -1411,7 +1405,7 @@ function Footer() {
 
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 sm:flex-row">
           <p className="text-sm text-white/30">
-            © {new Date().getFullYear()} Instalar+. Todos os direitos reservados.
+            © {new Date().getFullYear()} InstalaPro. Todos os direitos reservados.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-white/40">

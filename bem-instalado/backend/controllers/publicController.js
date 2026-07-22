@@ -15,9 +15,9 @@ const MARKETPLACE_CONTACT_EMAIL = process.env.MARKETPLACE_CONTACT_EMAIL || 'bemi
 
 function buildMarketplacePayload() {
   return {
-    title: 'Loja Oficial Instalar+',
+    title: 'Loja Oficial InstalaPro',
     description:
-      'A loja oficial Instalar+ Home Decor reúne papéis de parede para vários estilos, com operação em Florianópolis e atendimento para todo o Brasil.',
+      'A loja oficial InstalaPro Home Decor reúne papéis de parede para vários estilos, com operação em Florianópolis e atendimento para todo o Brasil.',
     url: MARKETPLACE_URL,
     cta_label: MARKETPLACE_CTA_LABEL,
     whatsapp_url: MARKETPLACE_WHATSAPP_URL,
@@ -509,7 +509,7 @@ exports.getInstallers = async (req, res) => {
           whatsapp_link: installer.phone
             ? generateWhatsAppLink(
                 installer.phone,
-                `Olá ${installer.display_name}, encontrei seu perfil no PapelPerto, da Instalar+, e gostaria de conversar sobre uma instalação.`
+                `Olá ${installer.display_name}, encontrei seu perfil no PapelPerto, da InstalaPro, e gostaria de conversar sobre uma instalação.`
               )
             : null,
           featured_installer: Boolean(installer.featured_installer),
@@ -759,7 +759,7 @@ exports.getInstallerProfile = async (req, res) => {
           whatsapp_link: installer.phone
             ? generateWhatsAppLink(
                 installer.phone,
-                `Olá ${installer.display_name}, encontrei seu perfil no PapelPerto, da Instalar+, e quero conversar sobre meu projeto.`
+                `Olá ${installer.display_name}, encontrei seu perfil no PapelPerto, da InstalaPro, e quero conversar sobre meu projeto.`
               )
             : null,
           available_dates: availableDates,

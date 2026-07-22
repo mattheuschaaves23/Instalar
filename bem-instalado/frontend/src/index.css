@@ -641,7 +641,7 @@ textarea {
 .brand-mark-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   padding: 0;
   display: block;
@@ -17752,6 +17752,38 @@ body,
   letter-spacing: 0;
 }
 
+.ref-panel-logo.brand-mark {
+  overflow: hidden;
+  padding: 0.18rem;
+  background: #11100f;
+  border: 1px solid rgba(var(--site-accent-rgb), 0.3);
+}
+
+.ref-panel-wordmark {
+  width: 9.7rem;
+}
+
+.ref-panel-collapsed-logo {
+  display: none;
+}
+
+.ref-panel-shell.is-collapsed .ref-panel-wordmark {
+  display: none;
+}
+
+.ref-panel-shell.is-collapsed .ref-panel-collapsed-logo {
+  display: inline-flex;
+}
+
+.ref-panel-mobile-wordmark {
+  width: clamp(7.5rem, 30vw, 9rem);
+}
+
+.installer-login-brand-logo,
+.client-login-brand-logo {
+  width: clamp(14rem, 23vw, 18rem);
+}
+
 .ref-panel-avatar {
   width: 2.5rem;
   height: 2.5rem;
@@ -21417,6 +21449,7 @@ body,
 .legal-page-links a { color: inherit; text-decoration: none; }
 .legal-page-brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; color: #e5b92f; }
 .legal-page-brand span { color: #fffaf0; }
+.legal-page-wordmark { width: clamp(9.5rem, 18vw, 12rem); }
 .legal-page-back { color: #c6beb1; font-size: 14px; }
 .legal-page-back:hover, .legal-page-links a:hover { color: #e8bd3b; }
 

@@ -168,7 +168,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
               <BrandWordmark className="mt-2" size="lg" />
               <h1 className="sidebar-brand-title mt-3">Painel interno</h1>
             </div>
-            <BrandMark className="sidebar-brand-badge" fallback="IL" />
+            <BrandMark className="sidebar-brand-badge" fallback="IP" />
           </div>
 
           <p className="mt-4 text-sm leading-7 text-[var(--muted)]">

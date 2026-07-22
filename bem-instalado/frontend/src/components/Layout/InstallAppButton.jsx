@@ -29,7 +29,7 @@ export default function InstallAppButton({ className = '', compact = false }) {
   const install = async () => {
     await installPrompt.prompt();
     const choice = await installPrompt.userChoice;
-    if (choice.outcome === 'accepted') toast.success('Instalar+ adicionado ao aparelho.');
+    if (choice.outcome === 'accepted') toast.success('InstalaPro adicionado ao aparelho.');
     setInstallPrompt(null);
   };
 

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'instalar-papelperto-v1';
-const APP_SHELL = ['/', '/cliente', '/cliente/entrar', '/manifest.webmanifest', '/brand/instalar-mark.svg'];
+const CACHE_NAME = 'instalapro-papelperto-v2';
+const APP_SHELL = ['/', '/cliente', '/cliente/entrar', '/manifest.webmanifest', '/brand/instalapro-logo.png', '/brand/instalapro-icon.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));

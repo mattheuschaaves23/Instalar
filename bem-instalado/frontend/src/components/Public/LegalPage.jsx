@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import BrandWordmark from '../Layout/BrandWordmark';
 
 const UPDATED_AT = '20 de julho de 2026';
 
@@ -13,7 +14,7 @@ const privacySections = [
 ];
 
 const termsSections = [
-  ['1. Papel da plataforma', 'O Instalar+ aproxima clientes e profissionais independentes. A plataforma organiza pedidos e contatos, mas não executa a instalação nem é parte automática do contrato fechado entre cliente e instalador.'],
+  ['1. Papel da plataforma', 'O InstalaPro aproxima clientes e profissionais independentes. A plataforma organiza pedidos e contatos, mas não executa a instalação nem é parte automática do contrato fechado entre cliente e instalador.'],
   ['2. Pedidos e propostas', 'O cliente deve revisar serviço, medidas, fotos e localização antes de publicar. Valores, materiais, prazo, garantia, deslocamento e forma de pagamento devem ser confirmados diretamente com o profissional escolhido.'],
   ['3. Perfis profissionais', 'Um perfil só pode aparecer publicamente após liberação administrativa. Selos de documento ou certificado indicam a análise realizada pela plataforma e não substituem a avaliação do cliente sobre experiência, orçamento e condições do serviço.'],
   ['4. Conduta e segurança', 'Não é permitido enviar informação falsa, assediar usuários, desviar pagamentos de forma fraudulenta, publicar conteúdo ilegal ou tentar acessar contas e dados de terceiros. Contas e pedidos podem ser suspensos para investigação.'],
@@ -27,13 +28,15 @@ export default function LegalPage({ type }) {
   const sections = isPrivacy ? privacySections : termsSections;
   const title = isPrivacy ? 'Política de Privacidade e LGPD' : 'Termos de Uso';
   const intro = isPrivacy
-    ? 'Esta política explica, de forma direta, como o Instalar+ trata dados de clientes e instaladores.'
-    : 'Estas regras definem o uso do Instalar+ por clientes, instaladores e administradores.';
+    ? 'Esta política explica, de forma direta, como o InstalaPro trata dados de clientes e instaladores.'
+    : 'Estas regras definem o uso do InstalaPro por clientes, instaladores e administradores.';
 
   return (
     <main className="legal-page">
       <header className="legal-page-header">
-        <Link className="legal-page-brand" to="/">I+ <span>Instalar+</span></Link>
+        <Link aria-label="InstalaPro - inicio" className="legal-page-brand" to="/">
+          <BrandWordmark className="legal-page-wordmark" size="sm" />
+        </Link>
         <Link className="legal-page-back" to="/">Voltar ao início</Link>
       </header>
 

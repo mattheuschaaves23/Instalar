@@ -20,7 +20,7 @@ const reverseGeocoder = read('backend/utils/reverseGeocode.js');
 assert.match(app, /path="\/papelperto"/, 'A rota pública /papelperto precisa continuar disponível.');
 assert.match(landing, /const REQUEST_PATH = '\/cliente';/, 'A landing deve enviar o cliente à área integrada de busca.');
 assert.match(home, /const SHOW_PUBLIC_INSTALLER_DIRECTORY = true;/, 'A vitrine de instaladores não pode ficar desativada.');
-assert.match(home, /api\.get\('\/public\/installers'/, 'O PapelPerto deve consultar instaladores no backend do Instalar+.');
+assert.match(home, /api\.get\('\/public\/installers'/, 'O PapelPerto deve consultar instaladores no backend do InstalaPro.');
 assert.match(home, /await loadDirectory\(nextFilters\);/, 'A busca guiada deve recarregar profissionais da região informada.');
 assert.match(home, /document\.getElementById\('resultados'\)/, 'Ao concluir o pedido, o cliente deve seguir para os resultados.');
 assert.match(home, />\s*Encontrar instaladores\s*</, 'O pedido guiado deve terminar com a ação de encontrar profissionais.');
@@ -53,4 +53,4 @@ assert.match(reverseGeocoder, /zoom: '14'/, 'A localização automática deve co
 assert.match(publicController, /encontrei seu perfil no PapelPerto/, 'O contato público deve identificar a origem PapelPerto.');
 assert.match(apiClient, /path\.startsWith\('\/papelperto'\)/, 'Sessões do cliente no PapelPerto devem usar o login correto.');
 
-console.log('Integração PapelPerto + Instalar+ verificada.');
+console.log('Integração PapelPerto + InstalaPro verificada.');

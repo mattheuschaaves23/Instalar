@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const WORDMARK_URL = '/brand/instalar-logo.svg';
+const WORDMARK_URL = '/brand/instalapro-logo.png';
 
 export default function BrandWordmark({ size = 'md', className = '' }) {
   const [imageError, setImageError] = useState(false);
@@ -9,13 +9,13 @@ export default function BrandWordmark({ size = 'md', className = '' }) {
     <span className={`brand-wordmark brand-wordmark--${size} ${className}`.trim()}>
       {!imageError ? (
         <img
-          alt="Logo Instalar+"
+          alt="Logo InstalaPro"
           className="brand-wordmark-image"
           onError={() => setImageError(true)}
           src={WORDMARK_URL}
         />
       ) : (
-        <span className="brand-wordmark-fallback">Instalar+</span>
+        <span className="brand-wordmark-fallback">InstalaPro</span>
       )}
     </span>
   );

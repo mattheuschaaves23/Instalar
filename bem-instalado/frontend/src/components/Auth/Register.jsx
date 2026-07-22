@@ -88,7 +88,7 @@ export default function Register() {
       asideCopy="Criar conta"
       asideTitle="Cadastro"
       description="Seu cadastro libera um painel completo para operar com organização, imagem forte e mais conversão."
-      eyebrow="Instalar+"
+      eyebrow="InstalaPro"
       highlights={highlights}
       title="Crie sua conta e transforme atendimento em operação profissional."
     >

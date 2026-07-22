@@ -3,6 +3,8 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatPanelBadgeCount, getPanelBadgeValue, usePanelBadgeCounts } from './panelBadgeCounts';
 import { hasAdminAccess } from '../../utils/adminAccess';
+import BrandMark from './BrandMark';
+import BrandWordmark from './BrandWordmark';
 
 const MOBILE_DOCK_ITEMS = [
   { to: '/dashboard', label: 'Inicio', icon: 'home' },
@@ -116,8 +118,8 @@ function SidebarContent({ allowCollapse = false, badgeCounts, collapsed = false,
   return (
     <>
       <div className="ref-panel-brand">
-        <span className="ref-panel-logo">I+</span>
-        <strong>Instalar+</strong>
+        <BrandWordmark className="ref-panel-wordmark" size="sm" />
+        <BrandMark className="ref-panel-logo ref-panel-collapsed-logo" />
         <button aria-label={allowCollapse ? 'Recolher menu' : 'Fechar menu'} onClick={onToggleCollapse || onNavigate} type="button">
           <span>{allowCollapse && collapsed ? '>' : '<'}</span>
         </button>
@@ -235,8 +237,7 @@ export default function InstallerPanelShell({ children }) {
             <PanelIcon type="menu" />
           </button>
           <div>
-            <span className="ref-panel-logo">I+</span>
-            <strong>Instalar+</strong>
+            <BrandWordmark className="ref-panel-mobile-wordmark" size="sm" />
           </div>
           <nav aria-label="Acoes rapidas do painel">
             <Link to={location.pathname}><PanelIcon type="search" size={18} /></Link>

@@ -5,16 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { startSocialLogin } from '../../services/auth';
 import { clearOAuthErrorFromUrl, getOAuthErrorMessage } from '../../utils/oauthMessages';
 import useAuthCapabilities from '../../hooks/useAuthCapabilities';
-
-function InstallerLoginLogoMark() {
-  return (
-    <svg aria-hidden="true" className="installer-login-logo-mark" viewBox="0 0 64 64">
-      <path d="M32 5.5 54 18.5v27L32 58.5 10 45.5v-27z" />
-      <path d="M21 44V25.5L32 19l11 6.5V44" />
-      <path d="M28 44V32h8v12" />
-    </svg>
-  );
-}
+import BrandWordmark from '../Layout/BrandWordmark';
 
 function InstallerLoginIcon({ name }) {
   const common = {
@@ -261,15 +252,11 @@ export default function Login() {
     <main className="installer-login-page">
       <section className="installer-login-frame">
         <div className="installer-login-left">
-          <img alt="" className="installer-login-worker-photo" src="/auth/installer-login-worker.png" />
+          <img alt="" className="installer-login-worker-photo" src="/auth/installer-login-worker-instalapro.jpg" />
           <div className="installer-login-left-overlay" />
 
           <div className="installer-login-brand">
-            <InstallerLoginLogoMark />
-            <div className="installer-login-wordmark">
-              <strong>INSTALAR<span>+</span></strong>
-              <small>INSTALADORES DE PAPEL DE PAREDE</small>
-            </div>
+            <BrandWordmark className="installer-login-brand-logo" size="md" />
           </div>
 
           <div className="installer-login-copy">

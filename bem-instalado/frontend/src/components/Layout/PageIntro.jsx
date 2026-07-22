@@ -1,5 +1,5 @@
 export default function PageIntro({
-  eyebrow = 'Instalar+',
+  eyebrow = 'InstalaPro',
   title,
   description,
   actions,

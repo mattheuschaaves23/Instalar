@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import BrandWordmark from '../Layout/BrandWordmark';
 
 const clientPoints = ['Busca por região', 'Horários visíveis', 'Contato direto'];
 const installerPoints = ['Agenda e clientes', 'Orçamentos rápidos', 'Painel profissional'];
@@ -13,7 +14,7 @@ export default function EntryPortal() {
     <div className="auth-scene min-h-screen overflow-x-hidden px-5 py-10 md:px-8 md:py-12 lg:px-12 lg:py-16">
       <div className="entry-portal-v2">
         <header className="entry-portal-head fade-up">
-          <p className="eyebrow">Instalar+</p>
+          <BrandWordmark className="mb-5" size="md" />
           <h1 className="entry-portal-title">Escolha como você quer entrar</h1>
           <p className="entry-portal-copy">
             Um espaço para clientes encontrarem profissionais e um painel para instaladores

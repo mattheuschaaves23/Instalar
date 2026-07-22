@@ -10,6 +10,8 @@ import {
   usePanelBadgeCounts,
 } from '../Layout/panelBadgeCounts';
 import { hasAdminAccess } from '../../utils/adminAccess';
+import BrandMark from '../Layout/BrandMark';
+import BrandWordmark from '../Layout/BrandWordmark';
 import {
   formatCurrency,
   formatDateTime,
@@ -909,8 +911,8 @@ export default function Dashboard() {
     <section className={`ref-panel-shell ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
       <aside className="ref-panel-sidebar" aria-label="Navegacao do painel">
         <div className="ref-panel-brand">
-          <span className="ref-panel-logo">I+</span>
-          <strong>Instalar+</strong>
+          <BrandWordmark className="ref-panel-wordmark" size="sm" />
+          <BrandMark className="ref-panel-logo ref-panel-collapsed-logo" />
           <button aria-label="Recolher menu" onClick={() => setSidebarCollapsed((current) => !current)} type="button">
             <span>{sidebarCollapsed ? '>' : '<'}</span>
           </button>
@@ -975,8 +977,7 @@ export default function Dashboard() {
             <PanelIcon type="menu" />
           </button>
           <div>
-            <span className="ref-panel-logo">I+</span>
-            <strong>Instalar+</strong>
+            <BrandWordmark className="ref-panel-mobile-wordmark" size="sm" />
           </div>
           <nav aria-label="Acoes rapidas do painel">
             <Link to="/dashboard"><PanelIcon type="search" size={18} /></Link>

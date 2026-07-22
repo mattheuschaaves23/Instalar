@@ -15,9 +15,9 @@ const emptyReviewForm = {
   comment: '',
 };
 const defaultMarketplace = {
-  title: 'Loja Oficial Instalar+',
+  title: 'Loja Oficial InstalaPro',
   description:
-    'A loja oficial Instalar+ Home Decor reúne papéis de parede para vários estilos, com operação em Florianópolis e atendimento para todo o Brasil.',
+    'A loja oficial InstalaPro Home Decor reúne papéis de parede para vários estilos, com operação em Florianópolis e atendimento para todo o Brasil.',
   url: 'https://www.beminstalado.com.br',
   cta_label: 'Visitar loja oficial',
   whatsapp_url: 'https://api.whatsapp.com/send?phone=5548999816000',
@@ -90,7 +90,7 @@ function buildWhatsAppLinkWithRequest(baseLink, request) {
     const nextMessage = [
       previousMessage,
       previousMessage ? '' : null,
-      'Olá, encontrei você no PapelPerto, da Instalar+, e quero falar sobre este pedido:',
+      'Olá, encontrei você no PapelPerto, da InstalaPro, e quero falar sobre este pedido:',
       ...requestLines,
     ]
       .filter(Boolean)

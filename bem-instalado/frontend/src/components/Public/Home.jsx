@@ -14,7 +14,7 @@ import {
   writeStoredClientRequest,
 } from '../../utils/clientRequest';
 import { safeSessionStorage } from '../../utils/safeStorage';
-import BrandMark from '../Layout/BrandMark';
+import BrandWordmark from '../Layout/BrandWordmark';
 import PaginationControls from '../Layout/PaginationControls';
 import './Home.css';
 
@@ -1770,11 +1770,7 @@ export default function Home() {
       <div className="client-app-shell">
         <header className="client-app-topbar fade-up">
           <div className="client-app-brand">
-            <BrandMark className="client-app-brand-mark" />
-            <div className="client-app-brand-copy">
-              <strong>Instalar+</strong>
-              <span>Encontre instaladores no Brasil</span>
-            </div>
+            <BrandWordmark className="client-app-brand-wordmark" size="sm" />
           </div>
 
           <div className="client-app-top-actions">

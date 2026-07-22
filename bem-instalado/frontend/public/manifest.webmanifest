@@ -1,6 +1,6 @@
 {
-  "name": "Instalar+ PapelPerto",
-  "short_name": "Instalar+",
+  "name": "InstalaPro PapelPerto",
+  "short_name": "InstalaPro",
   "description": "Encontre instaladores de papel de parede e acompanhe seus pedidos.",
   "start_url": "/",
   "scope": "/",
@@ -11,10 +11,10 @@
   "categories": ["business", "lifestyle", "productivity"],
   "icons": [
     {
-      "src": "/brand/instalar-mark.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "/brand/instalapro-icon.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

@@ -5,16 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { startSocialLogin } from '../../services/auth';
 import { clearOAuthErrorFromUrl, getOAuthErrorMessage } from '../../utils/oauthMessages';
 import useAuthCapabilities from '../../hooks/useAuthCapabilities';
-
-function ClientLoginLogoMark() {
-  return (
-    <svg aria-hidden="true" className="client-login-logo-mark" viewBox="0 0 64 64">
-      <path d="M32 5.5 54 18.5v27L32 58.5 10 45.5v-27z" />
-      <path d="M21 44V25.5L32 19l11 6.5V44" />
-      <path d="M28 44V32h8v12" />
-    </svg>
-  );
-}
+import BrandWordmark from '../Layout/BrandWordmark';
 
 function ClientLoginIcon({ name }) {
   const common = {
@@ -262,11 +253,7 @@ export default function ClientLogin() {
           <div className="client-login-left-overlay" />
 
           <div className="client-login-brand">
-            <ClientLoginLogoMark />
-            <div className="client-login-wordmark">
-              <strong>INSTALAR<span>+</span></strong>
-              <small>INSTALADORES DE PAPEL DE PAREDE</small>
-            </div>
+            <BrandWordmark className="client-login-brand-logo" size="md" />
           </div>
 
           <div className="client-login-copy">

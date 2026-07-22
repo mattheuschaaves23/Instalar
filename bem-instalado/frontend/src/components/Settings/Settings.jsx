@@ -174,7 +174,7 @@ export default function Settings() {
           <div className="settings-live-preview">
             <div>
               <span className="settings-preview-dot" />
-              <p>Painel Instalar+</p>
+              <p>Painel InstalaPro</p>
               <strong>Fundo preto, destaque na sua cor</strong>
             </div>
             <button type="button">Botao principal</button>

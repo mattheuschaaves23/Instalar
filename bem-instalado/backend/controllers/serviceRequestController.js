@@ -115,13 +115,13 @@ function joinRegion(item) {
 }
 
 function buildInstallerMessage(installer, request) {
-  const installerName = installer.business_name || installer.name || 'um instalador da Instalar+';
+  const installerName = installer.business_name || installer.name || 'um instalador da InstalaPro';
   const service = request.service_label || 'instalacao de papel de parede';
   const region = joinRegion(request);
 
   return [
     `Ola ${request.client_name}, sou ${installerName}.`,
-    `Voce me escolheu na Instalar+ para falar sobre ${service}${region ? ` em ${region}` : ''}.`,
+    `Voce me escolheu na InstalaPro para falar sobre ${service}${region ? ` em ${region}` : ''}.`,
     'Posso combinar os detalhes pelo WhatsApp?',
   ].join(' ');
 }
@@ -130,7 +130,7 @@ function buildClientMessage(installer, request) {
   const installerName = installer.display_name || installer.business_name || installer.name || 'instalador';
   const service = request.service_label || 'instalacao de papel de parede';
 
-  return `Ola ${installerName}, escolhi voce na Instalar+ para conversar sobre meu pedido de ${service}.`;
+  return `Ola ${installerName}, escolhi voce na InstalaPro para conversar sobre meu pedido de ${service}.`;
 }
 
 function serializeOpportunity(row) {

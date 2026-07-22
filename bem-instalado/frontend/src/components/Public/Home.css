@@ -51,6 +51,10 @@
   min-width: 0;
 }
 
+.client-app-brand-wordmark {
+  width: clamp(10rem, 19vw, 13rem);
+}
+
 .client-app-brand-mark {
   width: 3.6rem;
   height: 3.6rem;
@@ -3656,6 +3660,10 @@
   gap: 0.65rem;
 }
 
+.client-app-brand-wordmark {
+  width: clamp(9.5rem, 18vw, 11.75rem);
+}
+
 .client-app-brand-mark {
   width: 2.75rem;
   height: 2.75rem;
@@ -4143,6 +4151,10 @@
     min-height: 3.3rem;
     padding: 0.45rem 0.55rem;
     border-radius: 15px;
+  }
+
+  .client-app-brand-wordmark {
+    width: 8.5rem;
   }
 
   .client-app-brand-mark {
