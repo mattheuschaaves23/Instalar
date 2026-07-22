@@ -21962,6 +21962,10 @@ body,
   overflow: visible;
 }
 
+.panel-flat-language .page-intro-stats:has(.page-intro-stat:nth-child(4)) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .panel-flat-language .page-intro-stat {
   min-height: 7.5rem;
   align-content: center;
@@ -22146,8 +22150,18 @@ body,
 
 .panel-flat-language .opportunity-meta span,
 .panel-flat-language .opportunity-tags span {
+  min-height: 0;
   border: 0;
-  background: rgba(255, 255, 255, 0.035);
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.panel-flat-language .opportunity-meta span + span::before,
+.panel-flat-language .opportunity-tags span + span::before {
+  content: '·';
+  margin-right: 0.45rem;
+  color: var(--route-muted);
 }
 
 /* Agenda: o calendário continua delimitado porque a grade tem função. */
@@ -22425,6 +22439,10 @@ body,
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .panel-flat-language .page-intro-stats:has(.page-intro-stat:nth-child(4)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .panel-flat-language .page-intro-stat,
   .panel-flat-language .agenda-modern-hero-metrics article {
     min-height: 5rem;
@@ -22470,6 +22488,10 @@ body,
     grid-template-columns: 1fr;
   }
 
+  .panel-flat-language .page-intro-stats:has(.page-intro-stat:nth-child(4)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .panel-flat-language .page-intro-stat,
   .panel-flat-language .agenda-modern-hero-metrics article,
   .panel-flat-language .client-intake-stat-grid article {
@@ -22481,5 +22503,51 @@ body,
   .panel-flat-language .opportunity-filter-tabs {
     width: 100%;
     overflow-x: auto;
+  }
+}
+
+/* Entradas de cliente e instalador: o formulário é o foco, não dois cartões grandes. */
+.auth-shell-wrap .auth-visual-panel,
+.auth-shell-wrap .auth-form-panel {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.auth-shell-wrap .auth-visual-panel::before,
+.auth-shell-wrap .auth-visual-panel::after,
+.auth-shell-wrap .auth-form-panel::before,
+.auth-shell-wrap .auth-form-panel::after {
+  display: none;
+}
+
+.auth-shell-wrap .auth-form-panel {
+  padding-left: 2rem;
+  border-left: 1px solid rgba(var(--site-accent-rgb), 0.15);
+}
+
+.auth-shell-wrap .auth-highlight-card,
+.auth-shell-wrap .auth-audience-card,
+.auth-shell-wrap .auth-landing-step {
+  padding-inline: 0;
+  border: 0;
+  border-top: 1px solid rgba(var(--site-accent-rgb), 0.12);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.auth-shell-wrap .auth-landing-point {
+  border: 0;
+  background: transparent;
+}
+
+@media (max-width: 767px) {
+  .auth-shell-wrap .auth-form-panel {
+    padding-left: 1.25rem;
+    border-left: 0;
+    border-top: 1px solid rgba(var(--site-accent-rgb), 0.15);
   }
 }

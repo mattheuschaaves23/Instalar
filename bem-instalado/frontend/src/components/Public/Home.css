@@ -4307,3 +4307,169 @@
     font-size: 0.75rem;
   }
 }
+
+/* Fluxo público: usar caixas somente em escolhas, campos e estados importantes. */
+.client-app-topbar {
+  padding-inline: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(var(--site-accent-rgb), 0.14);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.client-app-request-card {
+  padding-inline: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.client-app-request-progress {
+  border-bottom: 1px solid rgba(var(--site-accent-rgb), 0.12);
+}
+
+.client-app-request-progress button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+}
+
+.client-app-request-progress button.is-active {
+  border-bottom-color: var(--gold);
+  background: linear-gradient(180deg, transparent, rgba(var(--site-accent-rgb), 0.08));
+}
+
+.client-app-request-panel,
+.client-app-request-panel--details,
+.client-app-request-panel--location {
+  padding: 0.9rem 0;
+  border: 0;
+  border-top: 1px solid rgba(var(--site-accent-rgb), 0.12);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.client-app-detail-section,
+.client-app-detail-single {
+  padding: 0.65rem 0;
+  border: 0;
+  border-top: 1px solid rgba(var(--site-accent-rgb), 0.09);
+  border-radius: 0;
+  background: transparent;
+}
+
+.client-app-clean-summary > div,
+.client-app-request-summary span,
+.client-request-profile-grid span {
+  border: 0;
+  border-left: 1px solid rgba(var(--site-accent-rgb), 0.12);
+  border-radius: 0;
+  background: transparent;
+}
+
+.client-app-clean-summary > div:nth-child(odd),
+.client-app-request-summary span:first-child,
+.client-request-profile-grid span:nth-child(odd) {
+  border-left: 0;
+}
+
+.client-app-result-overview,
+.client-app-request-receipt {
+  padding-inline: 0;
+  border: 0;
+  border-top: 1px solid rgba(var(--site-accent-rgb), 0.13);
+  border-bottom: 1px solid rgba(var(--site-accent-rgb), 0.13);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.client-app-opportunity-publish {
+  padding: 1rem 0;
+  border: 0;
+  border-top: 1px solid rgba(var(--site-accent-rgb), 0.13);
+  border-bottom: 1px solid rgba(var(--site-accent-rgb), 0.13);
+  border-radius: 0;
+  background: transparent;
+}
+
+.client-app-opportunity-success {
+  padding: 0.9rem 1rem;
+  border: 0;
+  border-left: 2px solid rgba(54, 223, 155, 0.55);
+  border-radius: 0;
+  background: linear-gradient(90deg, rgba(24, 217, 149, 0.08), transparent);
+}
+
+.client-app-interest-board,
+.client-request-profile-card {
+  padding-inline: 0;
+  border: 0;
+  border-top: 1px solid rgba(var(--site-accent-rgb), 0.13);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.client-app-interest-list {
+  gap: 0;
+}
+
+.client-app-interest-list article,
+.client-app-account-request-list > article {
+  padding: 0.9rem 0;
+  border: 0;
+  border-bottom: 1px solid rgba(var(--site-accent-rgb), 0.12);
+  border-radius: 0;
+  background: transparent;
+}
+
+.client-app-interest-list article:first-child,
+.client-app-account-request-list > article:first-child {
+  border-top: 1px solid rgba(var(--site-accent-rgb), 0.12);
+}
+
+.client-app-interest-list article.is-selected {
+  border-color: rgba(54, 223, 155, 0.3);
+  background: linear-gradient(90deg, rgba(54, 223, 155, 0.07), transparent);
+}
+
+.client-app-interest-avatar {
+  border-radius: 50%;
+}
+
+.client-app-installer-card {
+  padding-inline: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(var(--site-accent-rgb), 0.12);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.client-app-trust-strip {
+  padding-inline: 0;
+  border: 0;
+  border-top: 1px solid rgba(var(--site-accent-rgb), 0.12);
+  border-bottom: 1px solid rgba(var(--site-accent-rgb), 0.12);
+  border-radius: 0;
+  background: transparent;
+}
+
+@media (max-width: 620px) {
+  .client-app-topbar,
+  .client-app-request-card,
+  .client-app-request-panel,
+  .client-app-request-panel--details,
+  .client-app-request-panel--location {
+    border-radius: 0;
+  }
+
+  .client-app-opportunity-publish {
+    padding-inline: 0;
+  }
+}
