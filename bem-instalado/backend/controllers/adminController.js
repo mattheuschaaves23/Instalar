@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { expireOpenServiceRequests } = require('../utils/serviceRequestLifecycle');
 const ADMIN_MUTATION_LOCK_ID = 19772402;
 
 function parseLimit(value, fallback = 20) {
@@ -182,6 +183,7 @@ async function setSubscriptionStatus(userId, status, expiresAt = null, specificS
 
 exports.getOverview = async (_req, res) => {
   try {
+    await expireOpenServiceRequests();
     const [metricsResult, usersResult, paymentsResult, budgetsResult, requestsResult] = await Promise.all([
       pool.query(`
         WITH latest_subscriptions AS (
@@ -195,7 +197,14 @@ exports.getOverview = async (_req, res) => {
         SELECT
           (SELECT COUNT(*)::int FROM users WHERE deleted_at IS NULL) AS total_users,
           (SELECT COUNT(*)::int FROM users WHERE is_admin = TRUE AND deleted_at IS NULL) AS total_admins,
-          (SELECT COUNT(*)::int FROM users WHERE COALESCE(public_profile, FALSE) = TRUE AND deleted_at IS NULL) AS public_installers,
+          (
+            SELECT COUNT(*)::int
+            FROM users
+            WHERE account_type = 'installer'
+              AND COALESCE(public_profile, FALSE) = TRUE
+              AND COALESCE(certification_verified, FALSE) = TRUE
+              AND deleted_at IS NULL
+          ) AS public_installers,
           (SELECT COUNT(*)::int FROM users WHERE COALESCE(featured_installer, FALSE) = TRUE AND deleted_at IS NULL) AS featured_installers,
           (SELECT COUNT(*)::int FROM users WHERE COALESCE(certification_verified, FALSE) = TRUE AND deleted_at IS NULL) AS certified_installers,
           (SELECT COUNT(*)::int FROM users WHERE account_type = 'client' AND deleted_at IS NULL) AS total_clients,
@@ -494,12 +503,13 @@ exports.listPayments = async (req, res) => {
 
 exports.listServiceRequests = async (req, res) => {
   try {
+    await expireOpenServiceRequests();
     const search = String(req.query.q || '').trim();
     const status = String(req.query.status || 'all').trim().toLowerCase();
     const page = parsePage(req.query.page);
     const limit = parseLimit(req.query.limit, 20);
     const offset = (page - 1) * limit;
-    const safeStatus = ['all', 'open', 'selected', 'closed', 'canceled'].includes(status)
+    const safeStatus = ['all', 'open', 'selected', 'closed', 'canceled', 'expired'].includes(status)
       ? status
       : 'all';
 

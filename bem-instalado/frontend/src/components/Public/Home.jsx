@@ -1437,7 +1437,7 @@ export default function Home() {
         previousInterestCountRef.current = 0;
         loadRequestInterests(nextRequest);
       }
-      toast.success('Solicitação publicada para instaladores próximos.');
+      toast.success('Pedido publicado. Avisaremos quando um instalador demonstrar interesse.');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível publicar a solicitação.');
     } finally {
@@ -2495,7 +2495,7 @@ export default function Home() {
                     <label className="client-app-toolbar-select">
                       <AppIcon name="sort" />
                       <select onChange={(event) => setSortBy(event.target.value)} value={sortBy}>
-                        <option value="match">Mais compativeis</option>
+                        <option value="match">Mais compatíveis</option>
                         <option value="rating">Melhor avaliados</option>
                         <option value="reviews">Mais avaliações</option>
                         <option value="available">Mais disponíveis</option>
@@ -2521,8 +2521,8 @@ export default function Home() {
             <span className="client-app-empty-icon" aria-hidden="true">
               <AppIcon name="users" />
             </span>
-            <strong>Quer receber propostas?</strong>
-            <p>Publique seu pedido e aguarde o interesse de profissionais da região.</p>
+            <strong>Nenhum profissional verificado neste filtro</strong>
+            <p>Você pode publicar o pedido agora. Ele ficará disponível quando um profissional apto atender à sua região.</p>
             <div className="client-app-empty-actions">
               <button className="client-app-search-submit" onClick={() => setShowPublishForm(true)} type="button">
                 Receber propostas
@@ -2744,7 +2744,7 @@ export default function Home() {
             {publishedRequest ? (
               <div className="client-app-opportunity-success">
                 <strong>Pedido #{publishedRequest.id} publicado</strong>
-                <span>Instaladores da região já podem ver o pedido. Seu contato continua privado.</span>
+                <span>O pedido está disponível para profissionais que atendem à região. Seu contato continua privado.</span>
                 <div className="client-app-tracking-actions">
                   <button className="client-app-ghost-button" onClick={copyRequestTrackingLink} type="button">
                     Copiar link para acompanhar

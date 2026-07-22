@@ -695,9 +695,9 @@ export default function AdminDashboard() {
             detail: `${metrics.total_service_requests || 0} pedidos no total`,
           },
           {
-            label: 'Instaladores públicos',
+            label: 'Instaladores aptos',
             value: `${metrics.public_installers || 0}`,
-            detail: `${metrics.certified_installers || 0} com certificado verificado`,
+            detail: 'Verificados e visíveis para clientes',
           },
           {
             label: 'Receita do mês',
@@ -819,7 +819,7 @@ export default function AdminDashboard() {
                         {item.client_name} • {formatStatusLabel(item.status)}
                       </p>
                       <p className="text-xs text-[var(--muted)]">
-                        {[item.city, item.state].filter(Boolean).join(' - ')} • {item.interests_count || 0} interessado(s)
+                        {[item.city, item.state].filter(Boolean).join(' - ')} • {item.interests_count || 0} {Number(item.interests_count || 0) === 1 ? 'interessado' : 'interessados'}
                       </p>
                     </div>
                   ))}
@@ -847,6 +847,7 @@ export default function AdminDashboard() {
               <select className="field-select" name="status" onChange={handleRequestFilterChange} value={requestFilters.status}>
                 <option value="all">Todos os status</option>
                 <option value="open">Abertos</option>
+                <option value="expired">Vencidos</option>
                 <option value="selected">Instalador escolhido</option>
                 <option value="closed">Fechados</option>
                 <option value="canceled">Cancelados</option>

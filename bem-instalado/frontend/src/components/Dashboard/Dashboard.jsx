@@ -530,9 +530,9 @@ function buildStatusSegments(budgets) {
 
   if (total <= 0) {
     return {
-      total: 4,
-      items: baseSegments.map((segment) => ({ ...segment, value: 1, percentage: 25 })),
-      gradient: 'conic-gradient(var(--site-accent-strong) 0deg 90deg, var(--site-accent) 90deg 180deg, var(--site-accent-deep) 180deg 270deg, rgba(var(--site-accent-rgb), 0.38) 270deg 360deg)',
+      total: 0,
+      items: baseSegments.map((segment) => ({ ...segment, value: 0, percentage: 0 })),
+      gradient: 'conic-gradient(rgba(var(--site-accent-rgb), 0.12) 0deg 360deg)',
     };
   }
 
@@ -890,7 +890,7 @@ export default function Dashboard() {
     },
     {
       label: 'Taxa de conversão',
-      mobileLabel: 'Conversao',
+      mobileLabel: 'Conversão',
       value: `${conversionRate}%`,
       detail: 'orçamentos aprovados',
       mobileDetail: 'aprovados',
@@ -1440,7 +1440,7 @@ export default function Dashboard() {
                     <div>
                       <p>{segment.label}</p>
                       <span>
-                        {compactCurrency(segment.value)} ({segment.percentage ? Math.round(segment.percentage) : 25}%)
+                        {compactCurrency(segment.value)} ({Math.round(segment.percentage || 0)}%)
                       </span>
                     </div>
                   </article>

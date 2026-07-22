@@ -56,7 +56,7 @@ const initialSlotForm = {
 };
 
 const imageHint = 'PNG, JPG ou WEBP (máx. 3MB). A imagem é salva no perfil.';
-const certificateHint = 'PDF, PNG, JPG ou WEBP (máx. 4MB). O certificado é opcional.';
+const certificateHint = 'PDF, PNG, JPG ou WEBP (máx. 4MB). A validação é necessária para aparecer na busca e enviar interesse.';
 
 function buildMonthKey(date = new Date()) {
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -606,7 +606,7 @@ export default function Profile() {
             </label>
 
             <label className="block md:col-span-2">
-              <span className="field-label">Certificado de instalador (opcional)</span>
+              <span className="field-label">Certificado de instalador</span>
               <input
                 className="field-input"
                 onChange={(event) => handleCertificateUpload(event.target.files?.[0])}
@@ -911,7 +911,7 @@ export default function Profile() {
             </label>
 
             <label className="block">
-              <span className="field-label">Contato de emergência</span>
+              <span className="field-label">Contato de emergência (privado)</span>
               <input
                 className="field-input"
                 name="emergency_contact"
@@ -919,10 +919,11 @@ export default function Profile() {
                 placeholder="Nome do contato"
                 value={form.emergency_contact || ''}
               />
+              <p className="mt-2 text-xs text-[var(--muted)]">Este dado não aparece no perfil público.</p>
             </label>
 
             <label className="block">
-              <span className="field-label">Telefone de emergência</span>
+              <span className="field-label">Telefone de emergência (privado)</span>
               <input
                 className="field-input"
                 name="emergency_phone"

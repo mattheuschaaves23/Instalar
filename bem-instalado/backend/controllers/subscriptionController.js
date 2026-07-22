@@ -206,23 +206,31 @@ exports.getSubscription = async (req, res) => {
     const subscription = await getLatestSubscription(req.userId);
     const accessState = getSubscriptionAccessState(subscription);
     const launchAccess = isLaunchAccessEnabled();
+    const adminAccess = Boolean(req.user?.is_admin);
+    const complimentaryAccess = launchAccess || adminAccess;
 
     return res.json({
       ...(subscription || { status: 'inactive', plan: 'monthly' }),
-      can_use_app: accessState.canUseApp || launchAccess,
+      can_use_app: accessState.canUseApp || complimentaryAccess,
       is_expired: accessState.isExpired,
-      requires_payment: accessState.requiresPayment && !launchAccess,
-      access_mode: launchAccess && !accessState.canUseApp ? 'launch' : 'subscription',
+      requires_payment: accessState.requiresPayment && !complimentaryAccess,
+      access_mode: adminAccess
+        ? 'admin'
+        : launchAccess && !accessState.canUseApp
+          ? 'launch'
+          : 'subscription',
       pricing: {
         amount: SUBSCRIPTION_AMOUNT,
         currency: 'BRL',
-        period: 'mensal',
+        period: 'mês',
         label: 'Plano instalador',
       },
       plan_benefits: getPlanBenefits(),
-      payment_mode: launchAccess ? 'launch' : isManualConfirmationEnabled() ? 'manual' : 'disabled',
+      payment_mode: complimentaryAccess ? 'complimentary' : isManualConfirmationEnabled() ? 'manual' : 'disabled',
       provider_error: null,
-      payment_notice: launchAccess
+      payment_notice: adminAccess
+        ? 'Acesso administrativo liberado sem cobrança.'
+        : launchAccess
         ? 'Acesso de lançamento liberado sem cobrança enquanto o pagamento definitivo é preparado.'
         : isManualConfirmationEnabled()
         ? 'Pagamento manual habilitado apenas para desenvolvimento.'

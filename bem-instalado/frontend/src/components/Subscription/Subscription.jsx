@@ -14,7 +14,7 @@ import {
 const defaultPricing = {
   amount: Number(process.env.REACT_APP_SUBSCRIPTION_PRICE || 40),
   currency: 'BRL',
-  period: 'mensal',
+  period: 'mês',
   label: 'Plano instalador',
 };
 
@@ -126,7 +126,9 @@ export default function Subscription() {
 
   const canUseApp = Boolean(subscription?.can_use_app);
   const isPaymentDisabled = subscription?.payment_mode === 'disabled';
-  const isLaunchAccess = subscription?.payment_mode === 'launch' || subscription?.access_mode === 'launch';
+  const isAdminAccess = subscription?.access_mode === 'admin';
+  const isLaunchAccess = subscription?.access_mode === 'launch';
+  const hasComplimentaryAccess = isAdminAccess || isLaunchAccess;
   const showRecipient = Boolean(payment?.recipientName || payment?.city);
   const pricing = subscription?.pricing || defaultPricing;
   const apiBenefits = Array.isArray(subscription?.plan_benefits) ? subscription.plan_benefits : [];
@@ -137,19 +139,21 @@ export default function Subscription() {
   return (
     <section className="page-shell space-y-7">
       <PageIntro
-        description={isLaunchAccess
-          ? 'Durante o lançamento, todas as ferramentas estão liberadas sem cobrança.'
+        description={hasComplimentaryAccess
+          ? isAdminAccess
+            ? 'Sua conta administrativa possui acesso completo às ferramentas da plataforma.'
+            : 'Durante o lançamento, todas as ferramentas estão liberadas sem cobrança.'
           : 'Consulte aqui o status do seu plano e dos pagamentos.'}
         eyebrow="Assinatura"
         stats={[
           {
             label: 'Plano',
             value: subscription?.plan ? subscription.plan.toUpperCase() : 'MENSAL',
-            detail: isLaunchAccess ? 'Acesso gratuito nesta fase.' : `${formatCurrency(pricing.amount)} por ${pricing.period}.`,
+            detail: hasComplimentaryAccess ? 'Acesso sem cobrança.' : `${formatCurrency(pricing.amount)} por ${pricing.period}.`,
           },
           {
             label: 'Status',
-            value: isLaunchAccess ? 'LANÇAMENTO' : formatStatusLabel(subscription?.status),
+            value: isAdminAccess ? 'ADMINISTRATIVO' : isLaunchAccess ? 'LANÇAMENTO' : formatStatusLabel(subscription?.status),
             detail: subscription?.expires_at
               ? `Expira em ${formatShortDate(subscription.expires_at)}`
               : 'Ainda sem data de expiração registrada.',
@@ -158,11 +162,15 @@ export default function Subscription() {
             label: 'Acesso',
             value: canUseApp ? 'LIBERADO' : 'BLOQUEADO',
             detail: canUseApp
-              ? isLaunchAccess ? 'Ferramentas liberadas durante o lançamento.' : 'Ferramentas premium liberadas.'
+              ? hasComplimentaryAccess ? 'Ferramentas liberadas sem cobrança.' : 'Ferramentas premium liberadas.'
               : 'Os módulos do painel ficam bloqueados até a assinatura ser ativada.',
           },
         ]}
-        title={isLaunchAccess ? 'Seu acesso de lançamento está liberado.' : 'Gerencie seu plano de instalador.'}
+        title={isAdminAccess
+          ? 'Seu acesso administrativo está liberado.'
+          : isLaunchAccess
+            ? 'Seu acesso de lançamento está liberado.'
+            : 'Gerencie seu plano de instalador.'}
       />
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -171,7 +179,7 @@ export default function Subscription() {
             <div className="min-w-0">
               <p className="eyebrow">Estado da assinatura</p>
               <h2 className="mt-3 text-2xl font-semibold text-[var(--text)]">
-                {isLaunchAccess ? 'Acesso liberado' : 'Controle de acesso premium'}
+                {hasComplimentaryAccess ? 'Acesso liberado' : 'Controle de acesso premium'}
               </h2>
             </div>
             <span className="status-pill" data-tone={subscription?.status}>
@@ -180,8 +188,8 @@ export default function Subscription() {
           </div>
 
           <p className="mt-5 text-sm leading-7 text-[var(--muted)]">
-            {isLaunchAccess
-              ? 'Você já pode usar oportunidades, agenda, clientes e orçamentos. Nenhum pagamento é necessário agora.'
+            {hasComplimentaryAccess
+              ? 'Você já pode usar oportunidades, agenda, clientes e orçamentos. Nenhum pagamento é necessário para este acesso.'
               : 'Acompanhe aqui a ativação e a validade da sua assinatura.'}
           </p>
 
@@ -199,7 +207,7 @@ export default function Subscription() {
             </div>
           </div>
 
-          {!isLaunchAccess ? <div className="mt-6 flex flex-wrap gap-3">
+          {!hasComplimentaryAccess ? <div className="mt-6 flex flex-wrap gap-3">
             <button
               className="gold-button w-full sm:w-auto"
               disabled={isPaymentDisabled}
@@ -315,8 +323,10 @@ export default function Subscription() {
           <section className="lux-panel-soft fade-up rounded-[28px] p-6" style={{ animationDelay: '0.14s' }}>
             <p className="eyebrow">Regra de acesso</p>
             <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
-              {isLaunchAccess
-                ? 'O acesso é gratuito nesta fase. A plataforma avisará com antecedência antes de qualquer mudança no modelo de cobrança.'
+              {hasComplimentaryAccess
+                ? isAdminAccess
+                  ? 'O acesso é vinculado à função administrativa desta conta.'
+                  : 'O acesso é gratuito nesta fase. A plataforma avisará com antecedência antes de qualquer mudança no modelo de cobrança.'
                 : 'O usuário pode entrar na conta, ajustar perfil e acompanhar o status da assinatura nesta tela.'}
             </p>
           </section>

@@ -85,9 +85,7 @@ function formatPanelDate(date) {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
-  })
-    .format(date)
-    .replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`);
+  }).format(date);
 }
 
 function isActiveRoute(pathname, item) {
@@ -258,7 +256,7 @@ export default function InstallerPanelShell({ children }) {
               <PanelIcon type="agenda" size={17} />
               {formatPanelDate(today)}
             </span>
-            <Link className="ref-panel-bell" to="/notifications">
+            <Link aria-label="Abrir notificações" className="ref-panel-bell" to="/notifications">
               <PanelIcon type="bell" size={18} />
               {notificationBadge ? <em>{notificationBadge}</em> : null}
             </Link>

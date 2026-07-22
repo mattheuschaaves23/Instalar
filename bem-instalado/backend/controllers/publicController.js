@@ -104,8 +104,6 @@ function buildSafetySummary(installer) {
     accepts_service_contract: Boolean(installer.accepts_service_contract),
     provides_warranty: Boolean(installer.provides_warranty),
     warranty_days: Number(installer.warranty_days || 0),
-    emergency_contact: installer.emergency_contact || '',
-    emergency_phone: installer.emergency_phone || '',
     safety_notes: installer.safety_notes || '',
   };
 }

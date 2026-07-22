@@ -1,5 +1,3 @@
-const nodemailer = require('nodemailer');
-
 function firstEnvValue(...names) {
   for (const name of names) {
     const value = String(process.env[name] || '').trim();
@@ -20,6 +18,7 @@ function isEmailEnabled() {
 }
 
 function createTransporter() {
+  const nodemailer = require('nodemailer');
   const port = Number(firstEnvValue('SMTP_PORT') || 587);
   return nodemailer.createTransport({
     host: firstEnvValue('SMTP_HOST'),
@@ -52,10 +51,46 @@ async function sendPasswordResetEmail({ to, resetUrl, expiresInMinutes }) {
   const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER');
   const appName = firstEnvValue('APP_NAME') || 'InstalaPro';
   const transporter = createTransporter();
+  const message = buildPasswordResetMessage({ appName, resetUrl, expiresInMinutes });
 
   await transporter.sendMail({
     from,
     to,
+    ...message,
+  });
+
+  return { sent: true };
+}
+
+async function sendServiceRequestInterestEmail({ to, clientName, installerName, serviceLabel, trackingUrl }) {
+  if (!isEmailEnabled() || !to) {
+    return { sent: false, reason: 'smtp_not_configured' };
+  }
+
+  const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER');
+  const appName = firstEnvValue('APP_NAME') || 'InstalaPro';
+  const transporter = createTransporter();
+  const message = buildServiceRequestInterestMessage({
+    appName,
+    clientName,
+    installerName,
+    serviceLabel,
+    trackingUrl,
+  });
+
+  await transporter.sendMail({
+    from,
+    to,
+    ...message,
+  });
+
+  return { sent: true };
+}
+
+function buildPasswordResetMessage({ appName = 'InstalaPro', resetUrl, expiresInMinutes }) {
+  const safeResetUrl = escapeHtml(resetUrl);
+
+  return {
     subject: `Redefinição de senha - ${appName}`,
     text: [
       'Recebemos uma solicitação para redefinir sua senha.',
@@ -78,28 +113,22 @@ async function sendPasswordResetEmail({ to, resetUrl, expiresInMinutes }) {
         <p>Se você não solicitou essa alteração, ignore este e-mail.</p>
       </div>
     `,
-  });
-
-  return { sent: true };
+  };
 }
 
-async function sendServiceRequestInterestEmail({ to, clientName, installerName, serviceLabel, trackingUrl }) {
-  if (!isEmailEnabled() || !to) {
-    return { sent: false, reason: 'smtp_not_configured' };
-  }
-
-  const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER');
-  const appName = firstEnvValue('APP_NAME') || 'InstalaPro';
-  const transporter = createTransporter();
-  const safeResetUrl = escapeHtml(resetUrl);
+function buildServiceRequestInterestMessage({
+  appName = 'InstalaPro',
+  clientName,
+  installerName,
+  serviceLabel,
+  trackingUrl,
+}) {
   const safeClientName = escapeHtml(clientName || 'cliente');
   const safeInstallerName = escapeHtml(installerName || 'Um instalador');
   const safeServiceLabel = escapeHtml(serviceLabel || 'seu pedido');
   const safeTrackingUrl = escapeHtml(trackingUrl);
 
-  await transporter.sendMail({
-    from,
-    to,
+  return {
     subject: `Novo instalador interessado - ${appName}`,
     text: [
       `Olá, ${clientName || 'cliente'}.`,
@@ -125,12 +154,12 @@ async function sendServiceRequestInterestEmail({ to, clientName, installerName, 
         <p style="font-size:13px;color:#666">Seu telefone só será liberado depois que você escolher o profissional.</p>
       </div>
     `,
-  });
-
-  return { sent: true };
+  };
 }
 
 module.exports = {
+  buildPasswordResetMessage,
+  buildServiceRequestInterestMessage,
   isEmailEnabled,
   sendPasswordResetEmail,
   sendServiceRequestInterestEmail,

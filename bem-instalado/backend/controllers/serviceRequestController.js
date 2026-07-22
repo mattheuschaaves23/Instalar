@@ -6,6 +6,7 @@ const { publicAssetUrl, storeProfileAsset } = require('../services/objectStorage
 const { normalizeSearchText } = require('../utils/textSearch');
 const forwardGeocode = require('../utils/forwardGeocode');
 const { validateUploadFile } = require('../utils/uploadValidation');
+const { expireOpenServiceRequests } = require('../utils/serviceRequestLifecycle');
 
 const CURRENT_TERMS_VERSION = '2026-07-22';
 
@@ -523,10 +524,7 @@ exports.getMyServiceRequests = async (req, res) => {
       return res.status(403).json({ error: 'Acompanhamento disponível para contas de cliente.' });
     }
 
-    await pool.query(
-      `UPDATE service_requests SET status = 'expired', updated_at = NOW()
-       WHERE status = 'open' AND expires_at <= NOW()`
-    );
+    await expireOpenServiceRequests();
     const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 50);
     const result = await pool.query(
       `
@@ -658,6 +656,7 @@ exports.uploadPublicRequestPhoto = async (req, res) => {
 
 exports.getOpportunities = async (req, res) => {
   try {
+    await expireOpenServiceRequests();
     const installer = await getInstaller(req.userId);
 
     if (!installer) {
@@ -763,7 +762,7 @@ exports.getOpportunities = async (req, res) => {
         return {
           ...row,
           distance_km: distanceKm,
-          distance_label: distanceKm === null ? row.distance_label : `${Math.max(1, Math.round(distanceKm))} km de distancia`,
+          distance_label: distanceKm === null ? row.distance_label : `${Math.max(1, Math.round(distanceKm))} km de distância`,
         };
       })
       .filter((row) => {

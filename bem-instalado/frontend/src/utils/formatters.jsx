@@ -84,6 +84,11 @@ export function formatStatusLabel(status) {
     success: 'Sucesso',
     warning: 'Aviso',
     info: 'Informação',
+    open: 'Aberto',
+    selected: 'Escolhido',
+    closed: 'Concluído',
+    expired: 'Vencido',
+    interested: 'Interessado',
   };
 
   return map[status] || status || '-';
