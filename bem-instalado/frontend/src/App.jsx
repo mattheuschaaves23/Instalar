@@ -28,10 +28,22 @@ const Settings = lazy(() => import('./components/Settings/Settings'));
 const SupportChat = lazy(() => import('./components/Support/SupportChat'));
 const Subscription = lazy(() => import('./components/Subscription/Subscription'));
 
+function RouteLoading() {
+  return (
+    <main className="auth-scene flex min-h-screen items-center justify-center px-6" aria-busy="true">
+      <section className="lux-panel w-full max-w-md p-8 text-center" role="status">
+        <p className="eyebrow">InstalaPro</p>
+        <h1 className="page-title mt-4 text-[2.5rem]">Abrindo a tela</h1>
+        <p className="page-copy mt-4">Carregando as informações com segurança.</p>
+      </section>
+    </main>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-      <Suspense fallback={null}>
+      <Suspense fallback={<RouteLoading />}>
         <Routes>
           <Route element={<ClientLanding />} path="/" />
           <Route element={<ClientLogin />} path="/cliente/entrar" />

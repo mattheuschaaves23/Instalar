@@ -1362,6 +1362,14 @@ export default function Home() {
       return;
     }
 
+    if (
+      requestContact.email.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestContact.email.trim())
+    ) {
+      toast.error('Confira o e-mail informado ou deixe o campo vazio.');
+      return;
+    }
+
     if (!serviceRequest.city.trim() && !serviceRequest.state.trim()) {
       setRequestStep(2);
       toast.error('Informe a cidade ou estado do servico.');
@@ -2551,9 +2559,9 @@ export default function Home() {
                     <div className="client-app-installer-main">
                       <div className="client-app-installer-media">
                         {installer.installer_photo ? (
-                          <img alt={`Foto de ${installer.display_name}`} src={installer.installer_photo} />
+                          <img alt={`Foto de ${installer.display_name}`} decoding="async" loading="lazy" src={installer.installer_photo} />
                         ) : installer.logo ? (
-                          <img alt={`Logo de ${installer.display_name}`} src={installer.logo} />
+                          <img alt={`Logo de ${installer.display_name}`} decoding="async" loading="lazy" src={installer.logo} />
                         ) : (
                           <div className="client-app-avatar-fallback">{getInitials(installer.display_name)}</div>
                         )}
@@ -2635,9 +2643,9 @@ export default function Home() {
                   <div className="client-app-installer-main">
                     <div className="client-app-installer-media">
                       {installer.installer_photo ? (
-                        <img alt={`Foto de ${installer.display_name}`} src={installer.installer_photo} />
+                        <img alt={`Foto de ${installer.display_name}`} decoding="async" loading="lazy" src={installer.installer_photo} />
                       ) : installer.logo ? (
-                        <img alt={`Logo de ${installer.display_name}`} src={installer.logo} />
+                        <img alt={`Logo de ${installer.display_name}`} decoding="async" loading="lazy" src={installer.logo} />
                       ) : (
                         <div className="client-app-avatar-fallback">{getInitials(installer.display_name)}</div>
                       )}
@@ -2840,7 +2848,7 @@ export default function Home() {
                   <article className={interest.selected ? 'is-selected' : ''} key={interest.id}>
                     <div className="client-app-interest-avatar">
                       {interest.installer_photo || interest.logo ? (
-                        <img alt={`Foto de ${interest.display_name}`} src={interest.installer_photo || interest.logo} />
+                        <img alt={`Foto de ${interest.display_name}`} decoding="async" loading="lazy" src={interest.installer_photo || interest.logo} />
                       ) : (
                         <span>{getInitials(interest.display_name)}</span>
                       )}

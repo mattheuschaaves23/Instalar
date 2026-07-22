@@ -352,7 +352,9 @@ export default function InstallerProfile() {
                       <img
                         alt={`Instalação ${index + 1} de ${installer.display_name}`}
                         className="h-40 w-full rounded-[14px] border border-[var(--line)] object-cover"
+                        decoding="async"
                         key={`${index}-${photo.slice(0, 24)}`}
+                        loading="lazy"
                         src={photo}
                       />
                     ))}

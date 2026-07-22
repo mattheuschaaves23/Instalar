@@ -9,6 +9,7 @@ const {
 } = require('../services/objectStorage');
 const forwardGeocode = require('../utils/forwardGeocode');
 const { buildAvailableDates, normalizeInstallationDays } = require('../utils/installerAvailability');
+const { validateUploadFile } = require('../utils/uploadValidation');
 
 function normalizeStringList(values, maxItems = 8) {
   if (!Array.isArray(values)) {
@@ -47,6 +48,13 @@ function normalizeGallery(value) {
   }
 
   return [];
+}
+
+function normalizeCertificateReference(value) {
+  if (value === undefined) return undefined;
+  const reference = String(value || '').trim().slice(0, 2000);
+  if (!reference) return '';
+  return reference.startsWith('/api/users/uploads/file/') ? reference : null;
 }
 
 function calculateProfileCompleteness(profile) {
@@ -350,7 +358,7 @@ exports.getProfile = async (req, res) => {
 
     const profile = {
       ...rows[0],
-      installation_gallery: normalizeGallery(rawProfile?.installation_gallery),
+      installation_gallery: normalizeGallery(rows[0]?.installation_gallery),
     };
     return res.json(profile);
   } catch (_error) {
@@ -394,6 +402,12 @@ exports.updateProfile = async (req, res) => {
       provides_warranty,
       warranty_days,
     } = req.body;
+
+    const normalizedCertificateFile = normalizeCertificateReference(certificate_file);
+
+    if (certificate_file !== undefined && normalizedCertificateFile === null) {
+      return res.status(400).json({ error: 'Envie o certificado pelo campo de upload antes de salvar.' });
+    }
 
     const normalizedDays = normalizeInstallationDays(installation_days);
     const normalizedGallery = normalizeGallery(installation_gallery);
@@ -505,7 +519,7 @@ exports.updateProfile = async (req, res) => {
         logo ?? null,
         installer_photo ?? null,
         Array.isArray(installation_gallery) ? JSON.stringify(normalizedGallery) : null,
-        certificate_file ?? null,
+        normalizedCertificateFile ?? null,
         certificate_name ?? null,
         business_name ?? null,
         city ?? null,
@@ -565,9 +579,13 @@ exports.uploadProfileAsset = async (req, res) => {
       return res.status(400).json({ error: 'Destino do arquivo inválido.' });
     }
 
-    if (kind !== 'certificate' && req.file.mimetype === 'application/pdf') {
-      return res.status(400).json({ error: 'PDF é permitido somente para certificados.' });
+    const validation = validateUploadFile(req.file, { allowPdf: kind === 'certificate' });
+
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error, code: validation.code });
     }
+
+    req.file.mimetype = validation.mimeType;
 
     const stored = await storeProfileAsset({ userId: req.userId, kind, file: req.file });
     return res.status(201).json({

@@ -23,7 +23,7 @@ module.exports = async (req, _res, next) => {
     const decoded = jwt.verify(token, jwtSecret);
     const { rows } = await pool.query(
       `
-        SELECT id, account_type, is_admin
+        SELECT id, account_type, is_admin, auth_version
         FROM users
         WHERE id = $1 AND deleted_at IS NULL
         LIMIT 1
@@ -32,7 +32,7 @@ module.exports = async (req, _res, next) => {
     );
     const user = rows[0];
 
-    if (user) {
+    if (user && Number(decoded.v ?? 0) === Number(user.auth_version ?? 0)) {
       req.userId = user.id;
       req.user = {
         id: user.id,

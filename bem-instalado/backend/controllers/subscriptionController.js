@@ -76,8 +76,8 @@ function serializeStoredPayment(payment) {
   };
 }
 
-async function getLatestSubscription(userId) {
-  const result = await pool.query(
+async function getLatestSubscription(userId, db = pool) {
+  const result = await db.query(
     `
       SELECT *
       FROM subscriptions
@@ -91,14 +91,14 @@ async function getLatestSubscription(userId) {
   return result.rows[0] || null;
 }
 
-async function ensureSubscription(userId) {
-  const existing = await getLatestSubscription(userId);
+async function ensureSubscription(userId, db = pool) {
+  const existing = await getLatestSubscription(userId, db);
 
   if (existing) {
     return existing;
   }
 
-  const created = await pool.query(
+  const created = await db.query(
     `
       INSERT INTO subscriptions (user_id, plan, status)
       VALUES ($1, 'monthly', 'inactive')
@@ -237,7 +237,7 @@ exports.getSubscription = async (req, res) => {
 };
 
 exports.createPayment = async (req, res) => {
-  const db = await pool.connect();
+  let db;
   try {
     if (!isManualConfirmationEnabled()) {
       return res.status(503).json({
@@ -246,6 +246,7 @@ exports.createPayment = async (req, res) => {
       });
     }
 
+    db = await pool.connect();
     await db.query('BEGIN');
     await db.query('SELECT pg_advisory_xact_lock($1)', [Number(req.userId)]);
 
@@ -256,7 +257,7 @@ exports.createPayment = async (req, res) => {
       return res.json(serializeStoredPayment(pendingPayment));
     }
 
-    const subscription = await ensureSubscription(req.userId);
+    const subscription = await ensureSubscription(req.userId, db);
     const manualPix = await generatePix(SUBSCRIPTION_AMOUNT, crypto.randomBytes(12).toString('hex'));
     const paymentResult = await db.query(
       `
@@ -308,12 +309,12 @@ exports.createPayment = async (req, res) => {
 
     return res.json(serializeStoredPayment(paymentResult.rows[0]));
   } catch (error) {
-    await db.query('ROLLBACK').catch(() => null);
+    await db?.query('ROLLBACK').catch(() => null);
     console.error('Erro ao gerar pagamento manual.');
     console.error(error);
     return res.status(500).json({ error: 'Erro ao gerar pagamento.' });
   } finally {
-    db.release();
+    db?.release();
   }
 };
 

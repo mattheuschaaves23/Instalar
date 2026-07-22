@@ -10,20 +10,27 @@ module.exports = async (req, res, next) => {
   const header = req.headers.authorization;
 
   if (!header) {
-    return res.status(401).json({ error: 'Token nao informado.' });
+    return res.status(401).json({ error: 'Token nao informado.', code: 'AUTH_TOKEN_MISSING' });
   }
 
   const [scheme, token] = header.split(' ');
 
   if (!/^Bearer$/i.test(scheme) || !token) {
-    return res.status(401).json({ error: 'Token mal formatado.' });
+    return res.status(401).json({ error: 'Token mal formatado.', code: 'AUTH_TOKEN_MALFORMED' });
+  }
+
+  let decoded;
+
+  try {
+    decoded = jwt.verify(token, jwtSecret);
+  } catch (_error) {
+    return res.status(401).json({ error: 'Token invalido.', code: 'AUTH_TOKEN_INVALID' });
   }
 
   try {
-    const decoded = jwt.verify(token, jwtSecret);
     const { rows } = await pool.query(
       `
-        SELECT id, account_type, is_admin
+        SELECT id, account_type, is_admin, auth_version
         FROM users
         WHERE id = $1 AND deleted_at IS NULL
         LIMIT 1
@@ -33,7 +40,11 @@ module.exports = async (req, res, next) => {
     const user = rows[0];
 
     if (!user) {
-      return res.status(401).json({ error: 'Usuario nao autenticado.' });
+      return res.status(401).json({ error: 'Usuario nao autenticado.', code: 'AUTH_USER_NOT_FOUND' });
+    }
+
+    if (Number(decoded.v ?? 0) !== Number(user.auth_version ?? 0)) {
+      return res.status(401).json({ error: 'Sessao expirada.', code: 'AUTH_SESSION_REVOKED' });
     }
 
     req.userId = user.id;
@@ -45,6 +56,9 @@ module.exports = async (req, res, next) => {
 
     return next();
   } catch (_error) {
-    return res.status(401).json({ error: 'Token invalido.' });
+    return res.status(503).json({
+      error: 'Nao foi possivel validar sua sessao agora. Tente novamente.',
+      code: 'AUTH_SERVICE_UNAVAILABLE',
+    });
   }
 };

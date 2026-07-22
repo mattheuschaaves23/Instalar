@@ -82,7 +82,7 @@ async function reverseGeocode(lat, lon, acceptLanguage = 'pt-BR') {
     headers: {
       Accept: 'application/json',
       'Accept-Language': acceptLanguage,
-      'User-Agent': `BemInstalado/1.0 (${process.env.NOMINATIM_EMAIL || 'contato@beminstalado.app'})`,
+      'User-Agent': `InstalaPro/1.0 (${process.env.NOMINATIM_EMAIL || 'contato@instalapro.app'})`,
     },
   });
 

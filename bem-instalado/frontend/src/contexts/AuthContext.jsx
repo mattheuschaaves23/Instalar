@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { getProfileRequest, loginRequest, registerClientRequest, registerRequest } from '../services/auth';
 import { clearAuthToken, getAuthToken, setAuthToken } from '../utils/safeStorage';
 
@@ -7,6 +7,44 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
+
+  const loadProfile = useCallback(async () => {
+    const token = getAuthToken();
+
+    if (!token) {
+      setUser(null);
+      setAuthError('');
+      setLoading(false);
+      return null;
+    }
+
+    setLoading(true);
+    setAuthError('');
+
+    try {
+      const profile = await getProfileRequest();
+      setUser(profile);
+      return profile;
+    } catch (error) {
+      const status = error.response?.status;
+      const code = error.response?.data?.code || '';
+
+      if (status === 401 && code.startsWith('AUTH_')) {
+        clearAuthToken();
+        setUser(null);
+      } else {
+        setAuthError(
+          error.response?.data?.error ||
+            'Nao foi possivel validar sua sessao. Verifique a conexao e tente novamente.'
+        );
+      }
+
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -16,35 +54,14 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    let isMounted = true;
-
-    getProfileRequest()
-      .then((profile) => {
-        if (isMounted) {
-          setUser(profile);
-        }
-      })
-      .catch(() => {
-        clearAuthToken();
-        if (isMounted) {
-          setUser(null);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    loadProfile();
+  }, [loadProfile]);
 
   const login = async (payload, { remember = true } = {}) => {
     const result = await loginRequest(payload);
     setAuthToken(result.token, remember);
     setUser(result.user);
+    setAuthError('');
     return result;
   };
 
@@ -52,6 +69,7 @@ export function AuthProvider({ children }) {
     const result = await registerRequest(payload);
     setAuthToken(result.token, true);
     setUser(result.user);
+    setAuthError('');
     return result;
   };
 
@@ -59,16 +77,20 @@ export function AuthProvider({ children }) {
     const result = await registerClientRequest(payload);
     setAuthToken(result.token, true);
     setUser(result.user);
+    setAuthError('');
     return result;
   };
 
   const logout = () => {
     clearAuthToken();
     setUser(null);
+    setAuthError('');
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, login, register, registerClient, logout }}>
+    <AuthContext.Provider
+      value={{ user, setUser, loading, authError, retryProfile: loadProfile, login, register, registerClient, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

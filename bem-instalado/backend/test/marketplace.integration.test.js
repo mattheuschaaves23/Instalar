@@ -51,6 +51,17 @@ test('cadastro, pagamento, pedido, interesse e escolha do instalador', { skip: !
     const token = registration.body.token;
     const authHeaders = { Authorization: `Bearer ${token}` };
 
+    const installerProfile = await requestJson(baseUrl, '/api/users/profile', { headers: authHeaders });
+    assert.equal(installerProfile.response.status, 200, JSON.stringify(installerProfile.body));
+    assert.ok(Array.isArray(installerProfile.body.installation_gallery));
+
+    const unsafeCertificate = await requestJson(baseUrl, '/api/users/profile', {
+      method: 'PUT',
+      headers: authHeaders,
+      body: JSON.stringify({ certificate_file: 'https://example.test/captura-token.pdf' }),
+    });
+    assert.equal(unsafeCertificate.response.status, 400, JSON.stringify(unsafeCertificate.body));
+
     const clientRegistration = await requestJson(baseUrl, '/api/auth/register/client', {
       method: 'POST',
       body: JSON.stringify({
@@ -191,6 +202,81 @@ test('cadastro, pagamento, pedido, interesse e escolha do instalador', { skip: !
       }),
     });
     assert.equal(review.response.status, 201, JSON.stringify(review.body));
+
+    const forgotPassword = await requestJson(baseUrl, '/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, account_type: 'installer' }),
+    });
+    assert.equal(forgotPassword.response.status, 200, JSON.stringify(forgotPassword.body));
+    assert.ok(forgotPassword.body.reset_token);
+
+    const resetPassword = await requestJson(baseUrl, '/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token: forgotPassword.body.reset_token, password: 'NovaSenhaSegura456!' }),
+    });
+    assert.equal(resetPassword.response.status, 200, JSON.stringify(resetPassword.body));
+
+    const reusedResetToken = await requestJson(baseUrl, '/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token: forgotPassword.body.reset_token, password: 'OutraSenhaSegura789!' }),
+    });
+    assert.equal(reusedResetToken.response.status, 400, JSON.stringify(reusedResetToken.body));
+
+    const revokedSession = await requestJson(baseUrl, '/api/users/profile', { headers: authHeaders });
+    assert.equal(revokedSession.response.status, 401, JSON.stringify(revokedSession.body));
+    assert.equal(revokedSession.body.code, 'AUTH_SESSION_REVOKED');
+
+    const loginAfterReset = await requestJson(baseUrl, '/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password: 'NovaSenhaSegura456!', account_type: 'installer' }),
+    });
+    assert.equal(loginAfterReset.response.status, 200, JSON.stringify(loginAfterReset.body));
+    const renewedHeaders = { Authorization: `Bearer ${loginAfterReset.body.token}` };
+
+    const twoFactorSetup = await requestJson(baseUrl, '/api/auth/2fa/setup', { headers: renewedHeaders });
+    assert.equal(twoFactorSetup.response.status, 200, JSON.stringify(twoFactorSetup.body));
+    assert.ok(twoFactorSetup.body.setupToken);
+    const speakeasy = require('speakeasy');
+    const currentTotp = () => speakeasy.totp({ secret: twoFactorSetup.body.secret, encoding: 'base32' });
+
+    const enableTwoFactor = await requestJson(baseUrl, '/api/auth/2fa/enable', {
+      method: 'POST',
+      headers: renewedHeaders,
+      body: JSON.stringify({ setupToken: twoFactorSetup.body.setupToken, token: currentTotp() }),
+    });
+    assert.equal(enableTwoFactor.response.status, 200, JSON.stringify(enableTwoFactor.body));
+
+    const replayTwoFactorSetup = await requestJson(baseUrl, '/api/auth/2fa/enable', {
+      method: 'POST',
+      headers: renewedHeaders,
+      body: JSON.stringify({ setupToken: twoFactorSetup.body.setupToken, token: currentTotp() }),
+    });
+    assert.equal(replayTwoFactorSetup.response.status, 409, JSON.stringify(replayTwoFactorSetup.body));
+
+    const loginWithoutTotp = await requestJson(baseUrl, '/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password: 'NovaSenhaSegura456!', account_type: 'installer' }),
+    });
+    assert.equal(loginWithoutTotp.response.status, 401, JSON.stringify(loginWithoutTotp.body));
+    assert.equal(loginWithoutTotp.body.twoFactorRequired, true);
+
+    const loginWithTotp = await requestJson(baseUrl, '/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        password: 'NovaSenhaSegura456!',
+        account_type: 'installer',
+        twoFactorToken: currentTotp(),
+      }),
+    });
+    assert.equal(loginWithTotp.response.status, 200, JSON.stringify(loginWithTotp.body));
+
+    const disableTwoFactor = await requestJson(baseUrl, '/api/auth/2fa/disable', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${loginWithTotp.body.token}` },
+      body: JSON.stringify({ token: currentTotp() }),
+    });
+    assert.equal(disableTwoFactor.response.status, 200, JSON.stringify(disableTwoFactor.body));
   } finally {
     if (installerId) await pool.query('DELETE FROM users WHERE id = $1', [installerId]);
     if (clientId) await pool.query('DELETE FROM users WHERE id = $1', [clientId]);

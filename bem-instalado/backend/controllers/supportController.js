@@ -500,9 +500,10 @@ exports.getAdminConversationMessages = async (req, res) => {
 };
 
 exports.sendMessage = async (req, res) => {
-  const db = await pool.connect();
+  let db;
 
   try {
+    db = await pool.connect();
     const authUser = await getAuthUser(req.userId);
 
     if (!authUser) {
@@ -577,10 +578,10 @@ exports.sendMessage = async (req, res) => {
       message: serializeMessage(fullMessage),
     });
   } catch (_error) {
-    await db.query('ROLLBACK').catch(() => null);
+    await db?.query('ROLLBACK').catch(() => null);
     return res.status(500).json({ error: 'Erro ao enviar mensagem de suporte.' });
   } finally {
-    db.release();
+    db?.release();
   }
 };
 

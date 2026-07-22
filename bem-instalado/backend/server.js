@@ -123,7 +123,7 @@ app.use(
         connectSrc: ["'self'"],
         fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
         formAction: ["'self'"],
-        frameAncestors: ["'self'"],
+        frameAncestors: ["'none'"],
         imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
         objectSrc: ["'none'"],
         scriptSrc: ["'self'"],

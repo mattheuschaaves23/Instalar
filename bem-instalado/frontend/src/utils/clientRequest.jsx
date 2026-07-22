@@ -2,6 +2,7 @@ import { safeLocalStorage, safeSessionStorage } from './safeStorage';
 
 export const CLIENT_REQUEST_SESSION_KEY = 'bem_instalado_client_request_v1';
 export const CLIENT_PUBLISHED_REQUEST_KEY = 'instalar_published_request_v1';
+const PUBLISHED_REQUEST_MAX_AGE_MS = 45 * 24 * 60 * 60 * 1000;
 
 function cleanText(value, maxLength = 160) {
   return String(value || '').trim().slice(0, maxLength);
@@ -76,6 +77,8 @@ export function clearStoredClientRequest() {
 function normalizePublishedRequest(request) {
   const id = Number(request?.id || 0);
   const token = cleanText(request?.client_access_token || request?.token, 80);
+  const parsedSavedAt = new Date(request?.saved_at || request?.savedAt || '');
+  const savedAt = Number.isNaN(parsedSavedAt.getTime()) ? new Date() : parsedSavedAt;
 
   if (!Number.isInteger(id) || id <= 0 || token.length < 32) {
     return null;
@@ -88,7 +91,7 @@ function normalizePublishedRequest(request) {
     city: cleanText(request?.city, 120),
     state: cleanText(request?.state, 2).toUpperCase(),
     status: cleanText(request?.status, 30) || 'open',
-    saved_at: new Date().toISOString(),
+    saved_at: savedAt.toISOString(),
   };
 }
 
@@ -106,7 +109,14 @@ export function readPublishedClientRequest() {
   try {
     const raw = safeLocalStorage.getItem(CLIENT_PUBLISHED_REQUEST_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
-    return normalizePublishedRequest(parsed);
+    const request = normalizePublishedRequest(parsed);
+
+    if (request && Date.now() - new Date(request.saved_at).getTime() > PUBLISHED_REQUEST_MAX_AGE_MS) {
+      clearPublishedClientRequest();
+      return null;
+    }
+
+    return request;
   } catch (_error) {
     return null;
   }

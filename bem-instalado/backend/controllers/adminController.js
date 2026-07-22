@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const ADMIN_MUTATION_LOCK_ID = 19772402;
 
 function parseLimit(value, fallback = 20) {
   const parsed = Number(value);
@@ -42,9 +43,41 @@ function parseInteger(value, fallback = 0) {
   return Math.trunc(parsed);
 }
 
-async function countAdmins() {
-  const result = await pool.query('SELECT COUNT(*)::int AS total FROM users WHERE is_admin = TRUE AND deleted_at IS NULL');
+async function countAdmins(db = pool) {
+  const result = await db.query('SELECT COUNT(*)::int AS total FROM users WHERE is_admin = TRUE AND deleted_at IS NULL');
   return Number(result.rows[0]?.total || 0);
+}
+
+function normalizeHttpUrl(value, { required = false } = {}) {
+  const rawValue = String(value || '').trim();
+
+  if (!rawValue) {
+    return required ? null : '';
+  }
+
+  try {
+    const url = new URL(rawValue);
+    return ['http:', 'https:'].includes(url.protocol) ? url.toString().slice(0, 2000) : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+async function withAdminMutationLock(callback) {
+  const db = await pool.connect();
+
+  try {
+    await db.query('BEGIN');
+    await db.query('SELECT pg_advisory_xact_lock($1)', [ADMIN_MUTATION_LOCK_ID]);
+    const result = await callback(db);
+    await db.query('COMMIT');
+    return result;
+  } catch (error) {
+    await db.query('ROLLBACK').catch(() => null);
+    throw error;
+  } finally {
+    db.release();
+  }
 }
 
 function parsePage(value) {
@@ -98,11 +131,11 @@ exports.resolveApplicationError = async (req, res) => {
   }
 };
 
-async function setSubscriptionStatus(userId, status, expiresAt = null, specificSubscriptionId = null) {
+async function setSubscriptionStatus(userId, status, expiresAt = null, specificSubscriptionId = null, db = pool) {
   let targetSubscriptionId = specificSubscriptionId;
 
   if (!targetSubscriptionId) {
-    const latestResult = await pool.query(
+    const latestResult = await db.query(
       `
         SELECT id
         FROM subscriptions
@@ -117,7 +150,7 @@ async function setSubscriptionStatus(userId, status, expiresAt = null, specificS
   }
 
   if (targetSubscriptionId) {
-    const updateResult = await pool.query(
+    const updateResult = await db.query(
       `
         UPDATE subscriptions
         SET
@@ -135,7 +168,7 @@ async function setSubscriptionStatus(userId, status, expiresAt = null, specificS
     }
   }
 
-  const insertResult = await pool.query(
+  const insertResult = await db.query(
     `
       INSERT INTO subscriptions (user_id, plan, status, expires_at)
       VALUES ($1, 'monthly', $2, $3)
@@ -626,7 +659,7 @@ exports.updateUserPublicProfile = async (req, res) => {
 
     if (nextPublicProfile) {
       const trustResult = await pool.query(
-        `SELECT account_type, certification_verified, certificate_file FROM users WHERE id = $1 LIMIT 1`,
+        `SELECT account_type, certification_verified, certificate_file FROM users WHERE id = $1 AND deleted_at IS NULL LIMIT 1`,
         [targetUserId]
       );
       const trust = trustResult.rows[0];
@@ -647,7 +680,7 @@ exports.updateUserPublicProfile = async (req, res) => {
       `
         UPDATE users
         SET public_profile = $1, updated_at = NOW()
-        WHERE id = $2 AND account_type = 'installer'
+        WHERE id = $2 AND account_type = 'installer' AND deleted_at IS NULL
         RETURNING id, name, email, public_profile, updated_at
       `,
       [nextPublicProfile, targetUserId]
@@ -696,9 +729,9 @@ exports.updateUserTrust = async (req, res) => {
 
     const targetResult = await pool.query(
       `
-        SELECT id, name, email, account_type, certificate_file
+        SELECT id, name, email, account_type, certificate_file, certification_verified
         FROM users
-        WHERE id = $1
+        WHERE id = $1 AND deleted_at IS NULL
         LIMIT 1
       `,
       [targetUserId]
@@ -723,6 +756,17 @@ exports.updateUserTrust = async (req, res) => {
       });
     }
 
+    if (
+      nextFeaturedInstaller === true &&
+      nextCertificationVerified !== true &&
+      !target.certification_verified
+    ) {
+      return res.status(400).json({
+        error: 'Valide o certificado antes de destacar este instalador.',
+        code: 'CERTIFICATION_REQUIRED',
+      });
+    }
+
     const { rows } = await pool.query(
       `
         UPDATE users
@@ -731,7 +775,7 @@ exports.updateUserTrust = async (req, res) => {
           public_profile = CASE WHEN $2::boolean = FALSE THEN FALSE ELSE public_profile END,
           featured_installer = CASE WHEN $2::boolean = FALSE THEN FALSE ELSE COALESCE($1, featured_installer) END,
           updated_at = NOW()
-        WHERE id = $3
+        WHERE id = $3 AND deleted_at IS NULL
         RETURNING
           id,
           name,
@@ -797,43 +841,42 @@ exports.updateUserAdmin = async (req, res) => {
       return res.status(400).json({ error: 'Informe is_admin como true ou false.' });
     }
 
-    const targetResult = await pool.query(
-      `
-        SELECT id, email, name, is_admin
-        FROM users
-        WHERE id = $1 AND deleted_at IS NULL
-      `,
-      [targetUserId]
-    );
-
-    const target = targetResult.rows[0];
-
-    if (!target) {
-      return res.status(404).json({ error: 'Usuário não encontrado.' });
-    }
-
     if (targetUserId === req.userId && !nextIsAdmin) {
       return res.status(400).json({ error: 'Você não pode remover seu próprio acesso administrativo.' });
     }
 
-    if (!nextIsAdmin && target.is_admin) {
-      const adminCount = await countAdmins();
-      if (adminCount <= 1) {
-        return res.status(400).json({ error: 'Não é possível remover o último administrador do sistema.' });
+    const outcome = await withAdminMutationLock(async (db) => {
+      const targetResult = await db.query(
+        `SELECT id, email, name, is_admin FROM users WHERE id = $1 AND deleted_at IS NULL`,
+        [targetUserId]
+      );
+      const target = targetResult.rows[0];
+
+      if (!target) {
+        return { status: 404, body: { error: 'Usuário não encontrado.' } };
       }
-    }
 
-    const updateResult = await pool.query(
-      `
-        UPDATE users
-        SET is_admin = $1, updated_at = NOW()
-        WHERE id = $2 AND deleted_at IS NULL
-        RETURNING id, name, email, is_admin, updated_at
-      `,
-      [nextIsAdmin, targetUserId]
-    );
+      if (!nextIsAdmin && target.is_admin && (await countAdmins(db)) <= 1) {
+        return {
+          status: 400,
+          body: { error: 'Não é possível remover o último administrador do sistema.' },
+        };
+      }
 
-    return res.json({ user: updateResult.rows[0] });
+      const updateResult = await db.query(
+        `
+          UPDATE users
+          SET is_admin = $1, updated_at = NOW()
+          WHERE id = $2 AND deleted_at IS NULL
+          RETURNING id, name, email, is_admin, updated_at
+        `,
+        [nextIsAdmin, targetUserId]
+      );
+
+      return { status: 200, body: { user: updateResult.rows[0] } };
+    });
+
+    return res.status(outcome.status).json(outcome.body);
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao atualizar privilégio administrativo.' });
   }
@@ -851,44 +894,44 @@ exports.deleteUser = async (req, res) => {
       return res.status(400).json({ error: 'Você não pode excluir sua própria conta de administrador.' });
     }
 
-    const targetResult = await pool.query(
-      `
-        SELECT id, email, name, is_admin
-        FROM users
-        WHERE id = $1
-      `,
-      [targetUserId]
-    );
+    const outcome = await withAdminMutationLock(async (db) => {
+      const targetResult = await db.query(
+        `SELECT id, email, name, is_admin FROM users WHERE id = $1 AND deleted_at IS NULL`,
+        [targetUserId]
+      );
+      const target = targetResult.rows[0];
 
-    const target = targetResult.rows[0];
-
-    if (!target) {
-      return res.status(404).json({ error: 'Usuário não encontrado.' });
-    }
-
-    if (target.is_admin) {
-      const adminCount = await countAdmins();
-      if (adminCount <= 1) {
-        return res.status(400).json({ error: 'Não é possível remover o último administrador do sistema.' });
+      if (!target) {
+        return { status: 404, body: { error: 'Usuário não encontrado.' } };
       }
-    }
 
-    await pool.query(
-      `
-        UPDATE users
-        SET
-          deleted_at = NOW(),
-          public_profile = FALSE,
-          featured_installer = FALSE,
-          certification_verified = FALSE,
-          is_admin = FALSE,
-          updated_at = NOW()
-        WHERE id = $1 AND deleted_at IS NULL
-      `,
-      [targetUserId]
-    );
+      if (target.is_admin && (await countAdmins(db)) <= 1) {
+        return {
+          status: 400,
+          body: { error: 'Não é possível remover o último administrador do sistema.' },
+        };
+      }
 
-    return res.json({ success: true, archived_user: target });
+      await db.query(
+        `
+          UPDATE users
+          SET
+            deleted_at = NOW(),
+            public_profile = FALSE,
+            featured_installer = FALSE,
+            certification_verified = FALSE,
+            is_admin = FALSE,
+            auth_version = auth_version + 1,
+            updated_at = NOW()
+          WHERE id = $1 AND deleted_at IS NULL
+        `,
+        [targetUserId]
+      );
+
+      return { status: 200, body: { success: true, archived_user: target } };
+    });
+
+    return res.status(outcome.status).json(outcome.body);
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao remover usuário.' });
   }
@@ -926,8 +969,8 @@ exports.restoreUser = async (req, res) => {
 
 exports.broadcastAnnouncement = async (req, res) => {
   try {
-    const title = String(req.body.title || '').trim();
-    const message = String(req.body.message || '').trim();
+    const title = String(req.body.title || '').trim().slice(0, 150);
+    const message = String(req.body.message || '').trim().slice(0, 1000);
     const type = String(req.body.type || 'info').trim().toLowerCase();
     const allowedTypes = new Set(['info', 'warning', 'success']);
 
@@ -944,6 +987,7 @@ exports.broadcastAnnouncement = async (req, res) => {
         INSERT INTO notifications (user_id, title, message, type, read)
         SELECT id, $1, $2, $3, FALSE
         FROM users
+        WHERE deleted_at IS NULL
       `,
       [title, message, type]
     );
@@ -982,16 +1026,22 @@ exports.listRecommendedStores = async (_req, res) => {
 
 exports.createRecommendedStore = async (req, res) => {
   try {
-    const name = String(req.body.name || '').trim();
-    const description = String(req.body.description || '').trim() || null;
-    const imageUrl = String(req.body.image_url || '').trim() || null;
-    const linkUrl = String(req.body.link_url || '').trim() || null;
-    const ctaLabel = String(req.body.cta_label || '').trim() || 'Visitar loja';
+    const name = String(req.body.name || '').trim().slice(0, 160);
+    const description = String(req.body.description || '').trim().slice(0, 500) || null;
+    const rawImageUrl = String(req.body.image_url || '').trim();
+    const rawLinkUrl = String(req.body.link_url || '').trim();
+    const imageUrl = normalizeHttpUrl(rawImageUrl) || null;
+    const linkUrl = normalizeHttpUrl(rawLinkUrl) || null;
+    const ctaLabel = String(req.body.cta_label || '').trim().slice(0, 80) || 'Visitar loja';
     const sortOrder = parseInteger(req.body.sort_order, 0);
     const parsedIsActive = req.body.is_active === undefined ? true : parseBoolean(req.body.is_active);
 
     if (!name) {
       return res.status(400).json({ error: 'Informe o nome da loja recomendada.' });
+    }
+
+    if ((rawImageUrl && !imageUrl) || (rawLinkUrl && !linkUrl)) {
+      return res.status(400).json({ error: 'Use apenas URLs válidas com http ou https.' });
     }
 
     if (parsedIsActive === null) {
@@ -1045,7 +1095,7 @@ exports.updateRecommendedStore = async (req, res) => {
     let index = 1;
 
     if (req.body.name !== undefined) {
-      const name = String(req.body.name || '').trim();
+      const name = String(req.body.name || '').trim().slice(0, 160);
       if (!name) {
         return res.status(400).json({ error: 'Informe um nome válido para a loja.' });
       }
@@ -1056,25 +1106,33 @@ exports.updateRecommendedStore = async (req, res) => {
 
     if (req.body.description !== undefined) {
       updates.push(`description = $${index}`);
-      values.push(String(req.body.description || '').trim() || null);
+      values.push(String(req.body.description || '').trim().slice(0, 500) || null);
       index += 1;
     }
 
     if (req.body.image_url !== undefined) {
+      const imageUrl = normalizeHttpUrl(req.body.image_url);
+      if (String(req.body.image_url || '').trim() && !imageUrl) {
+        return res.status(400).json({ error: 'Informe uma URL de imagem válida com http ou https.' });
+      }
       updates.push(`image_url = $${index}`);
-      values.push(String(req.body.image_url || '').trim() || null);
+      values.push(imageUrl || null);
       index += 1;
     }
 
     if (req.body.link_url !== undefined) {
+      const linkUrl = normalizeHttpUrl(req.body.link_url);
+      if (String(req.body.link_url || '').trim() && !linkUrl) {
+        return res.status(400).json({ error: 'Informe uma URL de destino válida com http ou https.' });
+      }
       updates.push(`link_url = $${index}`);
-      values.push(String(req.body.link_url || '').trim() || null);
+      values.push(linkUrl || null);
       index += 1;
     }
 
     if (req.body.cta_label !== undefined) {
       updates.push(`cta_label = $${index}`);
-      values.push(String(req.body.cta_label || '').trim() || 'Visitar loja');
+      values.push(String(req.body.cta_label || '').trim().slice(0, 80) || 'Visitar loja');
       index += 1;
     }
 
@@ -1159,7 +1217,11 @@ exports.deleteRecommendedStore = async (req, res) => {
 };
 
 exports.updatePaymentStatus = async (req, res) => {
+  let db;
+  let transactionStarted = false;
+
   try {
+    db = await pool.connect();
     const paymentId = Number(req.params.id);
     const status = String(req.body.status || '').trim().toLowerCase();
     const allowedStatuses = new Set(['pending', 'paid', 'failed', 'canceled']);
@@ -1172,11 +1234,15 @@ exports.updatePaymentStatus = async (req, res) => {
       return res.status(400).json({ error: 'Status de pagamento inválido.' });
     }
 
-    const paymentResult = await pool.query(
+    await db.query('BEGIN');
+    transactionStarted = true;
+
+    const paymentResult = await db.query(
       `
         SELECT *
         FROM payments
         WHERE id = $1
+        FOR UPDATE
       `,
       [paymentId]
     );
@@ -1184,10 +1250,12 @@ exports.updatePaymentStatus = async (req, res) => {
     const payment = paymentResult.rows[0];
 
     if (!payment) {
+      await db.query('ROLLBACK');
+      transactionStarted = false;
       return res.status(404).json({ error: 'Pagamento não encontrado.' });
     }
 
-    const updateResult = await pool.query(
+    const updateResult = await db.query(
       `
         UPDATE payments
         SET status = $1, updated_at = NOW()
@@ -1211,10 +1279,11 @@ exports.updatePaymentStatus = async (req, res) => {
         payment.user_id,
         'active',
         expiresAt,
-        payment.subscription_id || null
+        payment.subscription_id || null,
+        db
       );
 
-      await pool.query(
+      await db.query(
         `
           INSERT INTO notifications (user_id, title, message, type, read)
           VALUES ($1, $2, $3, 'success', FALSE)
@@ -1232,10 +1301,11 @@ exports.updatePaymentStatus = async (req, res) => {
         payment.user_id,
         'inactive',
         null,
-        payment.subscription_id || null
+        payment.subscription_id || null,
+        db
       );
 
-      await pool.query(
+      await db.query(
         `
           INSERT INTO notifications (user_id, title, message, type, read)
           VALUES ($1, $2, $3, 'warning', FALSE)
@@ -1250,8 +1320,15 @@ exports.updatePaymentStatus = async (req, res) => {
       );
     }
 
+    await db.query('COMMIT');
+    transactionStarted = false;
     return res.json({ payment: updatedPayment });
   } catch (_error) {
+    if (transactionStarted) {
+      await db.query('ROLLBACK').catch(() => null);
+    }
     return res.status(500).json({ error: 'Erro ao atualizar status do pagamento.' });
+  } finally {
+    db?.release();
   }
 };

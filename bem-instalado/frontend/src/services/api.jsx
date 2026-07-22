@@ -3,6 +3,13 @@ import { clearAuthToken, getAuthToken } from '../utils/safeStorage';
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 const DEFAULT_API_TIMEOUT_MS = 20000;
+const INVALID_SESSION_CODES = new Set([
+  'AUTH_TOKEN_MISSING',
+  'AUTH_TOKEN_MALFORMED',
+  'AUTH_TOKEN_INVALID',
+  'AUTH_USER_NOT_FOUND',
+  'AUTH_SESSION_REVOKED',
+]);
 
 function isLocalHost(hostname) {
   return LOCAL_HOSTS.has(String(hostname || '').toLowerCase());
@@ -104,7 +111,11 @@ api.interceptors.response.use(
     const code = error.response?.data?.code || '';
 
     if (typeof window !== 'undefined') {
-      if (status === 401 && !isLoginRoute(window.location.pathname)) {
+      if (
+        status === 401 &&
+        INVALID_SESSION_CODES.has(code) &&
+        !isLoginRoute(window.location.pathname)
+      ) {
         clearAuthToken();
         redirectTo(getLoginRoute(window.location.pathname));
       }

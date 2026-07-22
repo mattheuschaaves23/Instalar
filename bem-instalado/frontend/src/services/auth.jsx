@@ -64,7 +64,7 @@ export async function enable2FARequest(payload) {
   return response.data;
 }
 
-export async function disable2FARequest() {
-  const response = await api.post('/auth/2fa/disable');
+export async function disable2FARequest(payload) {
+  const response = await api.post('/auth/2fa/disable', payload);
   return response.data;
 }

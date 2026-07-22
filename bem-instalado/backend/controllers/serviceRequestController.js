@@ -5,8 +5,9 @@ const { sendServiceRequestInterestEmail } = require('../services/email');
 const { publicAssetUrl, storeProfileAsset } = require('../services/objectStorage');
 const { normalizeSearchText } = require('../utils/textSearch');
 const forwardGeocode = require('../utils/forwardGeocode');
+const { validateUploadFile } = require('../utils/uploadValidation');
 
-const CURRENT_TERMS_VERSION = '2026-07-20';
+const CURRENT_TERMS_VERSION = '2026-07-22';
 
 function normalizeText(value, maxLength = 160) {
   return String(value || '').trim().slice(0, maxLength);
@@ -19,6 +20,12 @@ function normalizeOptionalText(value, maxLength = 160) {
 
 function normalizeState(value) {
   return normalizeText(value, 2).toUpperCase();
+}
+
+function normalizeOptionalEmail(value) {
+  const email = normalizeOptionalText(value, 150)?.toLowerCase() || null;
+  if (!email) return null;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
 }
 
 function normalizeCoordinate(value, min, max) {
@@ -89,15 +96,39 @@ function normalizePhotoUrls(value) {
 }
 
 function getPublicAppUrl(req) {
-  const configured = String(process.env.APP_URL || process.env.FRONTEND_URL || '').trim();
+  const configured = String(process.env.FRONTEND_URL || process.env.APP_URL || '').trim();
+  const deploymentHost = String(
+    process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || ''
+  ).trim();
+  const trustedValue = configured || (deploymentHost
+    ? deploymentHost.includes('://') ? deploymentHost : `https://${deploymentHost}`
+    : '');
 
-  if (configured) {
-    return configured.replace(/\/+$/, '');
+  if (trustedValue) {
+    try {
+      const trustedUrl = new URL(trustedValue);
+      if (['http:', 'https:'].includes(trustedUrl.protocol)) {
+        return trustedUrl.toString().replace(/\/+$/, '');
+      }
+    } catch (_error) {
+      // Em desenvolvimento, a URL da requisição ainda pode ser usada como alternativa.
+    }
   }
 
   const protocol = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
   const host = String(req.headers['x-forwarded-host'] || req.get('host') || '').split(',')[0].trim();
-  return host ? `${protocol}://${host}` : '';
+  const requestUrl = host ? `${protocol}://${host}` : '';
+
+  if (process.env.NODE_ENV === 'production') {
+    return '';
+  }
+
+  try {
+    const parsed = new URL(requestUrl);
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.origin : '';
+  } catch (_error) {
+    return '';
+  }
 }
 
 function buildTrackingUrl(req, request) {
@@ -313,7 +344,7 @@ exports.createPublicServiceRequest = async (req, res) => {
   try {
     const clientName = normalizeText(req.body.client_name, 120);
     const clientPhone = normalizePhone(req.body.client_phone);
-    const clientEmail = normalizeOptionalText(req.body.client_email, 150);
+    const clientEmail = normalizeOptionalEmail(req.body.client_email);
     const placeType = normalizeOptionalText(req.body.place_type, 60);
     const placeLabel = normalizeOptionalText(req.body.place_label, 120);
     const service = normalizeText(req.body.service, 60);
@@ -335,6 +366,10 @@ exports.createPublicServiceRequest = async (req, res) => {
 
     if (clientPhone.replace(/\D/g, '').length < 10) {
       return res.status(400).json({ error: 'Informe um WhatsApp valido para o instalador escolhido chamar voce.' });
+    }
+
+    if (req.body.client_email && !clientEmail) {
+      return res.status(400).json({ error: 'Informe um e-mail válido ou deixe o campo vazio.' });
     }
 
     if (!service) {
@@ -593,6 +628,14 @@ exports.uploadPublicRequestPhoto = async (req, res) => {
     if (!req.file || !String(req.file.mimetype || '').startsWith('image/')) {
       return res.status(400).json({ error: 'Selecione uma imagem PNG, JPG ou WEBP.' });
     }
+
+    const validation = validateUploadFile(req.file, { allowPdf: false });
+
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error, code: validation.code });
+    }
+
+    req.file.mimetype = validation.mimeType;
 
     const ipHash = crypto
       .createHash('sha256')
@@ -980,9 +1023,10 @@ exports.getPublicServiceRequestInterests = async (req, res) => {
 };
 
 exports.selectServiceRequestInterest = async (req, res) => {
-  const client = await pool.connect();
+  let client;
 
   try {
+    client = await pool.connect();
     const requestId = Number(req.params.id);
     const interestId = Number(req.params.interestId);
     const token = normalizeText(req.headers['x-client-request-token'], 80);
@@ -1010,6 +1054,11 @@ exports.selectServiceRequestInterest = async (req, res) => {
       return res.status(404).json({ error: 'Solicitacao nao encontrada.' });
     }
 
+    if (!['open', 'selected'].includes(request.status) || (request.expires_at && new Date(request.expires_at) <= new Date())) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Este pedido já foi encerrado e não aceita seleção.' });
+    }
+
     const interestResult = await client.query(
       `
         SELECT sri.*, u.phone, u.name, u.business_name, COALESCE(NULLIF(u.business_name, ''), u.name) AS display_name
@@ -1018,6 +1067,11 @@ exports.selectServiceRequestInterest = async (req, res) => {
         WHERE sri.id = $1
           AND sri.request_id = $2
           AND sri.status IN ('interested', 'selected')
+          AND u.deleted_at IS NULL
+          AND (COALESCE(u.is_admin, FALSE) = TRUE OR (
+            COALESCE(u.certification_verified, FALSE) = TRUE
+            AND COALESCE(u.public_profile, FALSE) = TRUE
+          ))
         LIMIT 1
       `,
       [interestId, requestId]
@@ -1061,10 +1115,10 @@ exports.selectServiceRequestInterest = async (req, res) => {
       selected_interest: serializeClientInterest({ ...interest, status: 'selected' }, updatedRequest),
     });
   } catch (_error) {
-    await client.query('ROLLBACK');
+    await client?.query('ROLLBACK').catch(() => null);
     return res.status(500).json({ error: 'Nao foi possivel escolher o instalador.' });
   } finally {
-    client.release();
+    client?.release();
   }
 };
 

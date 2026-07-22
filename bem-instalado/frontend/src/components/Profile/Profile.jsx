@@ -143,6 +143,8 @@ export default function Profile() {
   const [form, setForm] = useState(initialForm);
   const [setup, setSetup] = useState(null);
   const [token, setToken] = useState('');
+  const [disableToken, setDisableToken] = useState('');
+  const [securitySaving, setSecuritySaving] = useState(false);
   const [saving, setSaving] = useState(false);
   const [availabilityMonth, setAvailabilityMonth] = useState(buildMonthKey());
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
@@ -335,6 +337,11 @@ export default function Profile() {
   };
 
   const openStoredCertificate = async () => {
+    if (!form.certificate_file.startsWith('/api/users/uploads/file/')) {
+      toast.error('Este certificado precisa ser enviado novamente antes de abrir.');
+      return;
+    }
+
     const viewer = window.open('', '_blank', 'noopener,noreferrer');
     try {
       const response = await api.get(form.certificate_file.replace(/^\/api/, ''), { responseType: 'blob' });
@@ -411,18 +418,22 @@ export default function Profile() {
   };
 
   const handleSetup2FA = async () => {
+    setSecuritySaving(true);
     try {
       const response = await setup2FARequest();
       setSetup(response);
       toast.success('Escaneie o QR Code e confirme o código para ativar o 2FA.');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível iniciar o 2FA.');
+    } finally {
+      setSecuritySaving(false);
     }
   };
 
   const handleEnable2FA = async () => {
+    setSecuritySaving(true);
     try {
-      await enable2FARequest({ secret: setup.secret, token });
+      await enable2FARequest({ setupToken: setup.setupToken, token: token.trim() });
       const profile = await api.get('/users/profile');
       setForm(normalizeProfilePayload(profile.data));
       setUser((current) => ({ ...current, ...profile.data }));
@@ -431,20 +442,26 @@ export default function Profile() {
       toast.success('2FA ativado.');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível ativar o 2FA.');
+    } finally {
+      setSecuritySaving(false);
     }
   };
 
   const handleDisable2FA = async () => {
+    setSecuritySaving(true);
     try {
-      await disable2FARequest();
+      await disable2FARequest({ token: disableToken.trim() });
       const profile = await api.get('/users/profile');
       setForm(normalizeProfilePayload(profile.data));
       setUser((current) => ({ ...current, ...profile.data }));
       setSetup(null);
       setToken('');
+      setDisableToken('');
       toast.success('2FA desativado.');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível desativar o 2FA.');
+    } finally {
+      setSecuritySaving(false);
     }
   };
 
@@ -1023,8 +1040,8 @@ export default function Profile() {
             {!form.two_factor_enabled ? (
               <div className="mt-6 space-y-4">
                 {!setup ? (
-                  <button className="gold-button" onClick={handleSetup2FA} type="button">
-                    Iniciar configuração
+                  <button className="gold-button" disabled={securitySaving} onClick={handleSetup2FA} type="button">
+                    {securitySaving ? 'Preparando...' : 'Iniciar configuração'}
                   </button>
                 ) : (
                   <div className="space-y-4">
@@ -1039,14 +1056,22 @@ export default function Profile() {
                     <label className="block">
                       <span className="field-label">Código do aplicativo</span>
                       <input
+                        autoComplete="one-time-code"
                         className="field-input"
-                        onChange={(event) => setToken(event.target.value)}
+                        inputMode="numeric"
+                        maxLength={6}
+                        onChange={(event) => setToken(event.target.value.replace(/\D/g, '').slice(0, 6))}
                         placeholder="000000"
                         value={token}
                       />
                     </label>
-                    <button className="gold-button w-full" onClick={handleEnable2FA} type="button">
-                      Confirmar e ativar
+                    <button
+                      className="gold-button w-full"
+                      disabled={securitySaving || token.length !== 6}
+                      onClick={handleEnable2FA}
+                      type="button"
+                    >
+                      {securitySaving ? 'Ativando...' : 'Confirmar e ativar'}
                     </button>
                   </div>
                 )}
@@ -1056,8 +1081,25 @@ export default function Profile() {
                 <p className="text-sm text-[var(--muted)]">
                   O 2FA está ativo para esta conta. Isso dificulta acessos indevidos.
                 </p>
-                <button className="ghost-button mt-4" onClick={handleDisable2FA} type="button">
-                  Desativar 2FA
+                <label className="mt-4 block">
+                  <span className="field-label">Código atual do aplicativo</span>
+                  <input
+                    autoComplete="one-time-code"
+                    className="field-input"
+                    inputMode="numeric"
+                    maxLength={6}
+                    onChange={(event) => setDisableToken(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    value={disableToken}
+                  />
+                </label>
+                <button
+                  className="ghost-button mt-4"
+                  disabled={securitySaving || disableToken.length !== 6}
+                  onClick={handleDisable2FA}
+                  type="button"
+                >
+                  {securitySaving ? 'Desativando...' : 'Confirmar e desativar 2FA'}
                 </button>
               </div>
             )}

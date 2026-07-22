@@ -70,7 +70,7 @@ async function sendPasswordResetEmail({ to, resetUrl, expiresInMinutes }) {
         <h2 style="margin:0 0 12px">Redefinicao de senha</h2>
         <p>Recebemos uma solicitacao para redefinir sua senha.</p>
         <p>
-          <a href="${resetUrl}" style="display:inline-block;padding:12px 18px;background:#d89b35;color:#111;text-decoration:none;border-radius:8px;font-weight:700">
+          <a href="${safeResetUrl}" style="display:inline-block;padding:12px 18px;background:#d89b35;color:#111;text-decoration:none;border-radius:8px;font-weight:700">
             Criar nova senha
           </a>
         </p>
@@ -91,6 +91,7 @@ async function sendServiceRequestInterestEmail({ to, clientName, installerName, 
   const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER');
   const appName = firstEnvValue('APP_NAME') || 'InstalaPro';
   const transporter = createTransporter();
+  const safeResetUrl = escapeHtml(resetUrl);
   const safeClientName = escapeHtml(clientName || 'cliente');
   const safeInstallerName = escapeHtml(installerName || 'Um instalador');
   const safeServiceLabel = escapeHtml(serviceLabel || 'seu pedido');

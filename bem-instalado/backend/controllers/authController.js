@@ -11,6 +11,7 @@ const { isEmailEnabled, sendPasswordResetEmail } = require('../services/email');
 const REGISTER_PLAN_PRICE = Number(process.env.SUBSCRIPTION_PRICE || 40);
 const PASSWORD_RESET_EXPIRATION_MINUTES = Number(process.env.PASSWORD_RESET_EXPIRATION_MINUTES || 30);
 const OAUTH_STATE_EXPIRES_IN = '10m';
+const TWO_FACTOR_SETUP_EXPIRES_IN = '10m';
 const OAUTH_APPLE_AUDIENCE = 'https://appleid.apple.com';
 const OAUTH_APPLE_ISSUER = 'https://appleid.apple.com';
 const OAUTH_ALLOWED_ROLES = new Set(['installer', 'client']);
@@ -39,8 +40,10 @@ const OAUTH_REDIRECT_ERROR_CODES = new Set([
   'state_provider_mismatch',
 ]);
 
-function signToken(id) {
-  return jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
+function signToken(user) {
+  const id = typeof user === 'object' ? user.id : user;
+  const authVersion = typeof user === 'object' ? Number(user.auth_version || 0) : 0;
+  return jwt.sign({ id, v: authVersion }, jwtSecret, { expiresIn: jwtExpiresIn });
 }
 
 function firstEnvValue(...names) {
@@ -61,7 +64,19 @@ function normalizeBaseUrl(rawUrl) {
     return '';
   }
 
-  return value.replace(/\/+$/, '');
+  try {
+    const parsed = new URL(value);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+    return parsed.toString().replace(/\/+$/, '');
+  } catch (_error) {
+    return '';
+  }
+}
+
+function getDeploymentBaseUrl() {
+  const deploymentHost = firstEnvValue('VERCEL_PROJECT_PRODUCTION_URL', 'VERCEL_URL');
+  if (!deploymentHost) return '';
+  return normalizeBaseUrl(deploymentHost.includes('://') ? deploymentHost : `https://${deploymentHost}`);
 }
 
 function normalizeUrlPathSlashes(rawUrl) {
@@ -96,8 +111,27 @@ function getRequestBaseUrl(req) {
   const forwardedProto = firstHeaderValue(req.get('x-forwarded-proto')).toLowerCase();
   const protocol = ['http', 'https'].includes(forwardedProto) ? forwardedProto : req.protocol;
   const host = firstHeaderValue(req.get('x-forwarded-host')) || firstHeaderValue(req.get('host'));
+  const requestBaseUrl = normalizeBaseUrl(`${protocol}://${host}`);
 
-  return `${protocol}://${host}`;
+  if (process.env.NODE_ENV !== 'production') {
+    return requestBaseUrl;
+  }
+
+  const trustedBaseUrl = normalizeBaseUrl(
+    firstEnvValue('FRONTEND_URL', 'APP_URL', 'BACKEND_URL')
+  ) || getDeploymentBaseUrl();
+
+  if (!trustedBaseUrl) {
+    throw new Error('public_url_not_configured');
+  }
+
+  try {
+    return new URL(requestBaseUrl).host === new URL(trustedBaseUrl).host
+      ? requestBaseUrl
+      : trustedBaseUrl;
+  } catch (_error) {
+    return trustedBaseUrl;
+  }
 }
 
 function shouldUseConfiguredPublicUrl(configuredUrl, req) {
@@ -168,7 +202,13 @@ function sanitizeNextPath(value, role = 'installer') {
   const fallback = getDefaultNextPath(role);
   const nextPath = String(value || '').trim();
 
-  if (!nextPath || !nextPath.startsWith('/') || nextPath.startsWith('//')) {
+  if (
+    !nextPath ||
+    !nextPath.startsWith('/') ||
+    nextPath.startsWith('//') ||
+    nextPath.includes('\\') ||
+    /[\u0000-\u001f\u007f]/.test(nextPath)
+  ) {
     return fallback;
   }
 
@@ -308,7 +348,8 @@ async function fetchSanitizedUserById(userId) {
         default_price_per_roll,
         default_removal_price,
         is_admin,
-        two_factor_enabled
+        two_factor_enabled,
+        auth_version
       FROM users
       WHERE id = $1
       LIMIT 1
@@ -455,9 +496,10 @@ exports.getCapabilities = (_req, res) => {
 };
 
 async function registerPasswordAccount(req, res, accountType) {
-  const db = await pool.connect();
+  let db;
 
   try {
+    db = await pool.connect();
     const { name, email, password, phone, business_name } = req.body;
     const normalizedEmail = normalizeEmail(email);
     const normalizedName = String(name || '').trim();
@@ -515,7 +557,8 @@ async function registerPasswordAccount(req, res, accountType) {
           default_price_per_roll,
           default_removal_price,
           is_admin,
-          two_factor_enabled
+          two_factor_enabled,
+          auth_version
       `,
       [
         normalizedName,
@@ -550,7 +593,7 @@ async function registerPasswordAccount(req, res, accountType) {
 
     const payload = {
       user: sanitizeUser(user),
-      token: signToken(user.id),
+      token: signToken(user),
     };
 
     if (accountType === 'installer') {
@@ -563,13 +606,13 @@ async function registerPasswordAccount(req, res, accountType) {
 
     return res.status(201).json(payload);
   } catch (error) {
-    await db.query('ROLLBACK').catch(() => null);
+    await db?.query('ROLLBACK').catch(() => null);
     if (error.code === '23505') {
       return res.status(409).json({ error: 'E-mail já cadastrado para este tipo de conta.' });
     }
     return res.status(500).json({ error: 'Erro ao registrar usuário.' });
   } finally {
-    db.release();
+    db?.release();
   }
 }
 
@@ -667,7 +710,7 @@ exports.login = async (req, res) => {
 
     return res.json({
       user: sanitizeUser(user),
-      token: signToken(user.id),
+      token: signToken(user),
     });
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao fazer login.' });
@@ -904,7 +947,7 @@ exports.handleOAuthCallback = async (req, res) => {
     const user = await findOrCreateOAuthUser(oauthProfile, provider, role, req);
 
     return redirectOAuthResult(req, res, {
-      token: signToken(user.id),
+      token: signToken(user),
       role,
       next,
     });
@@ -934,16 +977,28 @@ exports.handleOAuthCallback = async (req, res) => {
 
 exports.setup2FA = async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT email FROM users WHERE id = $1', [req.userId]);
+    const { rows } = await pool.query(
+      'SELECT email, two_factor_enabled FROM users WHERE id = $1',
+      [req.userId]
+    );
     const user = rows[0];
 
     if (!user) {
       return res.status(404).json({ error: 'Usuário não encontrado.' });
     }
 
+    if (user.two_factor_enabled) {
+      return res.status(409).json({ error: 'O 2FA já está ativo nesta conta.' });
+    }
+
     const secret = generateSecret();
     const qrCode = await generateQrCode(secret.base32, user.email);
-    return res.json({ secret: secret.base32, qrCode });
+    const setupToken = jwt.sign(
+      { purpose: '2fa_setup', userId: req.userId, secret: secret.base32 },
+      jwtSecret,
+      { expiresIn: TWO_FACTOR_SETUP_EXPIRES_IN }
+    );
+    return res.json({ secret: secret.base32, qrCode, setupToken });
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao configurar 2FA.' });
   }
@@ -951,20 +1006,38 @@ exports.setup2FA = async (req, res) => {
 
 exports.enable2FA = async (req, res) => {
   try {
-    const { secret, token } = req.body;
+    const { setupToken, token } = req.body;
+    let setup;
 
-    if (!secret || !token || !verifyToken(secret, token)) {
+    try {
+      setup = jwt.verify(String(setupToken || ''), jwtSecret);
+    } catch (_error) {
+      return res.status(400).json({ error: 'A configuração do 2FA expirou. Inicie novamente.' });
+    }
+
+    if (
+      setup.purpose !== '2fa_setup' ||
+      Number(setup.userId) !== Number(req.userId) ||
+      !setup.secret ||
+      !token ||
+      !verifyToken(setup.secret, token)
+    ) {
       return res.status(400).json({ error: 'Dados de 2FA inválidos.' });
     }
 
-    await pool.query(
+    const enabled = await pool.query(
       `
         UPDATE users
         SET two_factor_secret = $1, two_factor_enabled = true, updated_at = NOW()
-        WHERE id = $2
+        WHERE id = $2 AND two_factor_enabled = false
+        RETURNING id
       `,
-      [secret, req.userId]
+      [setup.secret, req.userId]
     );
+
+    if (!enabled.rows[0]) {
+      return res.status(409).json({ error: 'O 2FA já está ativo nesta conta.' });
+    }
 
     await logAudit({
       actorUserId: req.userId,
@@ -982,6 +1055,32 @@ exports.enable2FA = async (req, res) => {
 
 exports.disable2FA = async (req, res) => {
   try {
+    const current = await pool.query(
+      'SELECT two_factor_enabled, two_factor_secret FROM users WHERE id = $1 LIMIT 1',
+      [req.userId]
+    );
+    const user = current.rows[0];
+    const token = String(req.body?.token || '').trim();
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    if (!user.two_factor_enabled || !user.two_factor_secret) {
+      return res.status(409).json({ error: 'O 2FA já está desativado.' });
+    }
+
+    if (!token || !verifyToken(user.two_factor_secret, token)) {
+      await logAudit({
+        actorUserId: req.userId,
+        action: 'auth.2fa_disable_failed',
+        entityType: 'user',
+        entityId: req.userId,
+        req,
+      });
+      return res.status(400).json({ error: 'Código de autenticação inválido.' });
+    }
+
     await pool.query(
       `
         UPDATE users
@@ -1054,23 +1153,33 @@ exports.forgotPassword = async (req, res) => {
 
     const { token, tokenHash } = buildPasswordResetToken();
     const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRATION_MINUTES * 60 * 1000);
+    const db = await pool.connect();
 
-    await pool.query(
-      `
-        UPDATE password_reset_tokens
-        SET used_at = NOW()
-        WHERE user_id = $1 AND used_at IS NULL
-      `,
-      [user.id]
-    );
-
-    await pool.query(
-      `
-        INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
-        VALUES ($1, $2, $3)
-      `,
-      [user.id, tokenHash, expiresAt]
-    );
+    try {
+      await db.query('BEGIN');
+      await db.query('SELECT pg_advisory_xact_lock($1)', [Number(user.id)]);
+      await db.query(
+        `
+          UPDATE password_reset_tokens
+          SET used_at = NOW()
+          WHERE user_id = $1 AND used_at IS NULL
+        `,
+        [user.id]
+      );
+      await db.query(
+        `
+          INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+          VALUES ($1, $2, $3)
+        `,
+        [user.id, tokenHash, expiresAt]
+      );
+      await db.query('COMMIT');
+    } catch (error) {
+      await db.query('ROLLBACK').catch(() => null);
+      throw error;
+    } finally {
+      db.release();
+    }
 
     await logAudit({
       actorUserId: user.id,
@@ -1111,8 +1220,11 @@ exports.forgotPassword = async (req, res) => {
 };
 
 exports.resetPassword = async (req, res) => {
-  const db = await pool.connect();
+  let db;
+  let transactionStarted = false;
+
   try {
+    db = await pool.connect();
     const token = String(req.body?.token || '').trim();
     const nextPassword = String(req.body?.password || '');
 
@@ -1125,7 +1237,10 @@ exports.resetPassword = async (req, res) => {
     }
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const resetTokenResult = await pool.query(
+    await db.query('BEGIN');
+    transactionStarted = true;
+
+    const resetTokenResult = await db.query(
       `
         SELECT id, user_id
         FROM password_reset_tokens
@@ -1133,22 +1248,24 @@ exports.resetPassword = async (req, res) => {
           AND used_at IS NULL
           AND expires_at > NOW()
         LIMIT 1
+        FOR UPDATE
       `,
       [tokenHash]
     );
     const resetTokenRow = resetTokenResult.rows[0];
 
     if (!resetTokenRow) {
+      await db.query('ROLLBACK');
+      transactionStarted = false;
       return res.status(400).json({ error: 'Token de redefinição inválido ou expirado.' });
     }
 
     const passwordHash = await bcrypt.hash(nextPassword, 10);
 
-    await db.query('BEGIN');
     await db.query(
       `
         UPDATE users
-        SET password = $1, updated_at = NOW()
+        SET password = $1, auth_version = auth_version + 1, updated_at = NOW()
         WHERE id = $2
       `,
       [passwordHash, resetTokenRow.user_id]
@@ -1171,6 +1288,7 @@ exports.resetPassword = async (req, res) => {
       [resetTokenRow.user_id]
     );
     await db.query('COMMIT');
+    transactionStarted = false;
 
     await logAudit({
       actorUserId: resetTokenRow.user_id,
@@ -1182,9 +1300,11 @@ exports.resetPassword = async (req, res) => {
 
     return res.json({ success: true, message: 'Senha redefinida com sucesso.' });
   } catch (_error) {
-    await db.query('ROLLBACK').catch(() => null);
+    if (transactionStarted) {
+      await db.query('ROLLBACK').catch(() => null);
+    }
     return res.status(500).json({ error: 'Erro ao redefinir senha.' });
   } finally {
-    db.release();
+    db?.release();
   }
 };

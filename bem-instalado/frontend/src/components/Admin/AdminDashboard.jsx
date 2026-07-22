@@ -368,7 +368,13 @@ export default function AdminDashboard() {
   const openInstallerCertificate = async (targetUser) => {
     if (!targetUser.certificate_file) return;
     if (!targetUser.certificate_file.startsWith('/api/')) {
-      window.open(targetUser.certificate_file, '_blank', 'noopener,noreferrer');
+      try {
+        const certificateUrl = new URL(targetUser.certificate_file);
+        if (!['http:', 'https:'].includes(certificateUrl.protocol)) throw new Error('invalid_protocol');
+        window.open(certificateUrl.toString(), '_blank', 'noopener,noreferrer');
+      } catch (_error) {
+        toast.error('O endereço deste certificado é inválido. Peça um novo envio ao instalador.');
+      }
       return;
     }
 

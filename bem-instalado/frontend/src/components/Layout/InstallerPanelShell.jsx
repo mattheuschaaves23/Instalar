@@ -165,6 +165,7 @@ function SidebarContent({ allowCollapse = false, badgeCounts, collapsed = false,
 export default function InstallerPanelShell({ children }) {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [search, setSearch] = useState('');
@@ -175,6 +176,10 @@ export default function InstallerPanelShell({ children }) {
   const badgeCounts = usePanelBadgeCounts();
   const notificationBadge = badgeCounts.notifications > 0 ? formatPanelBadgeCount(badgeCounts.notifications) : null;
   const canSeeAdmin = hasAdminAccess(user);
+  const searchableItems = useMemo(
+    () => (canSeeAdmin ? [...PANEL_NAV_ITEMS, ADMIN_NAV_ITEM] : PANEL_NAV_ITEMS),
+    [canSeeAdmin]
+  );
   const mobileDockItems = useMemo(
     () => (canSeeAdmin ? [...MOBILE_DOCK_ITEMS.slice(0, 4), ADMIN_MOBILE_DOCK_ITEM] : MOBILE_DOCK_ITEMS),
     [canSeeAdmin]
@@ -186,10 +191,28 @@ export default function InstallerPanelShell({ children }) {
 
   useEffect(() => {
     document.body.style.overflow = mobileDrawerOpen ? 'hidden' : '';
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') setMobileDrawerOpen(false);
+    };
+    window.addEventListener('keydown', handleEscape);
     return () => {
       document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleEscape);
     };
   }, [mobileDrawerOpen]);
+
+  const handlePanelSearch = (event) => {
+    event.preventDefault();
+    const query = search.trim().toLocaleLowerCase('pt-BR');
+    if (!query) return;
+    const destination = searchableItems.find((item) =>
+      item.label.toLocaleLowerCase('pt-BR').includes(query)
+    );
+    if (destination) {
+      navigate(destination.to);
+      setSearch('');
+    }
+  };
 
   return (
     <section className={`ref-panel-shell ref-panel-route-shell ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
@@ -204,17 +227,32 @@ export default function InstallerPanelShell({ children }) {
         />
       </aside>
 
-      <div className={`ref-panel-drawer-backdrop ${mobileDrawerOpen ? 'is-open' : ''}`} onClick={() => setMobileDrawerOpen(false)} />
-      <aside className={`ref-panel-mobile-drawer ${mobileDrawerOpen ? 'is-open' : ''}`} aria-label="Menu mobile do painel">
+      <div aria-hidden="true" className={`ref-panel-drawer-backdrop ${mobileDrawerOpen ? 'is-open' : ''}`} onClick={() => setMobileDrawerOpen(false)} />
+      <aside
+        aria-hidden={!mobileDrawerOpen}
+        aria-label="Menu mobile do painel"
+        className={`ref-panel-mobile-drawer ${mobileDrawerOpen ? 'is-open' : ''}`}
+        id="mobile-panel-menu"
+      >
         <SidebarContent badgeCounts={badgeCounts} initials={initials} onNavigate={() => setMobileDrawerOpen(false)} userName={userName} />
       </aside>
 
       <div className="ref-panel-main">
         <header className="ref-panel-topbar">
-          <label className="ref-panel-search">
+          <form className="ref-panel-search" onSubmit={handlePanelSearch} role="search">
             <PanelIcon type="search" size={18} />
-            <input onChange={(event) => setSearch(event.target.value)} placeholder="Buscar clientes, orcamentos..." type="search" value={search} />
-          </label>
+            <input
+              aria-label="Ir para uma área do painel"
+              list="panel-route-options"
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Ir para uma área do painel..."
+              type="search"
+              value={search}
+            />
+            <datalist id="panel-route-options">
+              {searchableItems.map((item) => <option key={item.to} value={item.label} />)}
+            </datalist>
+          </form>
           <div className="ref-panel-top-actions">
             <span className="ref-panel-date">
               <PanelIcon type="agenda" size={17} />
@@ -233,16 +271,16 @@ export default function InstallerPanelShell({ children }) {
         </header>
 
         <header className="ref-panel-mobile-header">
-          <button aria-label="Abrir menu" onClick={() => setMobileDrawerOpen(true)} type="button">
+          <button aria-controls="mobile-panel-menu" aria-expanded={mobileDrawerOpen} aria-label="Abrir menu" onClick={() => setMobileDrawerOpen(true)} type="button">
             <PanelIcon type="menu" />
           </button>
           <div>
             <BrandWordmark className="ref-panel-mobile-wordmark" size="sm" />
           </div>
           <nav aria-label="Acoes rapidas do painel">
-            <Link to={location.pathname}><PanelIcon type="search" size={18} /></Link>
-            <Link to="/notifications"><PanelIcon type="bell" size={18} />{notificationBadge ? <em>{notificationBadge}</em> : null}</Link>
-            <Link to="/profile" className="ref-panel-avatar">{initials}</Link>
+            <Link aria-label="Abrir clientes" to="/clients"><PanelIcon type="search" size={18} /></Link>
+            <Link aria-label="Abrir notificações" to="/notifications"><PanelIcon type="bell" size={18} />{notificationBadge ? <em>{notificationBadge}</em> : null}</Link>
+            <Link aria-label="Abrir perfil" to="/profile" className="ref-panel-avatar">{initials}</Link>
           </nav>
         </header>
 

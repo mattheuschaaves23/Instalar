@@ -128,7 +128,7 @@ async function forwardGeocode(query, limit = 6, acceptLanguage = 'pt-BR') {
     headers: {
       Accept: 'application/geo+json, application/json',
       'Accept-Language': acceptLanguage,
-      'User-Agent': 'InstalarPapelPerto/1.0 (busca de instaladores)',
+      'User-Agent': `InstalaPro/1.0 (${process.env.GEOCODING_CONTACT || process.env.NOMINATIM_EMAIL || 'contato@instalapro.app'})`,
     },
   });
 

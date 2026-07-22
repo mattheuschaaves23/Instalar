@@ -12,7 +12,7 @@ function getHomePath(user) {
 
 export default function ProtectedRoute({ allowedAccountTypes = ['installer'], loginPath = '/instalador/entrar' }) {
   const location = useLocation();
-  const { user, loading } = useAuth();
+  const { user, loading, authError, retryProfile, logout } = useAuth();
 
   if (loading) {
     return (
@@ -25,6 +25,26 @@ export default function ProtectedRoute({ allowedAccountTypes = ['installer'], lo
           </p>
         </div>
       </div>
+    );
+  }
+
+  if (!user && authError) {
+    return (
+      <main className="auth-scene flex min-h-screen items-center justify-center px-6 py-10">
+        <section className="lux-panel w-full max-w-lg p-8 text-center" role="alert">
+          <p className="eyebrow">Conexao temporariamente indisponivel</p>
+          <h1 className="page-title mt-4 text-[2.6rem]">Seu login continua salvo</h1>
+          <p className="page-copy mt-4">{authError}</p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button className="gold-button" onClick={retryProfile} type="button">
+              Tentar novamente
+            </button>
+            <button className="ghost-button" onClick={logout} type="button">
+              Sair da conta
+            </button>
+          </div>
+        </section>
+      </main>
     );
   }
 

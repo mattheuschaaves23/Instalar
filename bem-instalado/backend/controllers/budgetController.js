@@ -110,10 +110,11 @@ function parseScheduleDateTime(value) {
 }
 
 exports.createBudget = async (req, res) => {
-  const db = await pool.connect();
+  let db;
   let transactionStarted = false;
 
   try {
+    db = await pool.connect();
     const {
       client_id,
       environments,
@@ -359,7 +360,7 @@ exports.createBudget = async (req, res) => {
 
     return res.status(500).json({ error: 'Erro ao criar orçamento.' });
   } finally {
-    db.release();
+    db?.release();
   }
 };
 
@@ -433,10 +434,11 @@ exports.getBudget = async (req, res) => {
 };
 
 exports.approveBudget = async (req, res) => {
-  const db = await pool.connect();
+  let db;
   let transactionStarted = false;
 
   try {
+    db = await pool.connect();
     const { schedule_date } = req.body;
     const parsedScheduleDate = schedule_date ? parseScheduleDateTime(schedule_date) : null;
 
@@ -596,7 +598,7 @@ exports.approveBudget = async (req, res) => {
     }
     return res.status(500).json({ error: 'Erro ao aprovar orçamento.' });
   } finally {
-    db.release();
+    db?.release();
   }
 };
 

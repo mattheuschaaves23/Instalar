@@ -261,7 +261,7 @@ export default function Login() {
 
           <div className="installer-login-copy">
             <p className="installer-login-kicker">ÁREA DO INSTALADOR</p>
-            <h1>
+            <h1 aria-label="Conecte-se a mais oportunidades e faça seu trabalho crescer.">
               Conecte-se a mais
               <br />
               oportunidades e

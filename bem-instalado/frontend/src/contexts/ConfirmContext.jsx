@@ -34,6 +34,9 @@ function normalizeOptions(options = {}) {
 
 export function ConfirmProvider({ children }) {
   const queueRef = useRef([]);
+  const dialogRef = useRef(null);
+  const cancelButtonRef = useRef(null);
+  const previousFocusRef = useRef(null);
   const [dialog, setDialog] = useState(null);
 
   const openNext = useCallback(() => {
@@ -82,15 +85,37 @@ export function ConfirmProvider({ children }) {
       return undefined;
     }
 
+    previousFocusRef.current = document.activeElement;
+    const focusTimer = window.setTimeout(() => cancelButtonRef.current?.focus(), 0);
+
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         resolveDialog(false);
+        return;
+      }
+
+      if (event.key === 'Tab' && dialogRef.current) {
+        const focusable = Array.from(
+          dialogRef.current.querySelectorAll('button:not([disabled]), [href], input, select, textarea')
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
+      window.clearTimeout(focusTimer);
       window.removeEventListener('keydown', handleKeyDown);
+      previousFocusRef.current?.focus?.();
     };
   }, [dialog, resolveDialog]);
 
@@ -112,6 +137,7 @@ export function ConfirmProvider({ children }) {
             aria-modal="true"
             className="site-confirm-dialog"
             onClick={(event) => event.stopPropagation()}
+            ref={dialogRef}
             role="alertdialog"
           >
             <p className="eyebrow">Confirmação</p>
@@ -126,6 +152,7 @@ export function ConfirmProvider({ children }) {
               <button
                 className="ghost-button"
                 onClick={() => resolveDialog(false)}
+                ref={cancelButtonRef}
                 type="button"
               >
                 {dialog.options.cancelText}
