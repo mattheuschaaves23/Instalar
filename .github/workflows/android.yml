@@ -37,7 +37,12 @@ jobs:
 
       - name: Preparar Android SDK
         shell: bash
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" >/dev/null
+        run: |
+          set +o pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-36" \
+            "build-tools;36.0.0" >/dev/null
+          set -o pipefail
 
       - name: Instalar dependências
         run: npm ci
