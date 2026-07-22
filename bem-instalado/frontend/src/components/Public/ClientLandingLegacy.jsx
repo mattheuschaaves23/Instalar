@@ -5,6 +5,7 @@ import './ClientLandingLegacy.css';
 
 const REQUEST_PATH = '/cliente';
 const CLIENT_LOGIN_PATH = '/cliente/entrar';
+const INSTALLER_LOGIN_PATH = '/instalador/entrar';
 const INSTALLER_REGISTER_PATH = '/instalador/cadastro';
 
 const navLinks = [
@@ -569,7 +570,7 @@ function Navbar() {
           <div className="flex items-center justify-between">
             <LogoMark />
 
-            <div className="hidden items-center gap-8 lg:flex">
+            <div className="hidden items-center gap-8 xl:flex">
               {navLinks.map((link) => (
                 <SmartLink
                   className="group relative text-sm text-white/70 transition-colors hover:text-white"
@@ -591,13 +592,13 @@ function Navbar() {
                 className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white/85 transition-all hover:border-[#cda349]/50 hover:bg-white/5 hover:text-white"
                 href={CLIENT_LOGIN_PATH}
               >
-                Entrar
+                Login cliente
               </SmartLink>
               <SmartLink
                 className="btn-shine relative inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55] px-5 text-sm font-semibold text-black shadow-lg shadow-[#cda349]/20 transition-all hover:scale-105 hover:shadow-[#cda349]/35"
-                href={INSTALLER_REGISTER_PATH}
+                href={INSTALLER_LOGIN_PATH}
               >
-                Cadastre-se
+                Login instalador
               </SmartLink>
               <SmartLink
                 className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#cda349]/35 px-5 text-sm font-semibold text-[#f0d28a] transition-all hover:border-[#f0d28a]/70 hover:bg-[#cda349]/10"
@@ -609,16 +610,18 @@ function Navbar() {
 
             <div className="landing-navbar-mobile-actions flex items-center gap-1.5 lg:hidden">
               <SmartLink
-                className="landing-navbar-mobile-login inline-flex min-h-10 items-center justify-center rounded-full border border-white/15 px-3 text-xs font-semibold text-white/85 transition-all hover:border-[#cda349]/50 hover:bg-white/5 hover:text-white"
+                aria-label="Entrar como cliente"
+                className="landing-navbar-mobile-login inline-flex min-h-10 items-center justify-center rounded-full border border-white/15 px-2 text-[11px] font-semibold text-white/85 transition-all hover:border-[#cda349]/50 hover:bg-white/5 hover:text-white"
                 href={CLIENT_LOGIN_PATH}
               >
-                Entrar
+                Cliente
               </SmartLink>
               <SmartLink
-                className="landing-navbar-mobile-register inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55] px-3 text-xs font-semibold text-black shadow-lg shadow-[#cda349]/20"
-                href={INSTALLER_REGISTER_PATH}
+                aria-label="Entrar como instalador"
+                className="landing-navbar-mobile-register inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55] px-2 text-[11px] font-semibold text-black shadow-lg shadow-[#cda349]/20"
+                href={INSTALLER_LOGIN_PATH}
               >
-                Cadastro
+                Instalador
               </SmartLink>
               <button
                 aria-label={isMobileOpen ? 'Fechar menu' : 'Abrir menu'}
@@ -648,22 +651,32 @@ function Navbar() {
                   {link.label}
                 </SmartLink>
               ))}
-              <div className="grid grid-cols-2 gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#d8ad55]">
+                Escolha seu acesso
+              </p>
+              <div className="grid grid-cols-1 gap-3">
                 <SmartLink
                   className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 px-4 text-base font-semibold text-white/85"
                   href={CLIENT_LOGIN_PATH}
                   onClick={() => setIsMobileOpen(false)}
                 >
-                  Entrar
+                  Entrar como cliente
                 </SmartLink>
                 <SmartLink
                   className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55] px-4 text-base font-semibold text-black"
-                  href={INSTALLER_REGISTER_PATH}
+                  href={INSTALLER_LOGIN_PATH}
                   onClick={() => setIsMobileOpen(false)}
                 >
-                  Cadastro
+                  Entrar como instalador
                 </SmartLink>
               </div>
+              <SmartLink
+                className="text-center text-sm font-semibold text-white/65 underline decoration-white/20 underline-offset-4 transition-colors hover:text-[#f0d28a]"
+                href={INSTALLER_REGISTER_PATH}
+                onClick={() => setIsMobileOpen(false)}
+              >
+                Primeiro acesso? Cadastrar instalador
+              </SmartLink>
               <SmartLink
                 className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#cda349] to-[#d8ad55] px-6 py-3 text-base font-semibold text-black"
                 href={REQUEST_PATH}
