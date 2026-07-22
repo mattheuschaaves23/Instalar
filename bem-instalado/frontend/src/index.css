@@ -20643,6 +20643,9 @@ body,
   gap: 0;
   border-top: 1px solid var(--route-line);
   border-bottom: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
 }
 
 .admin-modern-shell .summary-strip-item {
@@ -20660,6 +20663,9 @@ body,
 
 .admin-modern-shell .admin-activity-grid {
   gap: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
 }
 
 .admin-modern-shell .admin-activity-column {
