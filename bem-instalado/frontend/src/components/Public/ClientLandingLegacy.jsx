@@ -189,7 +189,7 @@ const faqs = [
   },
   {
     question: 'Como escolher um instalador com mais segurança?',
-    answer: 'Analise as informações disponíveis no perfil, avaliações quando existirem, região atendida e conversa pelo WhatsApp. Antes de fechar, confirme material, prazo, visita e detalhes do local.',
+    answer: 'Analise as informações disponíveis no perfil, as avaliações, a região atendida e a conversa pelo WhatsApp. Antes de fechar, confirme o material, o prazo, a visita e os detalhes do local.',
   },
   {
     question: 'E se eu não souber as medidas?',
@@ -542,7 +542,7 @@ function StaggerContainer({ children, className = '' }) {
 
 function LogoMark({ compact = false }) {
   return (
-    <SmartLink aria-label="InstalaPro - inicio" href="/" className="group inline-flex items-center">
+    <SmartLink aria-label="InstalaPro - início" href="/" className="group inline-flex items-center">
       <img
         alt="Logo InstalaPro"
         className={compact ? 'h-auto w-12' : 'h-auto w-[clamp(10.5rem,18vw,13.5rem)]'}

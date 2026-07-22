@@ -268,12 +268,12 @@ export default function BudgetForm() {
     const normalizedInstallmentsCount = Number(installmentsCount);
 
     if (!Number.isInteger(normalizedClientId) || normalizedClientId <= 0) {
-      toast.error('Selecione um cliente valido.');
+      toast.error('Selecione um cliente válido.');
       return;
     }
 
     if (pricingMode === 'roll' && (!Number.isFinite(normalizedPricePerRoll) || normalizedPricePerRoll <= 0)) {
-      toast.error('Informe um preco por rolo maior que zero.');
+      toast.error('Informe um preço por rolo maior que zero.');
       return;
     }
 
@@ -281,7 +281,7 @@ export default function BudgetForm() {
       pricingMode === 'square_meter' &&
       (!Number.isFinite(normalizedPricePerSquareMeter) || normalizedPricePerSquareMeter <= 0)
     ) {
-      toast.error('Informe um preco por metro quadrado maior que zero.');
+      toast.error('Informe um preço por metro quadrado maior que zero.');
       return;
     }
 
@@ -315,7 +315,7 @@ export default function BudgetForm() {
     });
 
     if (invalidEnvironment) {
-      toast.error('Revise nome, medidas, rolos e remocao dos ambientes.');
+      toast.error('Revise nome, medidas, rolos e remoção dos ambientes.');
       return;
     }
 
@@ -339,10 +339,10 @@ export default function BudgetForm() {
         })),
       });
 
-      toast.success('Orcamento criado.');
+      toast.success('Orçamento criado.');
       navigate('/budgets');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel criar o orcamento.');
+      toast.error(error.response?.data?.error || 'Não foi possível criar o orçamento.');
     }
   };
 
@@ -355,13 +355,13 @@ export default function BudgetForm() {
           </button>
 
           <div className="budget-modern-topbar-copy">
-            <h1>Novo orcamento</h1>
-            <p>Faca orcamentos de instalacao com clareza e rapidez.</p>
+            <h1>Novo orçamento</h1>
+            <p>Faça orçamentos de instalação com clareza e rapidez.</p>
           </div>
 
           <button className="budget-modern-save-button" type="submit">
             <BudgetIcon type="save" />
-            <span>Salvar orcamento</span>
+            <span>Salvar orçamento</span>
           </button>
         </header>
 
@@ -387,8 +387,8 @@ export default function BudgetForm() {
                   <BudgetIcon type="measure" />
                 </div>
                 <div>
-                  <h2>Calculadora de instalacao</h2>
-                  <p>Informe as medidas, o modo de cobranca e os servicos para calcular.</p>
+                  <h2>Calculadora de instalação</h2>
+                  <p>Informe as medidas, o modo de cobrança e os serviços para calcular.</p>
                 </div>
               </header>
 
@@ -407,7 +407,7 @@ export default function BudgetForm() {
 
                 <div className="budget-modern-note">
                   <BudgetIcon type="info" />
-                  Ajuste manual de rolos disponivel em cada ambiente quando necessario.
+                  Ajuste manual de rolos disponível em cada ambiente quando necessário.
                 </div>
 
                 <div className="budget-modern-environments">
@@ -419,7 +419,7 @@ export default function BudgetForm() {
                         <div className="budget-modern-environment-head">
                           <div>
                             <strong>Ambiente {index + 1}</strong>
-                            <span>Defina nome, medidas e remocao deste espaco.</span>
+                            <span>Defina nome, medidas e remoção deste espaço.</span>
                           </div>
 
                           {environments.length > 1 ? (
@@ -469,7 +469,7 @@ export default function BudgetForm() {
                           </label>
 
                           <label className="budget-modern-field budget-modern-field--readonly">
-                            <span>Area total</span>
+                            <span>Área total</span>
                             <input disabled readOnly value={`${details.area.toFixed(2)} m²`} />
                           </label>
                         </div>
@@ -481,7 +481,7 @@ export default function BudgetForm() {
                               <input
                                 min="1"
                                 onChange={(event) => updateEnvironment(index, 'rolls_manual', event.target.value)}
-                                placeholder={`Automatico: ${details.rollsAuto}`}
+                                placeholder={`Automático: ${details.rollsAuto}`}
                                 step="1"
                                 type="number"
                                 value={environment.rolls_manual}
@@ -496,13 +496,13 @@ export default function BudgetForm() {
                             onChange={(event) => toggleEnvironmentRemoval(index, event.target.checked)}
                             type="checkbox"
                           />
-                          <span>Incluir remocao neste ambiente</span>
+                          <span>Incluir remoção neste ambiente</span>
                         </label>
 
                         {environment.removal_included ? (
                           <div className="budget-modern-field-grid">
                             <label className="budget-modern-field budget-modern-field--full">
-                              <span>Valor da remocao</span>
+                              <span>Valor da remoção</span>
                               <div className="budget-modern-currency-input">
                                 <i>R$</i>
                                 <input
@@ -550,7 +550,7 @@ export default function BudgetForm() {
                 <div className="budget-modern-field-grid">
                   {pricingMode === 'roll' ? (
                     <label className="budget-modern-field">
-                      <span>Preco do rolo (R$)</span>
+                      <span>Preço do rolo (R$)</span>
                       <div className="budget-modern-currency-input">
                         <i>R$</i>
                         <input
@@ -588,7 +588,7 @@ export default function BudgetForm() {
                   </label>
 
                   <label className="budget-modern-field">
-                    <span>Remocao padrao por ambiente</span>
+                    <span>Remoção padrão por ambiente</span>
                     <div className="budget-modern-currency-input">
                       <i>R$</i>
                       <input
@@ -605,7 +605,7 @@ export default function BudgetForm() {
 
                 <div className="budget-modern-calculated-grid">
                   <article>
-                    <span>Area total</span>
+                    <span>Área total</span>
                     <strong>{totals.area.toFixed(2)} m²</strong>
                     <small>Base somada de todos os ambientes.</small>
                   </article>
@@ -626,13 +626,13 @@ export default function BudgetForm() {
                 <div className="budget-modern-section-title">
                   <div>
                     <BudgetIcon type="services" />
-                    <span>3. Servicos e valores</span>
+                    <span>3. Serviços e valores</span>
                   </div>
                 </div>
 
                 <div className="budget-modern-service-list">
                   <div className="budget-modern-service-row">
-                    <span>Modo de cobranca</span>
+                    <span>Modo de cobrança</span>
                     <strong>{pricingMode === 'roll' ? 'Por rolo' : 'Por m²'}</strong>
                   </div>
                   <div className="budget-modern-service-row">
@@ -640,7 +640,7 @@ export default function BudgetForm() {
                     <strong>{formatCurrency(totals.subtotal)}</strong>
                   </div>
                   <div className="budget-modern-service-row">
-                    <span>Remocao total</span>
+                    <span>Remoção total</span>
                     <strong>{formatCurrency(totals.removal)}</strong>
                   </div>
                 </div>
@@ -697,7 +697,7 @@ export default function BudgetForm() {
 
                 <div className="budget-modern-actions-bar">
                   <button className="budget-modern-primary-cta" type="submit">
-                    Salvar orcamento
+                    Salvar orçamento
                   </button>
                   <button className="budget-modern-secondary-cta" onClick={handleClear} type="button">
                     Limpar calculo
@@ -709,7 +709,7 @@ export default function BudgetForm() {
 
           <aside className="budget-modern-summary-panel fade-up" style={{ animationDelay: '0.1s' }}>
             <div className="budget-modern-summary-head">
-              <p className="budget-modern-section-label">Resumo do orcamento</p>
+              <p className="budget-modern-section-label">Resumo do orçamento</p>
               <h3>Valores finais</h3>
             </div>
 
@@ -719,7 +719,7 @@ export default function BudgetForm() {
                 <strong>{formatCurrency(totals.subtotal)}</strong>
               </div>
               <div className="budget-modern-summary-row">
-                <span>Remocao</span>
+                <span>Remoção</span>
                 <strong>{formatCurrency(totals.removal)}</strong>
               </div>
               <div className="budget-modern-summary-row">
@@ -729,7 +729,7 @@ export default function BudgetForm() {
             </div>
 
             <div className="budget-modern-total-box">
-              <span>Total do orcamento</span>
+              <span>Total do orçamento</span>
               <strong>{formatCurrency(grandTotal)}</strong>
               <small>
                 Valor por m²: {totals.area > 0 ? formatCurrency(grandTotal / totals.area) : formatCurrency(0)}
@@ -738,7 +738,7 @@ export default function BudgetForm() {
 
             <div className="budget-modern-client-box">
               <span>Cliente selecionado</span>
-              <strong>{selectedClient?.name || 'Escolha quem vai receber o orcamento'}</strong>
+              <strong>{selectedClient?.name || 'Escolha quem vai receber o orçamento'}</strong>
               <small>
                 {selectedClient?.phone || selectedClient?.email || 'Os dados do cliente aparecem aqui.'}
               </small>

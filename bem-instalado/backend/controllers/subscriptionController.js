@@ -8,10 +8,10 @@ const SUBSCRIPTION_AMOUNT = Number(process.env.SUBSCRIPTION_PRICE || 40);
 
 function getPlanBenefits() {
   return [
-    'Dashboard completo com metricas comerciais.',
-    'Agenda visual com confirmacao de instalacao.',
-    'Orcamentos profissionais com PDF premium.',
-    'Perfil publico com avaliacoes e vitrine para clientes.',
+    'Dashboard completo com métricas comerciais.',
+    'Agenda visual com confirmação de instalação.',
+    'Orçamentos profissionais com PDF premium.',
+    'Perfil público com avaliações e vitrine para clientes.',
     'Suporte interno com o administrador.',
   ];
 }
@@ -223,10 +223,10 @@ exports.getSubscription = async (req, res) => {
       payment_mode: launchAccess ? 'launch' : isManualConfirmationEnabled() ? 'manual' : 'disabled',
       provider_error: null,
       payment_notice: launchAccess
-        ? 'Acesso de lancamento liberado sem cobranca enquanto o pagamento definitivo e preparado.'
+        ? 'Acesso de lançamento liberado sem cobrança enquanto o pagamento definitivo é preparado.'
         : isManualConfirmationEnabled()
         ? 'Pagamento manual habilitado apenas para desenvolvimento.'
-        : 'Pagamento temporariamente indisponivel. Um novo metodo sera configurado futuramente.',
+        : 'Pagamento temporariamente indisponível. Um novo método será configurado futuramente.',
       pending_payment: pendingPayment && pendingPayment.status === 'pending'
         ? serializeStoredPayment(pendingPayment)
         : null,
@@ -241,7 +241,7 @@ exports.createPayment = async (req, res) => {
   try {
     if (!isManualConfirmationEnabled()) {
       return res.status(503).json({
-        error: 'Pagamento temporariamente indisponivel. Um novo metodo sera configurado futuramente.',
+        error: 'Pagamento temporariamente indisponível. Um novo método será configurado futuramente.',
         code: 'PAYMENT_PROVIDER_DISABLED',
       });
     }
@@ -323,7 +323,7 @@ exports.checkPayment = async (req, res) => {
     const payment = await getPaymentByExternalId(req.params.externalId, req.userId);
 
     if (!payment) {
-      return res.status(404).json({ error: 'Pagamento nao encontrado.' });
+      return res.status(404).json({ error: 'Pagamento não encontrado.' });
     }
 
     return res.json({ status: payment.status, ...serializeStoredPayment(payment) });
@@ -335,13 +335,13 @@ exports.checkPayment = async (req, res) => {
 exports.confirmPayment = async (req, res) => {
   try {
     if (!isManualConfirmationEnabled()) {
-      return res.status(403).json({ error: 'Confirmacao manual desativada neste ambiente.' });
+      return res.status(403).json({ error: 'Confirmação manual desativada neste ambiente.' });
     }
 
     const payment = await getPaymentByExternalId(req.params.externalId, req.userId);
 
     if (!payment) {
-      return res.status(404).json({ error: 'Pagamento nao encontrado.' });
+      return res.status(404).json({ error: 'Pagamento não encontrado.' });
     }
 
     if (payment.status !== 'paid') {

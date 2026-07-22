@@ -66,7 +66,7 @@ export default function OAuthCallback() {
         clearAuthToken();
 
         if (isMounted) {
-          setError('Nao foi possivel concluir o login social.');
+          setError('Não foi possível concluir o login social.');
         }
       }
     }

@@ -978,7 +978,7 @@ exports.getReviewsSummary = async (req, res) => {
       average_rating: Number(summary.average_rating || 0),
     });
   } catch (_error) {
-    return res.status(500).json({ error: 'Erro ao carregar resumo das avaliacoes.' });
+    return res.status(500).json({ error: 'Erro ao carregar resumo das avaliações.' });
   }
 };
 
@@ -1071,7 +1071,7 @@ exports.getReviewsDashboard = async (req, res) => {
     const profile = profileResult.rows[0];
 
     if (!profile) {
-      return res.status(404).json({ error: 'Usuario nao encontrado.' });
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
     }
 
     const rawSummary = summaryResult.rows[0] || {};
@@ -1121,6 +1121,6 @@ exports.getReviewsDashboard = async (req, res) => {
       reviews: reviewsResult.rows,
     });
   } catch (_error) {
-    return res.status(500).json({ error: 'Erro ao carregar painel de avaliacoes.' });
+    return res.status(500).json({ error: 'Erro ao carregar painel de avaliações.' });
   }
 };

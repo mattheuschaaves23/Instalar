@@ -37,7 +37,7 @@ export default function PasswordRecovery() {
 
     try {
       const response = await forgotPasswordRequest({ email, account_type: accountType });
-      toast.success(response.message || 'Se o e-mail existir, as instrucoes serao enviadas.');
+      toast.success(response.message || 'Se o e-mail existir, as instruções serão enviadas.');
 
       if (response.reset_url || response.reset_token) {
         setResetUrl(response.reset_url || '');
@@ -45,7 +45,7 @@ export default function PasswordRecovery() {
         setMode('reset');
       }
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel iniciar a recuperacao.');
+      toast.error(error.response?.data?.error || 'Não foi possível iniciar a recuperação.');
     } finally {
       setLoading(false);
     }
@@ -60,12 +60,12 @@ export default function PasswordRecovery() {
     }
 
     if (password.length < 10 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
-      toast.error('Use pelo menos 10 caracteres, com letras e numeros.');
+      toast.error('Use pelo menos 10 caracteres, com letras e números.');
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error('A confirmacao de senha nao confere.');
+      toast.error('A confirmação de senha não confere.');
       return;
     }
 
@@ -77,7 +77,7 @@ export default function PasswordRecovery() {
       setPassword('');
       setConfirmPassword('');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel redefinir a senha.');
+      toast.error(error.response?.data?.error || 'Não foi possível redefinir a senha.');
     } finally {
       setLoading(false);
     }
@@ -87,11 +87,11 @@ export default function PasswordRecovery() {
     <AuthShell
       asideCopy="Recuperar acesso"
       asideTitle="Senha"
-      description={`Use seu e-mail de ${isClientRecovery ? 'cliente' : 'instalador'} para gerar um link seguro de redefinicao.`}
+      description={`Use seu e-mail de ${isClientRecovery ? 'cliente' : 'instalador'} para gerar um link seguro de redefinição.`}
       eyebrow="InstalaPro"
       highlights={[
-        { kicker: 'Seguro', title: 'Token temporario', copy: 'O link expira automaticamente.' },
-        { kicker: 'Conta', title: isClientRecovery ? 'Conta de cliente' : 'Conta de instalador', copy: 'A recuperacao valida o tipo correto de conta.' },
+        { kicker: 'Seguro', title: 'Token temporário', copy: 'O link expira automaticamente.' },
+        { kicker: 'Conta', title: isClientRecovery ? 'Conta de cliente' : 'Conta de instalador', copy: 'A recuperação valida o tipo correto de conta.' },
         { kicker: 'Acesso', title: 'Nova senha', copy: 'Depois de trocar, volte para o login normalmente.' },
       ]}
       title={title}
@@ -120,7 +120,7 @@ export default function PasswordRecovery() {
         <form className="space-y-4" onSubmit={handleReset}>
           {resetUrl ? (
             <div className="auth-helper-card">
-              <p className="text-sm text-[var(--muted)]">Link de redefinicao gerado:</p>
+              <p className="text-sm text-[var(--muted)]">Link de redefinição gerado:</p>
               <a
                 className="mt-2 block break-all font-semibold text-[var(--gold-strong)]"
                 href={resetUrl}
@@ -131,7 +131,7 @@ export default function PasswordRecovery() {
           ) : null}
 
           <label className="block">
-            <span className="field-label">Token de recuperacao</span>
+            <span className="field-label">Token de recuperação</span>
             <input
               className="field-input"
               name="token"

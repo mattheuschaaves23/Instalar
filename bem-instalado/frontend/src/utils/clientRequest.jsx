@@ -159,23 +159,23 @@ export function formatClientRequestLines(request) {
   const region = [request.neighborhood, request.city, request.state].filter(Boolean).join(' - ');
   const lines = [
     ['Local', request.placeLabel],
-    ['Servico', request.serviceLabel],
+    ['Serviço', request.serviceLabel],
     ['Ambiente', request.room],
-    ['Regiao', region],
+    ['Região', region],
     ['CEP', request.zipCode],
-    ['Referencia', request.addressReference],
+    ['Referência', request.addressReference],
     ['Prazo', request.urgencyLabel],
     ['Material', request.materialLabel],
     ['Medida', request.wallSize],
     ['Rolos', request.rollCount],
-    ['Preferencia de contato', request.contactPreferenceLabel],
+    ['Preferência de contato', request.contactPreferenceLabel],
     ['Detalhes', request.details],
   ];
 
   const photoCount = Number(request.photoCount || 0);
 
   if (photoCount > 0) {
-    lines.push(['Fotos', `${photoCount} referencia${photoCount > 1 ? 's' : ''} adicionada${photoCount > 1 ? 's' : ''}`]);
+    lines.push(['Fotos', `${photoCount} referência${photoCount > 1 ? 's' : ''} adicionada${photoCount > 1 ? 's' : ''}`]);
   }
 
   return lines

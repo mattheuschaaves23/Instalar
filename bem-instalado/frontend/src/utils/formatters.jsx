@@ -75,7 +75,7 @@ export function formatStatusLabel(status) {
     approved: 'Aprovado',
     rejected: 'Rejeitado',
     scheduled: 'Agendado',
-    completed: 'Concluido',
+    completed: 'Concluído',
     canceled: 'Cancelado',
     active: 'Ativa',
     inactive: 'Inativa',
@@ -83,7 +83,7 @@ export function formatStatusLabel(status) {
     failed: 'Falhou',
     success: 'Sucesso',
     warning: 'Aviso',
-    info: 'Informacao',
+    info: 'Informação',
   };
 
   return map[status] || status || '-';

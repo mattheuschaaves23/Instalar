@@ -387,9 +387,9 @@ export default function InstallerProfile() {
                 <article className="client-request-profile-card mt-8">
                   <div>
                     <p className="eyebrow">Seu pedido</p>
-                    <h2>{storedClientRequest.serviceLabel || 'Pedido de instalacao'}</h2>
+                    <h2>{storedClientRequest.serviceLabel || 'Pedido de instalação'}</h2>
                     <p>
-                      O instalador recebe esse resumo quando voce continuar pelo WhatsApp depois do login.
+                      O instalador recebe esse resumo quando você continuar pelo WhatsApp depois do login.
                     </p>
                   </div>
                   <div className="client-request-profile-grid">
@@ -488,7 +488,7 @@ export default function InstallerProfile() {
               <p className="eyebrow">Avaliar instalador</p>
               <h2 className="mt-3 text-2xl font-semibold text-[var(--text)]">Deixe sua avaliação</h2>
               <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-                A avaliacao fica disponivel depois que voce conclui um pedido com este profissional.
+                A avaliação fica disponível depois que você conclui um pedido com este profissional.
               </p>
 
               {!user ? (

@@ -72,7 +72,7 @@ function PageIntro({ title, description, stats = [] }) {
   return (
     <section className="admin-modern-hero">
       <div className="admin-modern-hero-copy">
-        <p>Administracao</p>
+        <p>Administração</p>
         <h1>{title || 'Painel ADM'}</h1>
         <small>{description}</small>
       </div>
@@ -464,7 +464,7 @@ export default function AdminDashboard() {
 
   const deleteUser = async (targetUser) => {
     const confirmed = await confirm(
-      `Arquivar o usuario ${targetUser.name}?\n\nO acesso sera bloqueado, mas os dados poderao ser restaurados pelo administrador.`
+      `Arquivar o usuário ${targetUser.name}?\n\nO acesso será bloqueado, mas os dados poderão ser restaurados pelo administrador.`
     );
 
     if (!confirmed) {
@@ -475,7 +475,7 @@ export default function AdminDashboard() {
 
     try {
       await api.delete(`/admin/users/${targetUser.id}`);
-      toast.success('Usuario arquivado com sucesso.');
+      toast.success('Usuário arquivado com sucesso.');
       await Promise.all([loadUsers(userFilters), loadOverview(), loadPayments(paymentFilters)]);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível excluir o usuário.');
@@ -490,10 +490,10 @@ export default function AdminDashboard() {
     setSavingUserId(targetUser.id);
     try {
       await api.patch(`/admin/users/${targetUser.id}/restore`);
-      toast.success('Usuario restaurado. A verificacao e a vitrine continuam desativadas por seguranca.');
+      toast.success('Usuário restaurado. A verificação e a vitrine continuam desativadas por segurança.');
       await Promise.all([loadUsers(userFilters), loadOverview()]);
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel restaurar o usuario.');
+      toast.error(error.response?.data?.error || 'Não foi possível restaurar o usuário.');
     } finally {
       setSavingUserId(null);
     }
@@ -725,7 +725,7 @@ export default function AdminDashboard() {
             detail: `${metrics.total_service_requests || 0} pedidos no total.`,
           },
           {
-            label: 'Receita do mes',
+            label: 'Receita do mês',
             value: formatCurrency(metrics.monthly_revenue || 0),
             detail: `${metrics.paid_this_month_count || 0} pagamentos confirmados.`,
           },
@@ -1207,7 +1207,7 @@ export default function AdminDashboard() {
                         onClick={() => restoreUser(item)}
                         type="button"
                       >
-                        Restaurar usuario
+                        Restaurar usuário
                       </button>
                     ) : (
                       <button
@@ -1216,7 +1216,7 @@ export default function AdminDashboard() {
                         onClick={() => deleteUser(item)}
                         type="button"
                       >
-                        Arquivar usuario
+                        Arquivar usuário
                       </button>
                     )}
                   </div>

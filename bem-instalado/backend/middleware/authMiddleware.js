@@ -10,7 +10,7 @@ module.exports = async (req, res, next) => {
   const header = req.headers.authorization;
 
   if (!header) {
-    return res.status(401).json({ error: 'Token nao informado.', code: 'AUTH_TOKEN_MISSING' });
+    return res.status(401).json({ error: 'Token não informado.', code: 'AUTH_TOKEN_MISSING' });
   }
 
   const [scheme, token] = header.split(' ');
@@ -24,7 +24,7 @@ module.exports = async (req, res, next) => {
   try {
     decoded = jwt.verify(token, jwtSecret);
   } catch (_error) {
-    return res.status(401).json({ error: 'Token invalido.', code: 'AUTH_TOKEN_INVALID' });
+    return res.status(401).json({ error: 'Token inválido.', code: 'AUTH_TOKEN_INVALID' });
   }
 
   try {
@@ -40,11 +40,11 @@ module.exports = async (req, res, next) => {
     const user = rows[0];
 
     if (!user) {
-      return res.status(401).json({ error: 'Usuario nao autenticado.', code: 'AUTH_USER_NOT_FOUND' });
+      return res.status(401).json({ error: 'Usuário não autenticado.', code: 'AUTH_USER_NOT_FOUND' });
     }
 
     if (Number(decoded.v ?? 0) !== Number(user.auth_version ?? 0)) {
-      return res.status(401).json({ error: 'Sessao expirada.', code: 'AUTH_SESSION_REVOKED' });
+      return res.status(401).json({ error: 'Sessão expirada.', code: 'AUTH_SESSION_REVOKED' });
     }
 
     req.userId = user.id;
@@ -57,7 +57,7 @@ module.exports = async (req, res, next) => {
     return next();
   } catch (_error) {
     return res.status(503).json({
-      error: 'Nao foi possivel validar sua sessao agora. Tente novamente.',
+      error: 'Não foi possível validar sua sessão agora. Tente novamente.',
       code: 'AUTH_SERVICE_UNAVAILABLE',
     });
   }

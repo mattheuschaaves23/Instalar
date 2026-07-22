@@ -699,8 +699,8 @@ exports.updateUserPublicProfile = async (req, res) => {
         targetUserId,
         nextPublicProfile ? 'Perfil aprovado para a busca' : 'Perfil removido da busca',
         nextPublicProfile
-          ? 'A analise administrativa foi concluida e seu perfil agora pode aparecer para clientes.'
-          : 'Seu perfil foi retirado temporariamente da busca publica. Revise os dados ou fale com o suporte.',
+          ? 'A análise administrativa foi concluída e seu perfil agora pode aparecer para clientes.'
+          : 'Seu perfil foi retirado temporariamente da busca pública. Revise os dados ou fale com o suporte.',
         nextPublicProfile ? 'success' : 'info',
       ]
     );
@@ -941,7 +941,7 @@ exports.restoreUser = async (req, res) => {
   try {
     const targetUserId = Number(req.params.id);
     if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
-      return res.status(400).json({ error: 'Usuario invalido.' });
+      return res.status(400).json({ error: 'Usuário inválido.' });
     }
 
     const { rows } = await pool.query(
@@ -960,10 +960,10 @@ exports.restoreUser = async (req, res) => {
       [targetUserId]
     );
 
-    if (!rows[0]) return res.status(404).json({ error: 'Usuario arquivado nao encontrado.' });
+    if (!rows[0]) return res.status(404).json({ error: 'Usuário arquivado não encontrado.' });
     return res.json({ user: rows[0] });
   } catch (_error) {
-    return res.status(500).json({ error: 'Erro ao restaurar usuario.' });
+    return res.status(500).json({ error: 'Erro ao restaurar usuário.' });
   }
 };
 

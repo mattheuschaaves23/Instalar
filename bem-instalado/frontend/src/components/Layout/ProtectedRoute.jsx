@@ -21,7 +21,7 @@ export default function ProtectedRoute({ allowedAccountTypes = ['installer'], lo
           <p className="eyebrow">InstalaPro</p>
           <h1 className="page-title mt-4 text-[3rem]">Abrindo seu acesso</h1>
           <p className="page-copy mt-4">
-            Estamos validando sua conta antes de liberar a proxima tela.
+            Estamos validando sua conta antes de liberar a próxima tela.
           </p>
         </div>
       </div>
@@ -32,7 +32,7 @@ export default function ProtectedRoute({ allowedAccountTypes = ['installer'], lo
     return (
       <main className="auth-scene flex min-h-screen items-center justify-center px-6 py-10">
         <section className="lux-panel w-full max-w-lg p-8 text-center" role="alert">
-          <p className="eyebrow">Conexao temporariamente indisponivel</p>
+          <p className="eyebrow">Conexão temporariamente indisponível</p>
           <h1 className="page-title mt-4 text-[2.6rem]">Seu login continua salvo</h1>
           <p className="page-copy mt-4">{authError}</p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">

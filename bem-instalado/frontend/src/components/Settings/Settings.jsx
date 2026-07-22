@@ -11,19 +11,19 @@ import {
 } from '../../utils/sitePreferences';
 
 const densityOptions = [
-  { value: 'comfortable', label: 'Espacosa', detail: 'Mais respiro' },
-  { value: 'compact', label: 'Compacta', detail: 'Mais informacao' },
+  { value: 'comfortable', label: 'Espaçosa', detail: 'Mais respiro' },
+  { value: 'compact', label: 'Compacta', detail: 'Mais informação' },
 ];
 
 const motionOptions = [
-  { value: 'smooth', label: 'Suaves', detail: 'Padrao' },
+  { value: 'smooth', label: 'Suaves', detail: 'Padrão' },
   { value: 'reduced', label: 'Reduzidas', detail: 'Menos movimento' },
 ];
 
 const shortcutItems = [
-  { to: '/profile', title: 'Perfil publico', detail: 'Dados, fotos, documentos e seguranca.', icon: 'user' },
+  { to: '/profile', title: 'Perfil público', detail: 'Dados, fotos, documentos e segurança.', icon: 'user' },
   { to: '/subscription', title: 'Assinatura', detail: 'Plano, status e acesso ao painel.', icon: 'card' },
-  { to: '/notifications', title: 'Notificacoes', detail: 'Avisos recentes da conta.', icon: 'bell' },
+  { to: '/notifications', title: 'Notificações', detail: 'Avisos recentes da conta.', icon: 'bell' },
   { to: '/support', title: 'Suporte', detail: 'Atendimento e ideias para o produto.', icon: 'help' },
 ];
 
@@ -85,7 +85,7 @@ export default function Settings() {
     () => ACCENT_PRESETS.find((preset) => preset.value === preferences.accentColor),
     [preferences.accentColor]
   );
-  const firstName = user?.name?.split(' ')[0] || 'usuario';
+  const firstName = user?.name?.split(' ')[0] || 'usuário';
 
   const savePreference = (patch) => {
     setPreferences((currentPreferences) => {
@@ -99,7 +99,7 @@ export default function Settings() {
     const nextPreferences = resetSitePreferences();
     setPreferences(nextPreferences);
     setSavedAt(new Date());
-    toast.success('Configuracoes restauradas.');
+    toast.success('Configurações restauradas.');
   };
 
   const stats = [
@@ -110,13 +110,13 @@ export default function Settings() {
     },
     {
       label: 'Densidade',
-      value: preferences.density === 'compact' ? 'Compacta' : 'Espacosa',
-      detail: 'Preferencia da interface',
+      value: preferences.density === 'compact' ? 'Compacta' : 'Espaçosa',
+      detail: 'Preferência da interface',
     },
     {
       label: 'Movimento',
       value: preferences.motion === 'reduced' ? 'Reduzido' : 'Suave',
-      detail: 'Animacoes do painel',
+      detail: 'Animações do painel',
     },
   ];
 
@@ -124,12 +124,12 @@ export default function Settings() {
     <div className="page-shell settings-page">
       <PageIntro
         eyebrow="Conta"
-        title="Configuracoes"
-        description={`Ajustes do painel de ${firstName}: aparencia, movimento e atalhos da conta.`}
+        title="Configurações"
+        description={`Ajustes do painel de ${firstName}: aparência, movimento e atalhos da conta.`}
         actions={(
           <button className="ghost-button" onClick={handleReset} type="button">
             <SettingsIcon type="reset" />
-            Restaurar padrao
+            Restaurar padrão
           </button>
         )}
         stats={stats}
@@ -186,7 +186,7 @@ export default function Settings() {
             <span><SettingsIcon type="layout" /></span>
             <div>
               <p>Interface</p>
-              <h2>Organizacao visual</h2>
+              <h2>Organização visual</h2>
             </div>
           </div>
 
@@ -198,7 +198,7 @@ export default function Settings() {
           />
 
           <PreferenceSegment
-            label="Animacoes"
+            label="Animações"
             onChange={(value) => savePreference({ motion: value })}
             options={motionOptions}
             value={preferences.motion}
@@ -236,7 +236,7 @@ export default function Settings() {
             </div>
           </div>
           <small>
-            As preferencias ficam neste dispositivo e sao aplicadas quando o painel abre.
+            As preferências ficam neste dispositivo e são aplicadas quando o painel abre.
           </small>
         </article>
       </section>

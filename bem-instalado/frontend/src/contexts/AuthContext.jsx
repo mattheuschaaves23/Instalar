@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
       } else {
         setAuthError(
           error.response?.data?.error ||
-            'Nao foi possivel validar sua sessao. Verifique a conexao e tente novamente.'
+            'Não foi possível validar sua sessão. Verifique a conexão e tente novamente.'
         );
       }
 

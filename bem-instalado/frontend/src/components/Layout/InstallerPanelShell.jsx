@@ -7,26 +7,26 @@ import BrandMark from './BrandMark';
 import BrandWordmark from './BrandWordmark';
 
 const MOBILE_DOCK_ITEMS = [
-  { to: '/dashboard', label: 'Inicio', icon: 'home' },
+  { to: '/dashboard', label: 'Início', icon: 'home' },
   { to: '/opportunities', label: 'Oportunidades', icon: 'opportunities' },
   { to: '/agenda', label: 'Agenda', icon: 'agenda' },
-  { to: '/budgets', label: 'Orcamentos', icon: 'budgets' },
+  { to: '/budgets', label: 'Orçamentos', icon: 'budgets' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
 ];
 
 const ADMIN_MOBILE_DOCK_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
 
 const PANEL_NAV_ITEMS = [
-  { to: '/dashboard', label: 'Inicio', icon: 'grid', section: 'VISAO GERAL' },
+  { to: '/dashboard', label: 'Início', icon: 'grid', section: 'VISÃO GERAL' },
   { to: '/opportunities', label: 'Oportunidades', icon: 'opportunities', badgeKey: 'opportunities' },
-  { to: '/reviews', label: 'Avaliacoes', icon: 'star', badgeKey: 'reviews' },
-  { to: '/agenda', label: 'Agenda', icon: 'agenda', section: 'OPERACAO', badgeKey: 'agenda' },
-  { to: '/budgets', label: 'Orcamentos', icon: 'file' },
+  { to: '/reviews', label: 'Avaliações', icon: 'star', badgeKey: 'reviews' },
+  { to: '/agenda', label: 'Agenda', icon: 'agenda', section: 'OPERAÇÃO', badgeKey: 'agenda' },
+  { to: '/budgets', label: 'Orçamentos', icon: 'file' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
   { to: '/profile', label: 'Perfil', icon: 'profile', section: 'CONTA' },
   { to: '/subscription', label: 'Assinatura', icon: 'card' },
-  { to: '/notifications', label: 'Notificacoes', icon: 'bell', badgeKey: 'notifications' },
-  { to: '/settings', label: 'Configuracoes', icon: 'settings' },
+  { to: '/notifications', label: 'Notificações', icon: 'bell', badgeKey: 'notifications' },
+  { to: '/settings', label: 'Configurações', icon: 'settings' },
   { to: '/support', label: 'Suporte', icon: 'help' },
 ];
 
@@ -92,7 +92,7 @@ function formatPanelDate(date) {
 
 function isActiveRoute(pathname, item) {
   if (item.to === '/dashboard') {
-    return pathname === '/dashboard' && item.label === 'Inicio';
+    return pathname === '/dashboard' && item.label === 'Início';
   }
 
   if (item.to === '/budgets') {
@@ -216,7 +216,7 @@ export default function InstallerPanelShell({ children }) {
 
   return (
     <section className={`ref-panel-shell ref-panel-route-shell ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
-      <aside className="ref-panel-sidebar" aria-label="Navegacao do painel">
+      <aside className="ref-panel-sidebar" aria-label="Navegação do painel">
         <SidebarContent
           allowCollapse
           collapsed={sidebarCollapsed}
@@ -277,7 +277,7 @@ export default function InstallerPanelShell({ children }) {
           <div>
             <BrandWordmark className="ref-panel-mobile-wordmark" size="sm" />
           </div>
-          <nav aria-label="Acoes rapidas do painel">
+          <nav aria-label="Ações rápidas do painel">
             <Link aria-label="Abrir clientes" to="/clients"><PanelIcon type="search" size={18} /></Link>
             <Link aria-label="Abrir notificações" to="/notifications"><PanelIcon type="bell" size={18} />{notificationBadge ? <em>{notificationBadge}</em> : null}</Link>
             <Link aria-label="Abrir perfil" to="/profile" className="ref-panel-avatar">{initials}</Link>
@@ -288,7 +288,7 @@ export default function InstallerPanelShell({ children }) {
           {children}
         </main>
 
-        <nav aria-label="Navegacao mobile" className="ref-panel-bottom-nav">
+        <nav aria-label="Navegação mobile" className="ref-panel-bottom-nav">
           {mobileDockItems.map((item) => (
             <NavLink className={({ isActive }) => `ref-panel-bottom-tab ${isActive ? 'is-active' : ''}`} key={item.to} to={item.to}>
               <PanelIcon type={item.icon} />

@@ -41,7 +41,7 @@ export default function Budgets() {
       const response = await api.get('/budgets');
       setBudgets(response.data);
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel carregar orcamentos.');
+      toast.error(error.response?.data?.error || 'Não foi possível carregar orçamentos.');
     }
   };
 
@@ -66,7 +66,7 @@ export default function Budgets() {
 
   const approveBudget = async () => {
     if (!approvalDraft.budgetId || !approvalDraft.scheduleDate) {
-      toast.error('Escolha a data e a hora da instalacao.');
+      toast.error('Escolha a data e a hora da instalação.');
       return;
     }
 
@@ -74,23 +74,23 @@ export default function Budgets() {
       await api.put(`/budgets/${approvalDraft.budgetId}/approve`, {
         schedule_date: `${approvalDraft.scheduleDate.replace('T', ' ')}:00`,
       });
-      toast.success('Orcamento aprovado e enviado para agenda.');
+      toast.success('Orçamento aprovado e enviado para agenda.');
       setCurrentPage(1);
       closeApprovalModal();
       await loadBudgets();
       notifyPanelBadgeCountsChanged();
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel aprovar o orcamento.');
+      toast.error(error.response?.data?.error || 'Não foi possível aprovar o orçamento.');
     }
   };
 
   const rejectBudget = async (budgetId) => {
     try {
       await api.put(`/budgets/${budgetId}/reject`);
-      toast.success('Orcamento rejeitado.');
+      toast.success('Orçamento rejeitado.');
       loadBudgets();
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel rejeitar o orcamento.');
+      toast.error(error.response?.data?.error || 'Não foi possível rejeitar o orçamento.');
     }
   };
 
@@ -99,7 +99,7 @@ export default function Budgets() {
       const response = await api.get(`/budgets/${budgetId}/whatsapp`);
       window.open(response.data.link, '_blank', 'noopener,noreferrer');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel abrir o WhatsApp.');
+      toast.error(error.response?.data?.error || 'Não foi possível abrir o WhatsApp.');
     }
   };
 
@@ -115,7 +115,7 @@ export default function Budgets() {
       anchor.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel gerar o PDF.');
+      toast.error(error.response?.data?.error || 'Não foi possível gerar o PDF.');
     }
   };
 
@@ -137,7 +137,7 @@ export default function Budgets() {
             </Link>
           </>
         }
-        description="Aqui a operacao comercial ganha clareza: acompanhe valor, status e acao ideal para cada proposta."
+        description="Aqui a operação comercial ganha clareza: acompanhe valor, status e ação ideal para cada proposta."
         eyebrow="Comercial"
         stats={[
           { label: 'Total de propostas', value: `${budgets.length}`, detail: 'Todas as propostas registradas.' },
@@ -152,7 +152,7 @@ export default function Budgets() {
             detail: 'Oportunidades que merecem acompanhamento.',
           },
         ]}
-        title="Um pipeline elegante ajuda voce a vender como consultor, nao como tirador de preco."
+        title="Um pipeline elegante ajuda você a vender como consultor, não como tirador de preço."
       />
 
       <div className="grid gap-4">
@@ -214,7 +214,7 @@ export default function Budgets() {
 
         {budgets.length === 0 ? (
           <div className="empty-state">
-            <p>Nenhum orcamento cadastrado ainda. Crie o primeiro para dar vida ao seu pipeline comercial.</p>
+            <p>Nenhum orçamento cadastrado ainda. Crie o primeiro para dar vida ao seu pipeline comercial.</p>
             <div className="mt-5">
               <Link className="gold-button" to="/budgets/new">
                 Criar novo orçamento
@@ -227,10 +227,10 @@ export default function Budgets() {
       {approvalDraft.budgetId ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(4,4,4,0.72)] px-4 backdrop-blur-md">
           <div className="lux-panel w-full max-w-lg p-6 sm:p-7">
-            <p className="eyebrow">Aprovacao guiada</p>
-            <h2 className="mt-3 text-2xl font-semibold text-[var(--text)]">Agendar instalacao</h2>
+            <p className="eyebrow">Aprovação guiada</p>
+            <h2 className="mt-3 text-2xl font-semibold text-[var(--text)]">Agendar instalação</h2>
             <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-              Defina a data e a hora para a instalacao antes de aprovar o orcamento.
+              Defina a data e a hora para a instalação antes de aprovar o orçamento.
             </p>
 
             <label className="mt-6 block">
@@ -247,7 +247,7 @@ export default function Budgets() {
 
             <div className="mt-6 flex flex-wrap gap-3">
               <button className="gold-button w-full sm:w-auto" onClick={approveBudget} type="button">
-                Confirmar aprovacao
+                Confirmar aprovação
               </button>
               <button className="ghost-button w-full sm:w-auto" onClick={closeApprovalModal} type="button">
                 Cancelar

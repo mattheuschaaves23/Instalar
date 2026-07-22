@@ -198,19 +198,19 @@ function getStatusTone(status) {
 
 function formatPrimaryAddress(destination) {
   if (!destination) {
-    return 'Endereco nao informado';
+    return 'Endereço não informado';
   }
 
   const street = [destination.street, destination.house_number].filter(Boolean).join(', ');
-  return street || destination.full_address || 'Endereco nao informado';
+  return street || destination.full_address || 'Endereço não informado';
 }
 
 function formatSecondaryAddress(destination) {
   if (!destination) {
-    return 'Local nao informado';
+    return 'Local não informado';
   }
 
-  return [destination.neighborhood, destination.city, destination.state].filter(Boolean).join(' - ') || 'Local nao informado';
+  return [destination.neighborhood, destination.city, destination.state].filter(Boolean).join(' - ') || 'Local não informado';
 }
 
 function formatTimeLabel(date) {
@@ -247,7 +247,7 @@ export default function Agenda() {
       const response = await api.get('/schedules');
       setItems(response.data);
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel carregar a agenda.');
+      toast.error(error.response?.data?.error || 'Não foi possível carregar a agenda.');
     } finally {
       setLoading(false);
     }
@@ -265,7 +265,7 @@ export default function Agenda() {
       await loadAgenda();
       notifyPanelBadgeCountsChanged();
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel atualizar a agenda.');
+      toast.error(error.response?.data?.error || 'Não foi possível atualizar a agenda.');
     }
   };
 
@@ -289,13 +289,13 @@ export default function Agenda() {
       await loadAgenda();
       notifyPanelBadgeCountsChanged();
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel excluir o agendamento.');
+      toast.error(error.response?.data?.error || 'Não foi possível excluir o agendamento.');
     }
   };
 
   const openRoute = (url) => {
     if (!url) {
-      toast.error('Endereco insuficiente para abrir rota.');
+      toast.error('Endereço insuficiente para abrir rota.');
       return;
     }
 
@@ -304,15 +304,15 @@ export default function Agenda() {
 
   const copyAddress = async (address) => {
     if (!address) {
-      toast.error('Endereco nao informado.');
+      toast.error('Endereço não informado.');
       return;
     }
 
     try {
       await navigator.clipboard.writeText(address);
-      toast.success('Endereco copiado.');
+      toast.success('Endereço copiado.');
     } catch (_error) {
-      toast.error('Nao foi possivel copiar o endereco.');
+      toast.error('Não foi possível copiar o endereço.');
     }
   };
 
@@ -399,15 +399,15 @@ export default function Agenda() {
       <header className="agenda-modern-hero fade-up">
         <div className="agenda-modern-hero-copy">
           <p className="agenda-modern-eyebrow">Minha agenda</p>
-          <h1>Gerencie suas instalacoes com clareza e ritmo.</h1>
+          <h1>Gerencie suas instalações com clareza e ritmo.</h1>
           <p>
-            Um calendario visual para organizar o mes, acompanhar o dia e agir rapido em cada compromisso.
+            Um calendário visual para organizar o mês, acompanhar o dia e agir rápido em cada compromisso.
           </p>
         </div>
 
         <div className="agenda-modern-hero-metrics">
           <article>
-            <span>Instalacoes no mes</span>
+            <span>Instalações no mês</span>
             <strong>{monthItems.length}</strong>
           </article>
           <article>
@@ -425,7 +425,7 @@ export default function Agenda() {
         <section className="agenda-modern-calendar-card fade-up" id="agenda-calendar">
           <div className="agenda-modern-panel-head">
             <div>
-              <p className="agenda-modern-section-label">Calendario</p>
+              <p className="agenda-modern-section-label">Calendário</p>
               <h2>{monthLabel(viewDate)}</h2>
             </div>
 
@@ -445,7 +445,7 @@ export default function Agenda() {
           <div className="agenda-modern-legend">
             <span>
               <i className="has-events" />
-              Com instalacoes
+              Com instalações
             </span>
             <span>
               <i className="selected-day" />
@@ -498,7 +498,7 @@ export default function Agenda() {
         <aside className="agenda-modern-day-panel fade-up" style={{ animationDelay: '0.06s' }}>
           <div className="agenda-modern-day-head">
             <div>
-              <p className="agenda-modern-section-label">Instalacoes do dia</p>
+              <p className="agenda-modern-section-label">Instalações do dia</p>
               <div className="agenda-modern-day-title-row">
                 <h2>{selectedDayLabel(selectedDate)}</h2>
                 <span className="agenda-modern-count-pill">{selectedItems.length}</span>
@@ -511,25 +511,25 @@ export default function Agenda() {
             </div>
 
             <button className="agenda-modern-primary-button" onClick={() => navigate('/budgets/new')} type="button">
-              + Agendar instalacao
+              + Agendar instalação
             </button>
           </div>
 
           <div className="agenda-modern-appointments">
             {loading ? (
-              <div className="agenda-modern-empty-state">Carregando compromissos do calendario...</div>
+              <div className="agenda-modern-empty-state">Carregando compromissos do calendário...</div>
             ) : null}
 
             {!loading && selectedItems.length === 0 ? (
               <div className="agenda-modern-empty-state">
-                Esse dia esta livre. Escolha outra data no calendario ou crie um novo compromisso.
+                Esse dia está livre. Escolha outra data no calendário ou crie um novo compromisso.
               </div>
             ) : null}
 
             {selectedItems.map((item) => {
               const isOpen = openMenuId === item.id;
               const statusTone = getStatusTone(item.status);
-              const serviceLabel = item.title || 'Instalacao de papel de parede';
+              const serviceLabel = item.title || 'Instalação de papel de parede';
 
               return (
                 <article className={`agenda-modern-appointment ${isOpen ? 'is-open' : ''}`} key={item.id}>
@@ -557,7 +557,7 @@ export default function Agenda() {
                       <div className="agenda-modern-appointment-meta">
                         <span>
                           <AgendaIcon type="pin" />
-                          {item.destination?.reference || 'Sem observacao de rota'}
+                          {item.destination?.reference || 'Sem observação de rota'}
                         </span>
                       </div>
                     </div>
@@ -634,10 +634,10 @@ export default function Agenda() {
         </div>
 
         <div className="agenda-modern-summary-copy">
-          <strong>Voce tem {monthItems.length} instalacoes neste mes</strong>
+          <strong>Você tem {monthItems.length} instalações neste mês</strong>
           <span>
             {nextAppointment?.parsedDate
-              ? `Proxima: ${formatShortDateLabel(nextAppointment.parsedDate)} as ${formatTimeLabel(nextAppointment.parsedDate)}`
+              ? `Próxima: ${formatShortDateLabel(nextAppointment.parsedDate)} às ${formatTimeLabel(nextAppointment.parsedDate)}`
               : 'Nenhum compromisso futuro confirmado no momento'}
           </span>
         </div>

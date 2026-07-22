@@ -114,12 +114,12 @@ const benefitItems = [
   {
     icon: 'shield',
     title: 'Profissionais verificados',
-    copy: 'Todos os instaladores passam por uma analise completa.',
+    copy: 'Todos os instaladores passam por uma análise completa.',
   },
   {
     icon: 'star',
     title: 'Avaliações reais',
-    copy: 'Veja a experiencia de outros clientes antes de contratar.',
+    copy: 'Veja a experiência de outros clientes antes de contratar.',
   },
   {
     icon: 'chat',
@@ -194,7 +194,7 @@ export default function ClientLogin() {
     try {
       if (isRegistering) {
         if (form.password.length < 10 || !/[A-Za-z]/.test(form.password) || !/\d/.test(form.password)) {
-          toast.error('Use pelo menos 10 caracteres, com letras e numeros.');
+          toast.error('Use pelo menos 10 caracteres, com letras e números.');
           return;
         }
 
@@ -213,7 +213,7 @@ export default function ClientLogin() {
 
       if (result.twoFactorRequired) {
         setNeeds2FA(true);
-        toast('Digite o codigo 2FA para concluir o acesso.');
+        toast('Digite o código 2FA para concluir o acesso.');
         return;
       }
 
@@ -222,12 +222,12 @@ export default function ClientLogin() {
     } catch (error) {
       if (error.response?.status === 401 && error.response?.data?.twoFactorRequired) {
         setNeeds2FA(true);
-        toast('Digite o codigo 2FA para concluir o acesso.');
+        toast('Digite o código 2FA para concluir o acesso.');
         return;
       }
 
       const suggestedPortal = error.response?.data?.suggested_portal;
-      toast.error(error.response?.data?.error || 'Nao foi possivel entrar.');
+      toast.error(error.response?.data?.error || 'Não foi possível entrar.');
       if (suggestedPortal) {
         navigate(suggestedPortal, { replace: true });
       }

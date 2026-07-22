@@ -429,7 +429,7 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
     user = updatedUser.rows[0] || user;
   } else {
     const generatedPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
-    const displayName = String(profile.name || normalizedEmail.split('@')[0] || 'Usuario').trim().slice(0, 100);
+    const displayName = String(profile.name || normalizedEmail.split('@')[0] || 'Usuário').trim().slice(0, 100);
 
     const createdUser = await pool.query(
       `
@@ -510,7 +510,7 @@ async function registerPasswordAccount(req, res, accountType) {
     }
 
     if (String(password).length < 10 || !/[A-Za-z]/.test(String(password)) || !/\d/.test(String(password))) {
-      return res.status(400).json({ error: 'A senha precisa ter pelo menos 10 caracteres, com letras e numeros.' });
+      return res.status(400).json({ error: 'A senha precisa ter pelo menos 10 caracteres, com letras e números.' });
     }
 
     if (accountType === 'client' && normalizedPhone.replace(/\D/g, '').length < 10) {
@@ -1115,7 +1115,7 @@ exports.forgotPassword = async (req, res) => {
 
     if (process.env.NODE_ENV === 'production' && !isEmailEnabled()) {
       return res.status(503).json({
-        error: 'Recuperacao por e-mail temporariamente indisponivel.',
+        error: 'Recuperação por e-mail temporariamente indisponível.',
         code: 'EMAIL_NOT_CONFIGURED',
       });
     }
@@ -1196,7 +1196,7 @@ exports.forgotPassword = async (req, res) => {
       resetUrl,
       expiresInMinutes: PASSWORD_RESET_EXPIRATION_MINUTES,
     }).catch((error) => {
-      console.error('Falha ao enviar e-mail de recuperacao de senha.');
+      console.error('Falha ao enviar e-mail de recuperação de senha.');
       console.error(error);
       return { sent: false, reason: 'send_failed' };
     });
@@ -1233,7 +1233,7 @@ exports.resetPassword = async (req, res) => {
     }
 
     if (nextPassword.length < 10 || !/[A-Za-z]/.test(nextPassword) || !/\d/.test(nextPassword)) {
-      return res.status(400).json({ error: 'A nova senha precisa ter pelo menos 10 caracteres, com letras e numeros.' });
+      return res.status(400).json({ error: 'A nova senha precisa ter pelo menos 10 caracteres, com letras e números.' });
     }
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');

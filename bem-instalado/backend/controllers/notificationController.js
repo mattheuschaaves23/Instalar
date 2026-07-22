@@ -1,4 +1,4 @@
-﻿const pool = require('../config/database');
+const pool = require('../config/database');
 
 exports.getNotifications = async (req, res) => {
   try {
@@ -54,6 +54,6 @@ exports.markAllAsRead = async (req, res) => {
 
     return res.json({ success: true, updated: result.rowCount });
   } catch (_error) {
-    return res.status(500).json({ error: 'Erro ao atualizar notificacoes.' });
+    return res.status(500).json({ error: 'Erro ao atualizar notificações.' });
   }
 };

@@ -463,7 +463,7 @@ async function startServer() {
   app.listen(port, () => {
     console.log(`InstalaPro backend rodando na porta ${port}`);
     if (isProduction) {
-      console.log('Commit atual:', gitCommit || 'nao informado');
+      console.log('Commit atual:', gitCommit || 'não informado');
     }
   });
 }

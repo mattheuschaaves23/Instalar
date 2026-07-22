@@ -574,7 +574,7 @@ exports.searchLocation = async (req, res) => {
     const suggest = String(req.query.suggest || '') === '1';
 
     if (query.length < 3) {
-      return res.status(400).json({ error: 'Digite um endereco com pelo menos 3 caracteres.' });
+      return res.status(400).json({ error: 'Digite um endereço com pelo menos 3 caracteres.' });
     }
 
     const suggestions = await forwardGeocode(
@@ -589,14 +589,14 @@ exports.searchLocation = async (req, res) => {
 
     if (!suggestions.length) {
       return res.status(404).json({
-        error: 'Nao encontramos esse endereco. Tente incluir a cidade e o estado.',
+        error: 'Não encontramos esse endereço. Tente incluir a cidade e o estado.',
       });
     }
 
     return res.json(suggestions[0]);
   } catch (_error) {
     return res.status(503).json({
-      error: 'Nao conseguimos localizar esse endereco agora. Tente novamente em instantes.',
+      error: 'Não conseguimos localizar esse endereço agora. Tente novamente em instantes.',
     });
   }
 };
@@ -786,7 +786,7 @@ const legacyCreateReview = async (req, res) => {
     const reviewerIp = getClientIp(req);
 
     if (!installerId || !reviewerName || rating < 1 || rating > 5) {
-      return res.status(400).json({ error: 'Nome e nota válida são obrigatórios.' });
+      return res.status(400).json({ error: 'Nome e nota são obrigatórios.' });
     }
 
     const installerCheck = await pool.query(
@@ -888,11 +888,11 @@ exports.createReview = async (req, res) => {
     }
 
     if (req.user?.account_type !== 'client') {
-      return res.status(403).json({ error: 'Somente clientes podem avaliar um servico concluido.' });
+      return res.status(403).json({ error: 'Somente clientes podem avaliar um serviço concluído.' });
     }
 
     if (!installerId || rating < 1 || rating > 5) {
-      return res.status(400).json({ error: 'Uma nota valida entre 1 e 5 e obrigatoria.' });
+      return res.status(400).json({ error: 'Uma nota entre 1 e 5 é obrigatória.' });
     }
 
     const installerCheck = await pool.query(
@@ -940,7 +940,7 @@ exports.createReview = async (req, res) => {
 
     if (!eligibleServiceRequestId) {
       return res.status(403).json({
-        error: 'Conclua um pedido com este instalador antes de enviar a avaliacao.',
+        error: 'Conclua um pedido com este instalador antes de enviar a avaliação.',
         code: 'COMPLETED_SERVICE_REQUIRED',
       });
     }
@@ -977,7 +977,7 @@ exports.createReview = async (req, res) => {
     return res.status(201).json(rows[0]);
   } catch (error) {
     if (error?.code === '23505') {
-      return res.status(409).json({ error: 'Este servico concluido ja foi avaliado.' });
+      return res.status(409).json({ error: 'Este serviço concluído já foi avaliado.' });
     }
 
     return res.status(500).json({ error: 'Erro ao enviar a avaliação.' });

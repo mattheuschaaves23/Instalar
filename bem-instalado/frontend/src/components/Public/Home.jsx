@@ -39,7 +39,7 @@ const CATEGORY_OPTIONS = [
 const QUICK_FILTER_OPTIONS = [
   { value: 'all', label: 'Todos' },
   { value: 'verified', label: 'Verificados' },
-  { value: 'available', label: 'Disponiveis' },
+  { value: 'available', label: 'Disponíveis' },
   { value: 'featured', label: 'Destaques' },
 ];
 
@@ -121,9 +121,9 @@ const URGENCY_OPTIONS = [
   { value: 'quote', label: 'Ainda estou orçando', description: 'Quero comparar antes de escolher.' },
 ];
 const CONTACT_PREFERENCE_OPTIONS = [
-  { value: 'whatsapp', label: 'WhatsApp', description: 'Mais rapido para combinar fotos e detalhes.' },
-  { value: 'phone', label: 'Ligacao', description: 'Prefiro conversar por chamada.' },
-  { value: 'any', label: 'Qualquer contato', description: 'Pode ser WhatsApp ou ligacao.' },
+  { value: 'whatsapp', label: 'WhatsApp', description: 'Mais rápido para combinar fotos e detalhes.' },
+  { value: 'phone', label: 'Ligação', description: 'Prefiro conversar por chamada.' },
+  { value: 'any', label: 'Qualquer contato', description: 'Pode ser WhatsApp ou ligação.' },
 ];
 const REQUEST_STEPS = [
   { value: 'service', label: 'Serviço' },
@@ -481,7 +481,7 @@ function buildClientRequestSnapshot(request) {
     city: String(request.city || '').trim(),
     state: regionState,
     materialStatus: request.materialStatus,
-    materialLabel: optionLabel(MATERIAL_STATUS_OPTIONS, request.materialStatus, 'Material nao informado'),
+    materialLabel: optionLabel(MATERIAL_STATUS_OPTIONS, request.materialStatus, 'Material não informado'),
     measurementStatus,
     measurementLabel: optionLabel(MEASUREMENT_OPTIONS, measurementStatus, 'Medidas a confirmar'),
     measurementDetail,
@@ -501,7 +501,7 @@ function getMeasurementSummary(request) {
   const rollCount = String(request.rollCount || '').trim();
 
   if (measurementStatus === 'visit') {
-    return 'Visita tecnica solicitada';
+    return 'Visita técnica solicitada';
   }
 
   if (measurementStatus === 'known') {
@@ -532,7 +532,7 @@ function getClientRequestStatusLabel(status) {
   return {
     open: 'Aguardando instaladores',
     selected: 'Instalador escolhido',
-    closed: 'Servico concluido',
+    closed: 'Serviço concluído',
     canceled: 'Pedido cancelado',
     expired: 'Pedido expirado',
   }[status] || 'Em acompanhamento';
@@ -593,7 +593,7 @@ function getInstallerMatchReasons(installer, request) {
   const reasons = [];
 
   if (request?.service && (request.service === 'all' || matchesCategory(installer, request.service))) {
-    reasons.push('Servico compativel');
+    reasons.push('Serviço compatível');
   }
 
   if (
@@ -611,7 +611,7 @@ function getInstallerMatchReasons(installer, request) {
   }
 
   if ((installer.availability_slots || []).length || (installer.available_dates || []).length) {
-    reasons.push('Agenda disponivel');
+    reasons.push('Agenda disponível');
   }
 
   if (installer.certificate_verified || installer.safety?.document_masked) {
@@ -639,7 +639,7 @@ function deriveInstallerTags(installer) {
 
 function getAvailabilityState(installer) {
   if ((installer.availability_slots || []).length > 0 || installer.availableToday) {
-    return { label: 'Disponivel', tone: 'available' };
+    return { label: 'Disponível', tone: 'available' };
   }
 
   if ((installer.available_dates || []).length > 0 || installer.nextAvailability) {
@@ -678,7 +678,7 @@ function sortInstallers(items, sortBy, request) {
 }
 
 function getRegionLabel(installer) {
-  return [installer.city, installer.state].filter(Boolean).join(', ') || installer.service_region || 'Regiao nao informada';
+  return [installer.city, installer.state].filter(Boolean).join(', ') || installer.service_region || 'Região não informada';
 }
 
 function getServiceRequestOption(value) {
@@ -709,7 +709,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [, setLocationState] = useState({
     status: 'idle',
-    message: 'Ative sua localizacao para encontrar profissionais mais proximos.',
+    message: 'Ative sua localização para encontrar profissionais mais próximos.',
   });
   const [installersPage, setInstallersPage] = useState(1);
   const [category, setCategory] = useState('all');
@@ -816,7 +816,7 @@ export default function Home() {
         marketplace: payload.marketplace || null,
       });
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel carregar os instaladores.');
+      toast.error(error.response?.data?.error || 'Não foi possível carregar os instaladores.');
     } finally {
       setLoading(false);
     }
@@ -834,14 +834,14 @@ export default function Home() {
     if (typeof window === 'undefined' || !navigator.geolocation) {
       setLocationState({
         status: 'unsupported',
-        message: 'Seu navegador nao oferece localizacao automatica. Voce pode buscar manualmente.',
+        message: 'Seu navegador não oferece localização automática. Você pode buscar manualmente.',
       });
       return;
     }
 
     setLocationState({
       status: 'locating',
-      message: 'Buscando sua regiao para filtrar os instaladores.',
+      message: 'Buscando sua região para filtrar os instaladores.',
     });
 
     navigator.geolocation.getCurrentPosition(
@@ -860,23 +860,23 @@ export default function Home() {
           setLocationState({
             status: 'resolved',
             message: region.label
-              ? `Mostrando profissionais proximos de ${region.label}.`
-              : 'Mostrando profissionais da sua regiao.',
+              ? `Mostrando profissionais próximos de ${region.label}.`
+              : 'Mostrando profissionais da sua região.',
           });
 
           if (!silent) {
-            toast.success(region.label ? `Regiao encontrada: ${region.label}.` : 'Regiao encontrada.');
+            toast.success(region.label ? `Região encontrada: ${region.label}.` : 'Região encontrada.');
           }
 
           await loadDirectory(nextFilters);
         } catch (error) {
           setLocationState({
             status: 'error',
-            message: error.response?.data?.error || 'Nao foi possivel localizar sua regiao agora.',
+            message: error.response?.data?.error || 'Não foi possível localizar sua região agora.',
           });
 
           if (!silent) {
-            toast.error(error.response?.data?.error || 'Nao foi possivel localizar sua regiao agora.');
+            toast.error(error.response?.data?.error || 'Não foi possível localizar sua região agora.');
           }
         }
       },
@@ -885,8 +885,8 @@ export default function Home() {
         setLocationState({
           status: permissionDenied ? 'denied' : 'error',
           message: permissionDenied
-            ? 'Permita a localizacao para mostrar primeiro os profissionais da sua regiao.'
-            : 'Nao foi possivel usar sua localizacao no momento.',
+            ? 'Permita a localização para mostrar primeiro os profissionais da sua região.'
+            : 'Não foi possível usar sua localização no momento.',
         });
       },
       {
@@ -970,7 +970,7 @@ export default function Home() {
           setLocationOptions([]);
           setLocationSuggestionsOpen(false);
           setLocationLoadError(
-            error.response?.data?.error || 'Nao foi possivel buscar enderecos agora.'
+            error.response?.data?.error || 'Não foi possível buscar endereços agora.'
           );
         }
       } finally {
@@ -1069,7 +1069,7 @@ export default function Home() {
         });
       }
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel carregar instaladores interessados.');
+      toast.error(error.response?.data?.error || 'Não foi possível carregar instaladores interessados.');
     } finally {
       setLoadingInterests(false);
     }
@@ -1205,13 +1205,13 @@ export default function Home() {
       await api.put('/notifications/read-all');
       await refreshNotifications();
     } catch (_error) {
-      toast.error('Nao foi possivel atualizar os avisos.');
+      toast.error('Não foi possível atualizar os avisos.');
     }
   };
 
   const handleEnableRequestNotifications = async () => {
     if (typeof Notification === 'undefined') {
-      toast('Avisos do navegador nao estao disponiveis neste aparelho.');
+      toast('Avisos do navegador não estão disponíveis neste aparelho.');
       return;
     }
 
@@ -1221,7 +1221,7 @@ export default function Home() {
     if (permission === 'granted') {
       toast.success('Avisos deste pedido ativados.');
     } else {
-      toast('Os avisos continuam disponiveis nesta pagina.');
+      toast('Os avisos continuam disponíveis nesta página.');
     }
   };
 
@@ -1235,7 +1235,7 @@ export default function Home() {
       await navigator.clipboard.writeText(trackingUrl);
       toast.success('Link de acompanhamento copiado.');
     } catch (_error) {
-      toast.error('Nao foi possivel copiar. Salve esta pagina nos favoritos.');
+      toast.error('Não foi possível copiar. Salve esta página nos favoritos.');
     }
   };
 
@@ -1250,7 +1250,7 @@ export default function Home() {
 
   const updateClientRequestStatus = async (request, status) => {
     if (!request?.id || updatingRequestStatus) return false;
-    const actionLabel = status === 'closed' ? 'marcar este servico como concluido' : 'cancelar este pedido';
+    const actionLabel = status === 'closed' ? 'marcar este serviço como concluído' : 'cancelar este pedido';
     const confirmed = await confirm(`Deseja ${actionLabel}?`);
     if (!confirmed) return false;
 
@@ -1269,10 +1269,10 @@ export default function Home() {
         setPublishedRequest(updatedRequest);
         writePublishedClientRequest(updatedRequest);
       }
-      toast.success(status === 'closed' ? 'Servico concluido. Agora voce pode avaliar o instalador.' : 'Pedido cancelado.');
+      toast.success(status === 'closed' ? 'Serviço concluído. Agora você pode avaliar o instalador.' : 'Pedido cancelado.');
       return true;
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel atualizar o pedido.');
+      toast.error(error.response?.data?.error || 'Não foi possível atualizar o pedido.');
       return false;
     } finally {
       setUpdatingRequestStatus(null);
@@ -1327,7 +1327,7 @@ export default function Home() {
 
       toast.success('Instalador escolhido. O contato pelo WhatsApp foi liberado.');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel escolher o instalador.');
+      toast.error(error.response?.data?.error || 'Não foi possível escolher o instalador.');
     } finally {
       setSelectingInterestId(null);
     }
@@ -1353,12 +1353,12 @@ export default function Home() {
     const phoneDigits = requestContact.phone.replace(/\D/g, '');
 
     if (!requestContact.name.trim()) {
-      toast.error('Informe seu nome para publicar a solicitacao.');
+      toast.error('Informe seu nome para publicar a solicitação.');
       return;
     }
 
     if (phoneDigits.length < 10) {
-      toast.error('Informe um WhatsApp valido para os instaladores chamarem voce.');
+      toast.error('Informe um WhatsApp válido para os instaladores chamarem você.');
       return;
     }
 
@@ -1372,12 +1372,12 @@ export default function Home() {
 
     if (!serviceRequest.city.trim() && !serviceRequest.state.trim()) {
       setRequestStep(2);
-      toast.error('Informe a cidade ou estado do servico.');
+      toast.error('Informe a cidade ou estado do serviço.');
       return;
     }
 
     if (!privacyConsent) {
-      toast.error('Confirme os Termos de Uso e a Politica de Privacidade.');
+      toast.error('Confirme os Termos de Uso e a Política de Privacidade.');
       return;
     }
 
@@ -1437,9 +1437,9 @@ export default function Home() {
         previousInterestCountRef.current = 0;
         loadRequestInterests(nextRequest);
       }
-      toast.success('Solicitacao publicada para instaladores proximos.');
+      toast.success('Solicitação publicada para instaladores próximos.');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel publicar a solicitacao.');
+      toast.error(error.response?.data?.error || 'Não foi possível publicar a solicitação.');
     } finally {
       setPublishingRequest(false);
     }
@@ -1479,14 +1479,14 @@ export default function Home() {
     const availableSlots = MAX_REQUEST_PHOTOS - serviceRequest.photos.length;
 
     if (availableSlots <= 0) {
-      toast.error(`Adicione no maximo ${MAX_REQUEST_PHOTOS} fotos.`);
+      toast.error(`Adicione no máximo ${MAX_REQUEST_PHOTOS} fotos.`);
       return;
     }
 
     const selectedFiles = files
       .filter((file) => {
         if (!file.type.startsWith('image/')) {
-          toast.error(`${file.name} nao parece ser uma imagem.`);
+          toast.error(`${file.name} não parece ser uma imagem.`);
           return false;
         }
 
@@ -1548,7 +1548,7 @@ export default function Home() {
 
   const canAdvanceRequest = () => {
     if (requestStep === 0 && !serviceRequest.placeType) {
-      toast.error('Escolha onde o servico sera feito para continuar.');
+      toast.error('Escolha onde o serviço será feito para continuar.');
       return false;
     }
 
@@ -1563,17 +1563,17 @@ export default function Home() {
     }
 
     if (requestStep === 1 && !serviceRequest.materialStatus) {
-      toast.error('Informe a situacao do material para continuar.');
+      toast.error('Informe a situação do material para continuar.');
       return false;
     }
 
     if (requestStep === 1 && !serviceRequest.measurementStatus) {
-      toast.error('Escolha se ja sabe as medidas ou se prefere visita tecnica.');
+      toast.error('Escolha se já sabe as medidas ou se prefere visita técnica.');
       return false;
     }
 
     if (requestStep === 2 && !serviceRequest.city.trim() && !serviceRequest.state.trim()) {
-      toast.error('Informe sua cidade ou estado para encontrar profissionais proximos.');
+      toast.error('Informe sua cidade ou estado para encontrar profissionais próximos.');
       return false;
     }
 
@@ -1612,7 +1612,7 @@ export default function Home() {
 
   const requestGuidedLocation = () => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      toast.error('Seu navegador nao oferece localizacao automatica.');
+      toast.error('Seu navegador não oferece localização automática.');
       return;
     }
 
@@ -1682,7 +1682,7 @@ export default function Home() {
     } catch (error) {
       const message =
         error.response?.data?.error ||
-        'Nao encontramos esse endereco. Tente incluir a cidade e o estado.';
+        'Não encontramos esse endereço. Tente incluir a cidade e o estado.';
       setLocationLoadError(message);
       toast.error(message);
     } finally {
@@ -1695,7 +1695,7 @@ export default function Home() {
 
     if (!serviceRequest.placeType) {
       setRequestStep(0);
-      toast.error('Escolha onde o servico sera feito primeiro.');
+      toast.error('Escolha onde o serviço será feito primeiro.');
       return;
     }
 
@@ -1707,13 +1707,13 @@ export default function Home() {
 
     if (selectedRooms.length === 0 || !serviceRequest.materialStatus || !serviceRequest.measurementStatus) {
       setRequestStep(1);
-      toast.error('Complete os detalhes do servico antes de continuar.');
+      toast.error('Complete os detalhes do serviço antes de continuar.');
       return;
     }
 
     if (!serviceRequest.city.trim() && !serviceRequest.state.trim()) {
       setRequestStep(2);
-      toast.error('Informe a regiao do servico para enviar aos instaladores proximos.');
+      toast.error('Informe a região do serviço para enviar aos instaladores próximos.');
       return;
     }
 
@@ -1769,7 +1769,7 @@ export default function Home() {
 
   const handleLogout = () => {
     logout();
-    toast.success('Voce saiu da conta.');
+    toast.success('Você saiu da conta.');
     navigate('/cliente', { replace: true });
   };
 
@@ -1833,7 +1833,7 @@ export default function Home() {
               <div>
                 <p className="client-app-kicker">Minha conta</p>
                 <h1>Meus pedidos</h1>
-                <p>Acompanhe, conclua ou cancele suas solicitacoes sem perder o historico.</p>
+                <p>Acompanhe, conclua ou cancele suas solicitações sem perder o histórico.</p>
               </div>
               <Link className="gold-button" to="/cliente">Criar novo pedido</Link>
             </div>
@@ -1841,8 +1841,8 @@ export default function Home() {
             {loadingAccountRequests ? <div className="client-app-interest-empty">Carregando seus pedidos...</div> : null}
             {!loadingAccountRequests && accountRequests.length === 0 ? (
               <div className="client-app-interest-empty">
-                <strong>Voce ainda nao publicou pedidos</strong>
-                <span>Crie uma solicitacao e ela ficara salva nesta pagina.</span>
+                <strong>Você ainda não publicou pedidos</strong>
+                <span>Crie uma solicitação e ela ficará salva nesta página.</span>
               </div>
             ) : null}
             <div className="client-app-account-request-list">
@@ -1867,7 +1867,7 @@ export default function Home() {
                     ) : null}
                     {request.status === 'selected' ? (
                       <button className="gold-button" disabled={updatingRequestStatus === request.id} onClick={() => updateClientRequestStatus(request, 'closed')} type="button">
-                        Marcar concluido
+                        Marcar concluído
                       </button>
                     ) : null}
                     {request.status === 'closed' && request.selected_installer_id ? (
@@ -2041,7 +2041,7 @@ export default function Home() {
                         <small>Toque para adicionar ou remover.</small>
                       </div>
                     </div>
-                    <div className="client-app-room-stream" role="group" aria-label="Ambientes do servico">
+                    <div className="client-app-room-stream" role="group" aria-label="Ambientes do serviço">
                       {ROOM_OPTIONS.map((room) => {
                         const isSelected = selectedRooms.includes(room);
 
@@ -2098,7 +2098,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="client-app-measure-options" role="group" aria-label="Situacao das medidas">
+                  <div className="client-app-measure-options" role="group" aria-label="Situação das medidas">
                     {MEASUREMENT_OPTIONS.map((item) => (
                       <button
                         className={serviceRequest.measurementStatus === item.value ? 'is-selected' : ''}
@@ -2136,12 +2136,12 @@ export default function Home() {
                     <div className="client-app-measure-note">
                       <strong>
                         {serviceRequest.measurementStatus === 'visit'
-                          ? 'Visita tecnica marcada como preferencia.'
+                          ? 'Visita técnica marcada como preferência.'
                           : 'Medidas ficam para confirmar depois.'}
                       </strong>
                       <span>
                         {serviceRequest.measurementStatus === 'visit'
-                          ? 'Os profissionais vao ver que precisam combinar uma visita antes do orcamento final.'
+                          ? 'Os profissionais vão ver que precisam combinar uma visita antes do orçamento final.'
                           : 'O instalador pode orientar a quantidade de papel e conferir as paredes pelo atendimento.'}
                       </span>
                     </div>
@@ -2174,7 +2174,7 @@ export default function Home() {
                         <div className="client-app-photo-grid">
                           {serviceRequest.photos.map((photo) => (
                             <figure key={photo.id}>
-                              <img alt={`Referencia ${photo.name}`} src={photo.preview} />
+                              <img alt={`Referência ${photo.name}`} src={photo.preview} />
                               <figcaption>{photo.name}</figcaption>
                               <button
                                 aria-label={`Remover ${photo.name}`}
@@ -2348,7 +2348,7 @@ export default function Home() {
                       <strong>Como prefere falar?</strong>
                       <span>Seu contato só será liberado para quem você escolher.</span>
                     </div>
-                    <div className="client-app-option-list" role="group" aria-label="Preferencia de contato">
+                    <div className="client-app-option-list" role="group" aria-label="Preferência de contato">
                       {CONTACT_PREFERENCE_OPTIONS.map((item) => (
                         <button
                           className={serviceRequest.contactPreference === item.value ? 'is-selected' : ''}
@@ -2480,7 +2480,7 @@ export default function Home() {
                     <span>
                       {filters.city
                         ? `${filters.city}${filters.state ? `, ${filters.state}` : ''}`
-                        : 'Minha localizacao'}
+                        : 'Minha localização'}
                     </span>
                   </button>
 
@@ -2495,9 +2495,9 @@ export default function Home() {
                       <select onChange={(event) => setSortBy(event.target.value)} value={sortBy}>
                         <option value="match">Mais compativeis</option>
                         <option value="rating">Melhor avaliados</option>
-                        <option value="reviews">Mais avaliacoes</option>
-                        <option value="available">Mais disponiveis</option>
-                        <option value="name">Ordem alfabetica</option>
+                        <option value="reviews">Mais avaliações</option>
+                        <option value="available">Mais disponíveis</option>
+                        <option value="name">Ordem alfabética</option>
                       </select>
                     </label>
                   </div>
@@ -2585,11 +2585,11 @@ export default function Home() {
                         <div className="client-app-rating-line">
                           <AppIcon name="star" />
                           <strong>{Number(installer.average_rating || 0).toFixed(1)}</strong>
-                          <span>({installer.review_count || 0} avaliacoes)</span>
+                          <span>({installer.review_count || 0} avaliações)</span>
                         </div>
 
                         <div className="client-app-match-row">
-                          <span className="client-app-match-pill">{matchScore}% compativel</span>
+                          <span className="client-app-match-pill">{matchScore}% compatível</span>
                           {matchReasons.map((reason) => (
                             <span key={`favorite-${installer.id}-${reason}`}>{reason}</span>
                           ))}
@@ -2607,7 +2607,7 @@ export default function Home() {
                           <AppIcon name="shield" />
                           <span>{isVerified ? 'Perfil verificado' : 'Contato direto com o profissional'}</span>
                           <span className="client-app-dot">•</span>
-                          <span>{(installer.available_dates || []).length > 0 ? 'Datas disponiveis' : 'Perfil completo'}</span>
+                          <span>{(installer.available_dates || []).length > 0 ? 'Datas disponíveis' : 'Perfil completo'}</span>
                         </div>
                       </div>
                     </div>
@@ -2677,11 +2677,11 @@ export default function Home() {
                       <div className="client-app-rating-line">
                         <AppIcon name="star" />
                         <strong>{Number(installer.average_rating || 0).toFixed(1)}</strong>
-                        <span>({installer.review_count || 0} avaliacoes)</span>
+                        <span>({installer.review_count || 0} avaliações)</span>
                       </div>
 
                       <div className="client-app-match-row">
-                        <span className="client-app-match-pill">{matchScore}% compativel</span>
+                        <span className="client-app-match-pill">{matchScore}% compatível</span>
                         {matchReasons.map((reason) => (
                           <span key={`${installer.id}-${reason}`}>{reason}</span>
                         ))}
@@ -2697,11 +2697,11 @@ export default function Home() {
 
                       <div className="client-app-detail-line">
                         <AppIcon name="shield" />
-                        <span>{isVerified ? 'Profissional verificado' : 'Contato direto disponivel'}</span>
+                        <span>{isVerified ? 'Profissional verificado' : 'Contato direto disponível'}</span>
                         <span className="client-app-dot">•</span>
                         <span>
                           {(installer.availability_slots || []).length > 0 || (installer.available_dates || []).length > 0
-                            ? 'Horarios disponiveis'
+                            ? 'Horários disponíveis'
                             : 'Agenda a confirmar'}
                         </span>
                       </div>
@@ -2750,7 +2750,7 @@ export default function Home() {
                   ) : null}
                   {publishedRequest.status === 'selected' ? (
                     <button className="client-app-ghost-button" disabled={updatingRequestStatus === publishedRequest.id} onClick={() => updateClientRequestStatus(publishedRequest, 'closed')} type="button">
-                      Marcar servico concluido
+                      Marcar serviço concluído
                     </button>
                   ) : null}
                   <button className="client-app-opportunity-cancel" onClick={startAnotherRequest} type="button">
@@ -2915,7 +2915,7 @@ export default function Home() {
         <nav className="client-app-mobile-dock">
           <a href="#top">
             <AppIcon name="home" />
-            <span>Inicio</span>
+            <span>Início</span>
           </a>
           <a href="#busca">
             <AppIcon name="search" />

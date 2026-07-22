@@ -51,7 +51,7 @@ function formatDate(value) {
 }
 
 function joinRegion(item) {
-  return [item.neighborhood, item.city, item.state].filter(Boolean).join(' - ') || 'Regiao nao informada';
+  return [item.neighborhood, item.city, item.state].filter(Boolean).join(' - ') || 'Região não informada';
 }
 
 function getSummaryItems(item) {
@@ -61,7 +61,7 @@ function getSummaryItems(item) {
     item.measurement_detail,
     item.material_label,
     item.urgency_label,
-    item.photo_count > 0 ? `${item.photo_count} foto(s) de referencia` : '',
+    item.photo_count > 0 ? `${item.photo_count} foto(s) de referência` : '',
   ].filter(Boolean);
 }
 
@@ -88,7 +88,7 @@ export default function Opportunities() {
       if (['CERTIFICATION_REQUIRED', 'PUBLIC_PROFILE_REQUIRED', 'PROFILE_LOCATION_REQUIRED'].includes(code)) {
         setAccessRequirement({ code, message: error.response?.data?.error });
       } else {
-        toast.error(error.response?.data?.error || 'Nao foi possivel carregar oportunidades.');
+        toast.error(error.response?.data?.error || 'Não foi possível carregar oportunidades.');
       }
       setOpportunities([]);
     } finally {
@@ -105,7 +105,7 @@ export default function Opportunities() {
       { label: 'Novas', value: stats.open || opportunities.filter((item) => !item.interested_by_me).length, detail: 'Ainda sem seu interesse' },
       { label: 'Interesses', value: stats.interested || opportunities.filter((item) => item.my_interest_status === 'interested').length, detail: 'Aguardando escolha do cliente' },
       { label: 'Escolhidas', value: stats.selected || opportunities.filter((item) => item.selected_by_me).length, detail: 'WhatsApp liberado pelo cliente' },
-      { label: 'Na sua regiao', value: stats.matched || opportunities.filter((item) => item.match_score >= 78).length, detail: 'Priorizadas por cidade/UF' },
+      { label: 'Na sua região', value: stats.matched || opportunities.filter((item) => item.match_score >= 78).length, detail: 'Priorizadas por cidade/UF' },
     ],
     [opportunities, stats]
   );
@@ -132,7 +132,7 @@ export default function Opportunities() {
 
       toast.success('Interesse enviado. O cliente vai escolher com quem quer falar.');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel enviar interesse.');
+      toast.error(error.response?.data?.error || 'Não foi possível enviar interesse.');
     } finally {
       setSendingInterestId(null);
     }
@@ -141,9 +141,9 @@ export default function Opportunities() {
   return (
     <div className="page-shell opportunities-page">
       <PageIntro
-        eyebrow="Operacao"
+        eyebrow="Operação"
         title="Oportunidades"
-        description="Solicitacoes publicadas por clientes proximos aparecem aqui. Envie interesse e aguarde o cliente escolher quem prefere chamar."
+        description="Solicitações publicadas por clientes próximos aparecem aqui. Envie interesse e aguarde o cliente escolher quem prefere chamar."
         actions={(
           <button className="ghost-button" onClick={() => loadOpportunities(filter)} type="button">
             <OpportunityIcon type="filter" />
@@ -199,7 +199,7 @@ export default function Opportunities() {
       {!loading && !accessRequirement && opportunities.length === 0 ? (
         <div className="opportunity-empty">
           <strong>Nenhuma oportunidade por enquanto.</strong>
-          <span>Quando clientes publicarem solicitacoes, elas vao aparecer aqui.</span>
+          <span>Quando clientes publicarem solicitações, elas vão aparecer aqui.</span>
         </div>
       ) : null}
 
@@ -219,17 +219,17 @@ export default function Opportunities() {
                     <div className="opportunity-heading">
                       <div>
                         <p>{formatDate(opportunity.created_at)}</p>
-                        <h2>{opportunity.service_label || 'Instalacao de papel de parede'}</h2>
+                        <h2>{opportunity.service_label || 'Instalação de papel de parede'}</h2>
                       </div>
-                      <span>{opportunity.match_score}% compativel</span>
+                      <span>{opportunity.match_score}% compatível</span>
                     </div>
 
                     <div className="opportunity-meta">
                       <span><OpportunityIcon type="user" />{opportunity.client_name || 'Cliente interessado'}</span>
                       <span><OpportunityIcon type="map" />{joinRegion(opportunity)}</span>
-                      <span><OpportunityIcon type="phone" />{opportunity.client_phone || opportunity.client_phone_masked || 'WhatsApp se o cliente escolher voce'}</span>
+                      <span><OpportunityIcon type="phone" />{opportunity.client_phone || opportunity.client_phone_masked || 'WhatsApp se o cliente escolher você'}</span>
                       <span><OpportunityIcon type="clock" />{opportunity.urgency_label || 'Prazo a combinar'}</span>
-                      <span>{opportunity.distance_label || 'Regiao priorizada'}</span>
+                      <span>{opportunity.distance_label || 'Região priorizada'}</span>
                     </div>
 
                     {summaryItems.length > 0 ? (
@@ -247,10 +247,10 @@ export default function Opportunities() {
                 <div className="opportunity-actions">
                   <span className={opportunity.selected_by_me ? 'is-accepted' : opportunity.interested_by_me ? 'is-interested' : ''}>
                     {opportunity.selected_by_me
-                      ? 'Cliente escolheu voce'
+                      ? 'Cliente escolheu você'
                       : opportunity.interested_by_me
                         ? 'Interesse enviado'
-                        : 'Nova solicitacao'}
+                        : 'Nova solicitação'}
                   </span>
 
                   {opportunity.selected_by_me && opportunity.whatsapp_url ? (

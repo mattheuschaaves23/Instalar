@@ -52,12 +52,12 @@ export default function Register() {
     event.preventDefault();
 
     if (!form.name || !form.email || !form.password) {
-      toast.error('Preencha nome, email e senha.');
+      toast.error('Preencha nome, e-mail e senha.');
       return;
     }
 
     if (form.password.length < 10 || !/[A-Za-z]/.test(form.password) || !/\d/.test(form.password)) {
-      toast.error('Use pelo menos 10 caracteres, com letras e numeros.');
+      toast.error('Use pelo menos 10 caracteres, com letras e números.');
       return;
     }
 

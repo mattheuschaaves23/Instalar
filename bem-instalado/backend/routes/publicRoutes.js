@@ -13,20 +13,20 @@ const router = express.Router();
 const publicSearchLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: 90,
-  message: 'Muitas buscas em sequencia. Aguarde alguns segundos para continuar.',
+  message: 'Muitas buscas em sequência. Aguarde alguns segundos para continuar.',
 });
 
 const reviewLimiter = createRateLimiter({
   windowMs: 10 * 60 * 1000,
   max: 5,
   keyGenerator: (req) => `${req.ip || 'unknown'}:installer:${req.params.id || ''}`,
-  message: 'Muitas avaliacoes em sequencia. Aguarde alguns minutos para enviar outra.',
+  message: 'Muitas avaliações em sequência. Aguarde alguns minutos para enviar outra.',
 });
 
 const serviceRequestLimiter = createRateLimiter({
   windowMs: 10 * 60 * 1000,
   max: 8,
-  message: 'Muitas solicitacoes em sequencia. Aguarde alguns minutos para publicar outra.',
+  message: 'Muitas solicitações em sequência. Aguarde alguns minutos para publicar outra.',
 });
 
 const clientErrorLimiter = createRateLimiter({

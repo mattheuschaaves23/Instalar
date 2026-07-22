@@ -166,7 +166,7 @@ function DashboardDockIcon({ type }) {
 }
 
 const MOBILE_DOCK_ITEMS = [
-  { to: '/dashboard', label: 'Inicio', icon: 'home' },
+  { to: '/dashboard', label: 'Início', icon: 'home' },
   { to: '/opportunities', label: 'Oportunidades', icon: 'opportunities' },
   { to: '/agenda', label: 'Agenda', icon: 'agenda' },
   { to: '/budgets', label: 'Orçamentos', icon: 'budgets' },
@@ -176,16 +176,16 @@ const MOBILE_DOCK_ITEMS = [
 const ADMIN_MOBILE_DOCK_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
 
 const PANEL_NAV_ITEMS = [
-  { to: '/dashboard', label: 'Inicio', icon: 'grid', section: 'VISAO GERAL' },
+  { to: '/dashboard', label: 'Início', icon: 'grid', section: 'VISÃO GERAL' },
   { to: '/opportunities', label: 'Oportunidades', icon: 'opportunities', badgeKey: 'opportunities' },
-  { to: '/reviews', label: 'Avaliacoes', icon: 'star', badgeKey: 'reviews' },
-  { to: '/agenda', label: 'Agenda', icon: 'agenda', section: 'OPERACAO', badgeKey: 'agenda' },
-  { to: '/budgets', label: 'Orcamentos', icon: 'file' },
+  { to: '/reviews', label: 'Avaliações', icon: 'star', badgeKey: 'reviews' },
+  { to: '/agenda', label: 'Agenda', icon: 'agenda', section: 'OPERAÇÃO', badgeKey: 'agenda' },
+  { to: '/budgets', label: 'Orçamentos', icon: 'file' },
   { to: '/clients', label: 'Clientes', icon: 'clients' },
   { to: '/profile', label: 'Perfil', icon: 'profile', section: 'CONTA' },
   { to: '/subscription', label: 'Assinatura', icon: 'card' },
-  { to: '/notifications', label: 'Notificacoes', icon: 'bell', badgeKey: 'notifications' },
-  { to: '/settings', label: 'Configuracoes', icon: 'settings' },
+  { to: '/notifications', label: 'Notificações', icon: 'bell', badgeKey: 'notifications' },
+  { to: '/settings', label: 'Configurações', icon: 'settings' },
   { to: '/support', label: 'Suporte', icon: 'help' },
 ];
 
@@ -613,7 +613,7 @@ export default function Dashboard() {
       setClients(Array.isArray(clientsResponse.data) ? clientsResponse.data : []);
     } catch (error) {
       if (!silent && isDashboardMountedRef.current) {
-        toast.error(error.response?.data?.error || 'Nao foi possivel carregar o dashboard.');
+        toast.error(error.response?.data?.error || 'Não foi possível carregar o dashboard.');
       }
     }
   }, []);
@@ -769,7 +769,7 @@ export default function Dashboard() {
       type: 'revenue',
     },
     {
-      label: 'Novos orcamentos',
+      label: 'Novos orçamentos',
       value: `${budgetsThisMonth.length}`,
       detail: `${metrics.pending_budgets || 0} aguardando retorno`,
       tone: 'green',
@@ -785,7 +785,7 @@ export default function Dashboard() {
     {
       label: 'Ticket medio',
       value: compactCurrency(averageTicket),
-      detail: `${approvedBudgetsThisMonth || 0} aprovados no mes`,
+      detail: `${approvedBudgetsThisMonth || 0} aprovados no mês`,
       tone: 'orange',
       type: 'ticket',
     },
@@ -803,7 +803,7 @@ export default function Dashboard() {
       tone: 'neutral',
     },
     {
-      label: 'Nota publica',
+      label: 'Nota pública',
       value: Number(metrics.average_rating || 0).toFixed(1),
       tone: 'neutral',
     },
@@ -869,8 +869,8 @@ export default function Dashboard() {
       positive: true,
     },
     {
-      label: 'Orcamentos enviados',
-      mobileLabel: 'Orcamentos',
+      label: 'Orçamentos enviados',
+      mobileLabel: 'Orçamentos',
       value: `${budgetsThisMonth.length}`,
       detail: `${metrics.pending_budgets || pendingBudgets.length} aguardando resposta`,
       mobileDetail: `${metrics.pending_budgets || pendingBudgets.length} pendentes`,
@@ -882,8 +882,8 @@ export default function Dashboard() {
       label: 'Novos clientes',
       mobileLabel: 'Clientes',
       value: `${clients.length}`,
-      detail: 'no mes atual',
-      mobileDetail: 'este mes',
+      detail: 'no mês atual',
+      mobileDetail: 'este mês',
       delta: `+${clientsWithEmail}`,
       type: 'clients',
       positive: true,
@@ -892,7 +892,7 @@ export default function Dashboard() {
       label: 'Taxa de conversao',
       mobileLabel: 'Conversao',
       value: `${conversionRate}%`,
-      detail: 'orcamentos aprovados',
+      detail: 'orçamentos aprovados',
       mobileDetail: 'aprovados',
       delta: `${approvedBudgetsThisMonth} aprov.`,
       type: 'trend',
@@ -909,7 +909,7 @@ export default function Dashboard() {
   if (!useLegacyDashboard) {
     return (
     <section className={`ref-panel-shell ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
-      <aside className="ref-panel-sidebar" aria-label="Navegacao do painel">
+      <aside className="ref-panel-sidebar" aria-label="Navegação do painel">
         <div className="ref-panel-brand">
           <BrandWordmark className="ref-panel-wordmark" size="sm" />
           <BrandMark className="ref-panel-logo ref-panel-collapsed-logo" />
@@ -933,7 +933,7 @@ export default function Dashboard() {
             return (
               <div className="ref-panel-nav-block" key={`${item.section || ''}-${item.label}`}>
                 {item.section ? <p>{item.section}</p> : null}
-                <NavLink className={({ isActive }) => `ref-panel-nav-link ${isActive && item.label === 'Inicio' ? 'is-active' : ''}`} to={item.to}>
+                <NavLink className={({ isActive }) => `ref-panel-nav-link ${isActive && item.label === 'Início' ? 'is-active' : ''}`} to={item.to}>
                   <PanelIcon type={item.icon} />
                   <span>{item.label}</span>
                   {badge !== null ? <em>{badge}</em> : null}
@@ -953,7 +953,7 @@ export default function Dashboard() {
         <header className="ref-panel-topbar">
           <label className="ref-panel-search">
             <PanelIcon type="search" size={18} />
-            <input onChange={(event) => setSearch(event.target.value)} placeholder="Buscar clientes, orcamentos..." type="search" value={search} />
+            <input onChange={(event) => setSearch(event.target.value)} placeholder="Buscar clientes, orçamentos..." type="search" value={search} />
           </label>
           <div className="ref-panel-top-actions">
             <span className="ref-panel-date">
@@ -979,7 +979,7 @@ export default function Dashboard() {
           <div>
             <BrandWordmark className="ref-panel-mobile-wordmark" size="sm" />
           </div>
-          <nav aria-label="Acoes rapidas do painel">
+          <nav aria-label="Ações rápidas do painel">
             <Link to="/dashboard"><PanelIcon type="search" size={18} /></Link>
             <Link to="/notifications"><PanelIcon type="bell" size={18} />{notificationBadge ? <em>{notificationBadge}</em> : null}</Link>
             <Link to="/profile" className="ref-panel-avatar">{initials}</Link>
@@ -991,10 +991,10 @@ export default function Dashboard() {
             <div>
               <p>Painel do instalador</p>
               <h1>Bom dia, <span>{firstName}</span></h1>
-              <h2>Ola, <span>{firstName}</span></h2>
+              <h2>Olá, <span>{firstName}</span></h2>
               <small>
                 <span className="ref-panel-hero-copy-desktop">
-                  Voce tem <strong>{installationsThisWeek} instalacoes</strong> agendadas para esta semana.
+                  Você tem <strong>{installationsThisWeek} instalações</strong> agendadas para esta semana.
                   Continue assim para alcancar sua meta mensal.
                 </span>
                 <span className="ref-panel-hero-copy-mobile">
@@ -1005,18 +1005,18 @@ export default function Dashboard() {
             <div className="ref-panel-hero-actions">
               <span className="ref-panel-week-badge"><i />{installationsThisWeek} esta semana</span>
               <Link className="ref-panel-primary" to="/budgets/new">
-                Novo orcamento <PanelIcon type="arrow" size={16} />
+                Novo orçamento <PanelIcon type="arrow" size={16} />
               </Link>
               <Link className="ref-panel-secondary" to="/agenda">Ver agenda</Link>
             </div>
           </section>
 
           <section className="ref-panel-mobile-section-head">
-            <h3>Resumo do mes</h3>
+            <h3>Resumo do mês</h3>
             <Link to="/dashboard">Ver detalhes <PanelIcon type="chevron" size={14} /></Link>
           </section>
 
-          <section className="ref-panel-metrics" aria-label="Resumo do mes">
+          <section className="ref-panel-metrics" aria-label="Resumo do mês">
             {referenceCards.map((card, index) => (
               <article className="ref-panel-metric-card" key={card.label} style={{ animationDelay: `${index * 70}ms` }}>
                 <span className="ref-panel-metric-icon">
@@ -1048,7 +1048,7 @@ export default function Dashboard() {
             <article className="ref-panel-card ref-panel-chart-card">
               <div className="ref-panel-card-head">
                 <div>
-                  <h3>Visao geral de vendas</h3>
+                  <h3>Visão geral de vendas</h3>
                   <p>{chartData.description}</p>
                 </div>
                 <div className="ref-panel-tabs">
@@ -1073,8 +1073,8 @@ export default function Dashboard() {
             <article className="ref-panel-card ref-panel-donut-card">
               <div className="ref-panel-card-head">
                 <div>
-                  <h3>Distribuicao das propostas</h3>
-                  <p>Como o valor total do mes esta dividido por status.</p>
+                  <h3>Distribuição das propostas</h3>
+                  <p>Como o valor total do mês está dividido por status.</p>
                 </div>
               </div>
               <div className="ref-panel-donut-row">
@@ -1110,7 +1110,7 @@ export default function Dashboard() {
                   <article className="ref-panel-appointment" data-status={budget.status} key={budget.id}>
                     <div className="ref-panel-appointment-head">
                       <div>
-                        <strong>{budget.client_name || `Orcamento #${budget.id}`}</strong>
+                        <strong>{budget.client_name || `Orçamento #${budget.id}`}</strong>
                         <small>{budget.rooms_count ? `${budget.rooms_count} ambientes` : 'Ambientes a confirmar'}</small>
                       </div>
                       <em className="ref-panel-status-pill" data-status={budget.status}>
@@ -1118,15 +1118,15 @@ export default function Dashboard() {
                       </em>
                     </div>
                     <div className="ref-panel-appointment-meta">
-                      <span><PanelIcon type="clock" size={13} />{budget.scheduled_time || 'Horario a confirmar'}</span>
-                      <span><PanelIcon type="pin" size={13} />{budget.address || budget.client_address || 'Endereco a confirmar'}</span>
+                      <span><PanelIcon type="clock" size={13} />{budget.scheduled_time || 'Horário a confirmar'}</span>
+                      <span><PanelIcon type="pin" size={13} />{budget.address || budget.client_address || 'Endereço a confirmar'}</span>
                     </div>
                   </article>
                 ))}
               </div>
               <Link className="ref-panel-add-appointment" to="/agenda">
                 <PanelIcon type="plus" size={17} />
-                Agendar instalacao
+                Agendar instalação
               </Link>
             </article>
 
@@ -1142,19 +1142,19 @@ export default function Dashboard() {
                   <strong>{Number(item.average_rating || 0).toFixed(1)}</strong>
                 </div>
               )) : (
-                <p className="ref-panel-empty-copy">O ranking aparecera quando houver servicos e avaliacoes reais.</p>
+                <p className="ref-panel-empty-copy">O ranking aparecerá quando houver serviços e avaliações reais.</p>
               )}
             </article>
 
             <article className="ref-panel-card ref-panel-quotes-card">
               <div className="ref-panel-card-head is-inline">
-                <h3>Orcamentos recentes</h3>
+                <h3>Orçamentos recentes</h3>
                 <Link to="/budgets">Ver todos</Link>
               </div>
               {filteredRecentBudgets.map((budget) => (
                 <Link className="ref-panel-quote-row" key={budget.id} to="/budgets">
                   <span>#{budget.id}</span>
-                  <strong>{budget.client_name || 'Cliente nao informado'}</strong>
+                  <strong>{budget.client_name || 'Cliente não informado'}</strong>
                   <em>{formatCurrency(budget.total_amount)}</em>
                 </Link>
               ))}
@@ -1164,7 +1164,7 @@ export default function Dashboard() {
               <div className="ref-panel-card-head">
                 <div>
                   <h3>Resumo financeiro</h3>
-                  <p>Leitura rapida do que entra, aberto e desempenho.</p>
+                  <p>Leitura rápida do que entra, do que está em aberto e do desempenho.</p>
                 </div>
               </div>
               {quickSummary.map((item) => (
@@ -1177,7 +1177,7 @@ export default function Dashboard() {
           </section>
         </main>
 
-        <nav aria-label="Navegacao mobile" className="ref-panel-bottom-nav">
+        <nav aria-label="Navegação mobile" className="ref-panel-bottom-nav">
           {mobileDockItems.map((item) => (
             <NavLink className={({ isActive }) => `ref-panel-bottom-tab ${isActive ? 'is-active' : ''}`} key={item.to} to={item.to}>
               <DashboardDockIcon type={item.icon} />

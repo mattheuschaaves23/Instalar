@@ -89,14 +89,14 @@ export default function Subscription() {
 
   const handlePay = async () => {
     if (subscription?.payment_mode === 'disabled') {
-      toast.error(subscription?.payment_notice || 'Pagamento temporariamente indisponivel.');
+      toast.error(subscription?.payment_notice || 'Pagamento temporariamente indisponível.');
       return;
     }
 
     try {
       const response = await api.post('/subscriptions/pay');
       setPayment(response.data);
-      toast.success('Pagamento gerado. O acesso sera liberado assim que for confirmado.');
+      toast.success('Pagamento gerado. O acesso será liberado assim que for confirmado.');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível gerar o pagamento.');
     }
@@ -159,7 +159,7 @@ export default function Subscription() {
             value: canUseApp ? 'LIBERADO' : 'BLOQUEADO',
             detail: canUseApp
               ? isLaunchAccess ? 'Ferramentas liberadas durante o lançamento.' : 'Ferramentas premium liberadas.'
-              : 'Os modulos do painel ficam bloqueados ate a assinatura ser ativada.',
+              : 'Os módulos do painel ficam bloqueados até a assinatura ser ativada.',
           },
         ]}
         title={isLaunchAccess ? 'Seu acesso de lançamento está liberado.' : 'Gerencie seu plano de instalador.'}
@@ -206,7 +206,7 @@ export default function Subscription() {
               onClick={handlePay}
               type="button"
             >
-              {isPaymentDisabled ? 'Pagamento indisponivel' : payment ? 'Abrir pagamento atual' : 'Gerar pagamento mensal'}
+              {isPaymentDisabled ? 'Pagamento indisponível' : payment ? 'Abrir pagamento atual' : 'Gerar pagamento mensal'}
             </button>
             {payment ? (
               <button className="ghost-button w-full sm:w-auto" onClick={handleCheck} type="button">
@@ -218,7 +218,7 @@ export default function Subscription() {
           <div className="subscription-inline-note mt-6">
             <p className="text-sm leading-7 text-[var(--muted)]">
               {subscription?.payment_notice
-                || 'Pagamento temporariamente indisponivel. Um novo metodo sera configurado futuramente.'}
+                || 'Pagamento temporariamente indisponível. Um novo método será configurado futuramente.'}
             </p>
           </div>
 
@@ -259,7 +259,7 @@ export default function Subscription() {
                 <div className="subscription-info-row">
                   <span>Validação</span>
                   <strong className="text-[var(--text)]">
-                    {payment?.automaticConfirmation ? 'Automatica' : 'Manual'}
+                    {payment?.automaticConfirmation ? 'Automática' : 'Manual'}
                   </strong>
                 </div>
 
@@ -305,7 +305,7 @@ export default function Subscription() {
 
               <div className="subscription-inline-note mt-5">
                 <p className="text-sm leading-7 text-[var(--muted)]">
-                  Enquanto o novo metodo de pagamento nao estiver configurado, o acesso premium permanece bloqueado
+                  Enquanto o novo método de pagamento não estiver configurado, o acesso premium permanece bloqueado
                   para assinaturas inativas.
                 </p>
               </div>

@@ -58,7 +58,7 @@ async function logApplicationError({
       ]
     );
   } catch (monitoringError) {
-    console.error('Falha ao registrar erro da aplicacao:', monitoringError.message);
+    console.error('Falha ao registrar erro da aplicação:', monitoringError.message);
   }
 }
 

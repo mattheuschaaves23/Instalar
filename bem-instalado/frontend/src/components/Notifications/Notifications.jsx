@@ -17,7 +17,7 @@ export default function Notifications() {
       const response = await api.get('/notifications');
       setItems(response.data);
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel carregar as notificacoes.');
+      toast.error(error.response?.data?.error || 'Não foi possível carregar as notificações.');
     }
   };
 
@@ -31,7 +31,7 @@ export default function Notifications() {
       await loadItems();
       notifyPanelBadgeCountsChanged();
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Nao foi possivel atualizar a notificacao.');
+      toast.error(error.response?.data?.error || 'Não foi possível atualizar a notificação.');
     }
   };
 
@@ -43,22 +43,22 @@ export default function Notifications() {
   return (
     <section className="page-shell space-y-7">
       <PageIntro
-        description="Uma central limpa para acompanhar tudo o que entrou na operacao sem depender de memoria ou de mensagens perdidas."
+        description="Uma central limpa para acompanhar tudo o que entrou na operação sem depender de memória ou de mensagens perdidas."
         eyebrow="Sinais do sistema"
         stats={[
-          { label: 'Total de avisos', value: `${items.length}`, detail: 'Todas as notificacoes recentes.' },
+          { label: 'Total de avisos', value: `${items.length}`, detail: 'Todas as notificações recentes.' },
           {
-            label: 'Nao lidas',
+            label: 'Não lidas',
             value: `${items.filter((item) => !item.read).length}`,
-            detail: 'Pontos que ainda merecem sua atencao.',
+            detail: 'Pontos que ainda merecem sua atenção.',
           },
           {
             label: 'Lidas',
             value: `${items.filter((item) => item.read).length}`,
-            detail: 'Historico ja processado por voce.',
+            detail: 'Histórico já processado por você.',
           },
         ]}
-        title="Notificacoes precisam ser claras, discretas e impossiveis de ignorar."
+        title="Notificações precisam ser claras, discretas e impossíveis de ignorar."
       />
 
       <div className="grid gap-4">
@@ -105,7 +105,7 @@ export default function Notifications() {
 
         {items.length === 0 ? (
           <div className="empty-state">
-            Nenhum aviso por enquanto. Quando o sistema tiver novas acoes, elas aparecem aqui.
+            Nenhum aviso por enquanto. Quando o sistema tiver novas ações, elas aparecem aqui.
           </div>
         ) : null}
       </div>

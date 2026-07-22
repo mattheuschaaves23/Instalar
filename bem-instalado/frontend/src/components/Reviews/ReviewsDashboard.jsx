@@ -84,8 +84,8 @@ function ReviewsLoadingState() {
     <section className="reviews-dashboard-shell">
       <div className="reviews-dashboard-empty">
         <span><ReviewIcon type="refresh" /></span>
-        <strong>Carregando avaliacoes</strong>
-        <p>Buscando nota media, distribuicao e comentarios recentes.</p>
+        <strong>Carregando avaliações</strong>
+        <p>Buscando nota média, distribuição e comentários recentes.</p>
       </div>
     </section>
   );
@@ -110,7 +110,7 @@ export default function ReviewsDashboard() {
       }
     } catch (error) {
       if (!silent && isReviewsMountedRef.current) {
-        toast.error(error.response?.data?.error || 'Nao foi possivel carregar as avaliacoes.');
+        toast.error(error.response?.data?.error || 'Não foi possível carregar as avaliações.');
       }
     } finally {
       if (!silent && isReviewsMountedRef.current) {
@@ -179,25 +179,25 @@ export default function ReviewsDashboard() {
 
   const metrics = [
     {
-      label: 'Avaliacoes totais',
+      label: 'Avaliações totais',
       value: summary.review_count || 0,
-      detail: summary.last_review_at ? `Ultima em ${formatShortDate(summary.last_review_at)}` : 'Ainda sem avaliacoes',
+      detail: summary.last_review_at ? `Última em ${formatShortDate(summary.last_review_at)}` : 'Ainda sem avaliações',
       icon: 'star',
     },
     {
-      label: 'Este mes',
+      label: 'Este mês',
       value: summary.current_month_count || 0,
-      detail: `${formatPercent(summary.monthly_delta)} vs. mes anterior`,
+      detail: `${formatPercent(summary.monthly_delta)} vs. mês anterior`,
       icon: 'trend',
     },
     {
-      label: 'Ultimos 3 dias',
+      label: 'Últimos 3 dias',
       value: summary.recent_3_count || 0,
       detail: 'Movimento recente do perfil',
       icon: 'calendar',
     },
     {
-      label: 'Com comentario',
+      label: 'Com comentário',
       value: `${summary.comment_rate || 0}%`,
       detail: `${summary.commented_count || 0} relatos escritos`,
       icon: 'message',
@@ -208,16 +208,16 @@ export default function ReviewsDashboard() {
     <section className="reviews-dashboard-shell">
       <div className="reviews-dashboard-hero fade-up">
         <div className="reviews-dashboard-hero-copy">
-          <p>Avaliacoes</p>
-          <h1>Painel de avaliacoes</h1>
+          <p>Avaliações</p>
+          <h1>Painel de avaliações</h1>
           <span>
-            Acompanhe a reputacao do seu perfil publico, veja a evolucao das notas e leia os comentarios mais recentes dos clientes.
+            Acompanhe a reputação do seu perfil público, veja a evolução das notas e leia os comentários mais recentes dos clientes.
           </span>
           <div className="reviews-dashboard-actions">
             {data?.profile?.id ? (
               <Link to={`/installers/${data.profile.id}`}>
                 <ReviewIcon type="external" />
-                Ver perfil publico
+                Ver perfil público
               </Link>
             ) : null}
             <button
@@ -231,10 +231,10 @@ export default function ReviewsDashboard() {
         </div>
 
         <div className="reviews-dashboard-score-card">
-          <span>Nota media</span>
+          <span>Nota média</span>
           <strong>{formatRating(summary.average_rating)}</strong>
           <RatingStars value={summary.average_rating} />
-          <p>{summary.review_count || 0} avaliacoes recebidas</p>
+          <p>{summary.review_count || 0} avaliações recebidas</p>
         </div>
       </div>
 
@@ -255,8 +255,8 @@ export default function ReviewsDashboard() {
         <article className="reviews-dashboard-panel fade-up" style={{ animationDelay: '0.1s' }}>
           <div className="reviews-dashboard-panel-head">
             <div>
-              <p>Evolucao mensal</p>
-              <h2>Volume de avaliacoes</h2>
+              <p>Evolução mensal</p>
+              <h2>Volume de avaliações</h2>
             </div>
             <span>6 meses</span>
           </div>
@@ -280,7 +280,7 @@ export default function ReviewsDashboard() {
         <article className="reviews-dashboard-panel fade-up" style={{ animationDelay: '0.14s' }}>
           <div className="reviews-dashboard-panel-head">
             <div>
-              <p>Distribuicao</p>
+              <p>Distribuição</p>
               <h2>Notas recebidas</h2>
             </div>
             <span>{formatRating(summary.average_rating)}/5</span>
@@ -302,8 +302,8 @@ export default function ReviewsDashboard() {
       <article className="reviews-dashboard-panel reviews-dashboard-list-panel fade-up" style={{ animationDelay: '0.18s' }}>
         <div className="reviews-dashboard-panel-head reviews-dashboard-list-head">
           <div>
-            <p>Historico</p>
-            <h2>Avaliacoes recentes</h2>
+            <p>Histórico</p>
+            <h2>Avaliações recentes</h2>
           </div>
           <div className="reviews-filter-tabs" aria-label="Filtrar por nota">
             {ratingFilters.map((item) => (
@@ -327,9 +327,9 @@ export default function ReviewsDashboard() {
                 <div className="reviews-list-copy">
                   <div>
                     <strong>{review.reviewer_name || 'Cliente verificado'}</strong>
-                    <span>{review.reviewer_region || 'Regiao nao informada'}</span>
+                    <span>{review.reviewer_region || 'Região não informada'}</span>
                   </div>
-                  <p>{review.comment || 'Avaliacao enviada sem comentario adicional.'}</p>
+                  <p>{review.comment || 'Avaliação enviada sem comentário adicional.'}</p>
                   <small>{formatShortDate(review.created_at)}</small>
                 </div>
                 <div className="reviews-list-score">
@@ -342,8 +342,8 @@ export default function ReviewsDashboard() {
         ) : (
           <div className="reviews-dashboard-empty reviews-dashboard-empty--compact">
             <span><ReviewIcon type="star" /></span>
-            <strong>Nenhuma avaliacao nesse filtro</strong>
-            <p>Quando clientes enviarem novas avaliacoes, elas aparecem aqui automaticamente.</p>
+            <strong>Nenhuma avaliação nesse filtro</strong>
+            <p>Quando clientes enviarem novas avaliações, elas aparecem aqui automaticamente.</p>
           </div>
         )}
       </article>

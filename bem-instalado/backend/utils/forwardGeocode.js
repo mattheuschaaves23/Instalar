@@ -89,7 +89,7 @@ function serializeFeature(feature) {
   const region = properties.state || properties.county || '';
   const state = resolveStateCode(properties.statecode, region);
   const zipCode = properties.postcode || '';
-  const baseLabel = street || properties.name || neighborhood || city || region || 'Localizacao';
+  const baseLabel = street || properties.name || neighborhood || city || region || 'Localização';
   const label = houseNumber ? `${baseLabel}, ${houseNumber}` : baseLabel;
   const subtitle = uniqueParts([neighborhood, city, state || region, zipCode, 'Brasil'])
     .filter((part) => normalizeText(part) !== normalizeText(label))
@@ -133,7 +133,7 @@ async function forwardGeocode(query, limit = 6, acceptLanguage = 'pt-BR') {
   });
 
   if (!response.ok) {
-    throw new Error(`Falha ao consultar enderecos: ${response.status}`);
+    throw new Error(`Falha ao consultar endereços: ${response.status}`);
   }
 
   const data = await response.json();

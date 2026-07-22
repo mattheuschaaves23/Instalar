@@ -147,21 +147,21 @@ function joinRegion(item) {
 
 function buildInstallerMessage(installer, request) {
   const installerName = installer.business_name || installer.name || 'um instalador da InstalaPro';
-  const service = request.service_label || 'instalacao de papel de parede';
+  const service = request.service_label || 'instalação de papel de parede';
   const region = joinRegion(request);
 
   return [
-    `Ola ${request.client_name}, sou ${installerName}.`,
-    `Voce me escolheu na InstalaPro para falar sobre ${service}${region ? ` em ${region}` : ''}.`,
+    `Olá, ${request.client_name}. Sou ${installerName}.`,
+    `Você me escolheu na InstalaPro para falar sobre ${service}${region ? ` em ${region}` : ''}.`,
     'Posso combinar os detalhes pelo WhatsApp?',
   ].join(' ');
 }
 
 function buildClientMessage(installer, request) {
   const installerName = installer.display_name || installer.business_name || installer.name || 'instalador';
-  const service = request.service_label || 'instalacao de papel de parede';
+  const service = request.service_label || 'instalação de papel de parede';
 
-  return `Ola ${installerName}, escolhi voce na InstalaPro para conversar sobre meu pedido de ${service}.`;
+  return `Olá, ${installerName}. Escolhi você na InstalaPro para conversar sobre meu pedido de ${service}.`;
 }
 
 function serializeOpportunity(row) {
@@ -208,7 +208,7 @@ function serializeOpportunity(row) {
     my_interest_at: row.my_interest_at || null,
     selected_at: row.selected_at || null,
     match_score: Number(row.match_score || 0),
-    distance_label: row.distance_label || 'Regiao a confirmar',
+    distance_label: row.distance_label || 'Região a confirmar',
     distance_km:
       row.distance_km === null || row.distance_km === undefined || row.distance_km === ''
         ? null
@@ -361,11 +361,11 @@ exports.createPublicServiceRequest = async (req, res) => {
     const clientUserId = req.user?.account_type === 'client' ? req.user.id : null;
 
     if (!clientName || clientName.length < 2) {
-      return res.status(400).json({ error: 'Informe seu nome para publicar a solicitacao.' });
+      return res.status(400).json({ error: 'Informe seu nome para publicar a solicitação.' });
     }
 
     if (clientPhone.replace(/\D/g, '').length < 10) {
-      return res.status(400).json({ error: 'Informe um WhatsApp valido para o instalador escolhido chamar voce.' });
+      return res.status(400).json({ error: 'Informe um WhatsApp válido para o instalador escolhido chamar você.' });
     }
 
     if (req.body.client_email && !clientEmail) {
@@ -373,7 +373,7 @@ exports.createPublicServiceRequest = async (req, res) => {
     }
 
     if (!service) {
-      return res.status(400).json({ error: 'Escolha o tipo de servico antes de publicar.' });
+      return res.status(400).json({ error: 'Escolha o tipo de serviço antes de publicar.' });
     }
 
     if (!city && !state) {
@@ -382,7 +382,7 @@ exports.createPublicServiceRequest = async (req, res) => {
 
     if (!privacyConsent) {
       return res.status(400).json({
-        error: 'Confirme os Termos de Uso e a Politica de Privacidade para publicar o pedido.',
+        error: 'Confirme os Termos de Uso e a Política de Privacidade para publicar o pedido.',
         code: 'PRIVACY_CONSENT_REQUIRED',
       });
     }
@@ -513,14 +513,14 @@ exports.createPublicServiceRequest = async (req, res) => {
     return res.status(201).json({ service_request: result.rows[0] });
   } catch (error) {
     console.error('Failed to create public service request:', error);
-    return res.status(500).json({ error: 'Nao foi possivel publicar a solicitacao agora.' });
+    return res.status(500).json({ error: 'Não foi possível publicar a solicitação agora.' });
   }
 };
 
 exports.getMyServiceRequests = async (req, res) => {
   try {
     if (req.user?.account_type !== 'client') {
-      return res.status(403).json({ error: 'Acompanhamento disponivel para contas de cliente.' });
+      return res.status(403).json({ error: 'Acompanhamento disponível para contas de cliente.' });
     }
 
     await pool.query(
@@ -554,7 +554,7 @@ exports.getMyServiceRequests = async (req, res) => {
       })),
     });
   } catch (_error) {
-    return res.status(500).json({ error: 'Nao foi possivel carregar seus pedidos.' });
+    return res.status(500).json({ error: 'Não foi possível carregar seus pedidos.' });
   }
 };
 
@@ -735,7 +735,7 @@ exports.getOpportunities = async (req, res) => {
             WHEN TRANSLATE(LOWER(COALESCE(sr.city, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = NULLIF($2, '')
               AND TRANSLATE(LOWER(COALESCE(sr.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = NULLIF($3, '') THEN 'Mesma cidade'
             WHEN TRANSLATE(LOWER(COALESCE(sr.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = NULLIF($3, '') THEN 'Mesmo estado'
-            ELSE 'Outra regiao'
+            ELSE 'Outra região'
           END AS distance_label
         FROM service_requests sr
         LEFT JOIN service_request_interests sri
@@ -818,7 +818,7 @@ exports.getOpportunities = async (req, res) => {
     });
   } catch (error) {
     console.error('Falha ao carregar oportunidades:', error);
-    return res.status(500).json({ error: 'Nao foi possivel carregar oportunidades.' });
+    return res.status(500).json({ error: 'Não foi possível carregar oportunidades.' });
   }
 };
 
@@ -841,7 +841,7 @@ exports.expressInterest = async (req, res) => {
     }
 
     if (!Number.isInteger(requestId) || requestId <= 0) {
-      return res.status(400).json({ error: 'Oportunidade invalida.' });
+      return res.status(400).json({ error: 'Oportunidade inválida.' });
     }
 
     const requestResult = await pool.query(
@@ -858,7 +858,7 @@ exports.expressInterest = async (req, res) => {
     const request = requestResult.rows[0];
 
     if (!request) {
-      return res.status(404).json({ error: 'Oportunidade nao encontrada ou ja encerrada.' });
+      return res.status(404).json({ error: 'Oportunidade não encontrada ou já encerrada.' });
     }
 
     if (!installer.is_admin) {
@@ -958,7 +958,7 @@ exports.expressInterest = async (req, res) => {
       }),
     });
   } catch (_error) {
-    return res.status(500).json({ error: 'Nao foi possivel enviar interesse.' });
+    return res.status(500).json({ error: 'Não foi possível enviar interesse.' });
   }
 };
 
@@ -968,13 +968,13 @@ exports.getPublicServiceRequestInterests = async (req, res) => {
     const token = normalizeText(req.headers['x-client-request-token'], 80);
 
     if (!Number.isInteger(requestId) || requestId <= 0 || !token) {
-      return res.status(400).json({ error: 'Solicitacao invalida.' });
+      return res.status(400).json({ error: 'Solicitação inválida.' });
     }
 
     const request = await getRequestForClient(requestId, token);
 
     if (!request) {
-      return res.status(404).json({ error: 'Solicitacao nao encontrada.' });
+      return res.status(404).json({ error: 'Solicitação não encontrada.' });
     }
 
     const result = await pool.query(
@@ -1018,7 +1018,7 @@ exports.getPublicServiceRequestInterests = async (req, res) => {
       interests: result.rows.map((row) => serializeClientInterest(row, request)),
     });
   } catch (_error) {
-    return res.status(500).json({ error: 'Nao foi possivel carregar interessados.' });
+    return res.status(500).json({ error: 'Não foi possível carregar interessados.' });
   }
 };
 
@@ -1032,7 +1032,7 @@ exports.selectServiceRequestInterest = async (req, res) => {
     const token = normalizeText(req.headers['x-client-request-token'], 80);
 
     if (!Number.isInteger(requestId) || requestId <= 0 || !Number.isInteger(interestId) || interestId <= 0 || !token) {
-      return res.status(400).json({ error: 'Escolha invalida.' });
+      return res.status(400).json({ error: 'Escolha inválida.' });
     }
 
     await client.query('BEGIN');
@@ -1051,7 +1051,7 @@ exports.selectServiceRequestInterest = async (req, res) => {
 
     if (!request) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Solicitacao nao encontrada.' });
+      return res.status(404).json({ error: 'Solicitação não encontrada.' });
     }
 
     if (!['open', 'selected'].includes(request.status) || (request.expires_at && new Date(request.expires_at) <= new Date())) {
@@ -1080,7 +1080,7 @@ exports.selectServiceRequestInterest = async (req, res) => {
 
     if (!interest) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Instalador interessado nao encontrado.' });
+      return res.status(404).json({ error: 'Instalador interessado não encontrado.' });
     }
 
     await client.query(
@@ -1116,7 +1116,7 @@ exports.selectServiceRequestInterest = async (req, res) => {
     });
   } catch (_error) {
     await client?.query('ROLLBACK').catch(() => null);
-    return res.status(500).json({ error: 'Nao foi possivel escolher o instalador.' });
+    return res.status(500).json({ error: 'Não foi possível escolher o instalador.' });
   } finally {
     client?.release();
   }
@@ -1130,11 +1130,11 @@ exports.updateClientServiceRequestStatus = async (req, res) => {
     const clientUserId = req.user?.account_type === 'client' ? Number(req.userId) : null;
 
     if (!Number.isInteger(requestId) || requestId <= 0 || !['canceled', 'closed'].includes(nextStatus)) {
-      return res.status(400).json({ error: 'Pedido ou status invalido.' });
+      return res.status(400).json({ error: 'Pedido ou status inválido.' });
     }
 
     if (!clientUserId && token.length < 32) {
-      return res.status(401).json({ error: 'Entre na conta ou informe o codigo de acesso do pedido.' });
+      return res.status(401).json({ error: 'Entre na conta ou informe o código de acesso do pedido.' });
     }
 
     const currentResult = await pool.query(
@@ -1153,7 +1153,7 @@ exports.updateClientServiceRequestStatus = async (req, res) => {
     const current = currentResult.rows[0];
 
     if (!current) {
-      return res.status(404).json({ error: 'Pedido nao encontrado ou acesso invalido.' });
+      return res.status(404).json({ error: 'Pedido não encontrado ou acesso inválido.' });
     }
 
     if (nextStatus === 'closed' && current.status !== 'selected') {
@@ -1161,7 +1161,7 @@ exports.updateClientServiceRequestStatus = async (req, res) => {
     }
 
     if (!['open', 'selected'].includes(current.status)) {
-      return res.status(409).json({ error: 'Este pedido ja foi encerrado.' });
+      return res.status(409).json({ error: 'Este pedido já foi encerrado.' });
     }
 
     const result = await pool.query(
@@ -1184,9 +1184,9 @@ exports.updateClientServiceRequestStatus = async (req, res) => {
          VALUES ($1, $2, $3, $4, FALSE)`,
         [
           current.selected_installer_id,
-          nextStatus === 'closed' ? 'Servico concluido pelo cliente' : 'Pedido cancelado pelo cliente',
+          nextStatus === 'closed' ? 'Serviço concluído pelo cliente' : 'Pedido cancelado pelo cliente',
           nextStatus === 'closed'
-            ? `O cliente marcou o pedido #${requestId} como concluido.`
+            ? `O cliente marcou o pedido #${requestId} como concluído.`
             : `O cliente cancelou o pedido #${requestId}.`,
           nextStatus === 'closed' ? 'success' : 'info',
         ]
@@ -1196,6 +1196,6 @@ exports.updateClientServiceRequestStatus = async (req, res) => {
     return res.json({ request: serializeClientRequest(result.rows[0]) });
   } catch (error) {
     console.error('Falha ao atualizar status do pedido:', error);
-    return res.status(500).json({ error: 'Nao foi possivel atualizar o pedido.' });
+    return res.status(500).json({ error: 'Não foi possível atualizar o pedido.' });
   }
 };

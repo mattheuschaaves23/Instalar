@@ -34,7 +34,7 @@ export default function LegalPage({ type }) {
   return (
     <main className="legal-page">
       <header className="legal-page-header">
-        <Link aria-label="InstalaPro - inicio" className="legal-page-brand" to="/">
+        <Link aria-label="InstalaPro - início" className="legal-page-brand" to="/">
           <BrandWordmark className="legal-page-wordmark" size="sm" />
         </Link>
         <Link className="legal-page-back" to="/">Voltar ao início</Link>
