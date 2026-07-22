@@ -28,34 +28,8 @@ const { logApplicationError } = require('./utils/errorMonitoring');
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
-const frontendBuildPath = path.join(__dirname, '..', 'frontend', 'build');
-const frontendAssetManifestPath = path.join(frontendBuildPath, '.vite', 'manifest.json');
-const renderGitCommit = process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || null;
-const renderGitBranch = process.env.RENDER_GIT_BRANCH || process.env.GIT_BRANCH || null;
-
-function getFrontendBuildInfo() {
-  if (!fs.existsSync(frontendAssetManifestPath)) {
-    return null;
-  }
-
-  try {
-    const manifest = JSON.parse(fs.readFileSync(frontendAssetManifestPath, 'utf8'));
-    const entry = manifest['src/index.jsx'] || Object.values(manifest).find((item) => item?.isEntry) || {};
-
-    return {
-      js: entry.file ? `/${entry.file}` : null,
-      css: entry.css?.[0] ? `/${entry.css[0]}` : null,
-      assetManifestExists: true,
-    };
-  } catch (error) {
-    return {
-      js: null,
-      css: null,
-      assetManifestExists: false,
-      error: error.message,
-    };
-  }
-}
+const gitCommit = process.env.VERCEL_GIT_COMMIT_SHA || process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || null;
+const gitBranch = process.env.VERCEL_GIT_COMMIT_REF || process.env.RENDER_GIT_BRANCH || process.env.GIT_BRANCH || null;
 
 function normalizeOrigin(rawOrigin) {
   const value = String(rawOrigin || '').trim();
@@ -179,9 +153,8 @@ app.get('/api/health', async (_req, res) => {
       service: 'bem-instalado-backend',
       date: new Date().toISOString(),
       mode: isProduction ? 'production' : 'development',
-      gitCommit: renderGitCommit,
-      gitBranch: renderGitBranch,
-      frontendBuild: getFrontendBuildInfo(),
+      gitCommit,
+      gitBranch,
     });
   } catch (error) {
     res.status(503).json({ ok: false, database: 'unavailable', service: 'bem-instalado-backend' });
@@ -200,21 +173,6 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/opportunities', opportunityRoutes);
-
-if (isProduction) {
-  if (fs.existsSync(frontendBuildPath)) {
-    app.use(express.static(frontendBuildPath));
-
-    app.get('*', (req, res, next) => {
-      if (req.path.startsWith('/api/')) {
-        return next();
-      }
-
-      res.set('Cache-Control', 'no-store');
-      return res.sendFile(path.join(frontendBuildPath, 'index.html'));
-    });
-  }
-}
 
 app.use((error, req, res, _next) => {
   const statusCode = Number(error.statusCode || error.status || 500);
@@ -505,8 +463,7 @@ async function startServer() {
   app.listen(port, () => {
     console.log(`Instalar+ backend rodando na porta ${port}`);
     if (isProduction) {
-      console.log('Build frontend em producao:', getFrontendBuildInfo());
-      console.log('Commit atual:', renderGitCommit || 'nao informado');
+      console.log('Commit atual:', gitCommit || 'nao informado');
     }
   });
 }

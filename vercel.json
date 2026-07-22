@@ -5,7 +5,6 @@
   "installCommand": "cd bem-instalado/backend && npm ci && cd ../frontend && npm ci",
   "functions": {
     "api/index.js": {
-      "memory": 1024,
       "maxDuration": 30
     }
   },
