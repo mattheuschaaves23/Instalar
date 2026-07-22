@@ -1,0 +1,17 @@
+{
+  "appId": "br.com.instalapro.instaladores",
+  "appName": "InstalaPro Instaladores",
+  "webDir": "build",
+  "backgroundColor": "#080706",
+  "loggingBehavior": "none",
+  "android": {
+    "backgroundColor": "#080706",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "minWebViewVersion": 60
+  },
+  "server": {
+    "androidScheme": "https",
+    "errorPath": "native-error.html"
+  }
+}

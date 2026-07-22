@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { startSocialLogin } from '../../services/auth';
 import { clearOAuthErrorFromUrl, getOAuthErrorMessage } from '../../utils/oauthMessages';
+import { getAuthRequestErrorMessage } from '../../utils/authErrorMessage';
 import useAuthCapabilities from '../../hooks/useAuthCapabilities';
 import BrandWordmark from '../Layout/BrandWordmark';
 
@@ -201,7 +202,7 @@ export default function ClientLogin() {
         await registerClient({
           name: form.name,
           phone: form.phone,
-          email: form.email,
+          email: form.email.trim().toLowerCase(),
           password: form.password,
         });
         toast.success('Conta criada. Seus pedidos ficarão salvos aqui.');
@@ -209,7 +210,7 @@ export default function ClientLogin() {
         return;
       }
 
-      const result = await login({ ...form, account_type: 'client' });
+      const result = await login({ ...form, email: form.email.trim().toLowerCase(), account_type: 'client' });
 
       if (result.twoFactorRequired) {
         setNeeds2FA(true);
@@ -227,7 +228,7 @@ export default function ClientLogin() {
       }
 
       const suggestedPortal = error.response?.data?.suggested_portal;
-      toast.error(error.response?.data?.error || 'Não foi possível entrar.');
+      toast.error(getAuthRequestErrorMessage(error));
       if (suggestedPortal) {
         navigate(suggestedPortal, { replace: true });
       }
@@ -351,11 +352,15 @@ export default function ClientLogin() {
               <div className="client-login-input-wrap">
                 <ClientLoginIcon name="mail" />
                 <input
+                  autoCapitalize="none"
                   autoComplete="email"
+                  autoCorrect="off"
+                  inputMode="email"
                   name="email"
                   onChange={handleChange}
                   placeholder="seu@email.com"
                   required
+                  spellCheck={false}
                   type="email"
                   value={form.email}
                 />
@@ -367,11 +372,14 @@ export default function ClientLogin() {
               <div className="client-login-input-wrap">
                 <ClientLoginIcon name="lock" />
                 <input
+                  autoCapitalize="none"
                   autoComplete={isRegistering ? 'new-password' : 'current-password'}
+                  autoCorrect="off"
                   name="password"
                   onChange={handleChange}
                   placeholder="Digite sua senha"
                   required
+                  spellCheck={false}
                   type={showPassword ? 'text' : 'password'}
                   value={form.password}
                 />
@@ -393,6 +401,8 @@ export default function ClientLogin() {
                   <ClientLoginIcon name="lock" />
                   <input
                     autoComplete="one-time-code"
+                    inputMode="numeric"
+                    maxLength={6}
                     name="twoFactorToken"
                     onChange={handleChange}
                     placeholder="000000"

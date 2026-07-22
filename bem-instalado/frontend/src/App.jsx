@@ -1,6 +1,25 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import ClientLanding from './components/Public/ClientLanding';
+import { useAuth } from './contexts/AuthContext';
+
+const IS_INSTALLER_APP = process.env.REACT_APP_INSTALLER_APP === 'true';
+const INSTALLER_APP_PATHS = [
+  '/instalador',
+  '/auth/social/callback',
+  '/dashboard',
+  '/opportunities',
+  '/clients',
+  '/budgets',
+  '/agenda',
+  '/reviews',
+  '/notifications',
+  '/profile',
+  '/settings',
+  '/subscription',
+  '/support',
+  '/admin',
+];
 
 const ClientLogin = lazy(() => import('./components/Auth/ClientLogin'));
 const Login = lazy(() => import('./components/Auth/Login'));
@@ -40,11 +59,38 @@ function RouteLoading() {
   );
 }
 
+function InstallerAppGuard({ children }) {
+  const location = useLocation();
+  const { loading, user } = useAuth();
+
+  if (!IS_INSTALLER_APP) {
+    return children;
+  }
+
+  const isInstallerPath = INSTALLER_APP_PATHS.some(
+    (path) => location.pathname === path || location.pathname.startsWith(`${path}/`)
+  );
+
+  if (isInstallerPath) {
+    return children;
+  }
+
+  if (loading) {
+    return <RouteLoading />;
+  }
+
+  const target = user?.account_type === 'installer' || user?.is_admin
+    ? '/dashboard'
+    : '/instalador/entrar';
+  return <Navigate replace to={target} />;
+}
+
 export default function App() {
   return (
     <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-      <Suspense fallback={<RouteLoading />}>
-        <Routes>
+      <InstallerAppGuard>
+        <Suspense fallback={<RouteLoading />}>
+          <Routes>
           <Route element={<ClientLanding />} path="/" />
           <Route element={<ClientLogin />} path="/cliente/entrar" />
           <Route element={<ClientLogin />} path="/login" />
@@ -88,8 +134,9 @@ export default function App() {
             </Route>
           </Route>
           <Route element={<Navigate replace to="/" />} path="*" />
-        </Routes>
-      </Suspense>
+          </Routes>
+        </Suspense>
+      </InstallerAppGuard>
     </BrowserRouter>
   );
 }

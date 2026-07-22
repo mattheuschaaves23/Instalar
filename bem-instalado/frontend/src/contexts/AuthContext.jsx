@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { getProfileRequest, loginRequest, registerClientRequest, registerRequest } from '../services/auth';
-import { clearAuthToken, getAuthToken, setAuthToken } from '../utils/safeStorage';
+import { clearAuthToken, getAuthToken, hydrateAuthToken, setAuthToken } from '../utils/safeStorage';
 
 const AuthContext = createContext(null);
 
@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
       const code = error.response?.data?.code || '';
 
       if (status === 401 && code.startsWith('AUTH_')) {
-        clearAuthToken();
+        void clearAuthToken();
         setUser(null);
       } else {
         setAuthError(
@@ -47,19 +47,33 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const token = getAuthToken();
+    let active = true;
 
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    const restoreSession = async () => {
+      const token = await hydrateAuthToken();
 
-    loadProfile();
+      if (!active) {
+        return;
+      }
+
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      await loadProfile();
+    };
+
+    restoreSession();
+
+    return () => {
+      active = false;
+    };
   }, [loadProfile]);
 
   const login = async (payload, { remember = true } = {}) => {
     const result = await loginRequest(payload);
-    setAuthToken(result.token, remember);
+    await setAuthToken(result.token, remember);
     setUser(result.user);
     setAuthError('');
     return result;
@@ -67,7 +81,7 @@ export function AuthProvider({ children }) {
 
   const register = async (payload) => {
     const result = await registerRequest(payload);
-    setAuthToken(result.token, true);
+    await setAuthToken(result.token, true);
     setUser(result.user);
     setAuthError('');
     return result;
@@ -75,14 +89,14 @@ export function AuthProvider({ children }) {
 
   const registerClient = async (payload) => {
     const result = await registerClientRequest(payload);
-    setAuthToken(result.token, true);
+    await setAuthToken(result.token, true);
     setUser(result.user);
     setAuthError('');
     return result;
   };
 
   const logout = () => {
-    clearAuthToken();
+    void clearAuthToken();
     setUser(null);
     setAuthError('');
   };

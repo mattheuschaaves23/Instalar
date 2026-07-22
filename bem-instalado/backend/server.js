@@ -48,7 +48,7 @@ function normalizeOrigin(rawOrigin) {
 
 const configuredOrigins = Array.from(
   new Set(
-    [process.env.FRONTEND_URL, process.env.APP_URL]
+    [process.env.FRONTEND_URL, process.env.APP_URL, process.env.MOBILE_APP_ORIGINS]
       .join(',')
       .split(',')
       .map((origin) => normalizeOrigin(origin))
@@ -56,7 +56,14 @@ const configuredOrigins = Array.from(
   )
 );
 const defaultDevOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
-const allowedCorsOrigins = configuredOrigins.length > 0 ? configuredOrigins : isProduction ? [] : defaultDevOrigins;
+const capacitorOrigins = ['https://localhost'];
+const allowedCorsOrigins = Array.from(
+  new Set([
+    ...configuredOrigins,
+    ...capacitorOrigins,
+    ...(!isProduction ? defaultDevOrigins : []),
+  ])
+);
 const localHostnames = new Set(['localhost', '127.0.0.1', '::1']);
 
 function isPrivateIPv4(hostname) {

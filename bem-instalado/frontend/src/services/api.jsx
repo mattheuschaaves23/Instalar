@@ -116,7 +116,7 @@ api.interceptors.response.use(
         INVALID_SESSION_CODES.has(code) &&
         !isLoginRoute(window.location.pathname)
       ) {
-        clearAuthToken();
+        void clearAuthToken();
         redirectTo(getLoginRoute(window.location.pathname));
       }
 

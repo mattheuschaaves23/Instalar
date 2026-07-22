@@ -1,7 +1,7 @@
 import api from './api';
 
 export async function loginRequest(payload) {
-  const response = await api.post('/auth/login', payload);
+  const response = await api.post('/auth/login', payload, { timeout: 45000 });
   return response.data;
 }
 

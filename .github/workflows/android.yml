@@ -1,0 +1,82 @@
+name: Android Instaladores
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "android-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: bem-instalado/frontend
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: bem-instalado/frontend/package-lock.json
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Preparar Android SDK
+        shell: bash
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" >/dev/null
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar aplicativo web dos instaladores
+        run: npm run build:android:web
+
+      - name: Sincronizar projeto Android
+        run: npx cap sync android
+
+      - name: Compilar APK instalável
+        working-directory: bem-instalado/frontend/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Preparar arquivo para download
+        shell: bash
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk InstalaPro-Instaladores.apk
+          sha256sum InstalaPro-Instaladores.apk > InstalaPro-Instaladores.apk.sha256
+
+      - name: Salvar APK na execução
+        uses: actions/upload-artifact@v4
+        with:
+          name: InstalaPro-Instaladores
+          path: |
+            bem-instalado/frontend/InstalaPro-Instaladores.apk
+            bem-instalado/frontend/InstalaPro-Instaladores.apk.sha256
+          if-no-files-found: error
+
+      - name: Publicar versão para download
+        if: startsWith(github.ref, 'refs/tags/android-v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            InstalaPro-Instaladores.apk \
+            InstalaPro-Instaladores.apk.sha256 \
+            --title "InstalaPro Instaladores ${GITHUB_REF_NAME#android-v}" \
+            --notes "Aplicativo Android exclusivo para instaladores. Esta versão pode ser instalada diretamente no aparelho."

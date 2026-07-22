@@ -4,8 +4,11 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { startSocialLogin } from '../../services/auth';
 import { clearOAuthErrorFromUrl, getOAuthErrorMessage } from '../../utils/oauthMessages';
+import { getAuthRequestErrorMessage } from '../../utils/authErrorMessage';
 import useAuthCapabilities from '../../hooks/useAuthCapabilities';
 import BrandWordmark from '../Layout/BrandWordmark';
+
+const IS_INSTALLER_APP = process.env.REACT_APP_INSTALLER_APP === 'true';
 
 function InstallerLoginIcon({ name }) {
   const common = {
@@ -175,12 +178,13 @@ const trustItems = [
 
 export default function Login() {
   const navigate = useNavigate();
-  const { loading, login, user } = useAuth();
+  const { loading, login, logout, user } = useAuth();
   const authCapabilities = useAuthCapabilities();
   const [form, setForm] = useState({ email: '', password: '', twoFactorToken: '' });
   const [needs2FA, setNeeds2FA] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const submitLabel = useMemo(() => (needs2FA ? 'Validar acesso' : 'Entrar'), [needs2FA]);
 
@@ -195,9 +199,14 @@ export default function Login() {
     }
 
     if (user?.account_type === 'client') {
-      navigate('/cliente', { replace: true });
+      if (IS_INSTALLER_APP) {
+        logout();
+        toast.error('Este aplicativo é exclusivo para contas de instalador.');
+      } else {
+        navigate('/cliente', { replace: true });
+      }
     }
-  }, [loading, navigate, user]);
+  }, [loading, logout, navigate, user]);
 
   useEffect(() => {
     const error = new URLSearchParams(window.location.search).get('oauth_error');
@@ -215,9 +224,15 @@ export default function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    if (submitting) {
+      return;
+    }
+
+    setSubmitting(true);
+
     try {
       const result = await login(
-        { ...form, account_type: 'installer' },
+        { ...form, email: form.email.trim().toLowerCase(), account_type: 'installer' },
         { remember: rememberMe }
       );
 
@@ -237,10 +252,18 @@ export default function Login() {
       }
 
       const suggestedPortal = error.response?.data?.suggested_portal;
-      toast.error(error.response?.data?.error || 'Não foi possível entrar.');
+      toast.error(
+        IS_INSTALLER_APP && suggestedPortal
+          ? 'Este aplicativo aceita somente contas de instalador.'
+          : getAuthRequestErrorMessage(error)
+      );
       if (suggestedPortal) {
-        navigate(suggestedPortal, { replace: true });
+        if (!IS_INSTALLER_APP) {
+          navigate(suggestedPortal, { replace: true });
+        }
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -302,11 +325,15 @@ export default function Login() {
               <div className="installer-login-input-wrap">
                 <InstallerLoginIcon name="mail" />
                 <input
+                  autoCapitalize="none"
                   autoComplete="email"
+                  autoCorrect="off"
+                  inputMode="email"
                   name="email"
                   onChange={handleChange}
                   placeholder="seu@email.com"
                   required
+                  spellCheck={false}
                   type="email"
                   value={form.email}
                 />
@@ -318,11 +345,14 @@ export default function Login() {
               <div className="installer-login-input-wrap">
                 <InstallerLoginIcon name="lock" />
                 <input
+                  autoCapitalize="none"
                   autoComplete="current-password"
+                  autoCorrect="off"
                   name="password"
                   onChange={handleChange}
                   placeholder="Digite sua senha"
                   required
+                  spellCheck={false}
                   type={showPassword ? 'text' : 'password'}
                   value={form.password}
                 />
@@ -344,6 +374,8 @@ export default function Login() {
                   <InstallerLoginIcon name="lock" />
                   <input
                     autoComplete="one-time-code"
+                    inputMode="numeric"
+                    maxLength={6}
                     name="twoFactorToken"
                     onChange={handleChange}
                     placeholder="000000"
@@ -370,12 +402,12 @@ export default function Login() {
               ) : null}
             </div>
 
-            <button className="installer-login-submit" type="submit">
-              <span>{submitLabel}</span>
+            <button className="installer-login-submit" disabled={submitting} type="submit">
+              <span>{submitting ? 'Entrando...' : submitLabel}</span>
               <InstallerLoginIcon name="arrow" />
             </button>
 
-            {authCapabilities.oauth.google || authCapabilities.oauth.apple ? (
+            {!IS_INSTALLER_APP && (authCapabilities.oauth.google || authCapabilities.oauth.apple) ? (
               <>
                 <div className="installer-login-divider">
                   <span />

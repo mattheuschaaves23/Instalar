@@ -1,8 +1,7 @@
 .vercel
 .env*
+!bem-instalado/frontend/.env.android
 node_modules/
 build/
 .pnpm-store/
 *.log
-
-.env*

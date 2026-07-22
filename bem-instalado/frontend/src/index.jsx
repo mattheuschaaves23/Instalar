@@ -10,10 +10,16 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { applyStoredSitePreferences } from './utils/sitePreferences';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+const isInstallerApp = process.env.REACT_APP_INSTALLER_APP === 'true';
 
 applyStoredSitePreferences();
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+if (isInstallerApp) {
+  document.documentElement.dataset.installerApp = 'true';
+  document.title = 'InstalaPro Instaladores';
+}
+
+if (import.meta.env.PROD && !isInstallerApp && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => null);
   });
