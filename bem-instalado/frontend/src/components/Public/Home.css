@@ -153,7 +153,7 @@
   align-items: start;
 }
 
-.client-app-request-head h2 {
+.client-app-request-head h1 {
   margin: 0.35rem 0 0;
   font-family: 'Poppins', 'Segoe UI', sans-serif;
   font-size: clamp(1.55rem, 3vw, 2.35rem);
@@ -2905,7 +2905,7 @@
     gap: 0.75rem;
   }
 
-  .client-app-request-head h2 {
+  .client-app-request-head h1 {
     font-size: 1.6rem;
   }
 
@@ -3683,7 +3683,7 @@
   padding: 0.15rem 0.1rem;
 }
 
-.client-app-request-head h2 {
+.client-app-request-head h1 {
   margin-top: 0.2rem;
   font-size: clamp(1.35rem, 2.5vw, 1.75rem);
   line-height: 1.06;
@@ -4167,7 +4167,7 @@
     padding: 0.15rem 0.2rem;
   }
 
-  .client-app-request-head h2 {
+  .client-app-request-head h1 {
     font-size: 1.32rem;
   }
 

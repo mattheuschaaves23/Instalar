@@ -1928,7 +1928,7 @@ export default function Home() {
           <div className="client-app-request-head">
             <div>
               <p className="client-app-kicker">Encontre um profissional</p>
-              <h2>Encontre seu instalador</h2>
+              <h1>Encontre seu instalador</h1>
               <p>Responda quatro etapas rápidas. Você só fala com quem escolher.</p>
             </div>
 
