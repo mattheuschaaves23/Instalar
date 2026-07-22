@@ -1114,9 +1114,9 @@ exports.updateClientServiceRequestStatus = async (req, res) => {
       `
         UPDATE service_requests
         SET
-          status = $1,
-          completed_at = CASE WHEN $1 = 'closed' THEN NOW() ELSE completed_at END,
-          canceled_at = CASE WHEN $1 = 'canceled' THEN NOW() ELSE canceled_at END,
+          status = $1::varchar,
+          completed_at = CASE WHEN $1::varchar = 'closed' THEN NOW() ELSE completed_at END,
+          canceled_at = CASE WHEN $1::varchar = 'canceled' THEN NOW() ELSE canceled_at END,
           updated_at = NOW()
         WHERE id = $2
         RETURNING *
