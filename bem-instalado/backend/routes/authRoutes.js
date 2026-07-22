@@ -31,7 +31,9 @@ const passwordRecoveryLimiter = createRateLimiter({
   message: 'Muitas tentativas de recuperação de senha. Aguarde alguns minutos.',
 });
 
+router.get('/capabilities', controller.getCapabilities);
 router.post('/register', authBurstLimiter, controller.register);
+router.post('/register/client', authBurstLimiter, controller.registerClient);
 router.post('/login', loginLimiter, controller.login);
 router.get('/oauth/:provider', authBurstLimiter, controller.startOAuth);
 router.get('/oauth/:provider/callback', authBurstLimiter, controller.handleOAuthCallback);

@@ -5,12 +5,11 @@ const pool = require('../config/database');
 const { jwtSecret, jwtExpiresIn } = require('../config/auth');
 const { generateSecret, verifyToken, generateQrCode } = require('../utils/totp');
 const { logAudit } = require('../utils/auditLog');
-const { isOwnerAdminEmail, normalizeEmail } = require('../utils/adminAccess');
-const { sendPasswordResetEmail } = require('../services/email');
+const { normalizeEmail } = require('../utils/adminAccess');
+const { isEmailEnabled, sendPasswordResetEmail } = require('../services/email');
 
 const REGISTER_PLAN_PRICE = Number(process.env.SUBSCRIPTION_PRICE || 40);
 const PASSWORD_RESET_EXPIRATION_MINUTES = Number(process.env.PASSWORD_RESET_EXPIRATION_MINUTES || 30);
-const PASSWORD_RESET_EXPOSE_TOKEN = process.env.PASSWORD_RESET_EXPOSE_TOKEN === 'true';
 const OAUTH_STATE_EXPIRES_IN = '10m';
 const OAUTH_APPLE_AUDIENCE = 'https://appleid.apple.com';
 const OAUTH_APPLE_ISSUER = 'https://appleid.apple.com';
@@ -358,6 +357,7 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
       SELECT *
       FROM users
       WHERE account_type = $1
+        AND deleted_at IS NULL
         AND (
           (auth_provider = $2 AND auth_provider_id = $3)
           OR LOWER(email) = LOWER($4)
@@ -368,8 +368,6 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
     [accountType, provider, providerSubject, normalizedEmail]
   );
   let user = existingUserResult.rows[0];
-  const shouldGrantOwnerAdmin = isOwnerAdminEmail(normalizedEmail);
-
   if (user) {
     const updatedUser = await pool.query(
       `
@@ -379,14 +377,13 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
           auth_provider_id = $3,
           email_verified_at = COALESCE(email_verified_at, NOW()),
           last_login_at = NOW(),
-          is_admin = CASE WHEN $4 THEN TRUE ELSE is_admin END,
-          account_type = $5::VARCHAR(20),
-          public_profile = CASE WHEN $5::VARCHAR(20) = 'client' THEN FALSE ELSE public_profile END,
+          account_type = $4::VARCHAR(20),
+          public_profile = CASE WHEN $4::VARCHAR(20) = 'client' THEN FALSE ELSE public_profile END,
           updated_at = NOW()
         WHERE id = $1
         RETURNING *
       `,
-      [user.id, provider, providerSubject, shouldGrantOwnerAdmin, accountType]
+      [user.id, provider, providerSubject, accountType]
     );
     user = updatedUser.rows[0] || user;
   } else {
@@ -404,13 +401,12 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
           auth_provider_id,
           email_verified_at,
           last_login_at,
-          public_profile,
-          is_admin
+          public_profile
         )
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), $7)
         RETURNING *
       `,
-      [displayName, normalizedEmail, generatedPassword, accountType, provider, providerSubject, accountType === 'installer', shouldGrantOwnerAdmin]
+      [displayName, normalizedEmail, generatedPassword, accountType, provider, providerSubject, false]
     );
     user = createdUser.rows[0];
   }
@@ -441,53 +437,71 @@ function buildPasswordResetToken() {
   return { token, tokenHash };
 }
 
-function buildPasswordResetUrl(req, token) {
+function buildPasswordResetUrl(req, token, accountType = 'installer') {
   const frontendUrl = getFrontendBaseUrl(req);
   const query = new URLSearchParams({ token });
-  return `${frontendUrl}/instalador/recuperar-senha?${query.toString()}`;
+  const route = accountType === 'client' ? '/cliente/recuperar-senha' : '/instalador/recuperar-senha';
+  return `${frontendUrl}${route}?${query.toString()}`;
 }
 
-exports.register = async (req, res) => {
+exports.getCapabilities = (_req, res) => {
+  return res.json({
+    password_reset: isEmailEnabled() || process.env.NODE_ENV !== 'production',
+    oauth: {
+      google: hasGoogleConfig(),
+      apple: hasAppleConfig(),
+    },
+  });
+};
+
+async function registerPasswordAccount(req, res, accountType) {
+  const db = await pool.connect();
+
   try {
     const { name, email, password, phone, business_name } = req.body;
     const normalizedEmail = normalizeEmail(email);
+    const normalizedName = String(name || '').trim();
+    const normalizedPhone = String(phone || '').replace(/[^\d+]/g, '').slice(0, 30);
 
-    if (!name || !normalizedEmail || !password) {
+    if (!normalizedName || !normalizedEmail || !password) {
       return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
     }
 
-    if (String(password).length < 6) {
-      return res.status(400).json({ error: 'A senha precisa ter pelo menos 6 caracteres.' });
+    if (String(password).length < 10 || !/[A-Za-z]/.test(String(password)) || !/\d/.test(String(password))) {
+      return res.status(400).json({ error: 'A senha precisa ter pelo menos 10 caracteres, com letras e numeros.' });
     }
 
-    const existingUser = await pool.query(
-      "SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND account_type = 'installer'",
-      [normalizedEmail]
+    if (accountType === 'client' && normalizedPhone.replace(/\D/g, '').length < 10) {
+      return res.status(400).json({ error: 'Informe um WhatsApp válido para acompanhar seus pedidos.' });
+    }
+
+    await db.query('BEGIN');
+    const existingUser = await db.query(
+      'SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND account_type = $2',
+      [normalizedEmail, accountType]
     );
 
     if (existingUser.rowCount > 0) {
+      await db.query('ROLLBACK');
       await logAudit({
         actorUserId: null,
         action: 'auth.register_denied_duplicate_email',
         entityType: 'user',
         entityId: normalizedEmail,
-        metadata: { email: normalizedEmail },
+        metadata: { email: normalizedEmail, accountType },
         req,
       });
-
-      return res.status(409).json({ error: 'E-mail já cadastrado.' });
+      return res.status(409).json({ error: 'E-mail já cadastrado para este tipo de conta.' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const shouldGrantOwnerAdmin = isOwnerAdminEmail(normalizedEmail);
-
-    const { rows } = await pool.query(
+    const { rows } = await db.query(
       `
-        INSERT INTO users (name, email, password, phone, business_name, account_type, is_admin)
-        VALUES ($1, $2, $3, $4, $5, 'installer', $6)
+        INSERT INTO users (name, email, password, phone, business_name, account_type)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING
           id,
-          COALESCE(account_type, 'installer') AS account_type,
+          account_type,
           name,
           email,
           phone,
@@ -503,44 +517,64 @@ exports.register = async (req, res) => {
           is_admin,
           two_factor_enabled
       `,
-      [name, normalizedEmail, passwordHash, phone || null, business_name || null, shouldGrantOwnerAdmin]
+      [
+        normalizedName,
+        normalizedEmail,
+        passwordHash,
+        normalizedPhone || null,
+        accountType === 'installer' ? business_name || null : null,
+        accountType,
+      ]
     );
-
     const user = rows[0];
 
-    await pool.query(
-      `
-        INSERT INTO subscriptions (user_id, plan, status)
-        VALUES ($1, 'monthly', 'inactive')
-      `,
-      [user.id]
-    );
+    if (accountType === 'installer') {
+      await db.query(
+        `
+          INSERT INTO subscriptions (user_id, plan, status)
+          VALUES ($1, 'monthly', 'inactive')
+        `,
+        [user.id]
+      );
+    }
 
+    await db.query('COMMIT');
     await logAudit({
       actorUserId: user.id,
       action: 'auth.register_success',
       entityType: 'user',
       entityId: user.id,
-      metadata: {
-        email: user.email,
-        isAdmin: Boolean(user.is_admin),
-      },
+      metadata: { email: user.email, accountType, isAdmin: Boolean(user.is_admin) },
       req,
     });
 
-    return res.status(201).json({
+    const payload = {
       user: sanitizeUser(user),
       token: signToken(user.id),
-      onboarding: {
+    };
+
+    if (accountType === 'installer') {
+      payload.onboarding = {
         subscription_price: REGISTER_PLAN_PRICE,
         currency: 'BRL',
         period: 'mensal',
-      },
-    });
-  } catch (_error) {
+      };
+    }
+
+    return res.status(201).json(payload);
+  } catch (error) {
+    await db.query('ROLLBACK').catch(() => null);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'E-mail já cadastrado para este tipo de conta.' });
+    }
     return res.status(500).json({ error: 'Erro ao registrar usuário.' });
+  } finally {
+    db.release();
   }
-};
+}
+
+exports.register = (req, res) => registerPasswordAccount(req, res, 'installer');
+exports.registerClient = (req, res) => registerPasswordAccount(req, res, 'client');
 
 exports.login = async (req, res) => {
   try {
@@ -549,12 +583,18 @@ exports.login = async (req, res) => {
     const requestedAccountType = expectedAccountType || 'installer';
     const normalizedEmail = normalizeEmail(email);
     const { rows } = await pool.query(
-      'SELECT * FROM users WHERE LOWER(email) = LOWER($1) AND account_type = $2',
+      'SELECT * FROM users WHERE LOWER(email) = LOWER($1) AND account_type = $2 AND deleted_at IS NULL',
       [normalizedEmail, requestedAccountType]
     );
     let user = rows[0];
 
     if (!user) {
+      const alternateAccount = await pool.query(
+        'SELECT account_type FROM users WHERE LOWER(email) = LOWER($1) AND deleted_at IS NULL LIMIT 1',
+        [normalizedEmail]
+      );
+      const alternateType = alternateAccount.rows[0]?.account_type;
+
       await logAudit({
         actorUserId: null,
         action: 'auth.login_failed_user_not_found',
@@ -563,6 +603,16 @@ exports.login = async (req, res) => {
         metadata: { email: normalizedEmail },
         req,
       });
+      if (alternateType && alternateType !== requestedAccountType) {
+        return res.status(401).json({
+          error: alternateType === 'client'
+            ? 'Esta conta é de cliente. Use a entrada de clientes.'
+            : 'Esta conta é de instalador. Use a entrada de instaladores.',
+          code: 'ACCOUNT_TYPE_MISMATCH',
+          suggested_portal: alternateType === 'client' ? '/cliente/entrar' : '/instalador/entrar',
+        });
+      }
+
       return res.status(401).json({ error: 'Credenciais inválidas.' });
     }
 
@@ -578,19 +628,6 @@ exports.login = async (req, res) => {
         req,
       });
       return res.status(401).json({ error: 'Credenciais inválidas.' });
-    }
-
-    if (!user.is_admin && isOwnerAdminEmail(user.email)) {
-      const elevatedUser = await pool.query(
-        `
-          UPDATE users
-          SET is_admin = TRUE
-          WHERE id = $1
-          RETURNING *
-        `,
-        [user.id]
-      );
-      user = elevatedUser.rows[0] || { ...user, is_admin: true };
     }
 
     if (user.two_factor_enabled) {
@@ -977,6 +1014,13 @@ exports.forgotPassword = async (req, res) => {
       return res.status(400).json({ error: 'Informe um e-mail válido.' });
     }
 
+    if (process.env.NODE_ENV === 'production' && !isEmailEnabled()) {
+      return res.status(503).json({
+        error: 'Recuperacao por e-mail temporariamente indisponivel.',
+        code: 'EMAIL_NOT_CONFIGURED',
+      });
+    }
+
     const userResult = await pool.query(
       `
         SELECT id, email
@@ -1037,7 +1081,7 @@ exports.forgotPassword = async (req, res) => {
       req,
     });
 
-    const resetUrl = buildPasswordResetUrl(req, token);
+    const resetUrl = buildPasswordResetUrl(req, token, requestedAccountType);
     const delivery = await sendPasswordResetEmail({
       to: user.email,
       resetUrl,
@@ -1048,7 +1092,7 @@ exports.forgotPassword = async (req, res) => {
       return { sent: false, reason: 'send_failed' };
     });
 
-    const shouldExposeResetToken = process.env.NODE_ENV !== 'production' || PASSWORD_RESET_EXPOSE_TOKEN;
+    const shouldExposeResetToken = process.env.NODE_ENV !== 'production';
 
     if (shouldExposeResetToken) {
       return res.json({
@@ -1076,8 +1120,8 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ error: 'Token e nova senha são obrigatórios.' });
     }
 
-    if (nextPassword.length < 8) {
-      return res.status(400).json({ error: 'A nova senha precisa ter pelo menos 8 caracteres.' });
+    if (nextPassword.length < 10 || !/[A-Za-z]/.test(nextPassword) || !/\d/.test(nextPassword)) {
+      return res.status(400).json({ error: 'A nova senha precisa ter pelo menos 10 caracteres, com letras e numeros.' });
     }
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');

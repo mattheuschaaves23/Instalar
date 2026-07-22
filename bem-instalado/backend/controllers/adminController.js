@@ -43,9 +43,60 @@ function parseInteger(value, fallback = 0) {
 }
 
 async function countAdmins() {
-  const result = await pool.query('SELECT COUNT(*)::int AS total FROM users WHERE is_admin = TRUE');
+  const result = await pool.query('SELECT COUNT(*)::int AS total FROM users WHERE is_admin = TRUE AND deleted_at IS NULL');
   return Number(result.rows[0]?.total || 0);
 }
+
+function parsePage(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(1, Math.floor(parsed)) : 1;
+}
+
+function buildPagination(page, limit, total) {
+  return {
+    page,
+    limit,
+    total,
+    total_pages: Math.max(1, Math.ceil(total / limit)),
+  };
+}
+
+exports.listApplicationErrors = async (req, res) => {
+  try {
+    const limit = parseLimit(req.query.limit, 30);
+    const includeResolved = parseBoolean(req.query.include_resolved) === true;
+    const { rows } = await pool.query(
+      `
+        SELECT id, source, severity, message, route, method, status_code,
+          stack_hash, metadata, resolved_at, created_at
+        FROM application_errors
+        WHERE ($1::boolean = TRUE OR resolved_at IS NULL)
+        ORDER BY created_at DESC
+        LIMIT $2
+      `,
+      [includeResolved, limit]
+    );
+
+    return res.json({ errors: rows });
+  } catch (error) {
+    return res.status(500).json({ error: 'Erro ao carregar monitoramento.' });
+  }
+};
+
+exports.resolveApplicationError = async (req, res) => {
+  try {
+    const id = parseInteger(req.params.id, 0);
+    const { rows } = await pool.query(
+      `UPDATE application_errors SET resolved_at = NOW() WHERE id = $1 RETURNING id, resolved_at`,
+      [id]
+    );
+
+    if (!rows[0]) return res.status(404).json({ error: 'Registro não encontrado.' });
+    return res.json(rows[0]);
+  } catch (error) {
+    return res.status(500).json({ error: 'Erro ao atualizar monitoramento.' });
+  }
+};
 
 async function setSubscriptionStatus(userId, status, expiresAt = null, specificSubscriptionId = null) {
   let targetSubscriptionId = specificSubscriptionId;
@@ -98,7 +149,7 @@ async function setSubscriptionStatus(userId, status, expiresAt = null, specificS
 
 exports.getOverview = async (_req, res) => {
   try {
-    const [metricsResult, usersResult, paymentsResult, budgetsResult] = await Promise.all([
+    const [metricsResult, usersResult, paymentsResult, budgetsResult, requestsResult] = await Promise.all([
       pool.query(`
         WITH latest_subscriptions AS (
           SELECT DISTINCT ON (user_id)
@@ -109,12 +160,13 @@ exports.getOverview = async (_req, res) => {
           ORDER BY user_id, created_at DESC
         )
         SELECT
-          (SELECT COUNT(*)::int FROM users) AS total_users,
-          (SELECT COUNT(*)::int FROM users WHERE is_admin = TRUE) AS total_admins,
-          (SELECT COUNT(*)::int FROM users WHERE COALESCE(public_profile, TRUE) = TRUE) AS public_installers,
-          (SELECT COUNT(*)::int FROM users WHERE COALESCE(featured_installer, FALSE) = TRUE) AS featured_installers,
-          (SELECT COUNT(*)::int FROM users WHERE COALESCE(certification_verified, FALSE) = TRUE) AS certified_installers,
-          (SELECT COUNT(*)::int FROM clients) AS total_clients,
+          (SELECT COUNT(*)::int FROM users WHERE deleted_at IS NULL) AS total_users,
+          (SELECT COUNT(*)::int FROM users WHERE is_admin = TRUE AND deleted_at IS NULL) AS total_admins,
+          (SELECT COUNT(*)::int FROM users WHERE COALESCE(public_profile, FALSE) = TRUE AND deleted_at IS NULL) AS public_installers,
+          (SELECT COUNT(*)::int FROM users WHERE COALESCE(featured_installer, FALSE) = TRUE AND deleted_at IS NULL) AS featured_installers,
+          (SELECT COUNT(*)::int FROM users WHERE COALESCE(certification_verified, FALSE) = TRUE AND deleted_at IS NULL) AS certified_installers,
+          (SELECT COUNT(*)::int FROM users WHERE account_type = 'client' AND deleted_at IS NULL) AS total_clients,
+          (SELECT COUNT(*)::int FROM clients) AS total_legacy_clients,
           (SELECT COUNT(*)::int FROM budgets) AS total_budgets,
           (SELECT COUNT(*)::int FROM budgets WHERE status = 'pending') AS pending_budgets,
           (SELECT COUNT(*)::int FROM budgets WHERE status = 'approved') AS approved_budgets,
@@ -137,6 +189,13 @@ exports.getOverview = async (_req, res) => {
               OR (expires_at IS NOT NULL AND expires_at <= NOW())
           ) AS inactive_subscriptions,
           (SELECT COUNT(*)::int FROM payments WHERE status = 'pending') AS pending_payments,
+          (SELECT COUNT(*)::int FROM service_requests) AS total_service_requests,
+          (SELECT COUNT(*)::int FROM service_requests WHERE status = 'open') AS open_service_requests,
+          (SELECT COUNT(*)::int FROM service_requests WHERE status = 'selected') AS selected_service_requests,
+          (
+            SELECT COUNT(*)::int FROM service_requests
+            WHERE created_at >= NOW() - INTERVAL '7 days'
+          ) AS recent_service_requests,
           (
             SELECT COUNT(*)::int
             FROM payments
@@ -175,9 +234,11 @@ exports.getOverview = async (_req, res) => {
           u.name,
           u.email,
           u.created_at,
+          u.deleted_at,
           u.is_admin,
           u.featured_installer,
           u.certification_verified,
+          u.certificate_file,
           (u.certificate_file IS NOT NULL AND LENGTH(TRIM(u.certificate_file)) > 0) AS has_certificate,
           COALESCE(ls.status, 'inactive') AS subscription_status,
           ls.expires_at
@@ -218,6 +279,24 @@ exports.getOverview = async (_req, res) => {
         ORDER BY b.created_at DESC
         LIMIT 8
       `),
+      pool.query(`
+        SELECT
+          sr.id,
+          sr.client_name,
+          sr.service_label,
+          sr.city,
+          sr.state,
+          sr.status,
+          sr.created_at,
+          COUNT(sri.id)::int AS interests_count,
+          COALESCE(NULLIF(selected.business_name, ''), selected.name) AS selected_installer_name
+        FROM service_requests sr
+        LEFT JOIN service_request_interests sri ON sri.request_id = sr.id
+        LEFT JOIN users selected ON selected.id = sr.selected_installer_id
+        GROUP BY sr.id, selected.business_name, selected.name
+        ORDER BY sr.created_at DESC
+        LIMIT 8
+      `),
     ]);
 
     return res.json({
@@ -225,6 +304,7 @@ exports.getOverview = async (_req, res) => {
       recent_users: usersResult.rows,
       recent_payments: paymentsResult.rows,
       recent_budgets: budgetsResult.rows,
+      recent_service_requests: requestsResult.rows,
     });
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao carregar visão geral do administrador.' });
@@ -235,10 +315,14 @@ exports.listUsers = async (req, res) => {
   try {
     const search = String(req.query.q || '').trim();
     const status = String(req.query.status || 'all').trim().toLowerCase();
-    const limit = parseLimit(req.query.limit, 30);
+    const accountType = String(req.query.account_type || 'all').trim().toLowerCase();
+    const page = parsePage(req.query.page);
+    const limit = parseLimit(req.query.limit, 20);
+    const offset = (page - 1) * limit;
 
     const allowedStatuses = new Set(['all', 'active', 'inactive', 'canceled']);
     const safeStatus = allowedStatuses.has(status) ? status : 'all';
+    const safeAccountType = ['all', 'installer', 'client'].includes(accountType) ? accountType : 'all';
 
     const { rows } = await pool.query(
       `
@@ -260,6 +344,7 @@ exports.listUsers = async (req, res) => {
         )
         SELECT
           u.id,
+          u.account_type,
           u.name,
           u.email,
           u.phone,
@@ -269,8 +354,10 @@ exports.listUsers = async (req, res) => {
           u.is_admin,
           u.featured_installer,
           u.certification_verified,
+          u.certificate_file,
           (u.certificate_file IS NOT NULL AND LENGTH(TRIM(u.certificate_file)) > 0) AS has_certificate,
           u.created_at,
+          u.deleted_at,
           CASE
             WHEN COALESCE(ls.status, 'inactive') = 'active'
               AND (ls.expires_at IS NULL OR ls.expires_at > NOW())
@@ -282,11 +369,13 @@ exports.listUsers = async (req, res) => {
           ls.expires_at,
           COALESCE(bs.budgets_count, 0)::int AS budgets_count,
           COALESCE(bs.approved_count, 0)::int AS approved_count
+          ,COUNT(*) OVER()::int AS total_count
         FROM users u
         LEFT JOIN latest_subscriptions ls ON ls.user_id = u.id
         LEFT JOIN budget_stats bs ON bs.user_id = u.id
         WHERE
           ($1 = '' OR u.name ILIKE ('%' || $1 || '%') OR u.email ILIKE ('%' || $1 || '%'))
+          AND ($3 = 'all' OR u.account_type = $3)
           AND (
             $2 = 'all'
             OR (
@@ -307,12 +396,16 @@ exports.listUsers = async (req, res) => {
             )
           )
         ORDER BY u.created_at DESC
-        LIMIT $3
+        LIMIT $4 OFFSET $5
       `,
-      [search, safeStatus, limit]
+      [search, safeStatus, safeAccountType, limit, offset]
     );
 
-    return res.json({ users: rows });
+    const total = Number(rows[0]?.total_count || 0);
+    return res.json({
+      users: rows.map(({ total_count, ...user }) => user),
+      pagination: buildPagination(page, limit, total),
+    });
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao listar usuários para administração.' });
   }
@@ -322,7 +415,9 @@ exports.listPayments = async (req, res) => {
   try {
     const search = String(req.query.q || '').trim();
     const status = String(req.query.status || 'all').trim().toLowerCase();
-    const limit = parseLimit(req.query.limit, 30);
+    const page = parsePage(req.query.page);
+    const limit = parseLimit(req.query.limit, 20);
+    const offset = (page - 1) * limit;
     const allowedStatuses = new Set(['all', 'pending', 'paid', 'failed', 'canceled']);
     const safeStatus = allowedStatuses.has(status) ? status : 'all';
 
@@ -341,21 +436,126 @@ exports.listPayments = async (req, res) => {
           p.created_at,
           p.updated_at,
           COALESCE(NULLIF(u.business_name, ''), u.name) AS user_name,
-          u.email AS user_email
+          u.email AS user_email,
+          COUNT(*) OVER()::int AS total_count
         FROM payments p
         JOIN users u ON u.id = p.user_id
         WHERE
           ($1 = '' OR u.name ILIKE ('%' || $1 || '%') OR u.email ILIKE ('%' || $1 || '%') OR COALESCE(p.external_id, '') ILIKE ('%' || $1 || '%'))
           AND ($2 = 'all' OR p.status = $2)
         ORDER BY p.created_at DESC
-        LIMIT $3
+        LIMIT $3 OFFSET $4
       `,
-      [search, safeStatus, limit]
+      [search, safeStatus, limit, offset]
     );
 
-    return res.json({ payments: rows });
+    const total = Number(rows[0]?.total_count || 0);
+    return res.json({
+      payments: rows.map(({ total_count, ...payment }) => payment),
+      pagination: buildPagination(page, limit, total),
+    });
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao listar pagamentos para administração.' });
+  }
+};
+
+exports.listServiceRequests = async (req, res) => {
+  try {
+    const search = String(req.query.q || '').trim();
+    const status = String(req.query.status || 'all').trim().toLowerCase();
+    const page = parsePage(req.query.page);
+    const limit = parseLimit(req.query.limit, 20);
+    const offset = (page - 1) * limit;
+    const safeStatus = ['all', 'open', 'selected', 'closed', 'canceled'].includes(status)
+      ? status
+      : 'all';
+
+    const { rows } = await pool.query(
+      `
+        SELECT
+          sr.id,
+          sr.client_name,
+          sr.client_email,
+          sr.client_phone,
+          sr.service,
+          sr.service_label,
+          sr.city,
+          sr.state,
+          sr.neighborhood,
+          sr.urgency,
+          sr.urgency_label,
+          sr.status,
+          sr.created_at,
+          sr.updated_at,
+          sr.selected_installer_id,
+          owner.email AS account_email,
+          COALESCE(NULLIF(selected.business_name, ''), selected.name) AS selected_installer_name,
+          COUNT(sri.id)::int AS interests_count,
+          COUNT(*) OVER()::int AS total_count
+        FROM service_requests sr
+        LEFT JOIN users owner ON owner.id = sr.client_user_id
+        LEFT JOIN users selected ON selected.id = sr.selected_installer_id
+        LEFT JOIN service_request_interests sri ON sri.request_id = sr.id
+        WHERE
+          ($1 = 'all' OR sr.status = $1)
+          AND (
+            $2 = ''
+            OR sr.client_name ILIKE ('%' || $2 || '%')
+            OR COALESCE(sr.client_email, '') ILIKE ('%' || $2 || '%')
+            OR COALESCE(sr.client_phone, '') ILIKE ('%' || $2 || '%')
+            OR COALESCE(sr.service_label, sr.service, '') ILIKE ('%' || $2 || '%')
+            OR COALESCE(sr.city, '') ILIKE ('%' || $2 || '%')
+          )
+        GROUP BY sr.id, owner.email, selected.business_name, selected.name
+        ORDER BY sr.created_at DESC
+        LIMIT $3 OFFSET $4
+      `,
+      [safeStatus, search, limit, offset]
+    );
+
+    const total = Number(rows[0]?.total_count || 0);
+    return res.json({
+      requests: rows.map(({ total_count, ...request }) => request),
+      pagination: buildPagination(page, limit, total),
+    });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Erro ao listar pedidos de clientes.' });
+  }
+};
+
+exports.updateServiceRequestStatus = async (req, res) => {
+  try {
+    const requestId = Number(req.params.id);
+    const status = String(req.body.status || '').trim().toLowerCase();
+
+    if (!Number.isInteger(requestId) || requestId <= 0) {
+      return res.status(400).json({ error: 'Pedido inválido.' });
+    }
+
+    if (!['open', 'closed', 'canceled'].includes(status)) {
+      return res.status(400).json({ error: 'Status do pedido inválido.' });
+    }
+
+    const { rows } = await pool.query(
+      `
+        UPDATE service_requests
+        SET status = $1, updated_at = NOW()
+        WHERE id = $2
+          AND ($1 <> 'open' OR selected_installer_id IS NULL)
+        RETURNING id, status, updated_at
+      `,
+      [status, requestId]
+    );
+
+    if (!rows[0]) {
+      return res.status(409).json({
+        error: 'Pedido não encontrado ou já possui um instalador selecionado.',
+      });
+    }
+
+    return res.json({ request: rows[0] });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Erro ao atualizar o pedido.' });
   }
 };
 
@@ -373,10 +573,14 @@ exports.updateUserSubscription = async (req, res) => {
       return res.status(400).json({ error: 'Status de assinatura inválido.' });
     }
 
-    const { rowCount } = await pool.query('SELECT id FROM users WHERE id = $1', [targetUserId]);
+    const targetResult = await pool.query('SELECT id, account_type FROM users WHERE id = $1', [targetUserId]);
 
-    if (rowCount === 0) {
+    if (targetResult.rowCount === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    if (targetResult.rows[0].account_type !== 'installer') {
+      return res.status(400).json({ error: 'Contas de cliente não possuem assinatura de instalador.' });
     }
 
     let expiresAt = parseDate(req.body.expires_at);
@@ -420,11 +624,30 @@ exports.updateUserPublicProfile = async (req, res) => {
       return res.status(400).json({ error: 'Informe public_profile como true ou false.' });
     }
 
+    if (nextPublicProfile) {
+      const trustResult = await pool.query(
+        `SELECT account_type, certification_verified, certificate_file FROM users WHERE id = $1 LIMIT 1`,
+        [targetUserId]
+      );
+      const trust = trustResult.rows[0];
+
+      if (!trust) return res.status(404).json({ error: 'Usuário não encontrado.' });
+      if (trust.account_type !== 'installer') {
+        return res.status(400).json({ error: 'A visibilidade pública é exclusiva para instaladores.' });
+      }
+      if (!trust.certification_verified || !String(trust.certificate_file || '').trim()) {
+        return res.status(400).json({
+          error: 'Valide o certificado antes de liberar este profissional na busca.',
+          code: 'CERTIFICATION_REQUIRED',
+        });
+      }
+    }
+
     const { rows } = await pool.query(
       `
         UPDATE users
         SET public_profile = $1, updated_at = NOW()
-        WHERE id = $2
+        WHERE id = $2 AND account_type = 'installer'
         RETURNING id, name, email, public_profile, updated_at
       `,
       [nextPublicProfile, targetUserId]
@@ -433,6 +656,21 @@ exports.updateUserPublicProfile = async (req, res) => {
     if (!rows[0]) {
       return res.status(404).json({ error: 'Usuário não encontrado.' });
     }
+
+    await pool.query(
+      `
+        INSERT INTO notifications (user_id, title, message, type, read)
+        VALUES ($1, $2, $3, $4, FALSE)
+      `,
+      [
+        targetUserId,
+        nextPublicProfile ? 'Perfil aprovado para a busca' : 'Perfil removido da busca',
+        nextPublicProfile
+          ? 'A analise administrativa foi concluida e seu perfil agora pode aparecer para clientes.'
+          : 'Seu perfil foi retirado temporariamente da busca publica. Revise os dados ou fale com o suporte.',
+        nextPublicProfile ? 'success' : 'info',
+      ]
+    );
 
     return res.json({ user: rows[0] });
   } catch (_error) {
@@ -458,7 +696,7 @@ exports.updateUserTrust = async (req, res) => {
 
     const targetResult = await pool.query(
       `
-        SELECT id, name, email, certificate_file
+        SELECT id, name, email, account_type, certificate_file
         FROM users
         WHERE id = $1
         LIMIT 1
@@ -470,6 +708,10 @@ exports.updateUserTrust = async (req, res) => {
 
     if (!target) {
       return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    if (target.account_type !== 'installer') {
+      return res.status(400).json({ error: 'Verificação e destaque são exclusivos para instaladores.' });
     }
 
     if (
@@ -485,8 +727,9 @@ exports.updateUserTrust = async (req, res) => {
       `
         UPDATE users
         SET
-          featured_installer = COALESCE($1, featured_installer),
           certification_verified = COALESCE($2, certification_verified),
+          public_profile = CASE WHEN $2::boolean = FALSE THEN FALSE ELSE public_profile END,
+          featured_installer = CASE WHEN $2::boolean = FALSE THEN FALSE ELSE COALESCE($1, featured_installer) END,
           updated_at = NOW()
         WHERE id = $3
         RETURNING
@@ -558,7 +801,7 @@ exports.updateUserAdmin = async (req, res) => {
       `
         SELECT id, email, name, is_admin
         FROM users
-        WHERE id = $1
+        WHERE id = $1 AND deleted_at IS NULL
       `,
       [targetUserId]
     );
@@ -584,7 +827,7 @@ exports.updateUserAdmin = async (req, res) => {
       `
         UPDATE users
         SET is_admin = $1, updated_at = NOW()
-        WHERE id = $2
+        WHERE id = $2 AND deleted_at IS NULL
         RETURNING id, name, email, is_admin, updated_at
       `,
       [nextIsAdmin, targetUserId]
@@ -630,11 +873,54 @@ exports.deleteUser = async (req, res) => {
       }
     }
 
-    await pool.query('DELETE FROM users WHERE id = $1', [targetUserId]);
+    await pool.query(
+      `
+        UPDATE users
+        SET
+          deleted_at = NOW(),
+          public_profile = FALSE,
+          featured_installer = FALSE,
+          certification_verified = FALSE,
+          is_admin = FALSE,
+          updated_at = NOW()
+        WHERE id = $1 AND deleted_at IS NULL
+      `,
+      [targetUserId]
+    );
 
-    return res.json({ success: true, deleted_user: target });
+    return res.json({ success: true, archived_user: target });
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao remover usuário.' });
+  }
+};
+
+exports.restoreUser = async (req, res) => {
+  try {
+    const targetUserId = Number(req.params.id);
+    if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+      return res.status(400).json({ error: 'Usuario invalido.' });
+    }
+
+    const { rows } = await pool.query(
+      `
+        UPDATE users
+        SET
+          deleted_at = NULL,
+          is_admin = FALSE,
+          public_profile = FALSE,
+          featured_installer = FALSE,
+          certification_verified = FALSE,
+          updated_at = NOW()
+        WHERE id = $1 AND deleted_at IS NOT NULL
+        RETURNING id, name, email, account_type, deleted_at, updated_at
+      `,
+      [targetUserId]
+    );
+
+    if (!rows[0]) return res.status(404).json({ error: 'Usuario arquivado nao encontrado.' });
+    return res.json({ user: rows[0] });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Erro ao restaurar usuario.' });
   }
 };
 

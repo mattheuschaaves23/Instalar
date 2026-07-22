@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: instalar_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/instalar_test
+      JWT_SECRET: ci-only-secret-with-more-than-thirty-two-characters
+      DATABASE_SSL: "false"
+      ALLOW_MANUAL_SUBSCRIPTION_CONFIRMATION: "true"
+      FRONTEND_URL: http://127.0.0.1:3000
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            bem-instalado/backend/package-lock.json
+            bem-instalado/frontend/package-lock.json
+      - name: Instalar backend
+        run: npm ci
+        working-directory: bem-instalado/backend
+      - name: Instalar frontend
+        run: npm ci
+        working-directory: bem-instalado/frontend
+      - name: Testar backend e fluxo principal
+        run: npm test
+        working-directory: bem-instalado/backend
+      - name: Testar frontend
+        run: npm test
+        working-directory: bem-instalado/frontend
+      - name: Verificar integração PapelPerto
+        run: npm run test:papelperto
+        working-directory: bem-instalado/backend
+      - name: Build de produção
+        run: npm run build
+        working-directory: bem-instalado/frontend
+      - name: Auditoria de produção
+        run: npm audit --omit=dev --audit-level=high
+        working-directory: bem-instalado/backend
+      - name: Auditoria do frontend
+        run: npm audit --audit-level=high
+        working-directory: bem-instalado/frontend

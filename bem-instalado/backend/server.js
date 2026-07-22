@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -9,10 +8,9 @@ const compression = require('compression');
 
 dotenv.config();
 
-const jwt = require('jsonwebtoken');
-const { Server } = require('socket.io');
 const pool = require('./config/database');
-const { jwtSecret } = require('./config/auth');
+const runMigrations = require('./scripts/migrateDatabase');
+require('./config/auth');
 
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -26,12 +24,12 @@ const publicRoutes = require('./routes/publicRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 const opportunityRoutes = require('./routes/opportunityRoutes');
+const { logApplicationError } = require('./utils/errorMonitoring');
 
 const app = express();
-const httpServer = http.createServer(app);
 const isProduction = process.env.NODE_ENV === 'production';
 const frontendBuildPath = path.join(__dirname, '..', 'frontend', 'build');
-const frontendAssetManifestPath = path.join(frontendBuildPath, 'asset-manifest.json');
+const frontendAssetManifestPath = path.join(frontendBuildPath, '.vite', 'manifest.json');
 const renderGitCommit = process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || null;
 const renderGitBranch = process.env.RENDER_GIT_BRANCH || process.env.GIT_BRANCH || null;
 
@@ -42,11 +40,11 @@ function getFrontendBuildInfo() {
 
   try {
     const manifest = JSON.parse(fs.readFileSync(frontendAssetManifestPath, 'utf8'));
-    const files = manifest.files || {};
+    const entry = manifest['src/index.jsx'] || Object.values(manifest).find((item) => item?.isEntry) || {};
 
     return {
-      js: files['main.js'] || null,
-      css: files['main.css'] || null,
+      js: entry.file ? `/${entry.file}` : null,
+      css: entry.css?.[0] ? `/${entry.css[0]}` : null,
       assetManifestExists: true,
     };
   } catch (error) {
@@ -130,17 +128,35 @@ function validateCorsOrigin(origin, callback) {
   }
 
   if (allowedCorsOrigins.length === 0) {
-    return callback(new Error('CORS bloqueado: configure FRONTEND_URL com os domínios permitidos.'));
+    const error = new Error('CORS bloqueado: configure FRONTEND_URL com os domínios permitidos.');
+    error.status = 403;
+    return callback(error);
   }
 
-  return callback(new Error('Origem não permitida pelo CORS.'));
+  const error = new Error('Origem não permitida pelo CORS.');
+  error.status = 403;
+  return callback(error);
 }
 
 app.set('trust proxy', 1);
 
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        baseUri: ["'self'"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+        objectSrc: ["'none'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        upgradeInsecureRequests: [],
+      },
+    },
     crossOriginEmbedderPolicy: false,
   })
 );
@@ -153,163 +169,23 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '64kb' }));
 
-const io = new Server(httpServer, {
-  cors: {
-    origin: validateCorsOrigin,
-  },
-});
-
-app.set('io', io);
-
-function getSocketToken(socket) {
-  const authHeader = socket.handshake?.headers?.authorization;
-
-  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
-    return authHeader.slice(7).trim();
-  }
-
-  const authToken = socket.handshake?.auth?.token || socket.handshake?.query?.token;
-
-  if (!authToken) {
-    return null;
-  }
-
-  return String(authToken).replace(/^Bearer\s+/i, '').trim();
-}
-
-io.use(async (socket, next) => {
-  try {
-    const token = getSocketToken(socket);
-
-    if (!token) {
-      return next(new Error('Token ausente.'));
-    }
-
-    const decoded = jwt.verify(token, jwtSecret);
-    const result = await pool.query(
-      `
-        SELECT
-          id,
-          name,
-          business_name,
-          email,
-          is_admin
-        FROM users
-        WHERE id = $1
-        LIMIT 1
-      `,
-      [decoded.id]
-    );
-    const user = result.rows[0];
-
-    if (!user) {
-      return next(new Error('Usuário não encontrado.'));
-    }
-
-    socket.user = {
-      id: user.id,
-      name: user.business_name || user.name,
-      email: user.email,
-      is_admin: Boolean(user.is_admin),
-    };
-
-    return next();
-  } catch (_error) {
-    return next(new Error('Token inválido.'));
-  }
-});
-
-io.on('connection', (socket) => {
-  const user = socket.user;
-
-  socket.join(`user:${user.id}`);
-
-  if (user.is_admin) {
-    socket.join('support:admins');
-  } else {
-    pool
-      .query(
-        `
-          SELECT id
-          FROM support_conversations
-          WHERE installer_id = $1
-          LIMIT 1
-        `,
-        [user.id]
-      )
-      .then((result) => {
-        const conversation = result.rows[0];
-        if (conversation) {
-          socket.join(`support:${conversation.id}`);
-        }
-      })
-      .catch(() => null);
-  }
-
-  socket.on('support:join', async (payload = {}, callback) => {
-    const done = typeof callback === 'function' ? callback : () => {};
-    const conversationId = Number(payload.conversationId);
-
-    if (!Number.isInteger(conversationId) || conversationId <= 0) {
-      done({ ok: false, error: 'Conversa inválida.' });
-      return;
-    }
-
-    try {
-      const result = await pool.query(
-        `
-          SELECT installer_id
-          FROM support_conversations
-          WHERE id = $1
-          LIMIT 1
-        `,
-        [conversationId]
-      );
-
-      const conversation = result.rows[0];
-
-      if (!conversation) {
-        done({ ok: false, error: 'Conversa não encontrada.' });
-        return;
-      }
-
-      if (!user.is_admin && conversation.installer_id !== user.id) {
-        done({ ok: false, error: 'Acesso negado para esta conversa.' });
-        return;
-      }
-
-      socket.join(`support:${conversationId}`);
-      done({ ok: true, conversationId });
-    } catch (_error) {
-      done({ ok: false, error: 'Falha ao entrar na conversa.' });
-    }
-  });
-
-  socket.on('support:leave', (payload = {}, callback) => {
-    const done = typeof callback === 'function' ? callback : () => {};
-    const conversationId = Number(payload.conversationId);
-
-    if (!Number.isInteger(conversationId) || conversationId <= 0) {
-      done({ ok: false, error: 'Conversa inválida.' });
-      return;
-    }
-
-    socket.leave(`support:${conversationId}`);
-    done({ ok: true, conversationId });
-  });
-});
-
-app.get('/api/health', (_req, res) => {
+app.get('/api/health', async (_req, res) => {
   res.set('Cache-Control', 'no-store');
-  res.json({
-    ok: true,
-    service: 'bem-instalado-backend',
-    date: new Date().toISOString(),
-    mode: isProduction ? 'production' : 'development',
-    gitCommit: renderGitCommit,
-    gitBranch: renderGitBranch,
-    frontendBuild: getFrontendBuildInfo(),
-  });
+  try {
+    await pool.query('SELECT 1');
+    res.json({
+      ok: true,
+      database: 'connected',
+      service: 'bem-instalado-backend',
+      date: new Date().toISOString(),
+      mode: isProduction ? 'production' : 'development',
+      gitCommit: renderGitCommit,
+      gitBranch: renderGitBranch,
+      frontendBuild: getFrontendBuildInfo(),
+    });
+  } catch (error) {
+    res.status(503).json({ ok: false, database: 'unavailable', service: 'bem-instalado-backend' });
+  }
 });
 
 app.use('/api/public', publicRoutes);
@@ -340,9 +216,19 @@ if (isProduction) {
   }
 }
 
-app.use((error, _req, res, _next) => {
-  console.error(error);
-  res.status(500).json({ error: 'Erro interno do servidor.' });
+app.use((error, req, res, _next) => {
+  const statusCode = Number(error.statusCode || error.status || 500);
+  if (statusCode >= 500) {
+    console.error(error);
+    void logApplicationError({ message: error.message, stack: error.stack, req, statusCode });
+  }
+  res.status(statusCode).json({
+    error: statusCode === 403
+      ? 'Origem não permitida.'
+      : statusCode < 500
+        ? error.message || 'Requisição inválida.'
+        : 'Erro interno do servidor.',
+  });
 });
 
 app.use((_req, res) => {
@@ -354,6 +240,8 @@ async function ensureRuntimeSchema() {
   const baseSchema = fs.readFileSync(baseSchemaPath, 'utf8').replace(/^\uFEFF/, '');
 
   await pool.query(baseSchema);
+  await runMigrations();
+  return;
 
   const statements = [
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE',
@@ -371,6 +259,8 @@ async function ensureRuntimeSchema() {
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS certificate_file TEXT',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS certificate_name VARCHAR(180)',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS certification_verified BOOLEAN NOT NULL DEFAULT FALSE',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS public_profile BOOLEAN NOT NULL DEFAULT FALSE',
+    'ALTER TABLE users ALTER COLUMN public_profile SET DEFAULT FALSE',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS featured_installer BOOLEAN NOT NULL DEFAULT FALSE',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS document_type VARCHAR(20)',
     'ALTER TABLE users ADD COLUMN IF NOT EXISTS document_id VARCHAR(60)',
@@ -611,17 +501,8 @@ async function ensureRuntimeSchema() {
 }
 
 async function startServer() {
-  try {
-    await ensureRuntimeSchema();
-  } catch (error) {
-    console.error('Falha ao validar schema da aplicação. O backend não será iniciado.');
-    console.error(error);
-    process.exit(1);
-    return;
-  }
-
   const port = Number(process.env.PORT || 5000);
-  httpServer.listen(port, () => {
+  app.listen(port, () => {
     console.log(`Instalar+ backend rodando na porta ${port}`);
     if (isProduction) {
       console.log('Build frontend em producao:', getFrontendBuildInfo());

@@ -1,5 +1,13 @@
 const pool = require('../config/database');
-const { isOwnerAdminEmail } = require('../utils/adminAccess');
+const {
+  decodeAssetKey,
+  isObjectStorageConfigured,
+  protectedAssetUrl,
+  publicAssetUrl,
+  storeProfileAsset,
+  streamStoredAsset,
+} = require('../services/objectStorage');
+const forwardGeocode = require('../utils/forwardGeocode');
 const { buildAvailableDates, normalizeInstallationDays } = require('../utils/installerAvailability');
 
 function normalizeStringList(values, maxItems = 8) {
@@ -265,7 +273,8 @@ async function getTopInstallers(limit = 5) {
           GROUP BY user_id
         ) schedule_stats ON schedule_stats.user_id = u.id
         WHERE COALESCE(u.account_type, 'installer') = 'installer'
-          AND COALESCE(u.public_profile, true) = true
+          AND COALESCE(u.public_profile, false) = true
+          AND COALESCE(u.certification_verified, false) = true
           AND (
             COALESCE(reviews.review_count, 0) > 0
             OR COALESCE(schedule_stats.completed_unique_clients, 0) > 0
@@ -303,6 +312,9 @@ exports.getProfile = async (req, res) => {
           business_name,
           city,
           state,
+          latitude,
+          longitude,
+          service_radius_km,
           service_region,
           bio,
           installation_method,
@@ -336,22 +348,8 @@ exports.getProfile = async (req, res) => {
       return res.status(404).json({ error: 'Usuário não encontrado.' });
     }
 
-    const rawProfile = rows[0];
-
-    if (!rawProfile.is_admin && isOwnerAdminEmail(rawProfile.email)) {
-      await pool.query(
-        `
-          UPDATE users
-          SET is_admin = TRUE, updated_at = NOW()
-          WHERE id = $1
-        `,
-        [rawProfile.id]
-      );
-      rawProfile.is_admin = true;
-    }
-
     const profile = {
-      ...rawProfile,
+      ...rows[0],
       installation_gallery: normalizeGallery(rawProfile?.installation_gallery),
     };
     return res.json(profile);
@@ -373,6 +371,7 @@ exports.updateProfile = async (req, res) => {
       business_name,
       city,
       state,
+      service_radius_km,
       service_region,
       bio,
       installation_method,
@@ -398,6 +397,24 @@ exports.updateProfile = async (req, res) => {
 
     const normalizedDays = normalizeInstallationDays(installation_days);
     const normalizedGallery = normalizeGallery(installation_gallery);
+    const normalizedRadius = service_radius_km === undefined
+      ? null
+      : Math.min(Math.max(Number(service_radius_km) || 80, 10), 250);
+    let locationCoordinates = null;
+
+    if (String(city || '').trim() && String(state || '').trim()) {
+      try {
+        const locations = await forwardGeocode(`${city}, ${state}, Brasil`, 1);
+        if (locations[0]) {
+          locationCoordinates = {
+            latitude: Number(locations[0].latitude),
+            longitude: Number(locations[0].longitude),
+          };
+        }
+      } catch (_error) {
+        locationCoordinates = null;
+      }
+    }
 
     const { rows } = await pool.query(
       `
@@ -434,8 +451,11 @@ exports.updateProfile = async (req, res) => {
           accepts_service_contract = COALESCE($29, accepts_service_contract),
           provides_warranty = COALESCE($30, provides_warranty),
           warranty_days = COALESCE($31, warranty_days),
+          latitude = COALESCE($32, latitude),
+          longitude = COALESCE($33, longitude),
+          service_radius_km = COALESCE($34, service_radius_km),
           updated_at = NOW()
-        WHERE id = $32
+        WHERE id = $35
         RETURNING
           id,
           COALESCE(account_type, 'installer') AS account_type,
@@ -452,6 +472,9 @@ exports.updateProfile = async (req, res) => {
           business_name,
           city,
           state,
+          latitude,
+          longitude,
+          service_radius_km,
           service_region,
           bio,
           installation_method,
@@ -497,7 +520,7 @@ exports.updateProfile = async (req, res) => {
         base_service_cost ?? null,
         travel_fee ?? null,
         monthly_goal ?? null,
-        public_profile ?? null,
+        null,
         years_experience ?? null,
         wallpaper_store_recommended ?? null,
         document_type ?? null,
@@ -508,6 +531,9 @@ exports.updateProfile = async (req, res) => {
         accepts_service_contract ?? null,
         provides_warranty ?? null,
         warranty_days ?? null,
+        locationCoordinates?.latitude ?? null,
+        locationCoordinates?.longitude ?? null,
+        normalizedRadius,
         req.userId,
       ]
     );
@@ -519,6 +545,60 @@ exports.updateProfile = async (req, res) => {
     return res.json(profile);
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao atualizar perfil.' });
+  }
+};
+
+exports.getUploadCapabilities = (_req, res) => {
+  return res.json({ object_storage: isObjectStorageConfigured() });
+};
+
+exports.uploadProfileAsset = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Selecione um arquivo para enviar.' });
+    }
+
+    const kind = String(req.body?.kind || '').trim().toLowerCase();
+    const allowedKinds = new Set(['logo', 'installer-photo', 'gallery', 'certificate']);
+
+    if (!allowedKinds.has(kind)) {
+      return res.status(400).json({ error: 'Destino do arquivo inválido.' });
+    }
+
+    if (kind !== 'certificate' && req.file.mimetype === 'application/pdf') {
+      return res.status(400).json({ error: 'PDF é permitido somente para certificados.' });
+    }
+
+    const stored = await storeProfileAsset({ userId: req.userId, kind, file: req.file });
+    return res.status(201).json({
+      ...stored,
+      url: kind === 'certificate' ? protectedAssetUrl(stored.pathname) : publicAssetUrl(stored.pathname),
+    });
+  } catch (error) {
+    if (error.code === 'OBJECT_STORAGE_NOT_CONFIGURED') {
+      return res.status(503).json({ error: error.message, code: error.code });
+    }
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: 'O arquivo excede o limite de 4MB.' });
+    }
+    return res.status(500).json({ error: 'Não foi possível armazenar o arquivo.' });
+  }
+};
+
+exports.getStoredProfileAsset = async (req, res) => {
+  const pathname = decodeAssetKey(req.params.assetKey);
+  const ownerId = Number(String(pathname || '').split('/')[1]);
+
+  if (!pathname || (!req.user?.is_admin && ownerId !== Number(req.userId))) {
+    return res.status(404).json({ error: 'Arquivo não encontrado.' });
+  }
+
+  try {
+    const found = await streamStoredAsset(pathname, res);
+    if (!found) return res.status(404).json({ error: 'Arquivo não encontrado.' });
+    return undefined;
+  } catch (_error) {
+    return res.status(503).json({ error: 'Arquivo temporariamente indisponível.' });
   }
 };
 
@@ -794,7 +874,8 @@ exports.getDashboard = async (req, res) => {
                 GROUP BY user_id
               ) schedule_stats ON schedule_stats.user_id = u.id
               WHERE COALESCE(u.account_type, 'installer') = 'installer'
-                AND COALESCE(u.public_profile, true) = true
+                AND COALESCE(u.public_profile, false) = true
+                AND COALESCE(u.certification_verified, false) = true
                 AND (
                   COALESCE(reviews.review_count, 0) > 0
                   OR COALESCE(schedule_stats.completed_unique_clients, 0) > 0
@@ -891,7 +972,7 @@ exports.getReviewsDashboard = async (req, res) => {
           SELECT
             id,
             COALESCE(NULLIF(business_name, ''), name) AS display_name,
-            COALESCE(public_profile, true) AS public_profile
+            COALESCE(public_profile, false) AS public_profile
           FROM users
           WHERE id = $1
         `,

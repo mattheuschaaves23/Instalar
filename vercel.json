@@ -1,14 +1,33 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd bem-instalado/frontend && npm install && npm run build",
+  "buildCommand": "cd bem-instalado/backend && npm run db:migrate:deploy && cd ../frontend && npm run build",
   "outputDirectory": "bem-instalado/frontend/build",
-  "installCommand": "cd bem-instalado/backend && npm install && cd ../frontend && npm install",
+  "installCommand": "cd bem-instalado/backend && npm ci && cd ../frontend && npm ci",
   "functions": {
     "api/index.js": {
       "memory": 1024,
       "maxDuration": 30
     }
   },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; connect-src 'self'; font-src 'self' https://fonts.gstatic.com data:; form-action 'self'; frame-ancestors 'self'; img-src 'self' data: blob: https:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; upgrade-insecure-requests"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(self)"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",

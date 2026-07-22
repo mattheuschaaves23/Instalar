@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { isLaunchAccessEnabled } = require('../utils/subscriptionAccess');
 
 function isSubscriptionActive(subscription) {
   if (!subscription) {
@@ -35,6 +36,11 @@ module.exports = async (req, res, next) => {
     }
 
     if (await isAdmin(req.userId)) {
+      return next();
+    }
+
+    if (isLaunchAccessEnabled()) {
+      req.subscriptionAccessMode = 'launch';
       return next();
     }
 

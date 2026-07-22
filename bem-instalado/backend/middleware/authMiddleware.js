@@ -25,7 +25,7 @@ module.exports = async (req, res, next) => {
       `
         SELECT id, account_type, is_admin
         FROM users
-        WHERE id = $1
+        WHERE id = $1 AND deleted_at IS NULL
         LIMIT 1
       `,
       [decoded.id]

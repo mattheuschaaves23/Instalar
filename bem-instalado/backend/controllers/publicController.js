@@ -3,6 +3,8 @@ const pool = require('../config/database');
 const { buildAvailableDates } = require('../utils/installerAvailability');
 const generateWhatsAppLink = require('../utils/whatsapp');
 const reverseGeocode = require('../utils/reverseGeocode');
+const forwardGeocode = require('../utils/forwardGeocode');
+const { normalizeSearchText } = require('../utils/textSearch');
 
 const MARKETPLACE_URL = process.env.MARKETPLACE_URL || 'https://www.beminstalado.com.br';
 const MARKETPLACE_CTA_LABEL = process.env.MARKETPLACE_CTA_LABEL || 'Visitar loja oficial';
@@ -230,7 +232,8 @@ async function getTopInstallers(limit = 5) {
           GROUP BY user_id
         ) schedule_stats ON schedule_stats.user_id = u.id
         WHERE COALESCE(u.account_type, 'installer') = 'installer'
-          AND COALESCE(u.public_profile, true) = true
+          AND COALESCE(u.public_profile, false) = true
+          AND COALESCE(u.certification_verified, false) = true
           AND (
             COALESCE(reviews.review_count, 0) > 0
             OR COALESCE(schedule_stats.completed_unique_clients, 0) > 0
@@ -251,9 +254,9 @@ exports.getInstallers = async (req, res) => {
     const search = (req.query.search || '').trim();
     const city = (req.query.city || '').trim();
     const state = (req.query.state || '').trim();
-    const searchTerm = `%${search}%`;
-    const cityTerm = `%${city}%`;
-    const stateTerm = `%${state}%`;
+    const searchTerm = `%${normalizeSearchText(search)}%`;
+    const cityTerm = `%${normalizeSearchText(city)}%`;
+    const stateTerm = `%${normalizeSearchText(state)}%`;
 
     const installerResult = await pool.query(
       `
@@ -325,17 +328,18 @@ exports.getInstallers = async (req, res) => {
           GROUP BY user_id
         ) schedule_stats ON schedule_stats.user_id = u.id
         WHERE COALESCE(u.account_type, 'installer') = 'installer'
-          AND COALESCE(u.public_profile, true) = true
+          AND COALESCE(u.public_profile, false) = true
+          AND COALESCE(u.certification_verified, false) = true
           AND ($1 = '%%' OR (
-            COALESCE(u.business_name, '') ILIKE $1
-            OR COALESCE(u.name, '') ILIKE $1
-            OR COALESCE(u.city, '') ILIKE $1
-            OR COALESCE(u.state, '') ILIKE $1
-            OR COALESCE(u.service_region, '') ILIKE $1
-            OR COALESCE(u.installation_method, '') ILIKE $1
+            TRANSLATE(LOWER(COALESCE(u.business_name, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
+            OR TRANSLATE(LOWER(COALESCE(u.name, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
+            OR TRANSLATE(LOWER(COALESCE(u.city, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
+            OR TRANSLATE(LOWER(COALESCE(u.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
+            OR TRANSLATE(LOWER(COALESCE(u.service_region, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
+            OR TRANSLATE(LOWER(COALESCE(u.installation_method, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
           ))
-          AND ($2 = '%%' OR COALESCE(u.city, '') ILIKE $2 OR COALESCE(u.service_region, '') ILIKE $2)
-          AND ($3 = '%%' OR COALESCE(u.state, '') ILIKE $3)
+          AND ($2 = '%%' OR TRANSLATE(LOWER(COALESCE(u.city, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $2 OR TRANSLATE(LOWER(COALESCE(u.service_region, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $2)
+          AND ($3 = '%%' OR TRANSLATE(LOWER(COALESCE(u.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $3)
         ORDER BY
           COALESCE(u.featured_installer, FALSE) DESC,
           COALESCE(reviews.average_rating, 0) DESC,
@@ -364,17 +368,18 @@ exports.getInstallers = async (req, res) => {
             COALESCE(u.featured_installer, false) AS featured_installer
           FROM users u
           WHERE COALESCE(u.account_type, 'installer') = 'installer'
-            AND COALESCE(u.public_profile, true) = true
+            AND COALESCE(u.public_profile, false) = true
+            AND COALESCE(u.certification_verified, false) = true
             AND ($1 = '%%' OR (
-              COALESCE(u.business_name, '') ILIKE $1
-              OR COALESCE(u.name, '') ILIKE $1
-              OR COALESCE(u.city, '') ILIKE $1
-              OR COALESCE(u.state, '') ILIKE $1
-              OR COALESCE(u.service_region, '') ILIKE $1
-              OR COALESCE(u.installation_method, '') ILIKE $1
+              TRANSLATE(LOWER(COALESCE(u.business_name, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
+              OR TRANSLATE(LOWER(COALESCE(u.name, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
+              OR TRANSLATE(LOWER(COALESCE(u.city, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
+              OR TRANSLATE(LOWER(COALESCE(u.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
+              OR TRANSLATE(LOWER(COALESCE(u.service_region, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
+              OR TRANSLATE(LOWER(COALESCE(u.installation_method, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
             ))
-            AND ($2 = '%%' OR COALESCE(u.city, '') ILIKE $2 OR COALESCE(u.service_region, '') ILIKE $2)
-            AND ($3 = '%%' OR COALESCE(u.state, '') ILIKE $3)
+            AND ($2 = '%%' OR TRANSLATE(LOWER(COALESCE(u.city, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $2 OR TRANSLATE(LOWER(COALESCE(u.service_region, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $2)
+            AND ($3 = '%%' OR TRANSLATE(LOWER(COALESCE(u.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $3)
         )
         SELECT
           COUNT(*)::int AS installers_count,
@@ -457,7 +462,8 @@ exports.getInstallers = async (req, res) => {
           FROM installer_reviews ir
           JOIN users u ON u.id = ir.installer_id
           WHERE COALESCE(u.account_type, 'installer') = 'installer'
-            AND COALESCE(u.public_profile, true) = true
+            AND COALESCE(u.public_profile, false) = true
+            AND COALESCE(u.certification_verified, false) = true
           ORDER BY ir.created_at DESC
           LIMIT 6
         `
@@ -503,7 +509,7 @@ exports.getInstallers = async (req, res) => {
           whatsapp_link: installer.phone
             ? generateWhatsAppLink(
                 installer.phone,
-                `Olá ${installer.display_name}, vi seu perfil na Instalar+ e gostaria de conversar sobre uma instalação.`
+                `Olá ${installer.display_name}, encontrei seu perfil no PapelPerto, da Instalar+, e gostaria de conversar sobre uma instalação.`
               )
             : null,
           featured_installer: Boolean(installer.featured_installer),
@@ -559,6 +565,39 @@ exports.reverseLocation = async (req, res) => {
     return res.json(region);
   } catch (_error) {
     return res.status(500).json({ error: 'Não foi possível localizar sua região agora.' });
+  }
+};
+
+exports.searchLocation = async (req, res) => {
+  try {
+    const query = String(req.query.q || '').trim();
+    const suggest = String(req.query.suggest || '') === '1';
+
+    if (query.length < 3) {
+      return res.status(400).json({ error: 'Digite um endereco com pelo menos 3 caracteres.' });
+    }
+
+    const suggestions = await forwardGeocode(
+      query,
+      suggest ? 6 : 1,
+      req.headers['accept-language'] || 'pt-BR'
+    );
+
+    if (suggest) {
+      return res.json({ suggestions });
+    }
+
+    if (!suggestions.length) {
+      return res.status(404).json({
+        error: 'Nao encontramos esse endereco. Tente incluir a cidade e o estado.',
+      });
+    }
+
+    return res.json(suggestions[0]);
+  } catch (_error) {
+    return res.status(503).json({
+      error: 'Nao conseguimos localizar esse endereco agora. Tente novamente em instantes.',
+    });
   }
 };
 
@@ -636,7 +675,8 @@ exports.getInstallerProfile = async (req, res) => {
           ) schedule_stats ON schedule_stats.user_id = u.id
           WHERE u.id = $1
             AND COALESCE(u.account_type, 'installer') = 'installer'
-            AND COALESCE(u.public_profile, true) = true
+          AND COALESCE(u.public_profile, false) = true
+          AND COALESCE(u.certification_verified, false) = true
         `,
         [installerId]
       ),
@@ -713,14 +753,13 @@ exports.getInstallerProfile = async (req, res) => {
           average_rating: Number(installer.average_rating || 0),
           installation_gallery: installationGallery,
           featured_installer: Boolean(installer.featured_installer),
-          certificate_file: installer.certificate_file || '',
           certificate_name: installer.certificate_name || '',
           certificate_verified: Boolean(installer.certification_verified),
           safety: buildSafetySummary(installer),
           whatsapp_link: installer.phone
             ? generateWhatsAppLink(
                 installer.phone,
-                `Olá ${installer.display_name}, vi seu perfil na Instalar+ e quero conversar sobre meu projeto.`
+                `Olá ${installer.display_name}, encontrei seu perfil no PapelPerto, da Instalar+, e quero conversar sobre meu projeto.`
               )
             : null,
           available_dates: availableDates,
@@ -756,7 +795,8 @@ const legacyCreateReview = async (req, res) => {
         FROM users
         WHERE id = $1
           AND COALESCE(account_type, 'installer') = 'installer'
-          AND COALESCE(public_profile, true) = true
+          AND COALESCE(public_profile, false) = true
+          AND COALESCE(certification_verified, false) = true
       `,
       [installerId]
     );
@@ -837,11 +877,9 @@ exports.createReview = async (req, res) => {
   try {
     const installerId = Number(req.params.id);
     const reviewerUserId = Number(req.userId);
-    const reviewerName = String(req.body.reviewer_name || '').trim();
-    const reviewerRegion = String(req.body.reviewer_region || '').trim();
+    const requestedServiceRequestId = Number(req.body.service_request_id || 0) || null;
     const rating = Number(req.body.rating || 0);
     const comment = String(req.body.comment || '').trim();
-    const normalizedName = normalizeReviewerName(reviewerName);
     const reviewerFingerprint = buildReviewerFingerprint(req, installerId);
     const reviewerIp = getClientIp(req);
 
@@ -849,8 +887,12 @@ exports.createReview = async (req, res) => {
       return res.status(401).json({ error: 'Faça login para avaliar instaladores.' });
     }
 
-    if (!installerId || !reviewerName || rating < 1 || rating > 5) {
-      return res.status(400).json({ error: 'Nome e nota válida são obrigatórios.' });
+    if (req.user?.account_type !== 'client') {
+      return res.status(403).json({ error: 'Somente clientes podem avaliar um servico concluido.' });
+    }
+
+    if (!installerId || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'Uma nota valida entre 1 e 5 e obrigatoria.' });
     }
 
     const installerCheck = await pool.query(
@@ -859,7 +901,8 @@ exports.createReview = async (req, res) => {
         FROM users
         WHERE id = $1
           AND COALESCE(account_type, 'installer') = 'installer'
-          AND COALESCE(public_profile, true) = true
+          AND COALESCE(public_profile, false) = true
+          AND COALESCE(certification_verified, false) = true
       `,
       [installerId]
     );
@@ -872,74 +915,33 @@ exports.createReview = async (req, res) => {
       return res.status(403).json({ error: 'Você não pode avaliar o seu próprio perfil.' });
     }
 
-    const [recentSameUserResult, recentSameIpResult, recentSameDeviceResult, recentSameNameResult] =
-      await Promise.all([
-        pool.query(
-          `
-            SELECT id
-            FROM installer_reviews
-            WHERE installer_id = $1
-              AND reviewer_user_id = $2
-            LIMIT 1
-          `,
-            [installerId, reviewerUserId]
-          ),
-        pool.query(
-          `
-            SELECT id
-            FROM installer_reviews
-            WHERE installer_id = $1
-              AND reviewer_ip = $2
-              AND created_at >= NOW() - INTERVAL '7 days'
-            LIMIT 1
-          `,
-            [installerId, reviewerIp || null]
-          ),
-        pool.query(
-          `
-            SELECT id
-            FROM installer_reviews
-            WHERE installer_id = $1
-              AND reviewer_fingerprint = $2
-              AND created_at >= NOW() - INTERVAL '24 hours'
-            LIMIT 1
-          `,
-          [installerId, reviewerFingerprint]
-        ),
-        pool.query(
-          `
-            SELECT id
-            FROM installer_reviews
-            WHERE installer_id = $1
-              AND LOWER(TRIM(reviewer_name)) = $2
-              AND created_at >= NOW() - INTERVAL '7 days'
-            LIMIT 1
-          `,
-          [installerId, normalizedName]
-        ),
-      ]);
+    const eligibleRequestResult = await pool.query(
+      `
+        SELECT
+          sr.id,
+          u.name AS reviewer_name,
+          CONCAT_WS(' - ', NULLIF(sr.city, ''), NULLIF(sr.state, '')) AS reviewer_region
+        FROM service_requests sr
+        JOIN users u ON u.id = sr.client_user_id AND u.deleted_at IS NULL
+        WHERE sr.client_user_id = $1
+          AND sr.selected_installer_id = $2
+          AND sr.status = 'closed'
+          AND ($3::int IS NULL OR sr.id = $3)
+          AND NOT EXISTS (
+            SELECT 1 FROM installer_reviews ir WHERE ir.service_request_id = sr.id
+          )
+        ORDER BY sr.completed_at DESC NULLS LAST, sr.created_at DESC
+        LIMIT 1
+      `,
+      [reviewerUserId, installerId, requestedServiceRequestId]
+    );
+    const eligibleRequest = eligibleRequestResult.rows[0];
+    const eligibleServiceRequestId = eligibleRequest?.id;
 
-    if (recentSameUserResult.rowCount > 0) {
-      return res.status(409).json({
-        error: 'Esta conta já enviou uma avaliação para este instalador.',
-      });
-    }
-
-    if (reviewerIp && recentSameIpResult.rowCount > 0) {
-      return res.status(429).json({
-        error: 'Este IP já enviou uma avaliação recente para este instalador. Tente novamente mais tarde.',
-      });
-    }
-
-    if (recentSameDeviceResult.rowCount > 0) {
-      return res.status(429).json({
-        error: 'Você já enviou uma avaliação recente para este instalador. Tente novamente mais tarde.',
-      });
-    }
-
-    if (recentSameNameResult.rowCount > 0) {
-      return res.status(409).json({
-        error: 'Já existe uma avaliação recente com esse nome para este instalador.',
+    if (!eligibleServiceRequestId) {
+      return res.status(403).json({
+        error: 'Conclua um pedido com este instalador antes de enviar a avaliacao.',
+        code: 'COMPLETED_SERVICE_REQUIRED',
       });
     }
 
@@ -948,6 +950,7 @@ exports.createReview = async (req, res) => {
         INSERT INTO installer_reviews (
           installer_id,
           reviewer_user_id,
+          service_request_id,
           reviewer_name,
           reviewer_region,
           rating,
@@ -955,14 +958,15 @@ exports.createReview = async (req, res) => {
           reviewer_ip,
           reviewer_fingerprint
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING id, installer_id, reviewer_name, reviewer_region, rating, comment, created_at
       `,
       [
         installerId,
         reviewerUserId,
-        reviewerName,
-        reviewerRegion || null,
+        eligibleServiceRequestId,
+        eligibleRequest.reviewer_name,
+        eligibleRequest.reviewer_region || null,
         rating,
         comment || null,
         reviewerIp || null,
@@ -973,7 +977,7 @@ exports.createReview = async (req, res) => {
     return res.status(201).json(rows[0]);
   } catch (error) {
     if (error?.code === '23505') {
-      return res.status(409).json({ error: 'Já existe uma avaliação registrada por esta conta.' });
+      return res.status(409).json({ error: 'Este servico concluido ja foi avaliado.' });
     }
 
     return res.status(500).json({ error: 'Erro ao enviar a avaliação.' });

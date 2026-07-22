@@ -40,3 +40,20 @@ exports.markAsRead = async (req, res) => {
     return res.status(500).json({ error: 'Erro ao atualizar notificação.' });
   }
 };
+
+exports.markAllAsRead = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+        UPDATE notifications
+        SET read = true
+        WHERE user_id = $1 AND read = false
+      `,
+      [req.userId]
+    );
+
+    return res.json({ success: true, updated: result.rowCount });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Erro ao atualizar notificacoes.' });
+  }
+};

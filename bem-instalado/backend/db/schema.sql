@@ -26,8 +26,12 @@
   warranty_days INTEGER NOT NULL DEFAULT 90,
   default_price_per_roll NUMERIC(10, 2) DEFAULT 0,
   default_removal_price NUMERIC(10, 2) DEFAULT 0,
+  latitude NUMERIC(10, 7),
+  longitude NUMERIC(10, 7),
+  service_radius_km INTEGER NOT NULL DEFAULT 80,
   two_factor_enabled BOOLEAN DEFAULT FALSE,
   two_factor_secret VARCHAR(255),
+  deleted_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -174,14 +178,6 @@ WHERE a.id < b.id
   AND a.reviewer_fingerprint = b.reviewer_fingerprint
   AND a.reviewer_fingerprint IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS installer_reviews_unique_user_idx
-  ON installer_reviews (installer_id, reviewer_user_id)
-  WHERE reviewer_user_id IS NOT NULL;
-
-CREATE UNIQUE INDEX IF NOT EXISTS installer_reviews_unique_fingerprint_idx
-  ON installer_reviews (installer_id, reviewer_fingerprint)
-  WHERE reviewer_fingerprint IS NOT NULL;
-
 CREATE TABLE IF NOT EXISTS installer_availability_slots (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -224,13 +220,22 @@ CREATE TABLE IF NOT EXISTS service_requests (
   address_reference TEXT,
   city VARCHAR(120),
   state VARCHAR(20),
+  latitude NUMERIC(10, 7),
+  longitude NUMERIC(10, 7),
   details TEXT,
   photo_count INTEGER NOT NULL DEFAULT 0,
   photo_names JSONB NOT NULL DEFAULT '[]'::jsonb,
+  photo_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
   client_access_token VARCHAR(80),
+  privacy_consent_at TIMESTAMP,
+  terms_version VARCHAR(30),
+  last_interest_at TIMESTAMP,
   selected_installer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   selected_at TIMESTAMP,
   status VARCHAR(20) NOT NULL DEFAULT 'open',
+  expires_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days'),
+  completed_at TIMESTAMP,
+  canceled_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -240,6 +245,7 @@ CREATE TABLE IF NOT EXISTS service_request_interests (
   request_id INTEGER NOT NULL REFERENCES service_requests(id) ON DELETE CASCADE,
   installer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status VARCHAR(20) NOT NULL DEFAULT 'interested',
+  client_notified_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (request_id, installer_id)
@@ -272,19 +278,41 @@ ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS neighborhood VARCHAR(120);
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS address_reference TEXT;
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS city VARCHAR(120);
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS state VARCHAR(20);
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS latitude NUMERIC(10, 7);
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS longitude NUMERIC(10, 7);
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS details TEXT;
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS photo_count INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS photo_names JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS client_access_token VARCHAR(80);
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS photo_urls JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS privacy_consent_at TIMESTAMP;
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS terms_version VARCHAR(30);
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS last_interest_at TIMESTAMP;
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS selected_installer_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS selected_at TIMESTAMP;
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'open';
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days');
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
+ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS canceled_at TIMESTAMP;
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE service_request_interests ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'interested';
+ALTER TABLE service_request_interests ADD COLUMN IF NOT EXISTS client_notified_at TIMESTAMP;
 ALTER TABLE service_request_interests ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE service_request_interests ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE service_request_interests ALTER COLUMN status SET DEFAULT 'interested';
+
+ALTER TABLE installer_reviews ADD COLUMN IF NOT EXISTS service_request_id INTEGER REFERENCES service_requests(id) ON DELETE SET NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS latitude NUMERIC(10, 7);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS longitude NUMERIC(10, 7);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS service_radius_km INTEGER NOT NULL DEFAULT 80;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+
+DROP INDEX IF EXISTS installer_reviews_unique_user_idx;
+DROP INDEX IF EXISTS installer_reviews_unique_fingerprint_idx;
+CREATE UNIQUE INDEX IF NOT EXISTS installer_reviews_unique_service_request_idx
+  ON installer_reviews (service_request_id)
+  WHERE service_request_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS support_conversations (
   id SERIAL PRIMARY KEY,
@@ -366,6 +394,30 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS api_rate_limits (
+  scope VARCHAR(180) NOT NULL,
+  key_hash VARCHAR(64) NOT NULL,
+  window_started_at TIMESTAMP NOT NULL,
+  request_count INTEGER NOT NULL DEFAULT 1,
+  expires_at TIMESTAMP NOT NULL,
+  PRIMARY KEY (scope, key_hash, window_started_at)
+);
+
+CREATE TABLE IF NOT EXISTS application_errors (
+  id BIGSERIAL PRIMARY KEY,
+  source VARCHAR(30) NOT NULL DEFAULT 'backend',
+  severity VARCHAR(20) NOT NULL DEFAULT 'error',
+  message TEXT NOT NULL,
+  route VARCHAR(240),
+  method VARCHAR(12),
+  status_code INTEGER,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  stack_hash VARCHAR(64),
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  resolved_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider VARCHAR(50) NOT NULL DEFAULT 'manual';
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider_payment_id VARCHAR(120);
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider_payload JSONB NOT NULL DEFAULT '{}'::jsonb;
@@ -381,7 +433,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS service_hours TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS base_service_cost NUMERIC(10, 2) NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS travel_fee NUMERIC(10, 2) NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS monthly_goal NUMERIC(10, 2) NOT NULL DEFAULT 5000;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS public_profile BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS public_profile BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ALTER COLUMN public_profile SET DEFAULT FALSE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS years_experience INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS wallpaper_store_recommended BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
@@ -500,6 +553,12 @@ CREATE INDEX IF NOT EXISTS installer_availability_slots_lookup_idx
 CREATE INDEX IF NOT EXISTS service_requests_lookup_idx
   ON service_requests (status, state, city, created_at DESC);
 
+CREATE INDEX IF NOT EXISTS service_requests_expiry_idx
+  ON service_requests (status, expires_at, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS users_active_lookup_idx
+  ON users (account_type, deleted_at, state, city);
+
 CREATE INDEX IF NOT EXISTS service_request_interests_installer_idx
   ON service_request_interests (installer_id, status, created_at DESC);
 
@@ -514,3 +573,12 @@ CREATE INDEX IF NOT EXISTS audit_logs_action_idx
 
 CREATE INDEX IF NOT EXISTS audit_logs_actor_idx
   ON audit_logs (actor_user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS api_rate_limits_expiry_idx
+  ON api_rate_limits (expires_at);
+
+CREATE INDEX IF NOT EXISTS application_errors_created_idx
+  ON application_errors (resolved_at, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS application_errors_stack_idx
+  ON application_errors (stack_hash, created_at DESC);

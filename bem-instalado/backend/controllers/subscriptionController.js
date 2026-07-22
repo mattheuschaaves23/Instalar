@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const pool = require('../config/database');
 const { generatePix, getPixConfig } = require('../utils/pix');
 const { logAudit } = require('../utils/auditLog');
+const { isLaunchAccessEnabled } = require('../utils/subscriptionAccess');
 
 const SUBSCRIPTION_AMOUNT = Number(process.env.SUBSCRIPTION_PRICE || 40);
 
@@ -204,12 +205,14 @@ exports.getSubscription = async (req, res) => {
     const pendingPayment = await getPendingPayment(req.userId);
     const subscription = await getLatestSubscription(req.userId);
     const accessState = getSubscriptionAccessState(subscription);
+    const launchAccess = isLaunchAccessEnabled();
 
     return res.json({
       ...(subscription || { status: 'inactive', plan: 'monthly' }),
-      can_use_app: accessState.canUseApp,
+      can_use_app: accessState.canUseApp || launchAccess,
       is_expired: accessState.isExpired,
-      requires_payment: accessState.requiresPayment,
+      requires_payment: accessState.requiresPayment && !launchAccess,
+      access_mode: launchAccess && !accessState.canUseApp ? 'launch' : 'subscription',
       pricing: {
         amount: SUBSCRIPTION_AMOUNT,
         currency: 'BRL',
@@ -217,9 +220,11 @@ exports.getSubscription = async (req, res) => {
         label: 'Plano instalador',
       },
       plan_benefits: getPlanBenefits(),
-      payment_mode: isManualConfirmationEnabled() ? 'manual' : 'disabled',
+      payment_mode: launchAccess ? 'launch' : isManualConfirmationEnabled() ? 'manual' : 'disabled',
       provider_error: null,
-      payment_notice: isManualConfirmationEnabled()
+      payment_notice: launchAccess
+        ? 'Acesso de lancamento liberado sem cobranca enquanto o pagamento definitivo e preparado.'
+        : isManualConfirmationEnabled()
         ? 'Pagamento manual habilitado apenas para desenvolvimento.'
         : 'Pagamento temporariamente indisponivel. Um novo metodo sera configurado futuramente.',
       pending_payment: pendingPayment && pendingPayment.status === 'pending'
