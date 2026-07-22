@@ -21900,3 +21900,586 @@ body,
   .legal-page { padding: 16px; }
   .legal-page-card { border-radius: 20px; }
 }
+
+/* Linguagem visual do painel: conteúdo plano; caixas apenas quando ajudam na ação. */
+.panel-flat-language .page-shell,
+.panel-flat-language .agenda-modern-shell,
+.panel-flat-language .client-intake-shell,
+.panel-flat-language .opportunities-page,
+.panel-flat-language .reviews-dashboard-shell,
+.panel-flat-language .settings-page {
+  gap: 1.5rem;
+  background: var(--site-bg);
+}
+
+.panel-flat-language .page-intro-grid {
+  grid-template-columns: minmax(0, 1.15fr) minmax(30rem, 0.85fr);
+  align-items: stretch;
+  gap: 1.5rem;
+  padding: 0.4rem 0 1.5rem;
+  border-bottom: 1px solid var(--route-line);
+}
+
+.panel-flat-language .page-intro-main {
+  display: flex;
+  align-items: center;
+  padding: 0 !important;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.panel-flat-language .page-intro-main::before,
+.panel-flat-language .page-intro-main::after,
+.panel-flat-language .page-intro-stat::before,
+.panel-flat-language .page-intro-stat::after {
+  display: none;
+}
+
+.panel-flat-language .page-intro-main .page-title {
+  margin-top: 0.55rem;
+  font-size: clamp(1.9rem, 3vw, 2.8rem);
+}
+
+.panel-flat-language .page-intro-main .page-copy {
+  margin-top: 0.7rem;
+  line-height: 1.55;
+}
+
+.panel-flat-language .page-intro-actions {
+  margin-top: 1rem;
+}
+
+.panel-flat-language .page-intro-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  align-items: stretch;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.panel-flat-language .page-intro-stat {
+  min-height: 7.5rem;
+  align-content: center;
+  padding: 0.75rem 1.15rem !important;
+  border: 0;
+  border-left: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.panel-flat-language .page-intro-stat:first-child {
+  border-left: 0;
+}
+
+.panel-flat-language .page-intro-stat .metric-value {
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+}
+
+.panel-flat-language .page-shell .lux-panel,
+.panel-flat-language .page-shell .lux-panel-soft {
+  padding-inline: 0 !important;
+  border: 0;
+  border-top: 1px solid var(--route-line);
+  border-radius: 0 !important;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: visible;
+}
+
+.panel-flat-language .page-shell .lux-panel::before,
+.panel-flat-language .page-shell .lux-panel::after,
+.panel-flat-language .page-shell .lux-panel-soft::before,
+.panel-flat-language .page-shell .lux-panel-soft::after {
+  display: none;
+}
+
+.panel-flat-language .page-shell .list-surface,
+.panel-flat-language .notification-surface {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.panel-flat-language .page-shell .list-row {
+  padding-inline: 0;
+  border: 0;
+  border-bottom: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .page-shell .list-row:first-child {
+  border-top: 1px solid var(--route-line);
+}
+
+.panel-flat-language .page-shell .list-row:hover {
+  background: linear-gradient(90deg, rgba(var(--site-accent-rgb), 0.04), transparent 75%);
+}
+
+.panel-flat-language .fixed .lux-panel {
+  padding: 1.5rem !important;
+  border: 1px solid var(--route-line-gold);
+  border-radius: 1rem !important;
+  background: var(--route-panel);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Início */
+.panel-flat-language .ref-panel-content {
+  gap: 1.35rem;
+}
+
+.panel-flat-language .ref-panel-hero {
+  min-height: 9rem;
+  padding: 0.4rem 0 1.5rem;
+  border: 0;
+  border-bottom: 1px solid var(--ref-line-soft);
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.panel-flat-language .ref-panel-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--ref-line-soft);
+  border-bottom: 1px solid var(--ref-line-soft);
+}
+
+.panel-flat-language .ref-panel-metric-card {
+  min-height: 7.6rem;
+  padding: 1rem 1.25rem;
+  border: 0;
+  border-left: 1px solid var(--ref-line-soft);
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .ref-panel-metric-card:first-child {
+  border-left: 0;
+}
+
+.panel-flat-language .ref-panel-metric-icon {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ref-gold);
+}
+
+.panel-flat-language .ref-panel-grid,
+.panel-flat-language .ref-panel-mobile-stack {
+  gap: 1.5rem;
+}
+
+.panel-flat-language .ref-panel-card {
+  padding: 1.35rem 0;
+  border: 0;
+  border-top: 1px solid var(--ref-line-soft);
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.panel-flat-language .ref-panel-appointment,
+.panel-flat-language .ref-panel-ranking-row,
+.panel-flat-language .ref-panel-quote-row,
+.panel-flat-language .ref-panel-finance-row {
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Oportunidades e listas comerciais */
+.panel-flat-language .opportunity-toolbar {
+  justify-content: flex-start;
+  border-bottom: 1px solid var(--route-line);
+}
+
+.panel-flat-language .opportunity-filter-tabs {
+  min-width: 0;
+  display: flex;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .opportunity-filter-tabs button {
+  padding-inline: 1rem;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+}
+
+.panel-flat-language .opportunity-filter-tabs button.is-active {
+  border-bottom-color: var(--ref-gold);
+  background: linear-gradient(180deg, transparent, rgba(var(--site-accent-rgb), 0.08));
+}
+
+.panel-flat-language .opportunity-list {
+  gap: 0;
+}
+
+.panel-flat-language .opportunity-row {
+  padding: 1.25rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .opportunity-row:first-child {
+  border-top: 1px solid var(--route-line);
+}
+
+.panel-flat-language .opportunity-icon {
+  border-radius: 50%;
+}
+
+.panel-flat-language .opportunity-meta span,
+.panel-flat-language .opportunity-tags span {
+  border: 0;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+/* Agenda: o calendário continua delimitado porque a grade tem função. */
+.panel-flat-language .agenda-modern-hero {
+  padding: 0.4rem 0 1.4rem;
+  border: 0;
+  border-bottom: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.panel-flat-language .agenda-modern-hero-metrics {
+  gap: 0;
+}
+
+.panel-flat-language .agenda-modern-hero-metrics article {
+  min-height: 6.4rem;
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-left: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .agenda-modern-hero-metrics article:first-child {
+  border-left: 0;
+}
+
+.panel-flat-language .agenda-modern-calendar-card,
+.panel-flat-language .agenda-modern-day-panel {
+  padding: 1.2rem 0;
+  border: 0;
+  border-top: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.panel-flat-language .agenda-modern-layout > * + * {
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--route-line);
+}
+
+.panel-flat-language .agenda-modern-summary-card {
+  padding: 1rem 0;
+  border: 0;
+  border-top: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.panel-flat-language .agenda-modern-appointment {
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Clientes */
+.panel-flat-language .client-intake-layout {
+  gap: 1.75rem;
+}
+
+.panel-flat-language .client-intake-form-shell,
+.panel-flat-language .client-intake-side-card,
+.panel-flat-language .client-intake-mobile-list {
+  padding-inline: 0;
+  border: 0;
+  border-top: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.panel-flat-language .client-intake-side {
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--route-line);
+}
+
+.panel-flat-language .client-intake-stat-grid {
+  gap: 0;
+  border-top: 1px solid var(--route-line);
+  border-bottom: 1px solid var(--route-line);
+}
+
+.panel-flat-language .client-intake-stat-grid article {
+  min-height: 5.8rem;
+  padding: 0.8rem;
+  border: 0;
+  border-left: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .client-intake-stat-grid article:first-child {
+  border-left: 0;
+}
+
+.panel-flat-language .client-intake-client-card {
+  padding: 1rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Avaliações */
+.panel-flat-language .reviews-dashboard-hero {
+  padding: 0.4rem 0 1.5rem;
+  border: 0;
+  border-bottom: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .reviews-dashboard-hero::after {
+  display: none;
+}
+
+.panel-flat-language .reviews-dashboard-score-card {
+  padding: 0 1.25rem;
+  border: 0;
+  border-left: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .reviews-dashboard-metrics {
+  gap: 0;
+  border-top: 1px solid var(--route-line);
+  border-bottom: 1px solid var(--route-line);
+}
+
+.panel-flat-language .reviews-dashboard-metric {
+  min-height: 6.8rem;
+  border: 0;
+  border-left: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .reviews-dashboard-metric:first-child {
+  border-left: 0;
+}
+
+.panel-flat-language .reviews-dashboard-panel {
+  padding: 1.25rem 0;
+  border: 0;
+  border-top: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Perfil, assinatura, configurações e notificações */
+.panel-flat-language .profile-slot-row,
+.panel-flat-language .profile-toggle-row,
+.panel-flat-language .subscription-info-row {
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .settings-layout {
+  gap: 1.6rem;
+}
+
+.panel-flat-language .settings-panel {
+  padding: 1.2rem 0;
+  border: 0;
+  border-top: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.panel-flat-language .settings-panel--status {
+  align-content: start;
+}
+
+.panel-flat-language .settings-shortcuts {
+  gap: 0;
+}
+
+.panel-flat-language .settings-shortcuts a {
+  padding-inline: 0;
+  border: 0;
+  border-bottom: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .settings-live-preview {
+  border-radius: 0.7rem;
+}
+
+/* Suporte: separação de áreas sem cartões empilhados. */
+.panel-flat-language .support-list-panel,
+.panel-flat-language .support-chat-panel,
+.panel-flat-language .support-ideas-panel {
+  padding-inline: 0 !important;
+  border: 0;
+  border-top: 1px solid var(--route-line);
+  border-radius: 0 !important;
+  background: transparent;
+  box-shadow: none;
+}
+
+.panel-flat-language .support-shell > * + *,
+.panel-flat-language .support-admin-stack > * + * {
+  padding-left: 1rem;
+  border-left: 1px solid var(--route-line);
+}
+
+.panel-flat-language .support-conversation-item,
+.panel-flat-language .support-idea-card {
+  border: 0;
+  border-bottom: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Novo orçamento: formulário aberto; resumo permanece destacado. */
+.panel-flat-language .budget-modern-topbar,
+.panel-flat-language .budget-modern-stepper,
+.panel-flat-language .budget-modern-calculator-card {
+  border: 0;
+  border-bottom: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.panel-flat-language .budget-modern-calculator-card {
+  padding-inline: 0;
+}
+
+.panel-flat-language .budget-modern-section,
+.panel-flat-language .budget-modern-environment,
+.panel-flat-language .budget-modern-calculated-grid article {
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-flat-language .budget-modern-summary-panel {
+  border: 0;
+  border-left: 2px solid var(--route-line-gold);
+  border-radius: 0;
+  background: linear-gradient(90deg, rgba(var(--site-accent-rgb), 0.06), transparent);
+  box-shadow: none;
+}
+
+@media (max-width: 1200px) {
+  .panel-flat-language .page-intro-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .panel-flat-language .page-intro-stat:first-child,
+  .panel-flat-language .agenda-modern-hero-metrics article:first-child {
+    border-left: 0;
+  }
+}
+
+@media (max-width: 1023px) {
+  .panel-flat-language .page-intro-grid,
+  .panel-flat-language .ref-panel-hero,
+  .panel-flat-language .agenda-modern-hero {
+    padding-inline: 0;
+    border-radius: 0;
+  }
+
+  .panel-flat-language .page-intro-stats,
+  .panel-flat-language .agenda-modern-hero-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .panel-flat-language .page-intro-stat,
+  .panel-flat-language .agenda-modern-hero-metrics article {
+    min-height: 5rem;
+    padding: 0.65rem !important;
+  }
+
+  .panel-flat-language .ref-panel-metrics,
+  .panel-flat-language .reviews-dashboard-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-flat-language .ref-panel-metric-card:nth-child(odd),
+  .panel-flat-language .reviews-dashboard-metric:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .panel-flat-language .ref-panel-metric-card:nth-child(n + 3),
+  .panel-flat-language .reviews-dashboard-metric:nth-child(n + 3) {
+    border-top: 1px solid var(--route-line);
+  }
+
+  .panel-flat-language .agenda-modern-layout > * + *,
+  .panel-flat-language .client-intake-side,
+  .panel-flat-language .support-shell > * + *,
+  .panel-flat-language .support-admin-stack > * + * {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .panel-flat-language .client-intake-form-shell,
+  .panel-flat-language .client-intake-side-card,
+  .panel-flat-language .client-intake-mobile-list,
+  .panel-flat-language .opportunity-row {
+    padding-inline: 0;
+    border-radius: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .panel-flat-language .page-intro-stats,
+  .panel-flat-language .agenda-modern-hero-metrics,
+  .panel-flat-language .client-intake-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-flat-language .page-intro-stat,
+  .panel-flat-language .agenda-modern-hero-metrics article,
+  .panel-flat-language .client-intake-stat-grid article {
+    min-height: 4.6rem;
+    border-top: 1px solid var(--route-line);
+    border-left: 0;
+  }
+
+  .panel-flat-language .opportunity-filter-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+}

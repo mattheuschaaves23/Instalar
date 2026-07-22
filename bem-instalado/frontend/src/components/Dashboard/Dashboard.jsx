@@ -889,7 +889,7 @@ export default function Dashboard() {
       positive: true,
     },
     {
-      label: 'Taxa de conversao',
+      label: 'Taxa de conversão',
       mobileLabel: 'Conversao',
       value: `${conversionRate}%`,
       detail: 'orçamentos aprovados',
@@ -995,10 +995,10 @@ export default function Dashboard() {
               <small>
                 <span className="ref-panel-hero-copy-desktop">
                   Você tem <strong>{installationsThisWeek} instalações</strong> agendadas para esta semana.
-                  Continue assim para alcancar sua meta mensal.
+                  Continue assim para alcançar sua meta mensal.
                 </span>
                 <span className="ref-panel-hero-copy-mobile">
-                  Continue assim para alcancar sua <strong>meta mensal</strong>.
+                  Continue assim para alcançar sua <strong>meta mensal</strong>.
                 </span>
               </small>
             </div>
@@ -1102,7 +1102,7 @@ export default function Dashboard() {
               </div>
               <div className="ref-panel-agenda-stats">
                 <span><strong>{installationsThisWeek}</strong>esta semana</span>
-                <span><strong>{completedThisWeek}</strong>concluidas</span>
+                <span><strong>{completedThisWeek}</strong>concluídas</span>
                 <span><strong>{pendingBudgets.length}</strong>pendentes</span>
               </div>
               <div className="ref-panel-appointment-list">

@@ -104,7 +104,7 @@ export default function Settings() {
 
   const stats = [
     {
-      label: 'Cor secundaria',
+      label: 'Cor secundária',
       value: currentPreset?.name || preferences.accentColor.toUpperCase(),
       detail: preferences.accentColor.toUpperCase(),
     },
@@ -140,8 +140,8 @@ export default function Settings() {
           <div className="settings-section-head">
             <span><SettingsIcon type="palette" /></span>
             <div>
-              <p>Aparencia</p>
-              <h2>Cor secundaria</h2>
+              <p>Aparência</p>
+              <h2>Cor secundária</h2>
             </div>
           </div>
 
@@ -177,7 +177,7 @@ export default function Settings() {
               <p>Painel InstalaPro</p>
               <strong>Fundo preto, destaque na sua cor</strong>
             </div>
-            <button type="button">Botao principal</button>
+            <button type="button">Botão principal</button>
           </div>
         </article>
 
@@ -191,7 +191,7 @@ export default function Settings() {
           </div>
 
           <PreferenceSegment
-            label="Espacamento"
+            label="Espaçamento"
             onChange={(value) => savePreference({ density: value })}
             options={densityOptions}
             value={preferences.density}
@@ -210,7 +210,7 @@ export default function Settings() {
             <span><SettingsIcon type="check" /></span>
             <div>
               <p>Conta</p>
-              <h2>Atalhos uteis</h2>
+              <h2>Atalhos úteis</h2>
             </div>
           </div>
 
