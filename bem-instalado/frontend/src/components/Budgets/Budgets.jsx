@@ -137,7 +137,7 @@ export default function Budgets() {
             </Link>
           </>
         }
-        description="Aqui a operação comercial ganha clareza: acompanhe valor, status e ação ideal para cada proposta."
+        description="Veja os valores, o status e a próxima ação de cada orçamento."
         eyebrow="Comercial"
         stats={[
           { label: 'Total de propostas', value: `${budgets.length}`, detail: 'Todas as propostas registradas.' },
@@ -152,7 +152,7 @@ export default function Budgets() {
             detail: 'Oportunidades que merecem acompanhamento.',
           },
         ]}
-        title="Um pipeline elegante ajuda você a vender como consultor, não como tirador de preço."
+        title="Acompanhe seus orçamentos."
       />
 
       <div className="grid gap-4">
@@ -214,7 +214,7 @@ export default function Budgets() {
 
         {budgets.length === 0 ? (
           <div className="empty-state">
-            <p>Nenhum orçamento cadastrado ainda. Crie o primeiro para dar vida ao seu pipeline comercial.</p>
+            <p>Nenhum orçamento cadastrado. Crie um quando tiver os dados do cliente e do serviço.</p>
             <div className="mt-5">
               <Link className="gold-button" to="/budgets/new">
                 Criar novo orçamento

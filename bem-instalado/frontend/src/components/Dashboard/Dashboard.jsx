@@ -1545,7 +1545,7 @@ export default function Dashboard() {
 
             {ranking.length > 0 ? (
               <div className="dashboard-neo-top-list">
-                <p className="dashboard-neo-mini-title">Melhores instaladores no ranking público</p>
+                <p className="dashboard-neo-mini-title">Ranking público de instaladores</p>
                 {ranking.slice(0, 3).map((item, index) => (
                   <div className="dashboard-neo-top-item" key={item.id || item.display_name || item.name || `top-${index}`}>
                     <span>#{item.ranking_position}</span>

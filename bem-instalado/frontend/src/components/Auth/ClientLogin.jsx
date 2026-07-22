@@ -257,12 +257,12 @@ export default function ClientLogin() {
           </div>
 
           <div className="client-login-copy">
-            <p className="client-login-kicker">PARA QUEM BUSCA QUALIDADE</p>
+            <p className="client-login-kicker">ÁREA DO CLIENTE</p>
             <h1>
-              Encontre os melhores <span>instaladores de papel</span> de parede da sua região.
+              Entre para <span>acompanhar seus pedidos.</span>
             </h1>
             <p className="client-login-description">
-              Compare avaliações, veja trabalhos anteriores e contrate com segurança e praticidade.
+              Seus pedidos e os instaladores interessados ficam salvos na sua conta.
             </p>
 
             <div className="client-login-benefits">
@@ -301,14 +301,14 @@ export default function ClientLogin() {
                   ? 'Crie sua conta de cliente'
                   : isInstallerIntent
                     ? 'Finalize seu acesso'
-                    : 'Bem-vindo de volta!'}
+                    : 'Entrar como cliente'}
               </h2>
               <p>
                 {isRegistering
                   ? 'Salve seus pedidos e acompanhe os interessados em qualquer aparelho.'
                   : isInstallerIntent
                   ? 'Entre para falar com o instalador escolhido.'
-                  : 'Faça login para acessar sua conta.'}
+                  : 'Use o e-mail e a senha informados no cadastro.'}
               </p>
             </div>
 

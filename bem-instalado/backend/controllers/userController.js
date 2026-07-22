@@ -93,7 +93,7 @@ function buildMotivationalNotes(metrics) {
   } else if (metrics.goal_progress >= 65) {
     notes.push({
       title: 'Você está perto',
-      description: 'Mais alguns fechamentos aprovados já colocam o mês no nível ideal.',
+      description: 'Confira os orçamentos em aberto que ainda podem ser aprovados neste mês.',
     });
   } else {
     notes.push({
@@ -104,7 +104,7 @@ function buildMotivationalNotes(metrics) {
 
   if (metrics.average_rating >= 4.7 && metrics.review_count >= 2) {
     notes.push({
-      title: 'Reputação premium',
+      title: 'Avaliações do perfil',
       description: 'Sua nota está alta. Destaque isso nas conversas e no perfil público.',
     });
   } else {

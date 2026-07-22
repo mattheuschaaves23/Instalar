@@ -21,7 +21,7 @@ const defaultPricing = {
 const defaultBenefits = [
   'Dashboard comercial completo com indicadores do mês.',
   'Agenda visual por dia para organizar instalações.',
-  'Orçamentos profissionais com PDF premium.',
+  'Orçamentos em PDF prontos para enviar ao cliente.',
   'Perfil público para captar mais clientes.',
   'Suporte interno em tempo real com o administrador.',
 ];

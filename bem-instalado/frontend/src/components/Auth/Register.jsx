@@ -14,7 +14,7 @@ const highlights = [
   {
     kicker: 'Comercial',
     title: 'Feche mais serviços',
-    copy: 'Orçamentos profissionais, PDF premium e aprovação com status claro.',
+    copy: 'Orçamentos em PDF para enviar ao cliente e acompanhar o status.',
   },
   {
     kicker: 'Operação',
@@ -87,10 +87,10 @@ export default function Register() {
     <AuthShell
       asideCopy="Criar conta"
       asideTitle="Cadastro"
-      description="Seu cadastro libera um painel completo para operar com organização, imagem forte e mais conversão."
+      description="Cadastre seus dados profissionais para acessar pedidos, agenda e orçamentos."
       eyebrow="InstalaPro"
       highlights={highlights}
-      title="Crie sua conta e transforme atendimento em operação profissional."
+      title="Crie sua conta de instalador."
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <label className="block">

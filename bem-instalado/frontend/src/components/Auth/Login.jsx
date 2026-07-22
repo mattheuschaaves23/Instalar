@@ -135,41 +135,41 @@ function InstallerLoginIcon({ name }) {
 const installerBenefits = [
   {
     icon: 'user',
-    title: 'Mais clientes',
-    copy: 'Receba solicitações todos os dias',
+    title: 'Pedidos da sua região',
+    copy: 'Veja solicitações compatíveis com o seu perfil',
   },
   {
     icon: 'star',
-    title: 'Seu perfil em destaque',
-    copy: 'Destaque suas avaliações e trabalhos realizados',
+    title: 'Perfil profissional',
+    copy: 'Mostre fotos, avaliações e regiões atendidas',
   },
   {
     icon: 'shield',
-    title: 'Acesso de lançamento',
-    copy: 'Encontre oportunidades sem cobrança durante esta fase',
+    title: 'Agenda e orçamentos',
+    copy: 'Organize os atendimentos no mesmo painel',
   },
   {
     icon: 'chart',
-    title: 'Cresça com a gente',
-    copy: 'Mais visibilidade, mais oportunidades, mais resultados',
+    title: 'Acesso de lançamento',
+    copy: 'Use as ferramentas sem cobrança nesta fase',
   },
 ];
 
 const trustItems = [
   {
     icon: 'shield',
-    title: 'Plataforma segura',
-    copy: 'Seus dados e pagamentos protegidos sempre.',
+    title: 'Sessão protegida',
+    copy: 'Acesso com senha e opção de verificação em duas etapas.',
   },
   {
     icon: 'headset',
-    title: 'Suporte dedicado',
-    copy: 'Conte com nosso time sempre que precisar.',
+    title: 'Suporte pelo painel',
+    copy: 'Envie suas dúvidas diretamente ao administrador.',
   },
   {
     icon: 'trophy',
-    title: 'Profissionais valorizados',
-    copy: 'Seu trabalho reconhecido e sua reputação cresce.',
+    title: 'Perfil público',
+    copy: 'Clientes podem consultar seus trabalhos e avaliações.',
   },
 ];
 
@@ -182,7 +182,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  const submitLabel = useMemo(() => (needs2FA ? 'Validar acesso' : 'Entrar na plataforma'), [needs2FA]);
+  const submitLabel = useMemo(() => (needs2FA ? 'Validar acesso' : 'Entrar'), [needs2FA]);
 
   useEffect(() => {
     if (loading) {
@@ -261,17 +261,13 @@ export default function Login() {
 
           <div className="installer-login-copy">
             <p className="installer-login-kicker">ÁREA DO INSTALADOR</p>
-            <h1 aria-label="Conecte-se a mais oportunidades e faça seu trabalho crescer.">
-              Conecte-se a mais
+            <h1 aria-label="Acesse seu painel de instalador.">
+              Acesse seu
               <br />
-              oportunidades e
-              <br />
-              <span>faça seu trabalho</span>
-              <br />
-              <span>crescer.</span>
+              <span>painel de instalador.</span>
             </h1>
             <p className="installer-login-description">
-              A plataforma que valoriza o seu trabalho e conecta você a clientes que buscam qualidade.
+              Consulte pedidos da região, organize a agenda e envie orçamentos.
             </p>
 
             <div className="installer-login-benefits">
@@ -297,8 +293,8 @@ export default function Login() {
             </div>
 
             <div className="installer-login-card-head">
-              <h2>Bem-vindo de volta!</h2>
-              <p>Faça login para acessar sua conta de instalador.</p>
+              <h2>Entrar como instalador</h2>
+              <p>Use o e-mail e a senha informados no cadastro.</p>
             </div>
 
             <label className="installer-login-field">

@@ -58,7 +58,7 @@ export default function Notifications() {
             detail: 'Histórico já processado por você.',
           },
         ]}
-        title="Notificações precisam ser claras, discretas e impossíveis de ignorar."
+        title="Avisos da sua conta."
       />
 
       <div className="grid gap-4">

@@ -1108,7 +1108,7 @@ export default function Profile() {
           <section className="lux-panel-soft fade-up rounded-[28px] p-6" style={{ animationDelay: '0.14s' }}>
             <p className="eyebrow">Vitrine pública</p>
             <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
-              Clientes enxergam mais segurança quando o perfil mostra foto do instalador, documento, contrato, garantia e horários vagos com clareza.
+              Mantenha foto, documento, contrato, garantia e horários atualizados para o cliente consultar.
             </p>
           </section>
         </aside>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import InstallAppButton from '../Layout/InstallAppButton';
 import './ClientLandingLegacy.css';
@@ -9,49 +9,35 @@ const INSTALLER_LOGIN_PATH = '/instalador/entrar';
 const INSTALLER_REGISTER_PATH = '/instalador/cadastro';
 
 const navLinks = [
-  { href: '#como-funciona', label: 'Como Funciona' },
-  { href: '#beneficios', label: 'Benefícios' },
-  { href: '#avaliacoes', label: 'Escolha segura' },
-  { href: '#faq', label: 'FAQ' },
+  { href: '#como-funciona', label: 'Como funciona' },
+  { href: '#avaliacoes', label: 'Antes de escolher' },
+  { href: '#faq', label: 'Dúvidas' },
 ];
 
 const trustStats = [
   {
     icon: 'map-pin-filled',
     number: '01',
-    title: [
-      { text: 'Pedido por ' },
-      { accent: true, text: 'região' },
-    ],
-    label: 'A localização ajuda a priorizar instaladores próximos.',
+    title: [{ text: 'Informe o ' }, { accent: true, text: 'local' }],
+    label: 'Diga a cidade e o bairro onde o serviço será feito.',
   },
   {
     icon: 'tag',
     number: '02',
-    title: [
-      { text: 'Sem ' },
-      { accent: true, text: 'preço' },
-      { text: ' fixo' },
-    ],
-    label: 'Valor, prazo e visita são combinados direto com o profissional.',
+    title: [{ text: 'Receba ' }, { accent: true, text: 'respostas' }],
+    label: 'Instaladores que atendem a região podem se interessar.',
   },
   {
     icon: 'user-check',
     number: '03',
-    title: [
-      { text: 'Cliente ' },
-      { accent: true, text: 'escolhe' },
-    ],
-    label: 'Mais de um instalador pode demonstrar interesse no mesmo pedido.',
+    title: [{ text: 'Compare com ' }, { accent: true, text: 'calma' }],
+    label: 'Veja o perfil e os trabalhos antes de decidir.',
   },
   {
     icon: 'whatsapp',
     number: '04',
-    title: [
-      { accent: true, text: 'WhatsApp' },
-      { text: ' direto' },
-    ],
-    label: 'A conversa só começa depois que o cliente escolhe quem chamar.',
+    title: [{ text: 'Chame no ' }, { accent: true, text: 'WhatsApp' }],
+    label: 'Seu contato só é liberado para o profissional escolhido.',
   },
 ];
 
@@ -59,38 +45,20 @@ const steps = [
   {
     number: '01',
     icon: 'clipboard',
-    title: 'Descreva seu Projeto',
-    description: 'Informe os detalhes do serviço: tipo de papel, metragem e localização.',
+    title: 'Conte o que precisa',
+    description: 'Informe o ambiente, o tipo de papel e onde será a instalação.',
   },
   {
     number: '02',
     icon: 'users',
-    title: 'Receba Interessados',
-    description: 'Profissionais da sua região podem demonstrar interesse no pedido.',
+    title: 'Aguarde os interessados',
+    description: 'O pedido aparece para instaladores que atendem a sua região.',
   },
   {
     number: '03',
-    icon: 'star',
-    title: 'Compare Perfis',
-    description: 'Veja avaliações, portfólio e experiência de cada profissional.',
-  },
-  {
-    number: '04',
     icon: 'message-circle',
-    title: 'Converse no WhatsApp',
-    description: 'Escolha os que mais te interessam e negocie diretamente.',
-  },
-  {
-    number: '05',
-    icon: 'handshake',
-    title: 'Feche o Negócio',
-    description: 'Combine valores, data e detalhes com o profissional escolhido.',
-  },
-  {
-    number: '06',
-    icon: 'check-circle',
-    title: 'Avalie o Serviço',
-    description: 'Compartilhe sua experiência e ajude outros clientes.',
+    title: 'Escolha com quem falar',
+    description: 'Compare os perfis e libere o WhatsApp de quem você escolher.',
   },
 ];
 
@@ -137,44 +105,23 @@ const choiceGuides = [
   {
     id: 1,
     icon: 'map-pin',
-    title: 'Confira a região atendida',
-    text: 'Antes de conversar, veja se o profissional atende a cidade, o bairro e o tipo de deslocamento necessário.',
-    detail: 'Evita contato com quem está longe do serviço.',
+    title: 'Atende a sua região?',
+    text: 'Confirme se o instalador atende a sua cidade e se cobra deslocamento.',
+    detail: 'Combine isso antes de marcar uma visita.',
   },
   {
     id: 2,
     icon: 'star',
-    title: 'Veja avaliações disponíveis',
-    text: 'Quando o perfil tiver avaliações, use os comentários para comparar pontualidade, acabamento e atendimento.',
-    detail: 'Avaliação ajuda, mas não substitui uma boa conversa.',
+    title: 'Há trabalhos anteriores?',
+    text: 'Veja fotos e avaliações quando estiverem disponíveis no perfil.',
+    detail: 'Pergunte sobre acabamento e preparação da parede.',
   },
   {
     id: 3,
     icon: 'clipboard',
-    title: 'Explique bem o ambiente',
-    text: 'Informe sala, quarto, cozinha, comércio ou mais de um ambiente para o instalador entender o tamanho do trabalho.',
-    detail: 'Quanto mais claro o pedido, melhor a conversa inicial.',
-  },
-  {
-    id: 4,
-    icon: 'message-circle',
-    title: 'Converse antes de fechar',
-    text: 'Use o WhatsApp para alinhar data, visita, material, preparação da parede e condições do serviço.',
-    detail: 'O combinado final acontece entre cliente e profissional.',
-  },
-  {
-    id: 5,
-    icon: 'users',
-    title: 'Compare interessados',
-    text: 'Se mais de um instalador demonstrar interesse, escolha quem parece mais adequado para o seu pedido.',
-    detail: 'Você não precisa chamar todos.',
-  },
-  {
-    id: 6,
-    icon: 'check-circle',
-    title: 'Combine detalhes por escrito',
-    text: 'Deixe claro no WhatsApp o que será instalado, o prazo, a necessidade de visita e qualquer preparação do local.',
-    detail: 'Isso reduz erro de entendimento no dia do serviço.',
+    title: 'O combinado ficou claro?',
+    text: 'Alinhe por escrito o valor, a data, o material e o que será feito.',
+    detail: 'Guarde a conversa até a conclusão do serviço.',
   },
 ];
 
@@ -207,22 +154,14 @@ const faqs = [
 
 const footerLinks = {
   produto: [
-    { label: 'Como Funciona', href: '#como-funciona' },
-    { label: 'Benefícios', href: '#beneficios' },
-    { label: 'Escolha segura', href: '#avaliacoes' },
-    { label: 'FAQ', href: '#faq' },
+    { label: 'Como funciona', href: '#como-funciona' },
+    { label: 'Antes de escolher', href: '#avaliacoes' },
+    { label: 'Dúvidas', href: '#faq' },
   ],
   pedido: [
-    { label: 'Solicitar pedido', href: REQUEST_PATH },
+    { label: 'Criar pedido', href: REQUEST_PATH },
     { label: 'Acompanhar meu pedido', href: '/cliente/pedido' },
-    { label: 'Informar localização', href: REQUEST_PATH },
-    { label: 'Receber interessados', href: REQUEST_PATH },
-    { label: 'Escolher profissional', href: REQUEST_PATH },
-  ],
-  processo: [
-    { label: 'Pedido guiado', href: '#como-funciona' },
-    { label: 'Comparar perfis', href: '#avaliacoes' },
-    { label: 'Contato pelo WhatsApp', href: '#beneficios' },
+    { label: 'Entrar como cliente', href: CLIENT_LOGIN_PATH },
   ],
 };
 
@@ -735,45 +674,37 @@ function Hero() {
       <div className="absolute inset-0 grid-pattern opacity-30" />
       <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-[#cda349]/10 blur-[100px] animate-pulse-glow" />
       <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#d8ad55]/10 blur-[120px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
-      <div
-        className="landing-hero-photo"
-        aria-hidden="true"
-        style={{ '--landing-hero-image': 'url("/landing/instaladores-profissionais.png")' }}
-      />
-
-      <div className="landing-hero-content relative z-10 mx-auto max-w-7xl px-6 py-24 text-center">
+      <div className="landing-hero-content relative z-10 mx-auto max-w-7xl px-6 py-24 text-left">
         <AnimatedSection delay={0.1}>
-          <h1 className="mx-auto max-w-5xl text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-7xl">
-            <span className="text-balance">Encontre um profissional </span>
-            <span className="gradient-text-gold">compatível</span>
-            <br className="hidden sm:block" />
-            <span className="text-balance"> para seu projeto</span>
+          <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <span className="text-balance">Precisa instalar </span>
+            <span className="text-[#d8ad55]">papel de parede?</span>
           </h1>
         </AnimatedSection>
 
         <AnimatedSection delay={0.2}>
-          <p className="mx-auto mt-6 max-w-2xl text-base text-white/60 sm:text-xl text-pretty">
-            Crie uma solicitação, informe sua região e deixe instaladores interessados
-            aparecerem para você escolher com quem quer conversar.
+          <p className="mt-6 max-w-2xl text-base text-white/60 sm:text-xl text-pretty">
+            Conte onde será o serviço. Instaladores da sua região podem responder,
+            e você escolhe com quem conversar.
           </p>
         </AnimatedSection>
 
         <AnimatedSection
-          className="landing-hero-actions mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+          className="landing-hero-actions mt-10 flex flex-col items-start justify-start gap-4 sm:flex-row"
           delay={0.3}
         >
           <SmartLink
             className="landing-hero-primary btn-shine group relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#cda349] via-[#d8ad55] to-[#cda349] bg-[length:200%_100%] px-8 py-4 text-base font-semibold text-black shadow-lg shadow-[#cda349]/25 transition-all hover:bg-right hover:shadow-[#cda349]/40"
             href={REQUEST_PATH}
           >
-            Encontrar instalador perto de mim
+            Criar meu pedido
             <Icon className="h-5 w-5 transition-transform group-hover:translate-x-1" name="arrow-right" size={20} />
           </SmartLink>
           <SmartLink
             className="landing-hero-secondary group inline-flex items-center gap-2 rounded-full glass px-8 py-4 text-base font-semibold text-white/90 transition-all hover:bg-white/10"
             href="#como-funciona"
           >
-            Ver Como Funciona
+            Entender como funciona
           </SmartLink>
         </AnimatedSection>
 
@@ -849,13 +780,12 @@ function HowItWorksSection() {
 
       <div className="relative z-10 mx-auto max-w-7xl px-6">
         <AnimatedSection className="landing-section-head mb-16 text-center sm:mb-20">
-          <SectionBadge icon="clipboard">Processo Simples</SectionBadge>
           <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
-            Como funciona o <span className="gradient-text-gold">InstalaPro</span>
+            Como o pedido funciona
           </h2>
           <p className="mx-auto max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
-            Em apenas 6 passos simples você encontra o profissional ideal para seu projeto.
-            Rápido, seguro e sem complicação.
+            Você não precisa escolher um profissional às pressas. Primeiro publica o pedido,
+            depois compara quem demonstrou interesse.
           </p>
         </AnimatedSection>
 
@@ -1124,58 +1054,6 @@ function DemoSection() {
 }
 
 function TestimonialsSection() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const [isMobileCarousel, setIsMobileCarousel] = useState(false);
-  const itemsPerPage = isMobileCarousel ? 1 : 3;
-  const totalPages = Math.ceil(choiceGuides.length / itemsPerPage);
-
-  const nextSlide = useCallback(() => {
-    setCurrentIndex((previous) => (previous + 1) % totalPages);
-  }, [totalPages]);
-
-  const prevSlide = () => {
-    setCurrentIndex((previous) => (previous - 1 + totalPages) % totalPages);
-  };
-
-  useEffect(() => {
-    if (!isAutoPlaying) {
-      return undefined;
-    }
-
-    const interval = window.setInterval(nextSlide, isMobileCarousel ? 4200 : 5000);
-    return () => window.clearInterval(interval);
-  }, [isAutoPlaying, isMobileCarousel, nextSlide]);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 768px)');
-    const syncCarouselMode = () => setIsMobileCarousel(mediaQuery.matches);
-
-    syncCarouselMode();
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', syncCarouselMode);
-    } else {
-      mediaQuery.addListener(syncCarouselMode);
-    }
-
-    return () => {
-      if (mediaQuery.removeEventListener) {
-        mediaQuery.removeEventListener('change', syncCarouselMode);
-      } else {
-        mediaQuery.removeListener(syncCarouselMode);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    setCurrentIndex((previous) => Math.min(previous, totalPages - 1));
-  }, [totalPages]);
-
-  const currentGuides = choiceGuides.slice(
-    currentIndex * itemsPerPage,
-    (currentIndex + 1) * itemsPerPage
-  );
-
   return (
     <section className="landing-guides-section relative overflow-hidden py-24 sm:py-32" id="avaliacoes">
       <div className="absolute inset-0 grid-pattern opacity-20" />
@@ -1183,27 +1061,18 @@ function TestimonialsSection() {
 
       <div className="relative z-10 mx-auto max-w-7xl px-6">
         <AnimatedSection className="landing-section-head mb-16 text-center">
-          <span className="mb-6 inline-flex items-center gap-2 rounded-full glass-gold px-4 py-2 text-sm text-white/70">
-            <Icon className="h-4 w-4 text-[#cda349]" name="check-circle" size={16} />
-            Escolha segura
-          </span>
           <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
-            Compare informações antes de <span className="gradient-text-gold">chamar um instalador</span>
+            Antes de escolher, confira três pontos
           </h2>
           <p className="mx-auto max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
-            Esta área mostra critérios práticos para o cliente decidir com mais segurança,
-            sem depender de número inventado ou promessa sem confirmação.
+            A decisão é sua. Use o perfil e a conversa para confirmar o que importa no serviço.
           </p>
         </AnimatedSection>
 
-        <div
-          className="relative"
-          onMouseEnter={() => setIsAutoPlaying(false)}
-          onMouseLeave={() => setIsAutoPlaying(true)}
-        >
+        <div className="relative">
           <div className="overflow-hidden">
-            <div className="landing-guides-grid landing-carousel-page grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" key={currentIndex}>
-              {currentGuides.map((guide) => (
+            <div className="landing-guides-grid grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {choiceGuides.map((guide) => (
                 <div className="landing-guide-card-shell group relative" key={guide.id}>
                   <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-[#cda349]/20 to-[#d8ad55]/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
                   <div className="landing-guide-card relative h-full rounded-2xl p-6 glass card-premium sm:p-8">
@@ -1225,37 +1094,6 @@ function TestimonialsSection() {
             </div>
           </div>
 
-          <div className="landing-guide-controls mt-10 flex items-center justify-center gap-4">
-            <button
-              aria-label="Anterior"
-              className="group flex h-12 w-12 items-center justify-center rounded-full glass transition-all hover:bg-white/10"
-              onClick={prevSlide}
-              type="button"
-            >
-              <Icon className="h-5 w-5 text-white/70 transition-colors group-hover:text-white" name="chevron-left" size={20} />
-            </button>
-
-            <div className="flex gap-2">
-              {Array.from({ length: totalPages }).map((_, index) => (
-                <button
-                  aria-label={`Ir para página ${index + 1}`}
-                  className={`landing-guide-dot h-2 rounded-full transition-all ${index === currentIndex ? 'landing-guide-dot-active w-8 bg-gradient-to-r from-[#cda349] to-[#d8ad55]' : 'w-2 bg-white/20 hover:bg-white/40'}`}
-                  key={index}
-                  onClick={() => setCurrentIndex(index)}
-                  type="button"
-                />
-              ))}
-            </div>
-
-            <button
-              aria-label="Próximo"
-              className="group flex h-12 w-12 items-center justify-center rounded-full glass transition-all hover:bg-white/10"
-              onClick={nextSlide}
-              type="button"
-            >
-              <Icon className="h-5 w-5 text-white/70 transition-colors group-hover:text-white" name="chevron-right" size={20} />
-            </button>
-          </div>
         </div>
       </div>
     </section>
@@ -1272,12 +1110,11 @@ function FaqSection() {
 
       <div className="relative z-10 mx-auto max-w-4xl px-6">
         <AnimatedSection className="landing-section-head mb-16 text-center">
-          <SectionBadge icon="help-circle">Perguntas Frequentes</SectionBadge>
           <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-balance">
-            Tire suas <span className="gradient-text-gold">dúvidas</span>
+            Dúvidas comuns
           </h2>
           <p className="mx-auto max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
-            Encontre respostas para as perguntas mais comuns sobre nossa plataforma.
+            O que acontece depois que você publica um pedido.
           </p>
         </AnimatedSection>
 
@@ -1327,36 +1164,22 @@ function CtaSection() {
 
       <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
         <AnimatedSection>
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full glass-gold px-4 py-2">
-            <Icon className="h-4 w-4 text-[#cda349]" name="sparkles" size={16} />
-            <span className="text-sm text-white/80">Comece agora mesmo</span>
-          </div>
-
           <h2 className="mb-6 text-3xl font-bold text-white sm:text-4xl lg:text-6xl text-balance">
-            Pronto para encontrar um <span className="gradient-text-gold">instalador compatível</span>?
+            Quer publicar seu pedido?
           </h2>
 
           <p className="mx-auto mb-10 max-w-2xl text-base text-white/50 sm:text-lg text-pretty">
-            Solicite gratuitamente, informe sua localização e acompanhe os instaladores
-            interessados para escolher com quem quer conversar.
+            Leva poucos minutos. O pedido é gratuito para o cliente e você escolhe quem chamar.
           </p>
 
           <SmartLink
             className="btn-shine group relative inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-[#cda349] via-[#d8ad55] to-[#f0d28a] px-10 py-5 text-lg font-semibold text-black shadow-xl shadow-[#cda349]/25 transition-all hover:scale-105 hover:shadow-[#cda349]/40"
             href={REQUEST_PATH}
           >
-            Buscar no PapelPerto
+            Criar pedido
             <Icon className="h-5 w-5 transition-transform group-hover:translate-x-1" name="arrow-right" size={20} />
           </SmartLink>
 
-          <div className="landing-cta-points mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-white/40 sm:gap-8">
-            {['Gratuito para solicitar', 'Sem compromisso', 'Você escolhe o profissional'].map((item) => (
-              <div className="flex items-center gap-2" key={item}>
-                <div className="h-2 w-2 rounded-full bg-green-500" />
-                {item}
-              </div>
-            ))}
-          </div>
         </AnimatedSection>
       </div>
     </section>
@@ -1374,32 +1197,16 @@ function Footer() {
             <LogoMark />
 
             <p className="mb-6 mt-6 max-w-sm leading-relaxed text-white/40">
-              Plataforma para clientes criarem pedidos de instalação de papel de parede
-              e conversarem com instaladores interessados.
+              Encontre instaladores de papel de parede que atendem a sua região.
             </p>
-
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-3 text-white/40">
-                <Icon className="h-4 w-4 text-[#cda349]" name="clipboard" size={16} />
-                Solicitação organizada pelo painel
-              </div>
-              <div className="flex items-center gap-3 text-white/40">
-                <Icon className="h-4 w-4 text-[#cda349]" name="message-circle" size={16} />
-                Contato pelo WhatsApp após a escolha
-              </div>
-              <div className="flex items-center gap-3 text-white/40">
-                <Icon className="h-4 w-4 text-[#cda349]" name="map-pin" size={16} />
-                Pedidos organizados por cidade, estado e bairro
-              </div>
-            </div>
           </div>
 
           <div className="lg:col-span-8">
-            <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-8">
               {Object.entries(footerLinks).map(([group, links]) => (
                 <div key={group}>
                   <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white">
-                    {group === 'produto' ? 'Produto' : group === 'pedido' ? 'Pedido' : 'Processo'}
+                    {group === 'produto' ? 'Informações' : 'Pedido'}
                   </h4>
                   <ul className="space-y-3">
                     {links.map((link) => (
@@ -1438,10 +1245,7 @@ export default function ClientLandingLegacy() {
       <Navbar />
       <main>
         <Hero />
-        <TrustSection />
         <HowItWorksSection />
-        <FeaturesSection />
-        <DemoSection />
         <TestimonialsSection />
         <FaqSection />
         <CtaSection />

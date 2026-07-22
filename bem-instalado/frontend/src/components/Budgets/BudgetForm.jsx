@@ -356,7 +356,7 @@ export default function BudgetForm() {
 
           <div className="budget-modern-topbar-copy">
             <h1>Novo orçamento</h1>
-            <p>Faça orçamentos de instalação com clareza e rapidez.</p>
+            <p>Informe as medidas e os valores do serviço.</p>
           </div>
 
           <button className="budget-modern-save-button" type="submit">

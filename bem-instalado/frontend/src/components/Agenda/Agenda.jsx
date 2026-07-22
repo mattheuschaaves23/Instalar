@@ -399,9 +399,9 @@ export default function Agenda() {
       <header className="agenda-modern-hero fade-up">
         <div className="agenda-modern-hero-copy">
           <p className="agenda-modern-eyebrow">Minha agenda</p>
-          <h1>Gerencie suas instalações com clareza e ritmo.</h1>
+          <h1>Seus próximos compromissos.</h1>
           <p>
-            Um calendário visual para organizar o mês, acompanhar o dia e agir rápido em cada compromisso.
+            Consulte as instalações marcadas e abra o endereço de cada cliente.
           </p>
         </div>
 

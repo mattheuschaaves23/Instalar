@@ -10,7 +10,7 @@ function getPlanBenefits() {
   return [
     'Dashboard completo com métricas comerciais.',
     'Agenda visual com confirmação de instalação.',
-    'Orçamentos profissionais com PDF premium.',
+    'Orçamentos em PDF prontos para enviar ao cliente.',
     'Perfil público com avaliações e vitrine para clientes.',
     'Suporte interno com o administrador.',
   ];
