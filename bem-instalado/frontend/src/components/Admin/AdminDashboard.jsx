@@ -90,30 +90,6 @@ function PageIntro({ title, description, stats = [] }) {
   );
 }
 
-function formatCurrencyParts(value) {
-  const parts = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).formatToParts(Number(value || 0));
-
-  const currency = parts.find((item) => item.type === 'currency')?.value || 'R$';
-  const integer = parts
-    .filter((item) => item.type === 'integer' || item.type === 'group')
-    .map((item) => item.value)
-    .join('');
-  const decimal = parts.find((item) => item.type === 'decimal')?.value || ',';
-  const fraction = parts.find((item) => item.type === 'fraction')?.value || '00';
-
-  return {
-    currency,
-    integer,
-    decimal,
-    fraction,
-  };
-}
-
 export default function AdminDashboard() {
   const confirm = useConfirm();
   const storeFormRef = useRef(null);
@@ -680,7 +656,6 @@ export default function AdminDashboard() {
   };
 
   const metrics = overview.metrics || {};
-  const paidMonthMetric = formatCurrencyParts(metrics.paid_this_month_total || 0);
   const totalUsersPages = usersPagination.total_pages || 1;
   const normalizedUsersPage = Math.min(usersPage, totalUsersPages);
   const paginatedUsers = users;
@@ -711,68 +686,60 @@ export default function AdminDashboard() {
   return (
     <section className="admin-modern-shell">
       <PageIntro
-        description="Área exclusiva do criador para acompanhar operação, assinaturas, pagamentos, confiança dos perfis e comunicados globais da plataforma."
+        description="Acompanhe pedidos, usuários, pagamentos e o funcionamento do InstalaPro em um só lugar."
         eyebrow="Administrador"
         stats={[
           {
-            label: 'Usuários totais',
-            value: `${metrics.total_users || 0}`,
-            detail: `${metrics.new_users_last_30_days || 0} novos nos últimos 30 dias.`,
-          },
-          {
             label: 'Pedidos abertos',
             value: `${metrics.open_service_requests || 0}`,
-            detail: `${metrics.total_service_requests || 0} pedidos no total.`,
+            detail: `${metrics.total_service_requests || 0} pedidos no total`,
+          },
+          {
+            label: 'Instaladores públicos',
+            value: `${metrics.public_installers || 0}`,
+            detail: `${metrics.certified_installers || 0} com certificado verificado`,
           },
           {
             label: 'Receita do mês',
             value: formatCurrency(metrics.monthly_revenue || 0),
-            detail: `${metrics.paid_this_month_count || 0} pagamentos confirmados.`,
+            detail: `${metrics.paid_this_month_count || 0} pagamentos confirmados`,
           },
         ]}
-        title="Painel administrativo do criador"
+        title="Painel administrativo"
       />
 
-      <section className="admin-section-nav fade-up" style={{ animationDelay: '0.05s' }}>
+      <nav aria-label="Áreas administrativas" className="admin-section-nav fade-up" style={{ animationDelay: '0.05s' }}>
         {adminSections.map((section) => (
           <button
+            aria-current={activeAdminSection.key === section.key ? 'page' : undefined}
+            aria-label={`${section.label}: ${section.detail}`}
             className={`admin-section-tab ${activeAdminSection.key === section.key ? 'is-active' : ''}`}
             key={section.key}
             onClick={() => setSearchParams({ section: section.key })}
+            title={section.detail}
             type="button"
           >
             <span className="admin-section-tab-icon"><AdminPanelIcon type={section.key} /></span>
             <span className="admin-section-tab-label">{section.label}</span>
-            <span className="admin-section-tab-detail">{section.detail}</span>
           </button>
         ))}
-      </section>
+      </nav>
+
+      <header className="admin-current-section fade-up" style={{ animationDelay: '0.07s' }}>
+        <p>{activeAdminSection.label}</p>
+        <span>{activeAdminSection.detail}</span>
+      </header>
 
       <div className="admin-modern-body">
-        <section className={`${['overview', 'requests', 'payments'].includes(activeAdminSection.key) ? 'grid gap-6' : 'hidden'}`}>
+        <section className={`admin-content-section ${['overview', 'requests', 'payments'].includes(activeAdminSection.key) ? 'grid gap-6' : 'hidden'}`}>
           {activeAdminSection.key === 'overview' ? (
-          <article className="lux-panel fade-up p-6">
-            <p className="eyebrow">Métricas da plataforma</p>
+          <article className="admin-content-panel lux-panel fade-up p-6">
+            <p className="eyebrow">Indicadores da plataforma</p>
 
-            <div className="summary-strip mt-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="summary-strip mt-5">
               <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Instaladores públicos</p>
-                <p className="metric-value admin-metric-value mt-2">{metrics.public_installers || 0}</p>
-              </article>
-
-              <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Admins ativos</p>
-                <p className="metric-value admin-metric-value mt-2">{metrics.total_admins || 0}</p>
-              </article>
-
-              <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Pagamentos pendentes</p>
-                <p className="metric-value admin-metric-value mt-2">{metrics.pending_payments || 0}</p>
-              </article>
-
-              <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Pedidos abertos</p>
-                <p className="metric-value admin-metric-value mt-2">{metrics.open_service_requests || 0}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Usuários cadastrados</p>
+                <p className="metric-value admin-metric-value mt-2">{metrics.total_users || 0}</p>
               </article>
 
               <article className="summary-strip-item">
@@ -781,20 +748,8 @@ export default function AdminDashboard() {
               </article>
 
               <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Pagamentos do mês</p>
-                <div className="admin-money mt-2">
-                  <span className="admin-money-currency">{paidMonthMetric.currency}</span>
-                  <span className="admin-money-integer">{paidMonthMetric.integer}</span>
-                  <span className="admin-money-fraction">
-                    {paidMonthMetric.decimal}
-                    {paidMonthMetric.fraction}
-                  </span>
-                </div>
-              </article>
-
-              <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Instaladores em destaque</p>
-                <p className="metric-value admin-metric-value mt-2">{metrics.featured_installers || 0}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Pagamentos pendentes</p>
+                <p className="metric-value admin-metric-value mt-2">{metrics.pending_payments || 0}</p>
               </article>
 
               <article className="summary-strip-item">
@@ -806,17 +761,12 @@ export default function AdminDashboard() {
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Suporte aberto</p>
                 <p className="metric-value admin-metric-value mt-2">{metrics.support_open_conversations || 0}</p>
               </article>
-
-              <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Ideias pendentes</p>
-                <p className="metric-value admin-metric-value mt-2">{metrics.support_pending_ideas || 0}</p>
-              </article>
             </div>
           </article>
           ) : null}
 
           {activeAdminSection.key === 'overview' ? (
-          <article className="lux-panel fade-up p-6" style={{ animationDelay: '0.06s' }}>
+          <article className="admin-content-panel lux-panel fade-up p-6" style={{ animationDelay: '0.06s' }}>
             <p className="eyebrow">Atividade recente</p>
 
             <div className="admin-activity-grid mt-5 md:grid-cols-3">
@@ -831,6 +781,9 @@ export default function AdminDashboard() {
                       <p className="text-xs text-[var(--muted)]">{formatDateTime(item.created_at)}</p>
                     </div>
                   ))}
+                  {(overview.recent_users || []).length === 0 ? (
+                    <p className="admin-activity-empty">Nenhum cadastro recente.</p>
+                  ) : null}
                 </div>
               </section>
 
@@ -847,6 +800,9 @@ export default function AdminDashboard() {
                       <p className="text-xs text-[var(--muted)]">{formatDateTime(item.created_at)}</p>
                     </div>
                   ))}
+                  {(overview.recent_payments || []).length === 0 ? (
+                    <p className="admin-activity-empty">Nenhum pagamento recente.</p>
+                  ) : null}
                 </div>
               </section>
 
@@ -867,6 +823,9 @@ export default function AdminDashboard() {
                       </p>
                     </div>
                   ))}
+                  {(overview.recent_service_requests || []).length === 0 ? (
+                    <p className="admin-activity-empty">Nenhum pedido recente.</p>
+                  ) : null}
                 </div>
               </section>
             </div>
@@ -874,10 +833,10 @@ export default function AdminDashboard() {
           ) : null}
 
           {activeAdminSection.key === 'requests' ? (
-          <article className="lux-panel fade-up p-6">
+          <article className="admin-content-panel lux-panel fade-up p-6">
             <p className="eyebrow">Pedidos de clientes</p>
 
-            <form className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_200px_auto]" onSubmit={handleRequestFilterSubmit}>
+            <form className="admin-filter-bar mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_200px_auto]" onSubmit={handleRequestFilterSubmit}>
               <input
                 className="field-input"
                 name="q"
@@ -947,10 +906,10 @@ export default function AdminDashboard() {
           ) : null}
 
           {activeAdminSection.key === 'payments' ? (
-          <article className="lux-panel fade-up p-6" style={{ animationDelay: '0.08s' }}>
+          <article className="admin-content-panel lux-panel fade-up p-6" style={{ animationDelay: '0.08s' }}>
             <p className="eyebrow">Gestão de pagamentos</p>
 
-            <form className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_200px_auto]" onSubmit={handlePaymentFilterSubmit}>
+            <form className="admin-filter-bar mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_200px_auto]" onSubmit={handlePaymentFilterSubmit}>
               <input
                 className="field-input"
                 name="q"
@@ -1010,43 +969,46 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        <div className="action-cluster flex flex-wrap gap-2 lg:max-w-[19rem]">
-                          <button
-                            className="gold-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                            disabled={savingPaymentId === item.id}
-                            onClick={() => confirmPaymentStatus(item.id, 'paid')}
-                            type="button"
-                          >
-                            Marcar pago
-                          </button>
+                        <details className="admin-row-actions lg:w-48">
+                          <summary>Alterar status</summary>
+                          <div className="action-cluster mt-2 grid gap-2">
+                            <button
+                              className="gold-button w-full !min-h-0 !px-3 !py-2 text-xs"
+                              disabled={savingPaymentId === item.id}
+                              onClick={() => confirmPaymentStatus(item.id, 'paid')}
+                              type="button"
+                            >
+                              Marcar pago
+                            </button>
 
-                          <button
-                            className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                            disabled={savingPaymentId === item.id}
-                            onClick={() => confirmPaymentStatus(item.id, 'pending')}
-                            type="button"
-                          >
-                            Voltar pendente
-                          </button>
+                            <button
+                              className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
+                              disabled={savingPaymentId === item.id}
+                              onClick={() => confirmPaymentStatus(item.id, 'pending')}
+                              type="button"
+                            >
+                              Voltar pendente
+                            </button>
 
-                          <button
-                            className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                            disabled={savingPaymentId === item.id}
-                            onClick={() => confirmPaymentStatus(item.id, 'failed')}
-                            type="button"
-                          >
-                            Marcar falha
-                          </button>
+                            <button
+                              className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
+                              disabled={savingPaymentId === item.id}
+                              onClick={() => confirmPaymentStatus(item.id, 'failed')}
+                              type="button"
+                            >
+                              Marcar falha
+                            </button>
 
-                          <button
-                            className="danger-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                            disabled={savingPaymentId === item.id}
-                            onClick={() => confirmPaymentStatus(item.id, 'canceled')}
-                            type="button"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
+                            <button
+                              className="danger-button w-full !min-h-0 !px-3 !py-2 text-xs"
+                              disabled={savingPaymentId === item.id}
+                              onClick={() => confirmPaymentStatus(item.id, 'canceled')}
+                              type="button"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </details>
                       </div>
                     </article>
                   ))}
@@ -1067,10 +1029,10 @@ export default function AdminDashboard() {
 
         <aside className={`${['users', 'stores', 'announcements', 'monitoring'].includes(activeAdminSection.key) ? 'grid gap-6' : 'hidden'}`}>
           {activeAdminSection.key === 'users' ? (
-          <section className="lux-panel fade-up p-6" style={{ animationDelay: '0.1s' }}>
+          <section className="admin-content-panel lux-panel fade-up p-6" style={{ animationDelay: '0.1s' }}>
             <p className="eyebrow">Gestão de usuários</p>
 
-            <form className="mt-5 grid gap-3" onSubmit={handleUserFilterSubmit}>
+            <form className="admin-filter-bar admin-user-filters mt-5 grid gap-3" onSubmit={handleUserFilterSubmit}>
               <input
                 className="field-input"
                 name="q"
@@ -1135,17 +1097,15 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="admin-data-grid mt-3">
-                    <p>Tipo de conta: {item.account_type === 'client' ? 'Cliente' : 'Instalador'}</p>
-                    <p>Orçamentos: {item.budgets_count}</p>
-                    <p>Aprovados: {item.approved_count}</p>
-                    <p>Perfil público: {item.public_profile ? 'Sim' : 'Não'}</p>
-                    <p>Certificado enviado: {item.has_certificate ? 'Sim' : 'Não'}</p>
-                    <p>Certificado verificado: {item.certification_verified ? 'Sim' : 'Não'}</p>
-                    <p>Destaque na vitrine: {item.featured_installer ? 'Sim' : 'Não'}</p>
-                    <p>Admin: {item.is_admin ? 'Sim' : 'Não'}</p>
+                    <p>Orçamentos: {item.budgets_count} · {item.approved_count} aprovados</p>
+                    <p>Vitrine: {item.public_profile ? 'Perfil público' : 'Perfil oculto'}</p>
+                    <p>Certificado: {item.certification_verified ? 'Verificado' : item.has_certificate ? 'Aguardando análise' : 'Não enviado'}</p>
+                    <p>Acesso: {item.is_admin ? 'Administrador' : 'Usuário comum'}</p>
                   </div>
 
-                  <div className="action-cluster mt-4 grid gap-2 sm:grid-cols-2">
+                  <details className="admin-row-actions mt-4">
+                    <summary>Gerenciar usuário</summary>
+                    <div className="action-cluster mt-3 grid gap-2 sm:grid-cols-2">
                     {item.account_type === 'installer' && item.has_certificate ? (
                       <button
                         className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
@@ -1219,7 +1179,8 @@ export default function AdminDashboard() {
                         Arquivar usuário
                       </button>
                     )}
-                  </div>
+                    </div>
+                  </details>
                     </article>
                   ))}
                 </div>
@@ -1237,7 +1198,7 @@ export default function AdminDashboard() {
           ) : null}
 
           {activeAdminSection.key === 'stores' ? (
-          <section className="lux-panel fade-up p-6" style={{ animationDelay: '0.12s' }}>
+          <section className="admin-content-panel admin-store-panel lux-panel fade-up p-6" style={{ animationDelay: '0.12s' }}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="eyebrow">Lojas recomendadas</p>
               {editingStoreId ? (
@@ -1247,7 +1208,7 @@ export default function AdminDashboard() {
               ) : null}
             </div>
 
-            <form className="mt-5 grid gap-3" onSubmit={handleStoreSubmit} ref={storeFormRef}>
+            <form className="admin-form-surface mt-5 grid gap-3" onSubmit={handleStoreSubmit} ref={storeFormRef}>
               <input
                 autoFocus={Boolean(editingStoreId)}
                 className="field-input"
@@ -1405,10 +1366,10 @@ export default function AdminDashboard() {
           ) : null}
 
           {activeAdminSection.key === 'announcements' ? (
-          <section className="lux-panel fade-up p-6" style={{ animationDelay: '0.14s' }}>
+          <section className="admin-content-panel admin-announcement-panel lux-panel fade-up p-6" style={{ animationDelay: '0.14s' }}>
             <p className="eyebrow">Comunicado global</p>
 
-            <form className="mt-5 grid gap-3" onSubmit={handleAnnouncementSubmit}>
+            <form className="admin-form-surface mt-5 grid gap-3" onSubmit={handleAnnouncementSubmit}>
               <input
                 className="field-input"
                 name="title"
@@ -1445,7 +1406,7 @@ export default function AdminDashboard() {
           ) : null}
 
           {activeAdminSection.key === 'monitoring' ? (
-          <section className="lux-panel fade-up p-6">
+          <section className="admin-content-panel lux-panel fade-up p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="eyebrow">Erros não resolvidos</p>

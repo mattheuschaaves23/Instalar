@@ -20490,6 +20490,421 @@ body,
   }
 }
 
+/* Painel administrativo: menos caixas, mais hierarquia e leitura direta. */
+.admin-modern-shell {
+  gap: 0;
+}
+
+.admin-modern-hero {
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(31rem, 0.9fr);
+  gap: 2rem;
+  padding: 0.65rem 0 1.6rem;
+  border: 0;
+  border-bottom: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.admin-modern-hero-copy h1 {
+  max-width: 42rem;
+  font-size: clamp(2rem, 3vw, 3rem);
+}
+
+.admin-modern-hero-copy small {
+  max-width: 40rem;
+  margin-top: 0.75rem;
+  font-size: 0.92rem;
+}
+
+.admin-modern-hero-metrics {
+  align-self: stretch;
+  gap: 0;
+}
+
+.admin-modern-hero-metrics article {
+  align-content: center;
+  gap: 0.35rem;
+  min-height: 7.5rem;
+  padding: 0.8rem 1.25rem;
+  border: 0;
+  border-left: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-modern-hero-metrics strong {
+  font-size: clamp(1.35rem, 2vw, 2rem);
+}
+
+.admin-modern-shell .admin-section-nav {
+  display: flex;
+  gap: 0.15rem;
+  margin-top: 0.7rem;
+  padding: 0;
+  border-bottom: 1px solid var(--route-line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.admin-modern-shell .admin-section-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-modern-shell .admin-section-tab {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 3.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 0.9rem 0.75rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--route-muted);
+  white-space: nowrap;
+  transform: none;
+}
+
+.admin-modern-shell .admin-section-tab:hover {
+  border-color: transparent;
+  background: rgba(var(--site-accent-rgb), 0.035);
+  color: var(--ref-text);
+  transform: none;
+}
+
+.admin-modern-shell .admin-section-tab.is-active {
+  border-color: var(--ref-gold);
+  background: linear-gradient(180deg, transparent 10%, rgba(var(--site-accent-rgb), 0.09));
+  color: var(--ref-text);
+  transform: none;
+}
+
+.admin-modern-shell .admin-section-tab-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-modern-shell .admin-section-tab-icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.admin-modern-shell .admin-section-tab-label {
+  font-size: 0.83rem;
+  font-weight: 750;
+}
+
+.admin-current-section {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  padding: 1.55rem 0 0.25rem;
+}
+
+.admin-current-section p {
+  margin: 0;
+  color: var(--ref-text);
+  font-size: 1.15rem;
+  font-weight: 850;
+}
+
+.admin-current-section span {
+  color: var(--route-muted);
+  font-size: 0.82rem;
+}
+
+.admin-modern-body {
+  gap: 0;
+}
+
+.admin-modern-shell .admin-content-section,
+.admin-modern-shell .admin-modern-body > aside {
+  gap: 0;
+}
+
+.admin-modern-shell .admin-content-panel {
+  padding: 1.35rem 0 !important;
+  border: 0;
+  border-top: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.admin-modern-shell .summary-strip {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--route-line);
+  border-bottom: 1px solid var(--route-line);
+}
+
+.admin-modern-shell .summary-strip-item {
+  min-height: 6.3rem;
+  padding: 1rem 1.15rem;
+  border: 0;
+  border-left: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-modern-shell .summary-strip-item:first-child {
+  border-left: 0;
+}
+
+.admin-modern-shell .admin-activity-grid {
+  gap: 0;
+}
+
+.admin-modern-shell .admin-activity-column {
+  padding: 0 1.25rem;
+  border: 0;
+  border-left: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-modern-shell .admin-activity-column:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.admin-modern-shell .admin-activity-column:last-child {
+  padding-right: 0;
+}
+
+.admin-modern-shell .admin-activity-entry {
+  padding: 0.8rem 0;
+}
+
+.admin-modern-shell .admin-activity-entry:first-child {
+  padding-top: 0;
+}
+
+.admin-activity-empty {
+  margin: 0;
+  padding: 0.85rem 0;
+  color: var(--route-muted);
+  font-size: 0.8rem;
+}
+
+.admin-modern-shell .admin-filter-bar {
+  align-items: center;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--route-line);
+  border-bottom: 1px solid var(--route-line);
+}
+
+.admin-modern-shell .admin-user-filters {
+  grid-template-columns: minmax(14rem, 1fr) minmax(11rem, 0.55fr) minmax(11rem, 0.55fr) auto;
+}
+
+.admin-modern-shell .field-input,
+.admin-modern-shell .field-select,
+.admin-modern-shell .field-textarea {
+  border-radius: 0.55rem;
+}
+
+.admin-modern-shell .list-surface {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.admin-modern-shell .list-row {
+  padding: 1.1rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--route-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-modern-shell .list-row:first-child {
+  border-top: 1px solid var(--route-line);
+}
+
+.admin-modern-shell .list-row:last-child {
+  border-bottom: 1px solid var(--route-line);
+}
+
+.admin-modern-shell .list-row:hover {
+  background: linear-gradient(90deg, rgba(var(--site-accent-rgb), 0.035), transparent 72%);
+}
+
+.admin-modern-shell .admin-data-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem 1.5rem;
+}
+
+.admin-modern-shell .admin-data-grid p {
+  font-size: 0.78rem;
+}
+
+.admin-row-actions {
+  position: relative;
+}
+
+.admin-row-actions > summary {
+  width: fit-content;
+  min-height: 2.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--route-line);
+  border-radius: 999px;
+  color: var(--ref-text);
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  list-style: none;
+}
+
+.admin-row-actions > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-row-actions > summary::after {
+  content: '+';
+  color: var(--ref-gold);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.admin-row-actions[open] > summary::after {
+  content: '−';
+}
+
+.admin-row-actions > summary:hover {
+  border-color: var(--route-line-gold);
+}
+
+.admin-modern-shell .admin-form-surface {
+  max-width: 52rem;
+  padding: 1rem 1.15rem;
+  border-left: 2px solid var(--route-line-gold);
+  background: linear-gradient(90deg, rgba(var(--site-accent-rgb), 0.055), transparent 85%);
+}
+
+.admin-modern-shell .admin-announcement-panel .admin-form-surface {
+  max-width: 46rem;
+}
+
+.admin-modern-shell .admin-store-preview {
+  border-radius: 0.65rem;
+}
+
+.admin-modern-shell .empty-state {
+  border: 1px dashed var(--route-line);
+  border-radius: 0.65rem;
+  background: transparent;
+}
+
+@media (max-width: 1200px) {
+  .admin-modern-hero {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .admin-modern-hero-metrics article:first-child {
+    border-left: 0;
+  }
+
+  .admin-modern-shell .admin-user-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1023px) {
+  .admin-modern-shell {
+    gap: 0;
+  }
+
+  .admin-modern-hero {
+    padding: 0.25rem 0 1rem;
+    border-radius: 0;
+  }
+
+  .admin-modern-hero-metrics article {
+    min-height: 5rem;
+    padding: 0.6rem 0.8rem;
+  }
+
+  .admin-modern-shell .admin-section-nav {
+    gap: 0;
+    margin-top: 0.35rem;
+  }
+
+  .admin-modern-shell .admin-section-tab {
+    min-width: auto;
+    min-height: 3.2rem;
+    padding-inline: 0.75rem;
+  }
+
+  .admin-current-section {
+    display: grid;
+    gap: 0.2rem;
+    padding-top: 1.25rem;
+  }
+
+  .admin-modern-shell .admin-content-panel {
+    padding: 1.1rem 0 !important;
+    border-radius: 0;
+  }
+
+  .admin-modern-shell .summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-modern-shell .summary-strip-item {
+    min-height: 5.7rem;
+    border-top: 1px solid var(--route-line);
+  }
+
+  .admin-modern-shell .summary-strip-item:nth-child(-n + 2) {
+    border-top: 0;
+  }
+
+  .admin-modern-shell .summary-strip-item:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .admin-modern-shell .admin-activity-column {
+    padding: 1rem 0;
+    border-left: 0;
+    border-top: 1px solid var(--route-line);
+  }
+
+  .admin-modern-shell .admin-activity-column:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .admin-modern-shell .admin-user-filters,
+  .admin-modern-shell form {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-modern-shell .list-row {
+    padding-inline: 0;
+  }
+
+  .admin-modern-shell .admin-data-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-modern-shell .admin-form-surface {
+    padding: 0.8rem 0 0.8rem 0.9rem;
+  }
+}
+
 .reviews-dashboard-shell {
   display: grid;
   gap: 1.15rem;
