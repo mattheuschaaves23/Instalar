@@ -648,6 +648,7 @@ exports.getOpportunities = async (req, res) => {
       normalizedCity,
       normalizedState,
       limit,
+      hasInstallerCoordinates,
     ];
     const filters = [];
 
@@ -664,9 +665,9 @@ exports.getOpportunities = async (req, res) => {
       }
     }
 
-    if (city && !hasInstallerCoordinates) {
-      filters.push("TRANSLATE(LOWER(COALESCE(sr.city, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = $4");
-    }
+    filters.push(
+      "($4 = '' OR $7::boolean = TRUE OR TRANSLATE(LOWER(COALESCE(sr.city, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = $4)"
+    );
 
     if (state) {
       filters.push("TRANSLATE(LOWER(COALESCE(sr.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = $5");
@@ -772,7 +773,8 @@ exports.getOpportunities = async (req, res) => {
         matched: opportunities.filter((item) => item.match_score >= 82).length,
       },
     });
-  } catch (_error) {
+  } catch (error) {
+    console.error('Falha ao carregar oportunidades:', error);
     return res.status(500).json({ error: 'Nao foi possivel carregar oportunidades.' });
   }
 };
