@@ -1854,7 +1854,10 @@ export default function Home() {
                     </span>
                     <strong>Pedido #{request.id} · {request.service_label || request.service}</strong>
                     <p>{[request.neighborhood, request.city, request.state].filter(Boolean).join(', ')}</p>
-                    <small>{formatClientRequestDate(request.created_at)} · {request.interests_count || 0} interessado(s)</small>
+                    <small>
+                      {formatClientRequestDate(request.created_at)} · {request.interests_count || 0}{' '}
+                      {Number(request.interests_count || 0) === 1 ? 'interessado' : 'interessados'}
+                    </small>
                   </div>
                   <div className="client-app-account-request-actions">
                     <button className="client-app-ghost-button" onClick={() => openAccountRequest(request)} type="button">

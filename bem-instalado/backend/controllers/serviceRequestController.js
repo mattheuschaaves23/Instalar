@@ -597,6 +597,7 @@ exports.claimServiceRequest = async (req, res) => {
     const interestsCount = Number(interestResult.rows[0]?.total || 0);
 
     if (interestsCount > 0) {
+      const interestLabel = interestsCount === 1 ? 'interessado' : 'interessados';
       await pool.query(
         `
           INSERT INTO notifications (user_id, title, message, type, read)
@@ -606,7 +607,7 @@ exports.claimServiceRequest = async (req, res) => {
             WHERE user_id = $1 AND title = 'Pedido vinculado' AND message = $2
           )
         `,
-        [req.userId, `Seu pedido #${requestId} tem ${interestsCount} interessado(s).`]
+        [req.userId, `Seu pedido #${requestId} tem ${interestsCount} ${interestLabel}.`]
       );
     }
 

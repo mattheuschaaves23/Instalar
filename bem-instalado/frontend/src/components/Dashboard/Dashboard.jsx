@@ -259,9 +259,7 @@ function formatReferenceDate(date) {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
-  })
-    .format(date)
-    .replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`);
+  }).format(date);
 }
 
 function startOfMonth(date) {
@@ -960,7 +958,7 @@ export default function Dashboard() {
               <PanelIcon type="agenda" size={17} />
               {formatReferenceDate(today)}
             </span>
-            <Link className="ref-panel-bell" to="/notifications">
+            <Link aria-label="Abrir notificações" className="ref-panel-bell" to="/notifications">
               <PanelIcon type="bell" size={18} />
               {notificationBadge ? <em>{notificationBadge}</em> : null}
             </Link>
@@ -980,9 +978,9 @@ export default function Dashboard() {
             <BrandWordmark className="ref-panel-mobile-wordmark" size="sm" />
           </div>
           <nav aria-label="Ações rápidas do painel">
-            <Link to="/dashboard"><PanelIcon type="search" size={18} /></Link>
-            <Link to="/notifications"><PanelIcon type="bell" size={18} />{notificationBadge ? <em>{notificationBadge}</em> : null}</Link>
-            <Link to="/profile" className="ref-panel-avatar">{initials}</Link>
+            <Link aria-label="Buscar no painel" to="/dashboard"><PanelIcon type="search" size={18} /></Link>
+            <Link aria-label="Abrir notificações" to="/notifications"><PanelIcon type="bell" size={18} />{notificationBadge ? <em>{notificationBadge}</em> : null}</Link>
+            <Link aria-label="Abrir perfil" to="/profile" className="ref-panel-avatar">{initials}</Link>
           </nav>
         </header>
 
