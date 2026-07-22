@@ -1140,7 +1140,8 @@ exports.updateClientServiceRequestStatus = async (req, res) => {
     }
 
     return res.json({ request: serializeClientRequest(result.rows[0]) });
-  } catch (_error) {
+  } catch (error) {
+    console.error('Falha ao atualizar status do pedido:', error);
     return res.status(500).json({ error: 'Nao foi possivel atualizar o pedido.' });
   }
 };
