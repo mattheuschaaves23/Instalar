@@ -15,7 +15,7 @@
     "seed:demo": "node scripts/seedDemoData.js",
     "seed:demo:clear": "node scripts/seedDemoData.js --clear",
     "test:papelperto": "node ../scripts/verifyPapelPertoIntegration.js",
-    "test": "node --test test/*.test.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js",
     "test:integration": "node --test test/marketplace.integration.test.js",
     "start": "npm run db:init && npm run db:migrate && node server.js",
     "build:web": "node -e \"const fs=require('fs');const path=require('path');fs.rmSync(path.resolve(process.cwd(),'..','frontend','build'),{recursive:true,force:true});\" && npm --prefix ../frontend install && npm --prefix ../frontend run build"
