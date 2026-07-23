@@ -58,6 +58,9 @@ Variáveis obrigatórias:
 - `FRONTEND_URL` e `APP_URL` com o domínio público;
 - `BLOB_READ_WRITE_TOKEN` para fotos e certificados;
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` e `SMTP_FROM` para recuperação de senha e aviso de novo interessado;
+- `ASAAS_ENVIRONMENT=production`, `ASAAS_API_KEY` e `ASAAS_WEBHOOK_TOKEN` para cobrança Pix automática;
+- na Asaas, cadastre o webhook `https://SEU_DOMINIO/api/subscriptions/webhooks/asaas` com o mesmo `ASAAS_WEBHOOK_TOKEN` e os eventos de pagamento;
+- mantenha `SUBSCRIPTION_LAUNCH_ACCESS=false` em produção para exigir uma assinatura ativa;
 - credenciais Google ou Apple somente quando o respectivo login social estiver habilitado.
 
 Depois do primeiro `npm run db:init`, toda alteração estrutural deve entrar em `backend/db/migrations`. Para promover uma conta já criada a administrador, use explicitamente:

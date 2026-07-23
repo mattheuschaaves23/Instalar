@@ -6,6 +6,7 @@
   account_type VARCHAR(20) NOT NULL DEFAULT 'installer',
   auth_provider VARCHAR(40),
   auth_provider_id VARCHAR(180),
+  asaas_customer_id VARCHAR(80),
   email_verified_at TIMESTAMP,
   last_login_at TIMESTAMP,
   phone VARCHAR(30),
@@ -491,6 +492,10 @@ ALTER TABLE environments ADD COLUMN IF NOT EXISTS removal_total NUMERIC(10, 2) D
 CREATE UNIQUE INDEX IF NOT EXISTS payments_provider_payment_id_idx
   ON payments (provider_payment_id)
   WHERE provider_payment_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_asaas_customer_id_idx
+  ON users (asaas_customer_id)
+  WHERE asaas_customer_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS installer_reviews_installer_id_idx
   ON installer_reviews (installer_id, created_at DESC);

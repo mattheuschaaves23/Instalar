@@ -3,12 +3,15 @@ const assert = require('node:assert/strict');
 
 const { isLaunchAccessEnabled } = require('../utils/subscriptionAccess');
 
-test('acesso de lançamento fica ativo por padrão fora de testes', () => {
+test('produção exige configuração explícita para liberar acesso de lançamento', () => {
   const previousNodeEnv = process.env.NODE_ENV;
   const previousLaunchAccess = process.env.SUBSCRIPTION_LAUNCH_ACCESS;
 
   process.env.NODE_ENV = 'production';
   delete process.env.SUBSCRIPTION_LAUNCH_ACCESS;
+  assert.equal(isLaunchAccessEnabled(), false);
+
+  process.env.SUBSCRIPTION_LAUNCH_ACCESS = 'true';
   assert.equal(isLaunchAccessEnabled(), true);
 
   process.env.SUBSCRIPTION_LAUNCH_ACCESS = 'false';

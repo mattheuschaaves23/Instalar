@@ -5,7 +5,7 @@ function isLaunchAccessEnabled() {
     return ['1', 'true', 'yes', 'on'].includes(configured);
   }
 
-  return process.env.NODE_ENV !== 'test';
+  return process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test';
 }
 
 module.exports = {

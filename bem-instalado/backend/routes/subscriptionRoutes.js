@@ -12,6 +12,7 @@ const paymentCreationLimiter = createRateLimiter({
   message: 'Muitas tentativas de gerar pagamento. Aguarde alguns minutos.',
 });
 
+router.post('/webhooks/asaas', controller.handleAsaasWebhook);
 router.use(auth);
 router.use(requireAccountType('installer'));
 router.get('/', controller.getSubscription);

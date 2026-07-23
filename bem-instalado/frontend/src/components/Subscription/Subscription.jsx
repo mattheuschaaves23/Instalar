@@ -82,7 +82,7 @@ export default function Subscription() {
 
     const interval = window.setInterval(() => {
       syncPaymentStatus(payment.payment.external_id, true);
-    }, 8000);
+    }, 20000);
 
     return () => window.clearInterval(interval);
   }, [payment?.automaticConfirmation, payment?.payment?.external_id, payment?.payment?.status, syncPaymentStatus]);
@@ -242,7 +242,9 @@ export default function Subscription() {
             <section className="lux-panel fade-up min-w-0 p-6" style={{ animationDelay: '0.08s' }}>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="eyebrow">Pagamento manual</p>
+                  <p className="eyebrow">
+                    {payment?.automaticConfirmation ? 'Pagamento Pix' : 'Pagamento manual'}
+                  </p>
                   <h2 className="mt-3 text-2xl font-semibold text-[var(--text)]">Compra em aberto</h2>
                 </div>
                 <span className="status-pill" data-tone={payment?.payment?.status}>
@@ -303,7 +305,7 @@ export default function Subscription() {
                 </button>
                 {payment.ticketUrl ? (
                   <a className="ghost-button w-full sm:w-auto" href={payment.ticketUrl} rel="noreferrer" target="_blank">
-                    Abrir comprovante
+                    Abrir cobrança
                   </a>
                 ) : null}
                 <button className="ghost-button w-full sm:w-auto" onClick={handleCheck} type="button">
@@ -313,8 +315,9 @@ export default function Subscription() {
 
               <div className="subscription-inline-note mt-5">
                 <p className="text-sm leading-7 text-[var(--muted)]">
-                  Enquanto o novo método de pagamento não estiver configurado, o acesso premium permanece bloqueado
-                  para assinaturas inativas.
+                  {payment?.automaticConfirmation
+                    ? 'A confirmação é automática. Depois de pagar, esta tela atualizará o acesso em poucos segundos.'
+                    : 'A confirmação manual está disponível somente no ambiente de desenvolvimento.'}
                 </p>
               </div>
             </section>

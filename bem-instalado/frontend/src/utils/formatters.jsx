@@ -80,6 +80,7 @@ export function formatStatusLabel(status) {
     active: 'Ativa',
     inactive: 'Inativa',
     paid: 'Pago',
+    refunded: 'Estornado',
     failed: 'Falhou',
     success: 'Sucesso',
     warning: 'Aviso',
