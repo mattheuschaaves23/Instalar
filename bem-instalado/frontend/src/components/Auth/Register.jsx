@@ -23,7 +23,7 @@ const highlights = [
   },
 ];
 
-const PLAN_PRICE = Number(process.env.REACT_APP_SUBSCRIPTION_PRICE || 40);
+const PLAN_PRICE = Number(process.env.REACT_APP_SUBSCRIPTION_PRICE || 49.9);
 const planBenefits = [
   'Dashboard com números do mês e evolução da operação.',
   'Agenda visual por dia para não perder instalação.',
