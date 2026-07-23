@@ -122,6 +122,13 @@ test('Asaas cria Pix, ativa assinatura e reverte acesso após estorno', { skip: 
       'UPDATE users SET document_id = $2 WHERE id = $1',
       [installerId, '24971563792']
     );
+    const trialSubscription = await pool.query(
+      'SELECT plan, status, expires_at FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+      [installerId]
+    );
+    assert.equal(trialSubscription.rows[0].plan, 'trial');
+    assert.equal(trialSubscription.rows[0].status, 'active');
+    assert.ok(trialSubscription.rows[0].expires_at);
 
     const payment = await requestJson(realFetch, baseUrl, '/api/subscriptions/pay', {
       method: 'POST',
@@ -147,9 +154,10 @@ test('Asaas cria Pix, ativa assinatura e reverte acesso após estorno', { skip: 
     assert.equal(paidWebhook.body.matched, true);
 
     const activeSubscription = await pool.query(
-      'SELECT status, expires_at FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+      'SELECT plan, status, expires_at FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
       [installerId]
     );
+    assert.equal(activeSubscription.rows[0].plan, 'monthly');
     assert.equal(activeSubscription.rows[0].status, 'active');
     assert.ok(activeSubscription.rows[0].expires_at);
 
@@ -168,10 +176,15 @@ test('Asaas cria Pix, ativa assinatura e reverte acesso após estorno', { skip: 
     assert.equal(refundedWebhook.body.matched, true);
 
     const reversedSubscription = await pool.query(
-      'SELECT status, expires_at FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+      'SELECT plan, status, expires_at FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
       [installerId]
     );
-    assert.equal(reversedSubscription.rows[0].status, 'inactive');
+    assert.equal(reversedSubscription.rows[0].plan, 'trial');
+    assert.equal(reversedSubscription.rows[0].status, 'active');
+    assert.equal(
+      new Date(reversedSubscription.rows[0].expires_at).getTime(),
+      new Date(trialSubscription.rows[0].expires_at).getTime()
+    );
 
     const duplicateWebhook = await requestJson(realFetch, baseUrl, '/api/subscriptions/webhooks/asaas', {
       method: 'POST',

@@ -4,6 +4,12 @@ const { generatePix, getPixConfig } = require('../utils/pix');
 const { logAudit } = require('../utils/auditLog');
 const { isLaunchAccessEnabled } = require('../utils/subscriptionAccess');
 const {
+  getSubscriptionTrialDays,
+  getTrialDaysRemaining,
+  isActiveTrial,
+  isTrialSubscription,
+} = require('../utils/subscriptionTrial');
+const {
   createPixPayment,
   findOrCreateCustomer,
   findPaymentByExternalId,
@@ -17,7 +23,7 @@ const {
   resolvePaymentStatusTransition,
 } = require('../utils/paymentState');
 
-const SUBSCRIPTION_AMOUNT = Number(process.env.SUBSCRIPTION_PRICE || 40);
+const SUBSCRIPTION_AMOUNT = Number(process.env.SUBSCRIPTION_PRICE || 49.9);
 
 function getPlanBenefits() {
   return [
@@ -126,14 +132,15 @@ async function getLatestSubscription(userId, db = pool) {
 async function ensureSubscription(userId, db = pool) {
   const existing = await getLatestSubscription(userId, db);
   if (existing) return existing;
+  const trialDays = getSubscriptionTrialDays();
 
   const created = await db.query(
     `
-      INSERT INTO subscriptions (user_id, plan, status)
-      VALUES ($1, 'monthly', 'inactive')
+      INSERT INTO subscriptions (user_id, plan, status, expires_at)
+      VALUES ($1, 'trial', 'active', NOW() + ($2::int * INTERVAL '1 day'))
       RETURNING *
     `,
-    [userId]
+    [userId, trialDays]
   );
 
   return created.rows[0];
@@ -261,6 +268,7 @@ async function activateSubscription(paymentId, req, paymentData = null) {
       `
         UPDATE subscriptions
         SET
+          plan = 'monthly',
           status = 'active',
           expires_at = GREATEST(COALESCE(expires_at, NOW()), NOW()) + INTERVAL '1 month',
           updated_at = NOW()
@@ -345,24 +353,43 @@ async function applyPaymentReversal(localPayment, providerPayment, req, nextStat
     );
 
     if (lockedPayment.status === 'paid' && lockedPayment.subscription_id) {
-      await db.query(
-        `
-          UPDATE subscriptions
-          SET
-            expires_at = CASE
-              WHEN expires_at IS NULL THEN NOW()
-              ELSE GREATEST(NOW(), expires_at - INTERVAL '1 month')
-            END,
-            status = CASE
-              WHEN expires_at IS NULL OR expires_at - INTERVAL '1 month' <= NOW()
-                THEN 'inactive'
-              ELSE 'active'
-            END,
-            updated_at = NOW()
-          WHERE id = $1
-        `,
-        [lockedPayment.subscription_id]
-      );
+      const originalPlan = String(payload.subscriptionPlan || '').trim();
+      const originalStatus = String(payload.subscriptionStatus || '').trim();
+      const originalExpiresAt = payload.subscriptionExpiresAt || null;
+
+      if (originalPlan && originalStatus) {
+        await db.query(
+          `
+            UPDATE subscriptions
+            SET
+              plan = $2,
+              status = $3,
+              expires_at = $4,
+              updated_at = NOW()
+            WHERE id = $1
+          `,
+          [lockedPayment.subscription_id, originalPlan, originalStatus, originalExpiresAt]
+        );
+      } else {
+        await db.query(
+          `
+            UPDATE subscriptions
+            SET
+              expires_at = CASE
+                WHEN expires_at IS NULL THEN NOW()
+                ELSE GREATEST(NOW(), expires_at - INTERVAL '1 month')
+              END,
+              status = CASE
+                WHEN expires_at IS NULL OR expires_at - INTERVAL '1 month' <= NOW()
+                  THEN 'inactive'
+                ELSE 'active'
+              END,
+              updated_at = NOW()
+            WHERE id = $1
+          `,
+          [lockedPayment.subscription_id]
+        );
+      }
       await db.query(
         `
           INSERT INTO notifications (user_id, title, message, type, read)
@@ -461,7 +488,8 @@ exports.getSubscription = async (req, res) => {
     const accessState = getSubscriptionAccessState(subscription);
     const launchAccess = isLaunchAccessEnabled();
     const adminAccess = Boolean(req.user?.is_admin);
-    const complimentaryAccess = launchAccess || adminAccess;
+    const trialAccess = isActiveTrial(subscription);
+    const complimentaryAccess = launchAccess || adminAccess || trialAccess;
     const paymentMode = getPaymentMode(complimentaryAccess);
 
     return res.json({
@@ -471,9 +499,17 @@ exports.getSubscription = async (req, res) => {
       requires_payment: accessState.requiresPayment && !complimentaryAccess,
       access_mode: adminAccess
         ? 'admin'
-        : launchAccess && !accessState.canUseApp
-          ? 'launch'
-          : 'subscription',
+        : trialAccess
+          ? 'trial'
+          : launchAccess && !accessState.canUseApp
+            ? 'launch'
+            : 'subscription',
+      trial: {
+        active: trialAccess,
+        days_total: getSubscriptionTrialDays(),
+        days_remaining: getTrialDaysRemaining(subscription),
+        ends_at: isTrialSubscription(subscription) ? subscription.expires_at : null,
+      },
       pricing: {
         amount: SUBSCRIPTION_AMOUNT,
         currency: 'BRL',
@@ -487,13 +523,15 @@ exports.getSubscription = async (req, res) => {
         : null,
       payment_notice: adminAccess
         ? 'Acesso administrativo liberado sem cobrança.'
-        : launchAccess
-          ? 'Acesso de lançamento liberado sem cobrança.'
-          : paymentMode === 'asaas'
-            ? 'Pagamento Pix processado com segurança pela Asaas e confirmado automaticamente.'
-            : paymentMode === 'manual'
-              ? 'Pagamento manual habilitado apenas para desenvolvimento.'
-              : 'Pagamento indisponível até a configuração das credenciais da Asaas.',
+        : trialAccess
+          ? `Teste grátis ativo por mais ${getTrialDaysRemaining(subscription)} dia(s). Nenhuma cobrança será feita durante esse período.`
+          : launchAccess
+            ? 'Acesso de lançamento liberado sem cobrança.'
+            : paymentMode === 'asaas'
+              ? 'Pagamento Pix processado com segurança pela Asaas e confirmado automaticamente.'
+              : paymentMode === 'manual'
+                ? 'Pagamento manual habilitado apenas para desenvolvimento.'
+                : 'Pagamento indisponível até a configuração das credenciais da Asaas.',
       pending_payment: pendingPayment ? serializeStoredPayment(pendingPayment) : null,
     });
   } catch (_error) {
@@ -524,6 +562,9 @@ async function createManualPayment(req, subscription, db) {
         description: manualPix.description,
         recipientName: manualPix.recipientName,
         city: manualPix.city,
+        subscriptionPlan: subscription.plan,
+        subscriptionStatus: subscription.status,
+        subscriptionExpiresAt: subscription.expires_at,
       }),
     ]
   );
@@ -574,7 +615,13 @@ exports.createPayment = async (req, res) => {
           subscription.id,
           SUBSCRIPTION_AMOUNT,
           externalId,
-          JSON.stringify({ providerStatus: 'creating', idempotencyKey: externalId }),
+          JSON.stringify({
+            providerStatus: 'creating',
+            idempotencyKey: externalId,
+            subscriptionPlan: subscription.plan,
+            subscriptionStatus: subscription.status,
+            subscriptionExpiresAt: subscription.expires_at,
+          }),
         ]
       );
       localPayment = paymentResult.rows[0];

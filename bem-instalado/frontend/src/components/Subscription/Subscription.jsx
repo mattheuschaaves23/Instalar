@@ -13,7 +13,7 @@ import {
 } from '../../utils/formatters';
 
 const defaultPricing = {
-  amount: Number(process.env.REACT_APP_SUBSCRIPTION_PRICE || 40),
+  amount: Number(process.env.REACT_APP_SUBSCRIPTION_PRICE || 49.9),
   currency: 'BRL',
   period: 'mês',
   label: 'Plano instalador',
@@ -147,7 +147,10 @@ export default function Subscription() {
   const isPaymentDisabled = subscription?.payment_mode === 'disabled';
   const isAdminAccess = subscription?.access_mode === 'admin';
   const isLaunchAccess = subscription?.access_mode === 'launch';
-  const hasComplimentaryAccess = isAdminAccess || isLaunchAccess;
+  const isTrialAccess = subscription?.access_mode === 'trial';
+  const isTrialPlan = subscription?.plan === 'trial';
+  const isExpiredTrial = isTrialPlan && subscription?.is_expired;
+  const hasComplimentaryAccess = isAdminAccess || isLaunchAccess || isTrialAccess;
   const currentPaymentIsPending = payment?.payment?.status === 'pending';
   const showRecipient = Boolean(payment?.recipientName || payment?.city);
   const pricing = subscription?.pricing || defaultPricing;
@@ -162,18 +165,34 @@ export default function Subscription() {
         description={hasComplimentaryAccess
           ? isAdminAccess
             ? 'Sua conta administrativa possui acesso completo às ferramentas da plataforma.'
-            : 'Durante o lançamento, todas as ferramentas estão liberadas sem cobrança.'
-          : 'Consulte aqui o status do seu plano e dos pagamentos.'}
+            : isTrialAccess
+              ? `Aproveite todas as ferramentas grátis até ${formatShortDate(subscription?.trial?.ends_at)}.`
+              : 'Durante o lançamento, todas as ferramentas estão liberadas sem cobrança.'
+          : isExpiredTrial
+            ? 'Seu teste grátis terminou. Gere o Pix mensal para continuar usando todas as ferramentas.'
+            : 'Consulte aqui o status do seu plano e dos pagamentos.'}
         eyebrow="Assinatura"
         stats={[
           {
             label: 'Plano',
-            value: subscription?.plan ? subscription.plan.toUpperCase() : 'MENSAL',
-            detail: hasComplimentaryAccess ? 'Acesso sem cobrança.' : `${formatCurrency(pricing.amount)} por ${pricing.period}.`,
+            value: isTrialPlan ? 'TESTE GRÁTIS' : subscription?.plan ? subscription.plan.toUpperCase() : 'MENSAL',
+            detail: isTrialPlan
+              ? `${subscription?.trial?.days_total || 7} dias sem cobrança.`
+              : hasComplimentaryAccess
+                ? 'Acesso sem cobrança.'
+                : `${formatCurrency(pricing.amount)} por ${pricing.period}.`,
           },
           {
             label: 'Status',
-            value: isAdminAccess ? 'ADMINISTRATIVO' : isLaunchAccess ? 'LANÇAMENTO' : formatStatusLabel(subscription?.status),
+            value: isAdminAccess
+              ? 'ADMINISTRATIVO'
+              : isTrialAccess
+                ? 'TESTE GRÁTIS'
+                : isExpiredTrial
+                  ? 'ENCERRADO'
+                  : isLaunchAccess
+                    ? 'LANÇAMENTO'
+                    : formatStatusLabel(subscription?.status),
             detail: subscription?.expires_at
               ? `Expira em ${formatShortDate(subscription.expires_at)}`
               : 'Ainda sem data de expiração registrada.',
@@ -182,15 +201,23 @@ export default function Subscription() {
             label: 'Acesso',
             value: canUseApp ? 'LIBERADO' : 'BLOQUEADO',
             detail: canUseApp
-              ? hasComplimentaryAccess ? 'Ferramentas liberadas sem cobrança.' : 'Ferramentas premium liberadas.'
+              ? isTrialAccess
+                ? 'Todas as ferramentas liberadas durante o teste.'
+                : hasComplimentaryAccess
+                  ? 'Ferramentas liberadas sem cobrança.'
+                  : 'Ferramentas premium liberadas.'
               : 'Os módulos do painel ficam bloqueados até a assinatura ser ativada.',
           },
         ]}
         title={isAdminAccess
           ? 'Seu acesso administrativo está liberado.'
-          : isLaunchAccess
-            ? 'Seu acesso de lançamento está liberado.'
-            : 'Gerencie seu plano de instalador.'}
+          : isTrialAccess
+            ? 'Seu teste grátis está ativo.'
+            : isExpiredTrial
+              ? 'Seu teste grátis terminou.'
+              : isLaunchAccess
+                ? 'Seu acesso de lançamento está liberado.'
+                : 'Gerencie seu plano de instalador.'}
       />
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -199,17 +226,23 @@ export default function Subscription() {
             <div className="min-w-0">
               <p className="eyebrow">Estado da assinatura</p>
               <h2 className="mt-3 text-2xl font-semibold text-[var(--text)]">
-                {hasComplimentaryAccess ? 'Acesso liberado' : 'Controle de acesso premium'}
+                {isTrialAccess
+                  ? 'Teste grátis em andamento'
+                  : hasComplimentaryAccess
+                    ? 'Acesso liberado'
+                    : 'Controle de acesso premium'}
               </h2>
             </div>
-            <span className="status-pill" data-tone={subscription?.status}>
-              {formatStatusLabel(subscription?.status)}
+            <span className="status-pill" data-tone={isExpiredTrial ? 'inactive' : subscription?.status}>
+              {isExpiredTrial ? 'Encerrado' : isTrialAccess ? 'Teste grátis' : formatStatusLabel(subscription?.status)}
             </span>
           </div>
 
           <p className="mt-5 text-sm leading-7 text-[var(--muted)]">
             {hasComplimentaryAccess
-              ? 'Você já pode usar oportunidades, agenda, clientes e orçamentos. Nenhum pagamento é necessário para este acesso.'
+              ? isTrialAccess
+                ? `Você tem ${subscription?.trial?.days_remaining || 1} dia(s) de teste restante(s). Nenhuma cobrança será feita durante esse período.`
+                : 'Você já pode usar oportunidades, agenda, clientes e orçamentos. Nenhum pagamento é necessário para este acesso.'
               : 'Acompanhe aqui a ativação e a validade da sua assinatura.'}
           </p>
 

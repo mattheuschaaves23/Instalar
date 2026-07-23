@@ -76,7 +76,7 @@ export default function Register() {
         account_type: 'installer',
       });
 
-      toast.success('Conta criada. Agora finalize a assinatura para liberar o painel completo.');
+      toast.success('Conta criada. Seu teste grátis de 7 dias já começou.');
       navigate('/subscription');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível criar a conta.');
@@ -152,7 +152,10 @@ export default function Register() {
 
         <section className="rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-4">
           <p className="field-label">Plano do instalador</p>
-          <p className="mt-1 text-lg font-semibold text-[var(--gold-strong)]">R$ {PLAN_PRICE.toFixed(2)}/mês</p>
+          <p className="mt-1 text-lg font-semibold text-[var(--gold-strong)]">7 dias grátis</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            Depois do teste, você decide se quer assinar por R$ {PLAN_PRICE.toFixed(2)}/mês.
+          </p>
           <div className="mt-3 grid gap-2">
             {planBenefits.map((benefit) => (
               <p className="text-sm text-[var(--muted)]" key={benefit}>

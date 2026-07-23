@@ -141,8 +141,8 @@ const installerBenefits = [
   },
   {
     icon: 'chart',
-    title: 'Acesso de lançamento',
-    copy: 'Use as ferramentas sem cobrança nesta fase',
+    title: 'Teste grátis por 7 dias',
+    copy: 'Conheça todas as ferramentas antes de assinar',
   },
 ];
 
