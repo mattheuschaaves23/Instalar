@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import PageIntro from '../Layout/PageIntro';
 import { useAuth } from '../../contexts/AuthContext';
@@ -30,6 +31,9 @@ export default function Subscription() {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState(null);
   const [payment, setPayment] = useState(null);
+  const [isPaying, setIsPaying] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [paymentNeedsProfile, setPaymentNeedsProfile] = useState(false);
 
   const loadSubscription = useCallback(async () => {
     try {
@@ -94,16 +98,31 @@ export default function Subscription() {
     }
 
     try {
+      setIsPaying(true);
       const response = await api.post('/subscriptions/pay');
       setPayment(response.data);
+      setPaymentNeedsProfile(false);
       toast.success('Pagamento gerado. O acesso será liberado assim que for confirmado.');
     } catch (error) {
+      const code = error.response?.data?.code;
+      setPaymentNeedsProfile([
+        'PAYMENT_CUSTOMER_REQUIRED',
+        'PAYMENT_CUSTOMER_NAME_REQUIRED',
+        'PAYMENT_CUSTOMER_DOCUMENT_REQUIRED',
+      ].includes(code));
       toast.error(error.response?.data?.error || 'Não foi possível gerar o pagamento.');
+    } finally {
+      setIsPaying(false);
     }
   };
 
   const handleCheck = async () => {
-    await syncPaymentStatus(payment?.payment?.external_id);
+    try {
+      setIsChecking(true);
+      await syncPaymentStatus(payment?.payment?.external_id);
+    } finally {
+      setIsChecking(false);
+    }
   };
 
   const handleCopy = async (value, message) => {
@@ -129,6 +148,7 @@ export default function Subscription() {
   const isAdminAccess = subscription?.access_mode === 'admin';
   const isLaunchAccess = subscription?.access_mode === 'launch';
   const hasComplimentaryAccess = isAdminAccess || isLaunchAccess;
+  const currentPaymentIsPending = payment?.payment?.status === 'pending';
   const showRecipient = Boolean(payment?.recipientName || payment?.city);
   const pricing = subscription?.pricing || defaultPricing;
   const apiBenefits = Array.isArray(subscription?.plan_benefits) ? subscription.plan_benefits : [];
@@ -210,16 +230,34 @@ export default function Subscription() {
           {!hasComplimentaryAccess ? <div className="mt-6 flex flex-wrap gap-3">
             <button
               className="gold-button w-full sm:w-auto"
-              disabled={isPaymentDisabled}
+              disabled={isPaymentDisabled || isPaying}
               onClick={handlePay}
               type="button"
             >
-              {isPaymentDisabled ? 'Pagamento indisponível' : payment ? 'Abrir pagamento atual' : 'Gerar pagamento mensal'}
+              {isPaymentDisabled
+                ? 'Pagamento indisponível'
+                : isPaying
+                  ? 'Gerando Pix...'
+                  : currentPaymentIsPending
+                    ? 'Reabrir pagamento atual'
+                    : payment
+                      ? 'Gerar novo pagamento'
+                      : 'Gerar pagamento mensal'}
             </button>
             {payment ? (
-              <button className="ghost-button w-full sm:w-auto" onClick={handleCheck} type="button">
-                Verificar pagamento
+              <button
+                className="ghost-button w-full sm:w-auto"
+                disabled={isChecking || !payment?.payment?.external_id}
+                onClick={handleCheck}
+                type="button"
+              >
+                {isChecking ? 'Verificando...' : 'Verificar pagamento'}
               </button>
+            ) : null}
+            {paymentNeedsProfile ? (
+              <Link className="ghost-button w-full sm:w-auto" to="/profile">
+                Completar perfil para pagar
+              </Link>
             ) : null}
           </div> : null}
 
@@ -289,34 +327,45 @@ export default function Subscription() {
                   </div>
                 ) : null}
 
+                {payment.copyPaste ? (
                   <div className="subscription-info-row !items-start !justify-between gap-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--gold-strong)]">Código copia e cola</p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-[var(--gold-strong)]">Código copia e cola</p>
                     <p className="break-all text-right text-[var(--text)]">{payment.copyPaste}</p>
-                </div>
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  className="gold-button w-full sm:w-auto"
-                  onClick={() => handleCopy(payment.copyPaste, 'Código PIX copiado.')}
-                  type="button"
-                >
-                  Copiar código
-                </button>
+                {payment.copyPaste ? (
+                  <button
+                    className="gold-button w-full sm:w-auto"
+                    onClick={() => handleCopy(payment.copyPaste, 'Código PIX copiado.')}
+                    type="button"
+                  >
+                    Copiar código
+                  </button>
+                ) : null}
                 {payment.ticketUrl ? (
                   <a className="ghost-button w-full sm:w-auto" href={payment.ticketUrl} rel="noreferrer" target="_blank">
                     Abrir cobrança
                   </a>
                 ) : null}
-                <button className="ghost-button w-full sm:w-auto" onClick={handleCheck} type="button">
-                  Atualizar status
+                <button
+                  className="ghost-button w-full sm:w-auto"
+                  disabled={isChecking || !payment?.payment?.external_id}
+                  onClick={handleCheck}
+                  type="button"
+                >
+                  {isChecking ? 'Atualizando...' : 'Atualizar status'}
                 </button>
               </div>
 
               <div className="subscription-inline-note mt-5">
                 <p className="text-sm leading-7 text-[var(--muted)]">
                   {payment?.automaticConfirmation
-                    ? 'A confirmação é automática. Depois de pagar, esta tela atualizará o acesso em poucos segundos.'
+                    ? payment.copyPaste || payment.qrCodeImage
+                      ? 'A confirmação é automática. Depois de pagar, esta tela atualizará o acesso em poucos segundos.'
+                      : 'O QR Code está sendo atualizado. Você pode abrir a cobrança segura da Asaas enquanto isso.'
                     : 'A confirmação manual está disponível somente no ambiente de desenvolvimento.'}
                 </p>
               </div>

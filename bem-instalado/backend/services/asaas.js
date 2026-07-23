@@ -53,7 +53,17 @@ function normalizePaymentStatus(status) {
   ) {
     return 'pending';
   }
-  if (['REFUNDED', 'REFUND_REQUESTED', 'REFUND_IN_PROGRESS', 'CHARGEBACK_REQUESTED', 'CHARGEBACK_DISPUTE'].includes(value)) {
+  if (
+    [
+      'REFUNDED',
+      'PARTIALLY_REFUNDED',
+      'REFUND_REQUESTED',
+      'REFUND_IN_PROGRESS',
+      'CHARGEBACK_REQUESTED',
+      'CHARGEBACK_DISPUTE',
+      'AWAITING_CHARGEBACK_REVERSAL',
+    ].includes(value)
+  ) {
     return 'refunded';
   }
   if (['DELETED', 'CANCELED', 'CANCELLED'].includes(value)) return 'canceled';
@@ -134,7 +144,20 @@ async function asaasRequest(
     options.body = JSON.stringify(body);
   }
 
-  const response = await fetchImpl(`${String(apiBaseUrl).replace(/\/+$/, '')}${path}`, options);
+  let response;
+  try {
+    response = await fetchImpl(`${String(apiBaseUrl).replace(/\/+$/, '')}${path}`, options);
+  } catch (cause) {
+    const isTimeout = cause?.name === 'AbortError' || cause?.name === 'TimeoutError';
+    const error = new Error(
+      isTimeout
+        ? 'A Asaas demorou para responder.'
+        : 'Não foi possível conectar à Asaas.'
+    );
+    error.code = isTimeout ? 'ASAAS_TIMEOUT' : 'ASAAS_NETWORK_ERROR';
+    error.cause = cause;
+    throw error;
+  }
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -142,6 +165,19 @@ async function asaasRequest(
   }
 
   return payload;
+}
+
+async function getPixQrCode(providerPaymentId, options = {}) {
+  const id = encodeURIComponent(String(providerPaymentId || '').trim());
+  if (!id) return {};
+
+  try {
+    return await asaasRequest(`/payments/${id}/pixQrCode`, options);
+  } catch (_error) {
+    // A cobrança continua válida pela fatura hospedada mesmo se o QR Code
+    // estiver temporariamente indisponível.
+    return {};
+  }
 }
 
 function validateCustomerData({ userId, name, cpfCnpj }) {
@@ -264,7 +300,7 @@ async function createPixPayment({
     throw error;
   }
 
-  const pixQrCode = await asaasRequest(`/payments/${paymentId}/pixQrCode`, requestOptions);
+  const pixQrCode = await getPixQrCode(paymentId, requestOptions);
   return parsePixPayment(payment, pixQrCode);
 }
 
@@ -277,7 +313,27 @@ async function getPixPayment(providerPaymentId, options = {}) {
   }
 
   const payment = await asaasRequest(`/payments/${id}`, options);
-  return parsePixPayment(payment);
+  const pixQrCode = options.includePixQrCode
+    ? await getPixQrCode(id, options)
+    : {};
+  return parsePixPayment(payment, pixQrCode);
+}
+
+async function findPaymentByExternalId(externalId, options = {}) {
+  const reference = String(externalId || '').trim();
+  if (!reference) return null;
+
+  const query = new URLSearchParams({
+    externalReference: reference,
+    limit: '10',
+  });
+  const result = await asaasRequest(`/payments?${query.toString()}`, options);
+  const payment = Array.isArray(result?.data)
+    ? result.data.find((item) => String(item?.externalReference || '') === reference)
+    : null;
+
+  if (!payment?.id) return null;
+  return getPixPayment(payment.id, { ...options, includePixQrCode: true });
 }
 
 function validateWebhookToken(providedToken, expectedToken = getAsaasConfig().webhookToken) {
@@ -291,6 +347,7 @@ module.exports = {
   asaasRequest,
   createPixPayment,
   findOrCreateCustomer,
+  findPaymentByExternalId,
   getAsaasConfig,
   getPixPayment,
   isAsaasConfigured,

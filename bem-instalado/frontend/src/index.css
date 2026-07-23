@@ -447,6 +447,7 @@ textarea {
 
 .status-pill[data-tone='rejected'],
 .status-pill[data-tone='canceled'],
+.status-pill[data-tone='refunded'],
 .status-pill[data-tone='failed'],
 .status-pill[data-tone='inactive'] {
   color: #ffc5c5;

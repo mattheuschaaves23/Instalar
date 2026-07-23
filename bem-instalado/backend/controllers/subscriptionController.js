@@ -6,11 +6,16 @@ const { isLaunchAccessEnabled } = require('../utils/subscriptionAccess');
 const {
   createPixPayment,
   findOrCreateCustomer,
+  findPaymentByExternalId,
   getPixPayment,
   isAsaasConfigured,
   isAsaasWebhookConfigured,
   validateWebhookToken,
 } = require('../services/asaas');
+const {
+  isReversalStatus,
+  resolvePaymentStatusTransition,
+} = require('../utils/paymentState');
 
 const SUBSCRIPTION_AMOUNT = Number(process.env.SUBSCRIPTION_PRICE || 40);
 
@@ -198,8 +203,32 @@ async function activateSubscription(paymentId, req, paymentData = null) {
     }
 
     if (payment.status === 'paid') {
+      if (paymentData) {
+        const payload = providerPayload(paymentData, getProviderPayload(payment));
+        const refreshedPayment = await db.query(
+          `
+            UPDATE payments
+            SET
+              provider_payment_id = COALESCE($2, provider_payment_id),
+              pix_qr_code = COALESCE($3, pix_qr_code),
+              pix_copy_paste = COALESCE($4, pix_copy_paste),
+              provider_payload = $5::jsonb,
+              updated_at = NOW()
+            WHERE id = $1
+            RETURNING *
+          `,
+          [
+            payment.id,
+            paymentData.providerPaymentId || null,
+            paymentData.qrCodeImage || null,
+            paymentData.copyPaste || null,
+            JSON.stringify(payload),
+          ]
+        );
+        updatedPayment = refreshedPayment.rows[0];
+      }
       await db.query('COMMIT');
-      return payment;
+      return updatedPayment || payment;
     }
 
     const payload = paymentData
@@ -273,11 +302,118 @@ async function activateSubscription(paymentId, req, paymentData = null) {
   }
 }
 
+async function applyPaymentReversal(localPayment, providerPayment, req, nextStatus) {
+  const db = await pool.connect();
+  let reversedSubscription = false;
+
+  try {
+    await db.query('BEGIN');
+    const lockedPaymentResult = await db.query(
+      'SELECT * FROM payments WHERE id = $1 FOR UPDATE',
+      [localPayment.id]
+    );
+    const lockedPayment = lockedPaymentResult.rows[0];
+
+    if (!lockedPayment) {
+      const error = new Error('Pagamento local não encontrado.');
+      error.code = 'PAYMENT_NOT_FOUND';
+      throw error;
+    }
+
+    const payload = providerPayload(providerPayment, getProviderPayload(lockedPayment));
+    const updatedPaymentResult = await db.query(
+      `
+        UPDATE payments
+        SET
+          status = $2,
+          provider_payment_id = COALESCE($3, provider_payment_id),
+          pix_qr_code = COALESCE($4, pix_qr_code),
+          pix_copy_paste = COALESCE($5, pix_copy_paste),
+          provider_payload = $6::jsonb,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING *
+      `,
+      [
+        lockedPayment.id,
+        nextStatus,
+        providerPayment.providerPaymentId || null,
+        providerPayment.qrCodeImage || null,
+        providerPayment.copyPaste || null,
+        JSON.stringify(payload),
+      ]
+    );
+
+    if (lockedPayment.status === 'paid' && lockedPayment.subscription_id) {
+      await db.query(
+        `
+          UPDATE subscriptions
+          SET
+            expires_at = CASE
+              WHEN expires_at IS NULL THEN NOW()
+              ELSE GREATEST(NOW(), expires_at - INTERVAL '1 month')
+            END,
+            status = CASE
+              WHEN expires_at IS NULL OR expires_at - INTERVAL '1 month' <= NOW()
+                THEN 'inactive'
+              ELSE 'active'
+            END,
+            updated_at = NOW()
+          WHERE id = $1
+        `,
+        [lockedPayment.subscription_id]
+      );
+      await db.query(
+        `
+          INSERT INTO notifications (user_id, title, message, type, read)
+          VALUES ($1, $2, $3, 'warning', false)
+        `,
+        [
+          lockedPayment.user_id,
+          'Pagamento revertido',
+          'A Asaas informou um estorno ou cancelamento. A validade da assinatura foi atualizada.',
+        ]
+      );
+      reversedSubscription = true;
+    }
+
+    await db.query('COMMIT');
+
+    if (reversedSubscription) {
+      await logAudit({
+        actorUserId: req?.userId || null,
+        action: 'subscription.payment_reversed',
+        entityType: 'payment',
+        entityId: lockedPayment.id,
+        metadata: {
+          userId: lockedPayment.user_id,
+          subscriptionId: lockedPayment.subscription_id,
+          provider: lockedPayment.provider,
+          status: nextStatus,
+        },
+        req,
+      });
+    }
+
+    return updatedPaymentResult.rows[0];
+  } catch (error) {
+    await db.query('ROLLBACK').catch(() => null);
+    throw error;
+  } finally {
+    db.release();
+  }
+}
+
 async function updatePaymentFromProvider(localPayment, providerPayment, req) {
   assertProviderPaymentMatches(localPayment, providerPayment);
 
   if (providerPayment.status === 'paid') {
     return activateSubscription(localPayment.id, req, providerPayment);
+  }
+
+  const nextStatus = resolvePaymentStatusTransition(localPayment.status, providerPayment.status);
+  if (isReversalStatus(nextStatus)) {
+    return applyPaymentReversal(localPayment, providerPayment, req, nextStatus);
   }
 
   const payload = providerPayload(providerPayment, getProviderPayload(localPayment));
@@ -296,7 +432,7 @@ async function updatePaymentFromProvider(localPayment, providerPayment, req) {
     `,
     [
       localPayment.id,
-      providerPayment.status,
+      nextStatus,
       providerPayment.providerPaymentId || null,
       providerPayment.qrCodeImage || null,
       providerPayment.copyPaste || null,
@@ -312,7 +448,9 @@ async function syncAsaasPayment(localPayment, req) {
     return localPayment;
   }
 
-  const providerPayment = await getPixPayment(localPayment.provider_payment_id);
+  const providerPayment = await getPixPayment(localPayment.provider_payment_id, {
+    includePixQrCode: !localPayment.pix_copy_paste,
+  });
   return updatePaymentFromProvider(localPayment, providerPayment, req);
 }
 
@@ -488,11 +626,19 @@ exports.createPayment = async (req, res) => {
         );
       }
 
-      const providerPayment = await createPixPayment({
-        customerId,
-        amount: SUBSCRIPTION_AMOUNT,
-        externalId: localPayment.external_id,
-      });
+      let providerPayment;
+      try {
+        providerPayment = await createPixPayment({
+          customerId,
+          amount: SUBSCRIPTION_AMOUNT,
+          externalId: localPayment.external_id,
+        });
+      } catch (creationError) {
+        // A resposta pode se perder depois que a cobrança já foi criada.
+        // A referência externa permite recuperar a cobrança sem duplicá-la.
+        providerPayment = await findPaymentByExternalId(localPayment.external_id).catch(() => null);
+        if (!providerPayment) throw creationError;
+      }
       localPayment = await updatePaymentFromProvider(localPayment, providerPayment, req);
     }
 

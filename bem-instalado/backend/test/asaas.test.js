@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 
 const {
   createPixPayment,
+  findPaymentByExternalId,
   findOrCreateCustomer,
   isAsaasConfigured,
   normalizePaymentStatus,
@@ -40,6 +41,8 @@ test('normaliza os estados relevantes da Asaas sem liberar Pix apenas confirmado
   assert.equal(normalizePaymentStatus('PENDING'), 'pending');
   assert.equal(normalizePaymentStatus('OVERDUE'), 'pending');
   assert.equal(normalizePaymentStatus('REFUNDED'), 'refunded');
+  assert.equal(normalizePaymentStatus('PARTIALLY_REFUNDED'), 'refunded');
+  assert.equal(normalizePaymentStatus('AWAITING_CHARGEBACK_REVERSAL'), 'refunded');
   assert.equal(normalizePaymentStatus('DELETED'), 'canceled');
 });
 
@@ -186,6 +189,101 @@ test('cria cliente sem duplicar busca por documento e depois gera cobrança Pix'
   assert.equal(requests[4].options.body, undefined);
   assert.equal(payment.providerPaymentId, 'pay_new');
   assert.equal(payment.copyPaste, 'pix-code');
+});
+
+test('mantém a cobrança acessível quando o QR Code está temporariamente indisponível', async () => {
+  const fetchImpl = async (url) => {
+    if (url.endsWith('/payments')) {
+      return new Response(
+        JSON.stringify({
+          id: 'pay_without_qr',
+          customer: 'cus_123',
+          status: 'PENDING',
+          billingType: 'PIX',
+          externalReference: 'instalapro_8_retry',
+          value: 40,
+          invoiceUrl: 'https://sandbox.asaas.com/i/pay_without_qr',
+        }),
+        { status: 200 }
+      );
+    }
+    return new Response(JSON.stringify({ errors: [{ description: 'QR indisponível' }] }), { status: 503 });
+  };
+
+  const payment = await createPixPayment({
+    customerId: 'cus_123',
+    amount: 40,
+    externalId: 'instalapro_8_retry',
+    accessToken: 'test-key',
+    fetchImpl,
+  });
+
+  assert.equal(payment.providerPaymentId, 'pay_without_qr');
+  assert.equal(payment.ticketUrl, 'https://sandbox.asaas.com/i/pay_without_qr');
+  assert.equal(payment.copyPaste, '');
+});
+
+test('recupera cobrança existente pela referência externa sem duplicá-la', async () => {
+  const requests = [];
+  const fetchImpl = async (url) => {
+    requests.push(url);
+    if (url.includes('/payments?externalReference=')) {
+      return new Response(
+        JSON.stringify({
+          data: [{
+            id: 'pay_recovered',
+            externalReference: 'instalapro_9_retry',
+          }],
+        }),
+        { status: 200 }
+      );
+    }
+    if (url.endsWith('/payments/pay_recovered')) {
+      return new Response(
+        JSON.stringify({
+          id: 'pay_recovered',
+          customer: 'cus_999',
+          status: 'PENDING',
+          billingType: 'PIX',
+          externalReference: 'instalapro_9_retry',
+          value: 40,
+          invoiceUrl: 'https://sandbox.asaas.com/i/recovered',
+        }),
+        { status: 200 }
+      );
+    }
+    if (url.endsWith('/payments/pay_recovered/pixQrCode')) {
+      return new Response(
+        JSON.stringify({ encodedImage: 'qr-recovered', payload: 'pix-recovered' }),
+        { status: 200 }
+      );
+    }
+    return new Response('{}', { status: 404 });
+  };
+
+  const payment = await findPaymentByExternalId('instalapro_9_retry', {
+    accessToken: 'test-key',
+    fetchImpl,
+  });
+
+  assert.equal(payment.providerPaymentId, 'pay_recovered');
+  assert.equal(payment.copyPaste, 'pix-recovered');
+  assert.equal(requests.length, 3);
+});
+
+test('classifica falhas de rede da Asaas para permitir recuperação segura', async () => {
+  await assert.rejects(
+    createPixPayment({
+      customerId: 'cus_123',
+      amount: 40,
+      externalId: 'instalapro_10_network',
+      accessToken: 'test-key',
+      fetchImpl: async () => {
+        throw new TypeError('fetch failed');
+      },
+    }),
+    { code: 'ASAAS_NETWORK_ERROR' }
+  );
 });
 
 test('valida token do webhook com comparação segura', () => {
