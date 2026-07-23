@@ -100,6 +100,9 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   plan VARCHAR(30) NOT NULL DEFAULT 'monthly',
   status VARCHAR(20) NOT NULL DEFAULT 'inactive',
+  provider VARCHAR(50),
+  provider_subscription_id VARCHAR(120),
+  billing_method VARCHAR(30),
   expires_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -423,6 +426,9 @@ CREATE TABLE IF NOT EXISTS application_errors (
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider VARCHAR(50) NOT NULL DEFAULT 'manual';
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider_payment_id VARCHAR(120);
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider_payload JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS provider VARCHAR(50);
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS provider_subscription_id VARCHAR(120);
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS billing_method VARCHAR(30);
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS business_name VARCHAR(160);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(120);
@@ -492,6 +498,10 @@ ALTER TABLE environments ADD COLUMN IF NOT EXISTS removal_total NUMERIC(10, 2) D
 CREATE UNIQUE INDEX IF NOT EXISTS payments_provider_payment_id_idx
   ON payments (provider_payment_id)
   WHERE provider_payment_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS subscriptions_provider_subscription_id_idx
+  ON subscriptions (provider_subscription_id)
+  WHERE provider_subscription_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS installer_reviews_installer_id_idx
   ON installer_reviews (installer_id, created_at DESC);

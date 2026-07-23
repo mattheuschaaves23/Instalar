@@ -10,12 +10,13 @@ const {
   isTrialSubscription,
 } = require('../utils/subscriptionTrial');
 const {
-  createPixPayment,
+  createRecurringCheckout,
   findOrCreateCustomer,
-  findPaymentByExternalId,
+  findPaymentByCheckoutId,
   getPixPayment,
   isAsaasConfigured,
   isAsaasWebhookConfigured,
+  parseRecurringCheckout,
   validateWebhookToken,
 } = require('../services/asaas');
 const {
@@ -24,6 +25,33 @@ const {
 } = require('../utils/paymentState');
 
 const SUBSCRIPTION_AMOUNT = Number(process.env.SUBSCRIPTION_PRICE || 49.9);
+
+function getPublicAppUrl(req) {
+  const configured = String(process.env.FRONTEND_URL || process.env.APP_URL || '').trim();
+  const deploymentHost = String(
+    process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || ''
+  ).trim();
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https')
+    .split(',')[0]
+    .trim();
+  const forwardedHost = String(req.headers['x-forwarded-host'] || req.get('host') || '')
+    .split(',')[0]
+    .trim();
+  const fallback = forwardedHost ? `${forwardedProto}://${forwardedHost}` : '';
+  const value = configured || (deploymentHost
+    ? deploymentHost.includes('://') ? deploymentHost : `https://${deploymentHost}`
+    : fallback);
+
+  try {
+    const url = new URL(value);
+    if (!['http:', 'https:'].includes(url.protocol)) throw new Error('invalid-protocol');
+    return url.toString().replace(/\/+$/, '');
+  } catch (_error) {
+    const error = new Error('URL pública do site não configurada para o checkout.');
+    error.code = 'PAYMENT_CALLBACK_URL_REQUIRED';
+    throw error;
+  }
+}
 
 function getPlanBenefits() {
   return [
@@ -84,6 +112,12 @@ function providerPayload(paymentData, previousPayload = {}) {
     expirationDate: paymentData.expirationDate,
     currency: paymentData.currency,
     customerId: paymentData.customerId,
+    subscriptionId: paymentData.subscriptionId || previousPayload.subscriptionId || '',
+    checkoutId: paymentData.checkoutId || previousPayload.checkoutId || '',
+    billingType: paymentData.billingType || previousPayload.billingType || '',
+    providerExternalReference: paymentData.externalId
+      || previousPayload.providerExternalReference
+      || '',
     syncedAt: new Date().toISOString(),
   };
 }
@@ -91,7 +125,7 @@ function providerPayload(paymentData, previousPayload = {}) {
 function serializeStoredPayment(payment) {
   const payload = getProviderPayload(payment);
   const pixConfig = getPixConfig();
-  const automaticConfirmation = payment.provider === 'asaas';
+  const automaticConfirmation = String(payment.provider || '').startsWith('asaas');
 
   return {
     payment: {
@@ -99,6 +133,7 @@ function serializeStoredPayment(payment) {
       external_id: payment.external_id,
       amount: payment.amount,
       status: payment.status,
+      method: payment.method,
       created_at: payment.created_at,
       provider: payment.provider || 'manual',
       provider_payment_id: payment.provider_payment_id || '',
@@ -157,7 +192,7 @@ async function getPendingPayment(userId, db = pool) {
       FROM payments
       WHERE user_id = $1
         AND status = 'pending'
-        AND created_at > NOW() - INTERVAL '2 days'
+        AND created_at > NOW() - INTERVAL '45 days'
       ORDER BY created_at DESC
       LIMIT 1
     `,
@@ -184,9 +219,19 @@ async function getPaymentByExternalId(externalId, userId, db = pool) {
 function assertProviderPaymentMatches(localPayment, providerPayment) {
   const expectedAmount = Number(localPayment.amount);
   const receivedAmount = Number(providerPayment.amount);
+  const payload = getProviderPayload(localPayment);
+  const expectedReferences = new Set(
+    [
+      localPayment.external_id,
+      payload.providerExternalReference,
+      payload.checkoutExternalReference,
+    ].filter(Boolean).map(String)
+  );
+  const providerReference = String(providerPayment.externalId || '');
+  const externalReferenceMatches = !providerReference || expectedReferences.has(providerReference);
 
   if (
-    providerPayment.externalId !== localPayment.external_id ||
+    !externalReferenceMatches ||
     !Number.isFinite(receivedAmount) ||
     Math.abs(expectedAmount - receivedAmount) > 0.009 ||
     (providerPayment.currency && providerPayment.currency !== 'BRL')
@@ -195,6 +240,34 @@ function assertProviderPaymentMatches(localPayment, providerPayment) {
     error.code = 'PAYMENT_PROVIDER_MISMATCH';
     throw error;
   }
+}
+
+function normalizeBillingMethod(value) {
+  const billingType = String(value || '').trim().toUpperCase();
+  if (billingType === 'PIX' || billingType === 'pix') return 'pix';
+  if (billingType === 'CREDIT_CARD' || billingType === 'credit_card') return 'credit_card';
+  return '';
+}
+
+async function updateSubscriptionProviderMetadata(db, payment, paymentData) {
+  if (!payment?.subscription_id || !paymentData) return;
+
+  const providerSubscriptionId = String(paymentData.subscriptionId || '').trim();
+  const billingMethod = normalizeBillingMethod(paymentData.billingType || paymentData.statusDetail);
+  if (!providerSubscriptionId && !billingMethod) return;
+
+  await db.query(
+    `
+      UPDATE subscriptions
+      SET
+        provider = 'asaas',
+        provider_subscription_id = COALESCE(NULLIF($2, ''), provider_subscription_id),
+        billing_method = COALESCE(NULLIF($3, ''), billing_method),
+        updated_at = NOW()
+      WHERE id = $1
+    `,
+    [payment.subscription_id, providerSubscriptionId, billingMethod]
+  );
 }
 
 async function activateSubscription(paymentId, req, paymentData = null) {
@@ -237,6 +310,7 @@ async function activateSubscription(paymentId, req, paymentData = null) {
           ]
         );
         updatedPayment = refreshedPayment.rows[0];
+        await updateSubscriptionProviderMetadata(db, payment, paymentData);
       }
       await db.query('COMMIT');
       return updatedPayment || payment;
@@ -280,6 +354,7 @@ async function activateSubscription(paymentId, req, paymentData = null) {
       `,
       [payment.subscription_id]
     );
+    await updateSubscriptionProviderMetadata(db, payment, paymentData);
 
     await db.query(
       `
@@ -437,6 +512,7 @@ async function applyPaymentReversal(localPayment, providerPayment, req, nextStat
 
 async function updatePaymentFromProvider(localPayment, providerPayment, req) {
   assertProviderPaymentMatches(localPayment, providerPayment);
+  await updateSubscriptionProviderMetadata(pool, localPayment, providerPayment);
 
   if (providerPayment.status === 'paid') {
     return activateSubscription(localPayment.id, req, providerPayment);
@@ -475,14 +551,139 @@ async function updatePaymentFromProvider(localPayment, providerPayment, req) {
 }
 
 async function syncAsaasPayment(localPayment, req) {
-  if (localPayment.provider !== 'asaas' || !localPayment.provider_payment_id) {
+  if (!String(localPayment.provider || '').startsWith('asaas') || !localPayment.provider_payment_id) {
     return localPayment;
   }
 
-  const providerPayment = await getPixPayment(localPayment.provider_payment_id, {
-    includePixQrCode: !localPayment.pix_copy_paste,
-  });
+  const payload = getProviderPayload(localPayment);
+  const providerPayment = localPayment.provider === 'asaas_checkout'
+    ? await findPaymentByCheckoutId(payload.checkoutId || localPayment.provider_payment_id)
+    : await getPixPayment(localPayment.provider_payment_id, {
+      includePixQrCode: !localPayment.pix_copy_paste,
+    });
+  if (!providerPayment) return localPayment;
   return updatePaymentFromProvider(localPayment, providerPayment, req);
+}
+
+async function findOrCreateRecurringPayment(providerPayment) {
+  const existingResult = await pool.query(
+    `
+      SELECT *
+      FROM payments
+      WHERE provider_payment_id = $1
+        OR (
+          $2 <> ''
+          AND provider_payload->>'checkoutId' = $2
+        )
+        OR (
+          $3 <> ''
+          AND external_id = $3
+          AND (
+            status <> 'paid'
+            OR COALESCE(provider_payload->>'subscriptionId', '') = ''
+          )
+        )
+      ORDER BY
+        CASE WHEN provider_payment_id = $1 THEN 0 ELSE 1 END,
+        created_at DESC
+      LIMIT 1
+    `,
+    [
+      providerPayment.providerPaymentId,
+      providerPayment.checkoutId || '',
+      providerPayment.externalId || '',
+    ]
+  );
+  if (existingResult.rows[0]) return existingResult.rows[0];
+
+  const providerSubscriptionId = String(providerPayment.subscriptionId || '').trim();
+  if (!providerSubscriptionId) return null;
+
+  const subscriptionResult = await pool.query(
+    `
+      SELECT *
+      FROM subscriptions
+      WHERE provider = 'asaas'
+        AND provider_subscription_id = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+    [providerSubscriptionId]
+  );
+  const subscription = subscriptionResult.rows[0];
+  if (!subscription) return null;
+
+  const providerPaymentId = String(providerPayment.providerPaymentId || '').trim();
+  const billingMethod = normalizeBillingMethod(
+    providerPayment.billingType || providerPayment.statusDetail
+  ) || subscription.billing_method || 'pix';
+  const externalId = `asaas_${providerPaymentId}`.slice(0, 120);
+  const createdResult = await pool.query(
+    `
+      INSERT INTO payments (
+        user_id, subscription_id, amount, method, status, external_id, provider,
+        provider_payment_id, provider_payload
+      )
+      VALUES ($1, $2, $3, $4, 'pending', $5, 'asaas', $6, $7::jsonb)
+      ON CONFLICT (provider_payment_id) WHERE provider_payment_id IS NOT NULL
+      DO NOTHING
+      RETURNING *
+    `,
+    [
+      subscription.user_id,
+      subscription.id,
+      Number(providerPayment.amount || SUBSCRIPTION_AMOUNT),
+      billingMethod,
+      externalId,
+      providerPaymentId,
+      JSON.stringify({
+        providerStatus: 'received_from_webhook',
+        providerExternalReference: providerPayment.externalId || '',
+        subscriptionId: providerSubscriptionId,
+        checkoutId: providerPayment.checkoutId || '',
+        billingType: providerPayment.billingType || providerPayment.statusDetail || '',
+        subscriptionPlan: subscription.plan,
+        subscriptionStatus: subscription.status,
+        subscriptionExpiresAt: subscription.expires_at,
+      }),
+    ]
+  );
+
+  if (createdResult.rows[0]) return createdResult.rows[0];
+  const concurrentResult = await pool.query(
+    'SELECT * FROM payments WHERE provider_payment_id = $1 LIMIT 1',
+    [providerPaymentId]
+  );
+  return concurrentResult.rows[0] || null;
+}
+
+async function findCheckoutPayment(checkoutId) {
+  const result = await pool.query(
+    `
+      SELECT *
+      FROM payments
+      WHERE provider = 'asaas_checkout'
+        AND (
+          provider_payment_id = $1
+          OR provider_payload->>'checkoutId' = $1
+        )
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+    [checkoutId]
+  );
+  return result.rows[0] || null;
+}
+
+async function markWebhookEventProcessed(eventId) {
+  await pool.query(
+    `
+      UPDATE payment_webhook_events
+      SET processed = TRUE, processed_at = NOW()
+      WHERE id = $1
+    `,
+    [eventId]
+  );
 }
 
 exports.getSubscription = async (req, res) => {
@@ -532,7 +733,7 @@ exports.getSubscription = async (req, res) => {
           : launchAccess
             ? 'Acesso de lançamento liberado sem cobrança.'
             : paymentMode === 'asaas'
-              ? 'Pagamento Pix processado com segurança pela Asaas e confirmado automaticamente.'
+              ? 'Assinatura mensal por Pix ou cartão processada com segurança pela Asaas.'
               : paymentMode === 'manual'
                 ? 'Pagamento manual habilitado apenas para desenvolvimento.'
                 : 'Pagamento indisponível até a configuração das credenciais da Asaas.',
@@ -611,7 +812,7 @@ exports.createPayment = async (req, res) => {
           INSERT INTO payments (
             user_id, subscription_id, amount, method, status, external_id, provider, provider_payload
           )
-          VALUES ($1, $2, $3, 'pix', 'pending', $4, 'asaas', $5::jsonb)
+          VALUES ($1, $2, $3, 'pix_credit_card', 'pending', $4, 'asaas_checkout', $5::jsonb)
           RETURNING *
         `,
         [
@@ -622,6 +823,7 @@ exports.createPayment = async (req, res) => {
           JSON.stringify({
             providerStatus: 'creating',
             idempotencyKey: externalId,
+            billingType: 'PIX,CREDIT_CARD',
             subscriptionPlan: subscription.plan,
             subscriptionStatus: subscription.status,
             subscriptionExpiresAt: subscription.expires_at,
@@ -677,19 +879,12 @@ exports.createPayment = async (req, res) => {
         );
       }
 
-      let providerPayment;
-      try {
-        providerPayment = await createPixPayment({
-          customerId,
-          amount: SUBSCRIPTION_AMOUNT,
-          externalId: localPayment.external_id,
-        });
-      } catch (creationError) {
-        // A resposta pode se perder depois que a cobrança já foi criada.
-        // A referência externa permite recuperar a cobrança sem duplicá-la.
-        providerPayment = await findPaymentByExternalId(localPayment.external_id).catch(() => null);
-        if (!providerPayment) throw creationError;
-      }
+      const providerPayment = await createRecurringCheckout({
+        customerId,
+        amount: SUBSCRIPTION_AMOUNT,
+        externalId: localPayment.external_id,
+        callbackBaseUrl: getPublicAppUrl(req),
+      });
       localPayment = await updatePaymentFromProvider(localPayment, providerPayment, req);
     }
 
@@ -738,7 +933,7 @@ exports.createPayment = async (req, res) => {
     return res.status(status).json({
       error: customerErrorCodes.has(error.code)
         ? error.message
-        : 'Não foi possível gerar o Pix na Asaas. Tente novamente.',
+        : 'Não foi possível abrir a assinatura mensal na Asaas. Tente novamente.',
       code: error.code || 'PAYMENT_PROVIDER_ERROR',
     });
   }
@@ -752,7 +947,7 @@ exports.checkPayment = async (req, res) => {
       return res.status(404).json({ error: 'Pagamento não encontrado.' });
     }
 
-    if (payment.provider === 'asaas' && payment.status === 'pending') {
+    if (String(payment.provider || '').startsWith('asaas') && payment.status === 'pending') {
       payment = await syncAsaasPayment(payment, req);
     }
 
@@ -797,7 +992,10 @@ exports.confirmPayment = async (req, res) => {
 exports.handleAsaasWebhook = async (req, res) => {
   const eventId = String(req.body?.id || '').trim().slice(0, 160);
   const eventType = String(req.body?.event || '').trim().slice(0, 60);
-  const providerPaymentId = String(req.body?.payment?.id || '').trim().slice(0, 120);
+  const isCheckoutEvent = eventType.startsWith('CHECKOUT_');
+  const providerPaymentId = String(
+    isCheckoutEvent ? req.body?.checkout?.id : req.body?.payment?.id
+  ).trim().slice(0, 120);
   const webhookToken = String(req.headers['asaas-access-token'] || '').trim();
 
   if (!isAsaasWebhookConfigured()) {
@@ -834,43 +1032,44 @@ exports.handleAsaasWebhook = async (req, res) => {
       return res.status(200).json({ received: true, duplicate: true });
     }
 
-    const providerPayment = await getPixPayment(providerPaymentId);
-    const paymentResult = await pool.query(
-      `
-        SELECT *
-        FROM payments
-        WHERE provider = 'asaas'
-          AND (
-            provider_payment_id = $1
-            OR external_id = $2
-          )
-        LIMIT 1
-      `,
-      [providerPayment.providerPaymentId, providerPayment.externalId]
-    );
-    const localPayment = paymentResult.rows[0];
+    let localPayment;
+    let providerPayment;
+
+    if (isCheckoutEvent) {
+      localPayment = await findCheckoutPayment(providerPaymentId);
+
+      if (localPayment) {
+        const previousPayload = getProviderPayload(localPayment);
+        const checkoutPayment = parseRecurringCheckout(req.body?.checkout, {
+          amount: localPayment.amount,
+          customerId: previousPayload.customerId,
+          externalId: localPayment.external_id,
+          ticketUrl: previousPayload.ticketUrl,
+        });
+
+        if (eventType === 'CHECKOUT_PAID') {
+          providerPayment = await findPaymentByCheckoutId(providerPaymentId).catch(() => null);
+          providerPayment = providerPayment || checkoutPayment;
+        } else if (localPayment.status !== 'paid') {
+          providerPayment = checkoutPayment;
+        }
+      }
+    } else {
+      providerPayment = await getPixPayment(providerPaymentId, {
+        includePixQrCode: true,
+      });
+      localPayment = await findOrCreateRecurringPayment(providerPayment);
+    }
 
     if (!localPayment) {
-      await pool.query(
-        `
-          UPDATE payment_webhook_events
-          SET processed = TRUE, processed_at = NOW()
-          WHERE id = $1
-        `,
-        [event.id]
-      );
+      await markWebhookEventProcessed(event.id);
       return res.status(200).json({ received: true, matched: false });
     }
 
-    await updatePaymentFromProvider(localPayment, providerPayment, req);
-    await pool.query(
-      `
-        UPDATE payment_webhook_events
-        SET processed = TRUE, processed_at = NOW()
-        WHERE id = $1
-      `,
-      [event.id]
-    );
+    if (providerPayment) {
+      await updatePaymentFromProvider(localPayment, providerPayment, req);
+    }
+    await markWebhookEventProcessed(event.id);
 
     return res.status(200).json({ received: true, matched: true });
   } catch (error) {

@@ -102,7 +102,10 @@ export default function Subscription() {
       const response = await api.post('/subscriptions/pay');
       setPayment(response.data);
       setPaymentNeedsProfile(false);
-      toast.success('Pagamento gerado. O acesso será liberado assim que for confirmado.');
+      toast.success('Checkout mensal gerado com Pix e cartão.');
+      if (response.data?.ticketUrl) {
+        window.location.assign(response.data.ticketUrl);
+      }
     } catch (error) {
       const code = error.response?.data?.code;
       setPaymentNeedsProfile([
@@ -171,7 +174,7 @@ export default function Subscription() {
               ? `Aproveite todas as ferramentas grátis até ${formatShortDate(subscription?.trial?.ends_at)}.`
               : 'Durante o lançamento, todas as ferramentas estão liberadas sem cobrança.'
           : isExpiredTrial
-            ? 'Seu teste grátis terminou. Gere o Pix mensal para continuar usando todas as ferramentas.'
+            ? 'Seu teste grátis terminou. Escolha Pix mensal ou cartão de crédito mensal para continuar.'
             : 'Consulte aqui o status do seu plano e dos pagamentos.'}
         eyebrow="Assinatura"
         stats={[
@@ -262,39 +265,56 @@ export default function Subscription() {
             </div>
           </div>
 
-          {!hasComplimentaryAccess ? <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              className="gold-button w-full sm:w-auto"
-              disabled={isPaymentDisabled || isPaying}
-              onClick={handlePay}
-              type="button"
-            >
-              {isPaymentDisabled
-                ? 'Pagamento indisponível'
-                : isPaying
-                  ? 'Gerando Pix...'
-                  : currentPaymentIsPending
-                    ? 'Reabrir pagamento atual'
-                    : payment
-                      ? 'Gerar novo pagamento'
-                      : 'Gerar pagamento mensal'}
-            </button>
-            {payment ? (
-              <button
-                className="ghost-button w-full sm:w-auto"
-                disabled={isChecking || !payment?.payment?.external_id}
-                onClick={handleCheck}
-                type="button"
-              >
-                {isChecking ? 'Verificando...' : 'Verificar pagamento'}
-              </button>
-            ) : null}
-            {paymentNeedsProfile ? (
-              <Link className="ghost-button w-full sm:w-auto" to="/profile">
-                Completar perfil para pagar
-              </Link>
-            ) : null}
-          </div> : null}
+          {!hasComplimentaryAccess ? (
+            <div className="mt-6">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="subscription-inline-note">
+                  <p className="eyebrow">Pix mensal</p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                    A Asaas gera uma nova cobrança Pix a cada mês. Você paga pelo QR Code ou copia e cola.
+                  </p>
+                </div>
+                <div className="subscription-inline-note">
+                  <p className="eyebrow">Cartão mensal</p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                    A mensalidade é cobrada automaticamente no cartão cadastrado no checkout seguro da Asaas.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  className="gold-button w-full sm:w-auto"
+                  disabled={isPaymentDisabled || isPaying}
+                  onClick={handlePay}
+                  type="button"
+                >
+                  {isPaymentDisabled
+                    ? 'Pagamento indisponível'
+                    : isPaying
+                      ? 'Abrindo checkout...'
+                      : currentPaymentIsPending
+                        ? 'Reabrir checkout atual'
+                        : 'Escolher Pix ou cartão'}
+                </button>
+                {payment ? (
+                  <button
+                    className="ghost-button w-full sm:w-auto"
+                    disabled={isChecking || !payment?.payment?.external_id}
+                    onClick={handleCheck}
+                    type="button"
+                  >
+                    {isChecking ? 'Verificando...' : 'Verificar pagamento'}
+                  </button>
+                ) : null}
+                {paymentNeedsProfile ? (
+                  <Link className="ghost-button w-full sm:w-auto" to="/profile">
+                    Completar perfil para pagar
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
           <div className="subscription-inline-note mt-6">
             <p className="text-sm leading-7 text-[var(--muted)]">
@@ -316,9 +336,13 @@ export default function Subscription() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="eyebrow">
-                    {payment?.automaticConfirmation ? 'Pagamento Pix' : 'Pagamento manual'}
+                    {payment?.payment?.method === 'pix_credit_card'
+                      ? 'Checkout Asaas'
+                      : payment?.automaticConfirmation
+                        ? 'Pagamento Pix'
+                        : 'Pagamento manual'}
                   </p>
-                  <h2 className="mt-3 text-2xl font-semibold text-[var(--text)]">Compra em aberto</h2>
+                  <h2 className="mt-3 text-2xl font-semibold text-[var(--text)]">Assinatura em aberto</h2>
                 </div>
                 <span className="status-pill" data-tone={payment?.payment?.status}>
                   {formatStatusLabel(payment?.payment?.status)}
@@ -382,7 +406,7 @@ export default function Subscription() {
                 ) : null}
                 {payment.ticketUrl ? (
                   <a className="ghost-button w-full sm:w-auto" href={payment.ticketUrl} rel="noreferrer" target="_blank">
-                    Abrir cobrança
+                    Continuar na Asaas
                   </a>
                 ) : null}
                 <button
@@ -400,7 +424,7 @@ export default function Subscription() {
                   {payment?.automaticConfirmation
                     ? payment.copyPaste || payment.qrCodeImage
                       ? 'A confirmação é automática. Depois de pagar, esta tela atualizará o acesso em poucos segundos.'
-                      : 'O QR Code está sendo atualizado. Você pode abrir a cobrança segura da Asaas enquanto isso.'
+                      : 'Escolha Pix ou cartão no checkout seguro da Asaas. O acesso será liberado após a confirmação.'
                     : 'A confirmação manual está disponível somente no ambiente de desenvolvimento.'}
                 </p>
               </div>
@@ -414,7 +438,7 @@ export default function Subscription() {
                 ? isAdminAccess
                   ? 'O acesso é vinculado à função administrativa desta conta.'
                   : isTrialAccess
-                    ? `O teste termina em ${formatShortDate(subscription?.trial?.ends_at)}. Depois, o Pix mensal só será gerado se você decidir assinar.`
+                    ? `O teste termina em ${formatShortDate(subscription?.trial?.ends_at)}. Depois, você poderá escolher Pix mensal ou cartão mensal para assinar.`
                     : 'O acesso de lançamento é gratuito e não gera cobrança automática.'
                 : 'O usuário pode entrar na conta, ajustar perfil e acompanhar o status da assinatura nesta tela.'}
             </p>

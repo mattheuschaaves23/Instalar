@@ -38,10 +38,12 @@ function normalizeDigits(value) {
   return String(value || '').replace(/\D/g, '');
 }
 
-function normalizePaymentStatus(status) {
+function normalizePaymentStatus(status, billingType = '') {
   const value = String(status || '').trim().toUpperCase();
+  const normalizedBillingType = String(billingType || '').trim().toUpperCase();
 
   if (['RECEIVED', 'RECEIVED_IN_CASH'].includes(value)) return 'paid';
+  if (value === 'CONFIRMED' && normalizedBillingType === 'CREDIT_CARD') return 'paid';
   if (
     [
       'PENDING',
@@ -83,7 +85,10 @@ function parsePixPayment(payment, pixQrCode = {}) {
     providerPaymentId: String(payment?.id || ''),
     externalId: String(payment?.externalReference || ''),
     customerId: String(payment?.customer || ''),
-    status: normalizePaymentStatus(payment?.status),
+    subscriptionId: String(payment?.subscription || ''),
+    checkoutId: String(payment?.checkoutSession || ''),
+    billingType: String(payment?.billingType || ''),
+    status: normalizePaymentStatus(payment?.status, payment?.billingType),
     providerStatus: String(payment?.status || ''),
     statusDetail: String(payment?.billingType || ''),
     amount: Number(payment?.value || 0),
@@ -93,6 +98,43 @@ function parsePixPayment(payment, pixQrCode = {}) {
     ticketUrl: String(payment?.invoiceUrl || ''),
     expirationDate: pixQrCode?.expirationDate || payment?.dueDate || null,
     raw: payment || {},
+  };
+}
+
+function normalizeCheckoutStatus(status) {
+  const value = String(status || '').trim().toUpperCase();
+  if (value === 'PAID') return 'paid';
+  if (value === 'EXPIRED') return 'failed';
+  if (['CANCELED', 'CANCELLED'].includes(value)) return 'canceled';
+  return 'pending';
+}
+
+function parseRecurringCheckout(checkout, fallback = {}) {
+  const items = Array.isArray(checkout?.items) ? checkout.items : [];
+  const itemTotal = items.reduce(
+    (total, item) => total + (Number(item?.value || 0) * Number(item?.quantity || 0)),
+    0
+  );
+  const billingTypes = Array.isArray(checkout?.billingTypes) ? checkout.billingTypes : [];
+
+  return {
+    provider: 'asaas_checkout',
+    providerPaymentId: String(checkout?.id || ''),
+    externalId: String(checkout?.externalReference || fallback.externalId || ''),
+    customerId: String(checkout?.customer || fallback.customerId || ''),
+    subscriptionId: String(checkout?.subscription?.id || ''),
+    checkoutId: String(checkout?.id || ''),
+    billingType: billingTypes.join(','),
+    status: normalizeCheckoutStatus(checkout?.status),
+    providerStatus: String(checkout?.status || ''),
+    statusDetail: billingTypes.join(','),
+    amount: Number(itemTotal || fallback.amount || 0),
+    currency: 'BRL',
+    qrCodeImage: '',
+    copyPaste: '',
+    ticketUrl: String(checkout?.link || fallback.ticketUrl || ''),
+    expirationDate: null,
+    raw: checkout || {},
   };
 }
 
@@ -191,13 +233,13 @@ function validateCustomerData({ userId, name, cpfCnpj }) {
   }
 
   if (!normalizedName) {
-    const error = new Error('Preencha seu nome no perfil antes de gerar o Pix.');
+    const error = new Error('Preencha seu nome no perfil antes de assinar.');
     error.code = 'PAYMENT_CUSTOMER_NAME_REQUIRED';
     throw error;
   }
 
   if (![11, 14].includes(normalizedDocument.length)) {
-    const error = new Error('Preencha um CPF ou CNPJ válido no seu perfil antes de gerar o Pix.');
+    const error = new Error('Preencha um CPF ou CNPJ válido no seu perfil antes de assinar.');
     error.code = 'PAYMENT_CUSTOMER_DOCUMENT_REQUIRED';
     throw error;
   }
@@ -263,6 +305,107 @@ function formatDueDate(date = new Date()) {
   return dueDate.toISOString().slice(0, 10);
 }
 
+function formatCurrentDate(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(date));
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function normalizeCallbackBaseUrl(value) {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) {
+    const error = new Error('URL de retorno do checkout não configurada.');
+    error.code = 'PAYMENT_CALLBACK_URL_REQUIRED';
+    throw error;
+  }
+
+  try {
+    const url = new URL(rawValue);
+    if (!['http:', 'https:'].includes(url.protocol)) throw new Error('invalid-protocol');
+    return url.toString().replace(/\/+$/, '');
+  } catch (_error) {
+    const error = new Error('URL de retorno do checkout inválida.');
+    error.code = 'PAYMENT_CALLBACK_URL_INVALID';
+    throw error;
+  }
+}
+
+async function createRecurringCheckout({
+  customerId,
+  amount,
+  externalId,
+  callbackBaseUrl,
+  fetchImpl,
+  accessToken,
+  apiBaseUrl,
+  now,
+}) {
+  const normalizedCustomerId = String(customerId || '').trim();
+  if (!normalizedCustomerId) {
+    const error = new Error('Cliente Asaas não informado para a assinatura.');
+    error.code = 'PAYMENT_CUSTOMER_REQUIRED';
+    throw error;
+  }
+
+  const normalizedAmount = Number(Number(amount || 0).toFixed(2));
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    const error = new Error('Valor da assinatura inválido.');
+    error.code = 'PAYMENT_AMOUNT_INVALID';
+    throw error;
+  }
+
+  const reference = String(externalId || '').trim().slice(0, 200);
+  const callbackUrl = normalizeCallbackBaseUrl(callbackBaseUrl);
+  const checkout = await asaasRequest('/checkouts', {
+    fetchImpl,
+    accessToken,
+    apiBaseUrl,
+    method: 'POST',
+    body: {
+      billingTypes: ['PIX', 'CREDIT_CARD'],
+      chargeTypes: ['RECURRENT'],
+      minutesToExpire: 1440,
+      externalReference: reference,
+      callback: {
+        successUrl: `${callbackUrl}/subscription?checkout=success`,
+        cancelUrl: `${callbackUrl}/subscription?checkout=canceled`,
+        expiredUrl: `${callbackUrl}/subscription?checkout=expired`,
+      },
+      items: [
+        {
+          externalReference: 'instalapro-monthly',
+          name: 'Plano mensal InstalaPro',
+          description: 'Acesso mensal às ferramentas profissionais para instaladores.',
+          quantity: 1,
+          value: normalizedAmount,
+        },
+      ],
+      customer: normalizedCustomerId,
+      subscription: {
+        cycle: 'MONTHLY',
+        nextDueDate: formatCurrentDate(now),
+      },
+    },
+  });
+
+  if (!checkout?.id || !checkout?.link) {
+    const error = new Error('A Asaas não retornou o link do checkout.');
+    error.code = 'PAYMENT_PROVIDER_ID_MISSING';
+    throw error;
+  }
+
+  return parseRecurringCheckout(checkout, {
+    amount: normalizedAmount,
+    customerId: normalizedCustomerId,
+    externalId: reference,
+  });
+}
+
 async function createPixPayment({
   customerId,
   amount,
@@ -319,6 +462,23 @@ async function getPixPayment(providerPaymentId, options = {}) {
   return parsePixPayment(payment, pixQrCode);
 }
 
+async function findPaymentByCheckoutId(checkoutId, options = {}) {
+  const id = String(checkoutId || '').trim();
+  if (!id) return null;
+
+  const query = new URLSearchParams({
+    checkoutSession: id,
+    limit: '10',
+  });
+  const result = await asaasRequest(`/payments?${query.toString()}`, options);
+  const payments = Array.isArray(result?.data) ? result.data : [];
+  const payment = payments.find((item) => String(item?.checkoutSession || '') === id)
+    || payments[0];
+
+  if (!payment?.id) return null;
+  return getPixPayment(payment.id, { ...options, includePixQrCode: true });
+}
+
 async function findPaymentByExternalId(externalId, options = {}) {
   const reference = String(externalId || '').trim();
   if (!reference) return null;
@@ -346,7 +506,9 @@ function validateWebhookToken(providedToken, expectedToken = getAsaasConfig().we
 module.exports = {
   asaasRequest,
   createPixPayment,
+  createRecurringCheckout,
   findOrCreateCustomer,
+  findPaymentByCheckoutId,
   findPaymentByExternalId,
   getAsaasConfig,
   getPixPayment,
@@ -354,6 +516,7 @@ module.exports = {
   isAsaasWebhookConfigured,
   normalizePaymentStatus,
   parsePixPayment,
+  parseRecurringCheckout,
   validateCustomerData,
   validateWebhookToken,
 };

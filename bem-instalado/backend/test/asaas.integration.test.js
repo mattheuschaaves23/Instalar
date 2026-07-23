@@ -15,7 +15,7 @@ async function requestJson(fetchImpl, baseUrl, path, options = {}) {
   return { response, body };
 }
 
-test('Asaas cria Pix, ativa assinatura e reverte acesso após estorno', { skip: !enabled }, async () => {
+test('Asaas cria checkout mensal, ativa assinatura e reverte acesso após estorno', { skip: !enabled }, async () => {
   process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
   process.env.DATABASE_SSL = 'false';
   process.env.NODE_ENV = 'test';
@@ -24,11 +24,14 @@ test('Asaas cria Pix, ativa assinatura e reverte acesso após estorno', { skip: 
   process.env.ASAAS_WEBHOOK_TOKEN = 'asaas-integration-webhook-token-with-32-characters';
   process.env.ASAAS_ENVIRONMENT = 'sandbox';
   process.env.SUBSCRIPTION_LAUNCH_ACCESS = 'false';
+  process.env.FRONTEND_URL = 'http://127.0.0.1:3000';
 
   const realFetch = global.fetch;
   let providerStatus = 'PENDING';
   let externalReference = '';
+  let checkoutAmount = 0;
   const providerPaymentId = `pay_test_${Date.now()}`;
+  const checkoutId = `checkout_test_${Date.now()}`;
 
   global.fetch = async (url, options = {}) => {
     const requestUrl = String(url);
@@ -45,19 +48,21 @@ test('Asaas cria Pix, ativa assinatura e reverte acesso após estorno', { skip: 
     if (requestUrl.endsWith('/customers') && options.method === 'POST') {
       return new Response(JSON.stringify({ id: 'cus_integration_test' }), { status: 200 });
     }
-    if (requestUrl.endsWith('/payments') && options.method === 'POST') {
+    if (requestUrl.endsWith('/checkouts') && options.method === 'POST') {
       const body = JSON.parse(options.body);
       externalReference = body.externalReference;
+      checkoutAmount = body.items[0].value;
       return new Response(
         JSON.stringify({
-          id: providerPaymentId,
+          id: checkoutId,
+          link: `https://sandbox.asaas.com/checkoutSession/show/${checkoutId}`,
           customer: body.customer,
-          status: providerStatus,
-          billingType: 'PIX',
+          status: 'ACTIVE',
+          billingTypes: body.billingTypes,
+          chargeTypes: body.chargeTypes,
           externalReference,
-          value: body.value,
-          invoiceUrl: `https://sandbox.asaas.com/i/${providerPaymentId}`,
-          dueDate: body.dueDate,
+          items: body.items,
+          subscription: body.subscription,
         }),
         { status: 200 }
       );
@@ -77,10 +82,12 @@ test('Asaas cria Pix, ativa assinatura e reverte acesso após estorno', { skip: 
         JSON.stringify({
           id: providerPaymentId,
           customer: 'cus_integration_test',
+          subscription: 'sub_integration_test',
+          checkoutSession: checkoutId,
           status: providerStatus,
           billingType: 'PIX',
           externalReference,
-          value: 40,
+          value: checkoutAmount,
           invoiceUrl: `https://sandbox.asaas.com/i/${providerPaymentId}`,
         }),
         { status: 200 }
@@ -136,9 +143,9 @@ test('Asaas cria Pix, ativa assinatura e reverte acesso após estorno', { skip: 
       body: JSON.stringify({}),
     });
     assert.equal(payment.response.status, 200, JSON.stringify(payment.body));
-    assert.equal(payment.body.provider, 'asaas');
-    assert.equal(payment.body.payment.provider_payment_id, providerPaymentId);
-    assert.equal(payment.body.copyPaste, 'integration-pix-copy-paste');
+    assert.equal(payment.body.provider, 'asaas_checkout');
+    assert.equal(payment.body.payment.provider_payment_id, checkoutId);
+    assert.match(payment.body.ticketUrl, /checkoutSession/);
 
     providerStatus = 'RECEIVED';
     const paidWebhook = await requestJson(realFetch, baseUrl, '/api/subscriptions/webhooks/asaas', {
@@ -154,12 +161,15 @@ test('Asaas cria Pix, ativa assinatura e reverte acesso após estorno', { skip: 
     assert.equal(paidWebhook.body.matched, true);
 
     const activeSubscription = await pool.query(
-      'SELECT plan, status, expires_at FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+      'SELECT plan, status, expires_at, provider, provider_subscription_id, billing_method FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
       [installerId]
     );
     assert.equal(activeSubscription.rows[0].plan, 'monthly');
     assert.equal(activeSubscription.rows[0].status, 'active');
     assert.ok(activeSubscription.rows[0].expires_at);
+    assert.equal(activeSubscription.rows[0].provider, 'asaas');
+    assert.equal(activeSubscription.rows[0].provider_subscription_id, 'sub_integration_test');
+    assert.equal(activeSubscription.rows[0].billing_method, 'pix');
 
     providerStatus = 'REFUNDED';
     const refundEventId = `evt_refund_${suffix}`;

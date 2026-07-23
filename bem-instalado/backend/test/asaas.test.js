@@ -3,11 +3,14 @@ const assert = require('node:assert/strict');
 
 const {
   createPixPayment,
+  createRecurringCheckout,
+  findPaymentByCheckoutId,
   findPaymentByExternalId,
   findOrCreateCustomer,
   isAsaasConfigured,
   normalizePaymentStatus,
   parsePixPayment,
+  parseRecurringCheckout,
   validateWebhookToken,
 } = require('../services/asaas');
 
@@ -38,12 +41,123 @@ test('só habilita cobrança quando chave e token seguro do webhook estão confi
 test('normaliza os estados relevantes da Asaas sem liberar Pix apenas confirmado', () => {
   assert.equal(normalizePaymentStatus('RECEIVED'), 'paid');
   assert.equal(normalizePaymentStatus('CONFIRMED'), 'pending');
+  assert.equal(normalizePaymentStatus('CONFIRMED', 'CREDIT_CARD'), 'paid');
   assert.equal(normalizePaymentStatus('PENDING'), 'pending');
   assert.equal(normalizePaymentStatus('OVERDUE'), 'pending');
   assert.equal(normalizePaymentStatus('REFUNDED'), 'refunded');
   assert.equal(normalizePaymentStatus('PARTIALLY_REFUNDED'), 'refunded');
   assert.equal(normalizePaymentStatus('AWAITING_CHARGEBACK_REVERSAL'), 'refunded');
   assert.equal(normalizePaymentStatus('DELETED'), 'canceled');
+});
+
+test('converte checkout recorrente da Asaas', () => {
+  const checkout = parseRecurringCheckout({
+    id: 'checkout_123',
+    link: 'https://sandbox.asaas.com/checkoutSession/show/checkout_123',
+    status: 'ACTIVE',
+    externalReference: 'instalapro_11_checkout',
+    customer: 'cus_123',
+    billingTypes: ['PIX', 'CREDIT_CARD'],
+    chargeTypes: ['RECURRENT'],
+    items: [{ quantity: 1, value: 49.9 }],
+    subscription: { cycle: 'MONTHLY' },
+  });
+
+  assert.equal(checkout.provider, 'asaas_checkout');
+  assert.equal(checkout.providerPaymentId, 'checkout_123');
+  assert.equal(checkout.externalId, 'instalapro_11_checkout');
+  assert.equal(checkout.amount, 49.9);
+  assert.equal(checkout.status, 'pending');
+  assert.equal(checkout.billingType, 'PIX,CREDIT_CARD');
+});
+
+test('cria checkout com Pix e cartão para assinatura mensal', async () => {
+  let request;
+  const fetchImpl = async (url, options) => {
+    request = { url, options };
+    return new Response(
+      JSON.stringify({
+        id: 'checkout_monthly',
+        link: 'https://sandbox.asaas.com/checkoutSession/show/checkout_monthly',
+        status: 'ACTIVE',
+        externalReference: 'instalapro_12_checkout',
+        customer: 'cus_123',
+        billingTypes: ['PIX', 'CREDIT_CARD'],
+        chargeTypes: ['RECURRENT'],
+        items: [{ quantity: 1, value: 49.9 }],
+        subscription: { cycle: 'MONTHLY', nextDueDate: '2026-07-23' },
+      }),
+      { status: 200 }
+    );
+  };
+
+  const checkout = await createRecurringCheckout({
+    customerId: 'cus_123',
+    amount: 49.9,
+    externalId: 'instalapro_12_checkout',
+    callbackBaseUrl: 'https://instalar.example',
+    accessToken: 'test-key',
+    fetchImpl,
+    now: new Date('2026-07-23T12:00:00Z'),
+  });
+  const body = JSON.parse(request.options.body);
+
+  assert.match(request.url, /\/checkouts$/);
+  assert.equal(request.options.method, 'POST');
+  assert.deepEqual(body.billingTypes, ['PIX', 'CREDIT_CARD']);
+  assert.deepEqual(body.chargeTypes, ['RECURRENT']);
+  assert.equal(body.customer, 'cus_123');
+  assert.equal(body.subscription.cycle, 'MONTHLY');
+  assert.equal(body.subscription.nextDueDate, '2026-07-23');
+  assert.equal(body.items[0].value, 49.9);
+  assert.equal(body.callback.successUrl, 'https://instalar.example/subscription?checkout=success');
+  assert.equal(checkout.ticketUrl, 'https://sandbox.asaas.com/checkoutSession/show/checkout_monthly');
+});
+
+test('localiza a cobrança vinculada ao checkout recorrente', async () => {
+  const requests = [];
+  const fetchImpl = async (url) => {
+    requests.push(url);
+    if (url.includes('/payments?checkoutSession=checkout_456')) {
+      return new Response(
+        JSON.stringify({
+          data: [{
+            id: 'pay_checkout_456',
+            checkoutSession: 'checkout_456',
+          }],
+        }),
+        { status: 200 }
+      );
+    }
+    if (url.endsWith('/payments/pay_checkout_456')) {
+      return new Response(
+        JSON.stringify({
+          id: 'pay_checkout_456',
+          customer: 'cus_456',
+          subscription: 'sub_456',
+          checkoutSession: 'checkout_456',
+          status: 'CONFIRMED',
+          billingType: 'CREDIT_CARD',
+          externalReference: 'instalapro_13_checkout',
+          value: 49.9,
+          invoiceUrl: 'https://sandbox.asaas.com/i/pay_checkout_456',
+        }),
+        { status: 200 }
+      );
+    }
+    return new Response(JSON.stringify({ errors: [] }), { status: 404 });
+  };
+
+  const payment = await findPaymentByCheckoutId('checkout_456', {
+    accessToken: 'test-key',
+    fetchImpl,
+  });
+
+  assert.equal(payment.providerPaymentId, 'pay_checkout_456');
+  assert.equal(payment.subscriptionId, 'sub_456');
+  assert.equal(payment.checkoutId, 'checkout_456');
+  assert.equal(payment.status, 'paid');
+  assert.equal(requests.length, 3);
 });
 
 test('converte cobrança e QR Code Pix da Asaas', () => {
