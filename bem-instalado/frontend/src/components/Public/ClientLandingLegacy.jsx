@@ -14,6 +14,7 @@ const fallbackStores = [
     id: 'visibility',
     name: 'Sua loja aqui',
     description: 'Apresente seus papéis de parede para clientes que já estão planejando uma instalação.',
+    image_url: '/landing/carousel-room-black-gold.jpg',
     cta_label: 'Quero anunciar',
     link_url: STORE_CONTACT_URL,
   },
@@ -21,6 +22,7 @@ const fallbackStores = [
     id: 'installers',
     name: 'Mais conexões',
     description: 'Aproxime sua marca de instaladores e gere oportunidades na região em que atua.',
+    image_url: '/landing/carousel-room-modern.jpg',
     cta_label: 'Falar com a InstalaPro',
     link_url: STORE_CONTACT_URL,
   },
@@ -28,6 +30,7 @@ const fallbackStores = [
     id: 'materials',
     name: 'Materiais em destaque',
     description: 'Dê visibilidade aos seus produtos dentro de uma jornada pronta para transformar ambientes.',
+    image_url: '/landing/carousel-room-tropical.jpg',
     cta_label: 'Anunciar minha loja',
     link_url: STORE_CONTACT_URL,
   },
@@ -196,6 +199,117 @@ function RoleCard({ card, index }) {
   );
 }
 
+function StoreCarousel() {
+  const [stores, setStores] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [cycle, setCycle] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+
+    api.get('/public/recommended-stores')
+      .then((response) => {
+        if (!active) return;
+        const nextStores = Array.isArray(response.data?.stores)
+          ? response.data.stores.slice(0, 8)
+          : [];
+        setStores(nextStores);
+        setActiveIndex(0);
+      })
+      .catch(() => {
+        if (active) setStores([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const items = stores.length ? stores : fallbackStores;
+  const currentIndex = activeIndex % items.length;
+  const activeStore = items[currentIndex];
+  const fallbackImage = fallbackStores[currentIndex % fallbackStores.length].image_url;
+
+  useEffect(() => {
+    if (paused || items.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setActiveIndex((index) => (index + 1) % items.length);
+    }, 5200);
+
+    return () => window.clearInterval(timer);
+  }, [cycle, items.length, paused]);
+
+  const selectSlide = (index) => {
+    setActiveIndex((index + items.length) % items.length);
+    setCycle((value) => value + 1);
+  };
+
+  const move = (direction) => {
+    selectSlide(currentIndex + direction);
+  };
+
+  return (
+    <section
+      aria-label="Carrossel de lojas em destaque"
+      className="lp2-store-carousel"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false);
+      }}
+      onFocus={() => setPaused(true)}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <img
+        alt={`Ambiente em destaque de ${activeStore.name}`}
+        className="lp2-carousel-image"
+        key={`${activeStore.id}-${currentIndex}`}
+        loading="eager"
+        src={activeStore.image_url || fallbackImage}
+      />
+      <div className="lp2-carousel-shade" />
+
+      <div className="lp2-carousel-top">
+        <span><Symbol type="store" /> Lojas em destaque</span>
+        <span>{String(currentIndex + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span>
+      </div>
+
+      <div aria-live="polite" className="lp2-carousel-content">
+        <p>{stores.length ? 'Parceiro InstalaPro' : 'Sua marca pode estar aqui'}</p>
+        <h2>{activeStore.name}</h2>
+        <span>{activeStore.description}</span>
+        <a href={activeStore.link_url || STORE_CONTACT_URL} rel="noreferrer" target="_blank">
+          {activeStore.cta_label || 'Visitar loja'} <i aria-hidden="true">↗</i>
+        </a>
+      </div>
+
+      <div className="lp2-carousel-controls">
+        <button aria-label="Ver loja anterior" onClick={() => move(-1)} type="button">←</button>
+        <div aria-label="Escolher loja" className="lp2-carousel-dots">
+          {items.map((store, index) => (
+            <button
+              aria-label={`Ver ${store.name}`}
+              aria-pressed={index === currentIndex}
+              className={index === currentIndex ? 'is-active' : ''}
+              key={store.id}
+              onClick={() => selectSlide(index)}
+              type="button"
+            />
+          ))}
+        </div>
+        <button aria-label="Ver próxima loja" onClick={() => move(1)} type="button">→</button>
+      </div>
+
+      {!paused && items.length > 1 ? (
+        <div className="lp2-carousel-progress" key={`${currentIndex}-${cycle}`}><span /></div>
+      ) : null}
+    </section>
+  );
+}
+
 function Hero() {
   return (
     <section className="lp2-stage" id="como-funciona">
@@ -210,13 +324,27 @@ function Hero() {
       <div className="lp2-intro">
         <p className="lp2-badge">
           <span aria-hidden="true">◎</span>
-          Conectamos instaladores, lojas e clientes
+          Clientes, instaladores e lojas no mesmo lugar
         </p>
 
         <h1>
           Precisa instalar
           <strong>papel de parede?</strong>
         </h1>
+
+        <p className="lp2-copy">
+          Crie seu pedido, encontre profissionais da sua região e descubra lojas que ajudam a transformar o seu ambiente.
+        </p>
+
+        <div className="lp2-actions">
+          <Link className="lp2-primary" to={REQUEST_PATH}>
+            Criar meu pedido <span aria-hidden="true">→</span>
+          </Link>
+          <a className="lp2-secondary" href="#acessos">
+            <span aria-hidden="true">↓</span>
+            Como funciona
+          </a>
+        </div>
 
         <div aria-label="Fluxo da plataforma" className="lp2-flow">
           <span><Symbol type="client" /> Cliente</span>
@@ -225,94 +353,28 @@ function Hero() {
           <i aria-hidden="true">↔</i>
           <span><Symbol type="store" /> Loja</span>
         </div>
-
-        <p className="lp2-copy">
-          Você cria seu pedido e instaladores da sua região <em>respondem.</em>
-          <br />
-          Lojas parceiras <em>anunciam</em>, ganham visibilidade e <em>geram oportunidades.</em>
-        </p>
-
-        <div className="lp2-actions">
-          <Link className="lp2-primary" to={REQUEST_PATH}>
-            Criar meu pedido <span aria-hidden="true">→</span>
-          </Link>
-          <a className="lp2-secondary" href="#cliente">
-            <span aria-hidden="true">↓</span>
-            Conhecer as áreas
-          </a>
-        </div>
       </div>
 
-      <div className="lp2-roles">
-        {roleCards.map((card, index) => <RoleCard card={card} index={index} key={card.id} />)}
-      </div>
+      <StoreCarousel />
     </section>
   );
 }
 
-function StoreRail() {
-  const [stores, setStores] = useState([]);
-  const [page, setPage] = useState(0);
-  const railRef = useRef(null);
-
-  useEffect(() => {
-    let active = true;
-
-    api.get('/public/recommended-stores')
-      .then((response) => {
-        if (active) setStores(Array.isArray(response.data?.stores) ? response.data.stores : []);
-      })
-      .catch(() => {
-        if (active) setStores([]);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const items = stores.length ? stores : fallbackStores;
-  const scroll = (direction) => {
-    const rail = railRef.current;
-    if (!rail) return;
-    rail.scrollBy({ behavior: 'smooth', left: direction * rail.clientWidth * 0.82 });
-  };
-  const updatePage = () => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const maxScroll = Math.max(rail.scrollWidth - rail.clientWidth, 1);
-    setPage(Math.round((rail.scrollLeft / maxScroll) * Math.min(items.length - 1, 3)));
-  };
-
+function AudienceSection() {
   return (
-    <section aria-label="Lojas em destaque" className="lp2-store-showcase">
-      <button aria-label="Ver lojas anteriores" className="lp2-rail-arrow lp2-rail-arrow-prev" onClick={() => scroll(-1)} type="button">‹</button>
+    <section className="lp2-audiences" id="acessos">
+      <header>
+        <div>
+          <p>Escolha seu caminho</p>
+          <h2>Direto para o que você precisa.</h2>
+        </div>
+        <span>
+          Cliente publica. Instalador responde. Loja ganha visibilidade.
+        </span>
+      </header>
 
-      <div className="lp2-store-rail" onScroll={updatePage} ref={railRef}>
-        {items.map((store) => (
-          <article className="lp2-store-card" key={store.id}>
-            <div className="lp2-store-visual">
-              {store.image_url ? (
-                <img alt="" loading="lazy" src={store.image_url} />
-              ) : (
-                <Symbol type="store" />
-              )}
-            </div>
-            <div>
-              <h2>{store.name}</h2>
-              <p>{store.description}</p>
-              <a href={store.link_url || STORE_CONTACT_URL} rel="noreferrer" target="_blank">
-                {store.cta_label || 'Visitar loja'} <span aria-hidden="true">↗</span>
-              </a>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      <button aria-label="Ver próximas lojas" className="lp2-rail-arrow lp2-rail-arrow-next" onClick={() => scroll(1)} type="button">›</button>
-
-      <div aria-hidden="true" className="lp2-rail-dots">
-        {[0, 1, 2, 3].map((dot) => <span className={page === dot ? 'is-active' : ''} key={dot} />)}
+      <div className="lp2-roles">
+        {roleCards.map((card, index) => <RoleCard card={card} index={index} key={card.id} />)}
       </div>
     </section>
   );
@@ -325,7 +387,7 @@ export default function ClientLandingLegacy() {
       <Header />
       <main id="conteudo">
         <Hero />
-        <StoreRail />
+        <AudienceSection />
       </main>
     </div>
   );
