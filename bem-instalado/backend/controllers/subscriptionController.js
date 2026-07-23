@@ -35,6 +35,10 @@ function getPlanBenefits() {
   ];
 }
 
+function formatTrialDays(count) {
+  return `${count} ${count === 1 ? 'dia' : 'dias'}`;
+}
+
 function isManualConfirmationEnabled() {
   return process.env.ALLOW_MANUAL_SUBSCRIPTION_CONFIRMATION === 'true' && process.env.NODE_ENV !== 'production';
 }
@@ -524,7 +528,7 @@ exports.getSubscription = async (req, res) => {
       payment_notice: adminAccess
         ? 'Acesso administrativo liberado sem cobrança.'
         : trialAccess
-          ? `Teste grátis ativo por mais ${getTrialDaysRemaining(subscription)} dia(s). Nenhuma cobrança será feita durante esse período.`
+          ? `Teste grátis ativo por mais ${formatTrialDays(getTrialDaysRemaining(subscription))}. Nenhuma cobrança será feita durante esse período.`
           : launchAccess
             ? 'Acesso de lançamento liberado sem cobrança.'
             : paymentMode === 'asaas'

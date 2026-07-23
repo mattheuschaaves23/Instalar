@@ -151,6 +151,8 @@ export default function Subscription() {
   const isTrialPlan = subscription?.plan === 'trial';
   const isExpiredTrial = isTrialPlan && subscription?.is_expired;
   const hasComplimentaryAccess = isAdminAccess || isLaunchAccess || isTrialAccess;
+  const trialDaysRemaining = subscription?.trial?.days_remaining || 0;
+  const trialDaysLabel = `${trialDaysRemaining} ${trialDaysRemaining === 1 ? 'dia' : 'dias'}`;
   const currentPaymentIsPending = payment?.payment?.status === 'pending';
   const showRecipient = Boolean(payment?.recipientName || payment?.city);
   const pricing = subscription?.pricing || defaultPricing;
@@ -241,7 +243,7 @@ export default function Subscription() {
           <p className="mt-5 text-sm leading-7 text-[var(--muted)]">
             {hasComplimentaryAccess
               ? isTrialAccess
-                ? `Você tem ${subscription?.trial?.days_remaining || 1} dia(s) de teste restante(s). Nenhuma cobrança será feita durante esse período.`
+                ? `Você tem ${trialDaysLabel} de teste. Nenhuma cobrança será feita durante esse período.`
                 : 'Você já pode usar oportunidades, agenda, clientes e orçamentos. Nenhum pagamento é necessário para este acesso.'
               : 'Acompanhe aqui a ativação e a validade da sua assinatura.'}
           </p>
@@ -411,7 +413,9 @@ export default function Subscription() {
               {hasComplimentaryAccess
                 ? isAdminAccess
                   ? 'O acesso é vinculado à função administrativa desta conta.'
-                  : 'O acesso é gratuito nesta fase. A plataforma avisará com antecedência antes de qualquer mudança no modelo de cobrança.'
+                  : isTrialAccess
+                    ? `O teste termina em ${formatShortDate(subscription?.trial?.ends_at)}. Depois, o Pix mensal só será gerado se você decidir assinar.`
+                    : 'O acesso de lançamento é gratuito e não gera cobrança automática.'
                 : 'O usuário pode entrar na conta, ajustar perfil e acompanhar o status da assinatura nesta tela.'}
             </p>
           </section>
