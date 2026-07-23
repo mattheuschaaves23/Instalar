@@ -16053,20 +16053,6 @@ body {
     0 -0.08em #ea4335;
 }
 
-.installer-login-apple {
-  width: 1.3rem;
-  height: 1.3rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
-
-.installer-login-apple svg {
-  width: 1.3rem;
-  height: 1.3rem;
-}
-
 .installer-login-register {
   margin: 1.55rem 0 0;
   color: rgba(255, 255, 255, 0.68);
@@ -16795,20 +16781,6 @@ body {
     -0.08em 0 #34a853,
     0 0.08em #fbbc05,
     0 -0.08em #ea4335;
-}
-
-.client-login-apple {
-  width: 1.3rem;
-  height: 1.3rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
-
-.client-login-apple svg {
-  width: 1.3rem;
-  height: 1.3rem;
 }
 
 .client-login-register {

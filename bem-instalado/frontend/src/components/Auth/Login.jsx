@@ -115,18 +115,6 @@ function InstallerLoginIcon({ name }) {
     );
   }
 
-  if (name === 'apple') {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path
-          d="M16.8 12.6c0-2 1.7-3 1.8-3.1-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.7-.7-2.7-.6-1.4 0-2.7.8-3.4 2-1.5 2.6-.4 6.4 1 8.5.7 1 1.6 2.2 2.7 2.1 1.1 0 1.5-.7 2.8-.7s1.7.7 2.9.7 1.9-1 2.6-2.1c.8-1.2 1.2-2.4 1.2-2.4 0-.1-2.9-1.1-3-3.5Z"
-          fill="currentColor"
-        />
-        <path d="M14.9 6.6c.6-.7 1-1.7.9-2.6-.9.1-1.9.6-2.5 1.3-.6.7-1.1 1.6-.9 2.5.9.1 1.9-.5 2.5-1.2Z" fill="currentColor" />
-      </svg>
-    );
-  }
-
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <path d="M4.5 19.5h15" {...common} />
@@ -407,7 +395,7 @@ export default function Login() {
               <InstallerLoginIcon name="arrow" />
             </button>
 
-            {!IS_INSTALLER_APP && (authCapabilities.oauth.google || authCapabilities.oauth.apple) ? (
+            {!IS_INSTALLER_APP && authCapabilities.oauth.google ? (
               <>
                 <div className="installer-login-divider">
                   <span />
@@ -420,14 +408,6 @@ export default function Login() {
                     <button onClick={() => handleSocialLogin('google')} type="button">
                       <span className="installer-login-google">G</span>
                       <span>Entrar com Gmail</span>
-                    </button>
-                  ) : null}
-                  {authCapabilities.oauth.apple ? (
-                    <button onClick={() => handleSocialLogin('apple')} type="button">
-                      <span className="installer-login-apple">
-                        <InstallerLoginIcon name="apple" />
-                      </span>
-                      <span>Entrar com Apple</span>
                     </button>
                   ) : null}
                 </div>

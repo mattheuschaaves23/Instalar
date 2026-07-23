@@ -12,18 +12,11 @@ const REGISTER_PLAN_PRICE = Number(process.env.SUBSCRIPTION_PRICE || 40);
 const PASSWORD_RESET_EXPIRATION_MINUTES = Number(process.env.PASSWORD_RESET_EXPIRATION_MINUTES || 30);
 const OAUTH_STATE_EXPIRES_IN = '10m';
 const TWO_FACTOR_SETUP_EXPIRES_IN = '10m';
-const OAUTH_APPLE_AUDIENCE = 'https://appleid.apple.com';
-const OAUTH_APPLE_ISSUER = 'https://appleid.apple.com';
 const OAUTH_ALLOWED_ROLES = new Set(['installer', 'client']);
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 const OAUTH_REDIRECT_ERROR_CODES = new Set([
   'account_type_mismatch',
   'access_denied',
-  'apple_id_token_missing',
-  'apple_key_not_found',
-  'apple_keys_fetch_failed',
-  'apple_not_configured',
-  'apple_token_exchange_failed',
   'code_missing',
   'google_audience_invalid',
   'google_id_token_missing',
@@ -170,7 +163,7 @@ function getOAuthCallbackUrl(req, provider) {
   const configured = firstEnvValue(
     `${providerKey}_OAUTH_CALLBACK_URL`,
     `${providerKey}_CALLBACK_URL`,
-    provider === 'apple' ? 'APPLE_REDIRECT_URI' : 'GOOGLE_REDIRECT_URI'
+    'GOOGLE_REDIRECT_URI'
   );
 
   if (configured && shouldUseConfiguredPublicUrl(configured, req)) {
@@ -255,7 +248,7 @@ function getOAuthRedirectErrorCode(error) {
 
 function normalizeProvider(provider) {
   const value = String(provider || '').trim().toLowerCase();
-  return ['google', 'apple'].includes(value) ? value : '';
+  return value === 'google' ? value : '';
 }
 
 function signOAuthState(payload) {
@@ -268,36 +261,6 @@ function verifyOAuthState(state) {
 
 function parseBoolean(value) {
   return value === true || value === 'true' || value === '1';
-}
-
-function getApplePrivateKey() {
-  const rawPrivateKey = firstEnvValue('APPLE_PRIVATE_KEY');
-
-  if (rawPrivateKey) {
-    return rawPrivateKey.replace(/\\n/g, '\n');
-  }
-
-  const base64PrivateKey = firstEnvValue('APPLE_PRIVATE_KEY_BASE64');
-
-  if (base64PrivateKey) {
-    return Buffer.from(base64PrivateKey, 'base64').toString('utf8');
-  }
-
-  return '';
-}
-
-function getAppleConfig() {
-  return {
-    serviceId: firstEnvValue('APPLE_SERVICE_ID', 'APPLE_CLIENT_ID'),
-    teamId: firstEnvValue('APPLE_TEAM_ID'),
-    keyId: firstEnvValue('APPLE_KEY_ID'),
-    privateKey: getApplePrivateKey(),
-  };
-}
-
-function hasAppleConfig() {
-  const config = getAppleConfig();
-  return Boolean(config.serviceId && config.teamId && config.keyId && config.privateKey);
 }
 
 function hasGoogleConfig() {
@@ -490,7 +453,6 @@ exports.getCapabilities = (_req, res) => {
     password_reset: isEmailEnabled() || process.env.NODE_ENV !== 'production',
     oauth: {
       google: hasGoogleConfig(),
-      apple: hasAppleConfig(),
     },
   });
 };
@@ -730,40 +692,22 @@ exports.startOAuth = async (req, res) => {
     const state = signOAuthState({ provider, role, next });
     const redirectUri = getOAuthCallbackUrl(req, provider);
 
-    if (provider === 'google') {
-      if (!hasGoogleConfig()) {
-        return redirectOAuthResult(req, res, { role, error: 'google_not_configured' });
-      }
-
-      const authorizationParams = new URLSearchParams({
-        client_id: firstEnvValue('GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_CLIENT_ID'),
-        redirect_uri: redirectUri,
-        response_type: 'code',
-        scope: 'openid email profile',
-        prompt: 'select_account',
-        access_type: 'offline',
-        include_granted_scopes: 'true',
-        state,
-      });
-
-      return res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${authorizationParams.toString()}`);
+    if (!hasGoogleConfig()) {
+      return redirectOAuthResult(req, res, { role, error: 'google_not_configured' });
     }
 
-    if (!hasAppleConfig()) {
-      return redirectOAuthResult(req, res, { role, error: 'apple_not_configured' });
-    }
-
-    const appleConfig = getAppleConfig();
     const authorizationParams = new URLSearchParams({
-      client_id: appleConfig.serviceId,
+      client_id: firstEnvValue('GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_CLIENT_ID'),
       redirect_uri: redirectUri,
       response_type: 'code',
-      response_mode: 'form_post',
-      scope: 'name email',
+      scope: 'openid email profile',
+      prompt: 'select_account',
+      access_type: 'offline',
+      include_granted_scopes: 'true',
       state,
     });
 
-    return res.redirect(`https://appleid.apple.com/auth/authorize?${authorizationParams.toString()}`);
+    return res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${authorizationParams.toString()}`);
   } catch (_error) {
     return redirectOAuthResult(req, res, { role, next, error: 'oauth_start_failed' });
   }
@@ -822,94 +766,6 @@ async function exchangeGoogleCode(req, code) {
   };
 }
 
-function buildAppleClientSecret() {
-  const appleConfig = getAppleConfig();
-
-  return jwt.sign({}, appleConfig.privateKey, {
-    algorithm: 'ES256',
-    audience: OAUTH_APPLE_AUDIENCE,
-    expiresIn: '180d',
-    issuer: appleConfig.teamId,
-    keyid: appleConfig.keyId,
-    subject: appleConfig.serviceId,
-  });
-}
-
-async function getApplePublicKey(kid) {
-  const keysResponse = await fetch('https://appleid.apple.com/auth/keys');
-
-  if (!keysResponse.ok) {
-    throw new Error('apple_keys_fetch_failed');
-  }
-
-  const { keys = [] } = await keysResponse.json();
-  const key = keys.find((item) => item.kid === kid);
-
-  if (!key) {
-    throw new Error('apple_key_not_found');
-  }
-
-  return crypto.createPublicKey({ key, format: 'jwk' });
-}
-
-function parseAppleUserName(rawUser) {
-  if (!rawUser) {
-    return '';
-  }
-
-  try {
-    const parsedUser = JSON.parse(rawUser);
-    const firstName = parsedUser?.name?.firstName || '';
-    const lastName = parsedUser?.name?.lastName || '';
-    return `${firstName} ${lastName}`.trim();
-  } catch (_error) {
-    return '';
-  }
-}
-
-async function exchangeAppleCode(req, code) {
-  const appleConfig = getAppleConfig();
-  const redirectUri = getOAuthCallbackUrl(req, 'apple');
-  const tokenResponse = await fetch('https://appleid.apple.com/auth/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      client_id: appleConfig.serviceId,
-      client_secret: buildAppleClientSecret(),
-      code,
-      grant_type: 'authorization_code',
-      redirect_uri: redirectUri,
-    }),
-  });
-
-  if (!tokenResponse.ok) {
-    throw new Error('apple_token_exchange_failed');
-  }
-
-  const tokenData = await tokenResponse.json();
-
-  if (!tokenData.id_token) {
-    throw new Error('apple_id_token_missing');
-  }
-
-  const decodedToken = jwt.decode(tokenData.id_token, { complete: true });
-  const publicKey = await getApplePublicKey(decodedToken?.header?.kid);
-  const profile = jwt.verify(tokenData.id_token, publicKey, {
-    algorithms: ['RS256'],
-    audience: appleConfig.serviceId,
-    issuer: OAUTH_APPLE_ISSUER,
-  });
-
-  return {
-    providerId: profile.sub,
-    email: profile.email,
-    emailVerified: parseBoolean(profile.email_verified),
-    name: parseAppleUserName(req.body?.user),
-  };
-}
-
 exports.handleOAuthCallback = async (req, res) => {
   let role = 'installer';
   let next = getDefaultNextPath(role);
@@ -940,9 +796,7 @@ exports.handleOAuthCallback = async (req, res) => {
       return redirectOAuthResult(req, res, { role, next, error: 'code_missing' });
     }
 
-    const oauthProfile = provider === 'google'
-      ? await exchangeGoogleCode(req, code)
-      : await exchangeAppleCode(req, code);
+    const oauthProfile = await exchangeGoogleCode(req, code);
 
     const user = await findOrCreateOAuthUser(oauthProfile, provider, role, req);
 

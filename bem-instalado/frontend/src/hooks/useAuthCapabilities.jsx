@@ -3,7 +3,7 @@ import api from '../services/api';
 
 const DEFAULT_CAPABILITIES = {
   password_reset: false,
-  oauth: { google: false, apple: false },
+  oauth: { google: false },
 };
 
 export default function useAuthCapabilities() {
@@ -19,7 +19,6 @@ export default function useAuthCapabilities() {
           password_reset: Boolean(response.data?.password_reset),
           oauth: {
             google: Boolean(response.data?.oauth?.google),
-            apple: Boolean(response.data?.oauth?.apple),
           },
         });
       })

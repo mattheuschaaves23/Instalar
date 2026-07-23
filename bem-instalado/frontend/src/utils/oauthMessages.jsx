@@ -2,13 +2,10 @@ const OAUTH_ERROR_MESSAGES = {
   account_type_mismatch: 'Esse e-mail já pertence ao outro tipo de conta. Entre pela tela correta.',
   google_not_configured:
     'Login com Google ainda não está configurado. Preencha GOOGLE_OAUTH_CLIENT_ID e GOOGLE_OAUTH_CLIENT_SECRET no backend.',
-  apple_not_configured: 'Login com Apple ainda não está configurado. Preencha as chaves da Apple no backend.',
   google_token_exchange_failed: 'O Google recusou o callback. Confira a URL autorizada no Google Cloud.',
   google_id_token_missing: 'O Google não retornou o token da conta. Confira o Client ID e o Client Secret.',
   google_token_verify_failed: 'Não foi possível validar o token do Google. Tente novamente em alguns minutos.',
   google_audience_invalid: 'O Client ID do Google não confere com esta aplicação.',
-  apple_token_exchange_failed: 'A Apple recusou o callback. Confira a URL autorizada e as chaves da Apple.',
-  apple_id_token_missing: 'A Apple não retornou o token da conta. Confira as chaves da Apple.',
   access_denied: 'Login cancelado na tela do provedor social.',
   code_missing: 'O provedor social não retornou o código de autorização.',
   oauth_state_expired: 'A tentativa de login expirou. Clique em entrar com Google novamente.',
