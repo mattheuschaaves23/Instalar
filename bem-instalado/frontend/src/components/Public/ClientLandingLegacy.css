@@ -427,6 +427,11 @@
   color: var(--lp2-gold-soft);
 }
 
+.lp2-symbol-installer svg {
+  width: 64%;
+  height: 64%;
+}
+
 .lp2-copy {
   max-width: 630px;
   margin-top: 1.8rem !important;

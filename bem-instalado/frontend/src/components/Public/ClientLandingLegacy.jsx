@@ -71,9 +71,9 @@ function Symbol({ type }) {
     ),
     installer: (
       <>
-        <path d="M5 7.5A1.5 1.5 0 0 1 6.5 6H16a2 2 0 0 1 2 2v2H9a2 2 0 0 0-2 2v6" />
-        <path d="M9 18h4" />
-        <path d="M13 18v2.5" />
+        <rect height="6" rx="2" width="14" x="2.5" y="3.5" />
+        <path d="M16.5 6.5H19a2 2 0 0 1 2 2V11a2 2 0 0 1-2 2h-6a2 2 0 0 0-2 2v2" />
+        <rect height="4" rx="1" width="5" x="8.5" y="17" />
       </>
     ),
     store: (
