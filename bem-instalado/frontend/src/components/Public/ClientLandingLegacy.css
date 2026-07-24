@@ -73,18 +73,19 @@
   position: relative;
   z-index: 40;
   display: grid;
-  grid-template-columns: minmax(190px, 0.8fr) 2.6fr auto;
-  width: min(calc(100% - 4rem), 1540px);
-  height: 86px;
+  grid-template-columns: 220px minmax(0, 1fr) 330px;
+  width: min(calc(100% - 3rem), 1552px);
+  height: 94px;
   align-items: center;
-  gap: 2rem;
+  gap: 0;
   margin: 0 auto;
   border-bottom: 1px solid rgba(248, 245, 239, 0.12);
 }
 
 .lp2-brand {
   display: block;
-  width: 186px;
+  width: 194px;
+  margin-left: 2px;
   line-height: 0;
 }
 
@@ -97,14 +98,15 @@
 .lp2-nav {
   display: flex;
   justify-content: center;
-  gap: clamp(1.5rem, 3vw, 3.6rem);
+  gap: 2.9rem;
+  transform: translateX(10px);
 }
 
 .lp2-nav a {
   position: relative;
   color: rgba(248, 245, 239, 0.76);
-  font-size: 0.78rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 430;
   white-space: nowrap;
   transition: color 0.25s ease;
 }
@@ -135,20 +137,21 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  justify-content: flex-end;
+  gap: 1.7rem;
 }
 
 .lp2-access > p {
   color: rgba(248, 245, 239, 0.54);
-  font-size: 0.65rem;
+  font-size: 0.78rem;
   line-height: 1.45;
   text-align: right;
 }
 
 .lp2-access-trigger {
   display: inline-flex;
-  min-width: 138px;
-  height: 50px;
+  min-width: 145px;
+  height: 56px;
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
@@ -156,7 +159,7 @@
   border-radius: 13px;
   background: rgba(7, 7, 6, 0.74);
   color: var(--lp2-gold-soft);
-  font-size: 0.77rem;
+  font-size: 1rem;
   font-weight: 700;
   transition:
     background 0.25s ease,
@@ -235,9 +238,9 @@
 }
 
 .lp2-page main {
-  width: min(calc(100% - 4rem), 1540px);
+  width: min(calc(100% - 5.375rem), 1514px);
   margin: 0 auto;
-  padding: 0.5rem 0;
+  padding: 0;
 }
 
 .lp2-stage {
@@ -246,14 +249,14 @@
   grid-template-areas:
     'intro roles'
     'carousel carousel';
-  grid-template-columns: minmax(440px, 0.88fr) minmax(620px, 1.12fr);
-  height: calc(100svh - 102px);
-  min-height: 650px;
-  max-height: 820px;
+  grid-template-columns: minmax(0, 0.98fr) minmax(720px, 1.02fr);
+  height: calc(100svh - 105px);
+  min-height: 700px;
+  max-height: 795px;
   align-items: center;
-  grid-template-rows: minmax(0, 1fr) auto;
-  column-gap: clamp(2.5rem, 4vw, 5rem);
-  row-gap: 0.75rem;
+  grid-template-rows: minmax(0, 1fr) 228px;
+  column-gap: 2.5rem;
+  row-gap: 1.25rem;
   overflow: visible;
 }
 
@@ -272,17 +275,17 @@
 }
 
 .lp2-orbits > span:first-child {
-  top: 1%;
-  right: -9%;
-  width: 78%;
-  height: 86%;
+  top: 3%;
+  right: -7%;
+  width: 76%;
+  height: 82%;
 }
 
 .lp2-orbits > span:nth-child(2) {
-  top: 10%;
-  right: -18%;
-  width: 92%;
-  height: 76%;
+  top: 8%;
+  right: -14%;
+  width: 88%;
+  height: 75%;
   transform: rotate(9deg);
 }
 
@@ -299,58 +302,68 @@
 }
 
 .lp2-orbits i:nth-of-type(1) {
-  top: 11%;
-  right: 15%;
+  top: 8%;
+  right: 16.8%;
 }
 
 .lp2-orbits i:nth-of-type(2) {
-  top: 49%;
-  right: 1%;
+  top: 10.3%;
+  right: 6.4%;
   animation-delay: 0.7s;
 }
 
 .lp2-orbits i:nth-of-type(3) {
-  right: 8%;
-  bottom: 3%;
+  top: 70.5%;
+  right: 6.4%;
   animation-delay: 1.4s;
+}
+
+.lp2-orbits i:nth-of-type(4) {
+  top: 63.5%;
+  left: -0.5rem;
+  animation-delay: 2.1s;
 }
 
 .lp2-intro {
   position: relative;
   z-index: 2;
   grid-area: intro;
-  padding: 0.75rem 0 0.75rem 1.2rem;
+  align-self: start;
+  padding: 2.62rem 0 0 1.85rem;
   animation: lp2-rise 0.7s ease both;
 }
 
 .lp2-badge {
   display: inline-flex;
-  min-height: 36px;
+  min-height: 42px;
   align-items: center;
   gap: 0.75rem;
   border: 1px solid rgba(227, 172, 50, 0.34);
   border-radius: 999px;
   background: rgba(227, 172, 50, 0.035);
   color: var(--lp2-gold-soft);
-  padding: 0.5rem 0.9rem;
-  font-size: 0.62rem;
+  padding: 0.62rem 0.95rem;
+  font-size: 0.72rem;
   font-weight: 750;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  line-height: 1;
 }
 
 .lp2-badge span {
   font-size: 1.1rem;
+  line-height: 1;
 }
 
 .lp2-intro h1 {
-  max-width: 650px;
-  margin-top: 1rem;
+  width: 700px;
+  max-width: none;
+  margin-top: 1.9rem;
   color: var(--lp2-text);
-  font-size: clamp(3.25rem, 5.2vw, 5.7rem);
+  font-size: clamp(4rem, 5.3vw, 5.35rem);
   font-weight: 760;
-  letter-spacing: -0.065em;
-  line-height: 0.94;
+  letter-spacing: -0.025em;
+  line-height: 0.87;
 }
 
 .lp2-intro h1 strong {
@@ -365,17 +378,19 @@
 .lp2-flow {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  max-width: 560px;
-  margin-top: 1rem;
+  width: 595px;
+  gap: 0.92rem;
+  justify-content: space-between;
+  max-width: 595px;
+  margin-top: 2.05rem;
   color: rgba(248, 245, 239, 0.86);
-  font-size: 0.84rem;
+  font-size: 1rem;
 }
 
 .lp2-flow > span {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 1.1rem;
   white-space: nowrap;
 }
 
@@ -456,6 +471,7 @@
   border-radius: 4px 4px 8px 8px;
   background:
     repeating-linear-gradient(90deg, transparent 0 4px, rgba(227, 172, 50, 0.55) 4px 6px);
+  box-shadow: 0 3px 0 -1px rgba(227, 172, 50, 0.7);
   content: '';
   transform: translateX(-50%);
 }
@@ -468,45 +484,47 @@
   height: 17px;
   border: 2px solid var(--lp2-gold);
   border-top: 0;
+  background:
+    linear-gradient(90deg, transparent 0 58%, rgba(227, 172, 50, 0.82) 58% 64%, transparent 64%);
   content: '';
   transform: translateX(-50%);
 }
 
 .lp2-flow .lp2-symbol {
-  width: 42px;
-  height: 42px;
+  width: 52px;
+  height: 52px;
 }
 
 .lp2-flow .lp2-symbol-client::before {
-  top: 8px;
-}
-
-.lp2-flow .lp2-symbol-client::after {
-  bottom: 7px;
-}
-
-.lp2-flow .lp2-symbol-installer::before {
   top: 10px;
 }
 
+.lp2-flow .lp2-symbol-client::after {
+  bottom: 9px;
+}
+
+.lp2-flow .lp2-symbol-installer::before {
+  top: 13px;
+}
+
 .lp2-flow .lp2-symbol-installer::after {
-  top: 23px;
+  top: 27px;
 }
 
 .lp2-flow .lp2-symbol-store::before {
-  top: 8px;
+  top: 10px;
 }
 
 .lp2-flow .lp2-symbol-store::after {
-  top: 17px;
+  top: 20px;
 }
 
 .lp2-copy {
-  max-width: 555px;
-  margin-top: 0.85rem !important;
+  max-width: 670px;
+  margin-top: 2.15rem !important;
   color: var(--lp2-muted);
-  font-size: 0.92rem;
-  line-height: 1.58;
+  font-size: 1.15rem;
+  line-height: 1.62;
 }
 
 .lp2-copy em {
@@ -518,18 +536,18 @@
 .lp2-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 1.32rem;
+  margin-top: 1.25rem;
 }
 
 .lp2-primary,
 .lp2-secondary {
   display: inline-flex;
-  min-height: 50px;
+  min-height: 62px;
   align-items: center;
   justify-content: center;
   border-radius: 14px;
-  font-size: 0.77rem;
+  font-size: 0.92rem;
   font-weight: 750;
   transition:
     transform 0.25s ease,
@@ -538,7 +556,7 @@
 }
 
 .lp2-primary {
-  min-width: 244px;
+  min-width: 272px;
   justify-content: space-between;
   background: linear-gradient(115deg, #f0bc4c, #f5d077 52%, #c98713);
   box-shadow: 0 13px 36px rgba(190, 126, 9, 0.19);
@@ -551,7 +569,7 @@
 }
 
 .lp2-secondary {
-  min-width: 224px;
+  min-width: 316px;
   gap: 0.7rem;
   border: 1px solid rgba(248, 245, 239, 0.25);
   color: rgba(248, 245, 239, 0.86);
@@ -584,6 +602,10 @@
   grid-area: roles;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
+  align-self: start;
+  width: min(100%, 720px);
+  margin-left: -3px;
+  margin-top: 7.12rem;
   animation: lp2-rise 0.7s 0.12s ease both;
 }
 
@@ -594,7 +616,7 @@
 .lp2-role > a {
   position: relative;
   display: flex;
-  min-height: 316px;
+  min-height: 410px;
   flex-direction: column;
   align-items: flex-start;
   overflow: hidden;
@@ -605,7 +627,7 @@
     linear-gradient(145deg, rgba(227, 172, 50, 0.035), transparent 42%),
     rgba(5, 5, 4, 0.72);
   color: var(--lp2-text);
-  padding: 1.15rem 1.25rem 1.05rem;
+  padding: 1.85rem 1.8rem 1.6rem;
   transition:
     border-color 0.3s ease,
     background 0.3s ease,
@@ -648,58 +670,58 @@
 
 .lp2-role-index {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 1.15rem;
+  right: 1.15rem;
   color: rgba(227, 172, 50, 0.42);
   font-family: 'Fraunces', Georgia, serif;
   font-size: 0.7rem;
 }
 
 .lp2-role .lp2-symbol {
-  width: 50px;
-  height: 50px;
-  margin: 0.15rem 0 1rem;
+  width: 70px;
+  height: 70px;
+  margin: 0 0 2.5rem;
   background: rgba(227, 172, 50, 0.025);
   box-shadow: 0 0 28px rgba(227, 172, 50, 0.06);
 }
 
 .lp2-role .lp2-symbol-client::before {
-  top: 11px;
-  width: 11px;
-  height: 11px;
-}
-
-.lp2-role .lp2-symbol-client::after {
-  bottom: 9px;
-  width: 24px;
-  height: 12px;
-}
-
-.lp2-role .lp2-symbol-installer::before {
-  top: 14px;
-  width: 27px;
+  top: 15px;
+  width: 14px;
   height: 14px;
 }
 
+.lp2-role .lp2-symbol-client::after {
+  bottom: 13px;
+  width: 30px;
+  height: 15px;
+}
+
+.lp2-role .lp2-symbol-installer::before {
+  top: 18px;
+  width: 34px;
+  height: 18px;
+}
+
 .lp2-role .lp2-symbol-installer::after {
-  top: 30px;
-  width: 31px;
+  top: 38px;
+  width: 39px;
 }
 
 .lp2-role .lp2-symbol-store::before {
-  top: 11px;
-  width: 27px;
-  height: 10px;
+  top: 15px;
+  width: 34px;
+  height: 12px;
 }
 
 .lp2-role .lp2-symbol-store::after {
-  top: 21px;
-  width: 24px;
-  height: 20px;
+  top: 27px;
+  width: 30px;
+  height: 26px;
 }
 
 .lp2-role h2 {
-  font-size: clamp(1.14rem, 1.35vw, 1.38rem);
+  font-size: clamp(1.2rem, 1.28vw, 1.3rem);
   font-weight: 560;
   letter-spacing: -0.035em;
   line-height: 1.15;
@@ -709,20 +731,20 @@
   display: block;
   width: 28px;
   height: 2px;
-  margin: 0.7rem 0 0.75rem;
+  margin: 1.5rem 0 1.6rem;
   background: var(--lp2-gold);
 }
 
 .lp2-role p {
   color: var(--lp2-muted);
-  font-size: 0.76rem;
-  line-height: 1.6;
+  font-size: 0.94rem;
+  line-height: 1.82;
 }
 
 .lp2-role-arrow {
   margin-top: auto;
   color: var(--lp2-gold);
-  font-size: 1.75rem;
+  font-size: 2rem;
   transition: transform 0.25s ease;
 }
 
@@ -753,6 +775,7 @@
   position: relative;
   z-index: 3;
   grid-area: carousel;
+  align-self: stretch;
   min-height: 0;
   overflow: hidden;
   border: 1px solid rgba(227, 172, 50, 0.34);
@@ -761,7 +784,7 @@
     radial-gradient(circle at 50% -60%, rgba(227, 172, 50, 0.13), transparent 48%),
     linear-gradient(105deg, rgba(227, 172, 50, 0.045), transparent 38%),
     rgba(5, 5, 4, 0.88);
-  padding: 0.62rem 0.8rem 0.55rem;
+  padding: 1.12rem 1.55rem 0.65rem;
   box-shadow:
     0 24px 70px rgba(0, 0, 0, 0.35),
     inset 0 0 0 1px rgba(255, 255, 255, 0.018);
@@ -807,9 +830,10 @@
 
 .lp2-store-rail-body {
   display: grid;
+  height: 167px;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: stretch;
-  gap: 0.75rem;
+  gap: 1.55rem;
 }
 
 .lp2-store-rail-window {
@@ -821,7 +845,7 @@
 .lp2-store-rail-track {
   display: flex;
   height: 100%;
-  transform: translate3d(calc(var(--carousel-position) * -100%), 0, 0);
+  transform: translate3d(var(--carousel-offset), 0, 0);
   transition: transform 0.72s cubic-bezier(0.22, 0.76, 0.22, 1);
   will-change: transform;
 }
@@ -835,15 +859,15 @@
   min-width: 0;
   flex: 0 0 100%;
   grid-template-columns: repeat(var(--carousel-columns), minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 1.1rem;
 }
 
 .lp2-store-card {
   display: grid;
   min-width: 0;
-  min-height: 120px;
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: 0.8rem;
+  min-height: 166px;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 1.85rem;
   align-items: center;
   overflow: hidden;
   border: 1px solid rgba(227, 172, 50, 0.3);
@@ -851,7 +875,7 @@
   background:
     linear-gradient(135deg, rgba(227, 172, 50, 0.055), transparent 48%),
     rgba(9, 8, 6, 0.94);
-  padding: 0.62rem;
+  padding: 1.15rem 1.25rem;
   transition:
     border-color 0.25s ease,
     transform 0.25s ease;
@@ -862,16 +886,56 @@
   transform: translateY(-3px);
 }
 
-.lp2-store-card > img {
-  width: 96px;
-  height: 96px;
+.lp2-store-card-visual {
+  position: relative;
+  display: grid;
+  width: 112px;
+  height: 126px;
+  place-items: center;
+  overflow: hidden;
   border: 1px solid rgba(227, 172, 50, 0.2);
   border-radius: 14px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(227, 172, 50, 0.12), transparent 52%),
+    linear-gradient(145deg, rgba(227, 172, 50, 0.09), rgba(9, 8, 6, 0.96));
+}
+
+.lp2-store-card-visual img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   filter: saturate(0.88) contrast(1.04);
 }
 
-.lp2-store-card > div {
+.lp2-store-card-visual .lp2-symbol {
+  display: none;
+  width: 84px;
+  height: 84px;
+  border-color: rgba(227, 172, 50, 0.48);
+  box-shadow:
+    0 0 0 10px rgba(227, 172, 50, 0.025),
+    0 0 28px rgba(227, 172, 50, 0.1);
+}
+
+.lp2-store-card-visual.is-fallback .lp2-symbol {
+  display: block;
+}
+
+.lp2-store-card-visual .lp2-symbol-store::before {
+  top: 17px;
+  width: 44px;
+  height: 15px;
+}
+
+.lp2-store-card-visual .lp2-symbol-store::after {
+  top: 32px;
+  width: 38px;
+  height: 33px;
+}
+
+.lp2-store-card-content {
   display: flex;
   min-width: 0;
   height: 100%;
@@ -879,19 +943,10 @@
   justify-content: center;
 }
 
-.lp2-store-card p {
-  margin-bottom: 0.24rem;
-  color: var(--lp2-gold);
-  font-size: 0.48rem;
-  font-weight: 750;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .lp2-store-card h2 {
   overflow: hidden;
   color: var(--lp2-text);
-  font-size: clamp(1.05rem, 1.45vw, 1.42rem);
+  font-size: clamp(1.35rem, 1.6vw, 1.62rem);
   font-weight: 660;
   letter-spacing: -0.035em;
   line-height: 1.1;
@@ -899,13 +954,13 @@
   white-space: nowrap;
 }
 
-.lp2-store-card > div > span {
+.lp2-store-card-content > span {
   display: -webkit-box;
   overflow: hidden;
-  margin-top: 0.3rem;
+  margin-top: 0.72rem;
   color: var(--lp2-muted);
-  font-size: 0.66rem;
-  line-height: 1.45;
+  font-size: 0.92rem;
+  line-height: 1.55;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -914,16 +969,16 @@
   display: inline-flex;
   width: fit-content;
   max-width: 100%;
-  min-height: 25px;
+  min-height: 34px;
   align-items: center;
   gap: 0.45rem;
   overflow: hidden;
-  margin-top: 0.4rem;
+  margin-top: 0.72rem;
   border: 1px solid rgba(227, 172, 50, 0.42);
   border-radius: 999px;
   color: var(--lp2-gold-soft);
-  padding: 0.32rem 0.65rem;
-  font-size: 0.52rem;
+  padding: 0.42rem 0.78rem;
+  font-size: 0.72rem;
   font-weight: 740;
   letter-spacing: 0.035em;
   text-overflow: ellipsis;
@@ -945,14 +1000,14 @@
 .lp2-store-rail-arrow {
   align-self: center;
   display: grid;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   place-items: center;
   border: 1px solid rgba(227, 172, 50, 0.34);
   border-radius: 50%;
   background: rgba(4, 4, 3, 0.75);
   color: var(--lp2-gold-soft);
-  font-size: 1rem;
+  font-size: 1.25rem;
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
@@ -969,16 +1024,16 @@
 
 .lp2-store-rail-dots {
   display: flex;
-  min-height: 15px;
+  min-height: 26px;
   align-items: end;
   justify-content: center;
   gap: 0.4rem;
-  padding-top: 0.4rem;
+  padding-top: 0.55rem;
 }
 
 .lp2-store-rail-dots button {
-  width: 7px;
-  height: 7px;
+  width: 10px;
+  height: 10px;
   border: 0;
   border-radius: 50%;
   background: rgba(248, 245, 239, 0.2);
@@ -1060,7 +1115,21 @@
   }
 
   .lp2-intro h1 {
+    width: auto;
+    max-width: 100%;
     font-size: clamp(3.2rem, 5.7vw, 5rem);
+  }
+
+  .lp2-flow,
+  .lp2-copy {
+    width: auto;
+    max-width: 100%;
+  }
+
+  .lp2-hero-roles {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 4.5rem;
   }
 
   .lp2-role > a {
@@ -1077,9 +1146,9 @@
     grid-template-columns: 96px minmax(0, 1fr);
   }
 
-  .lp2-store-card > img {
+  .lp2-store-card-visual {
     width: 96px;
-    height: 96px;
+    height: 112px;
   }
 }
 
@@ -1158,13 +1227,18 @@
   }
 
   .lp2-store-card {
-    min-height: 108px;
+    min-height: 120px;
     grid-template-columns: 86px minmax(0, 1fr);
   }
 
-  .lp2-store-card > img {
+  .lp2-store-card-visual {
     width: 86px;
-    height: 86px;
+    height: 100px;
+  }
+
+  .lp2-store-card-visual .lp2-symbol {
+    width: 64px;
+    height: 64px;
   }
 
   .lp2-store-rail-dots {
@@ -1297,7 +1371,10 @@
       'carousel'
       'roles';
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    height: auto;
     min-height: 0;
+    max-height: none;
     gap: 1rem;
     padding: 2.4rem 0 1.2rem;
   }
@@ -1308,7 +1385,15 @@
   }
 
   .lp2-intro h1 {
+    width: auto;
+    max-width: 100%;
     font-size: clamp(4rem, 10vw, 6rem);
+  }
+
+  .lp2-flow,
+  .lp2-copy {
+    width: auto;
+    max-width: 100%;
   }
 
   .lp2-store-carousel {
@@ -1316,6 +1401,8 @@
   }
 
   .lp2-hero-roles {
+    width: 100%;
+    margin-left: 0;
     grid-template-columns: repeat(3, minmax(260px, 1fr));
     margin-top: 1.5rem;
   }
@@ -1372,6 +1459,8 @@
   }
 
   .lp2-intro h1 {
+    width: auto;
+    max-width: 100%;
     margin-top: 1.3rem;
     font-size: clamp(3.15rem, 14.8vw, 5rem);
     line-height: 0.94;
@@ -1382,6 +1471,8 @@
   }
 
   .lp2-flow {
+    width: auto;
+    max-width: 100%;
     flex-wrap: wrap;
     gap: 0.45rem;
     margin-top: 1.3rem;
@@ -1481,17 +1572,22 @@
     padding: 0.65rem;
   }
 
-  .lp2-store-card > img {
+  .lp2-store-card-visual {
     width: 92px;
     height: 126px;
     border-radius: 11px;
+  }
+
+  .lp2-store-card-visual .lp2-symbol {
+    width: 70px;
+    height: 70px;
   }
 
   .lp2-store-card h2 {
     font-size: 1.1rem;
   }
 
-  .lp2-store-card > div > span {
+  .lp2-store-card-content > span {
     font-size: 0.62rem;
   }
 

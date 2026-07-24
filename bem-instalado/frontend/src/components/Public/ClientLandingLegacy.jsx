@@ -12,26 +12,34 @@ const STORE_CONTACT_URL =
 const fallbackStores = [
   {
     id: 'visibility',
-    name: 'Sua loja aqui',
-    description: 'Apresente seus papéis de parede para clientes que já estão planejando uma instalação.',
-    image_url: '/landing/carousel-room-black-gold.jpg',
-    cta_label: 'Quero anunciar',
+    name: 'Loja 1',
+    description: 'Papéis de parede premium e atendimento especializado.',
+    image_url: '',
+    cta_label: 'Anuncie sua loja',
     link_url: STORE_CONTACT_URL,
   },
   {
     id: 'installers',
-    name: 'Mais conexões',
-    description: 'Aproxime sua marca de instaladores e gere oportunidades na região em que atua.',
-    image_url: '/landing/carousel-room-modern.jpg',
-    cta_label: 'Falar com a InstalaPro',
+    name: 'Loja 2',
+    description: 'Transforme ambientes com estilo e qualidade.',
+    image_url: '',
+    cta_label: 'Anuncie sua loja',
     link_url: STORE_CONTACT_URL,
   },
   {
     id: 'materials',
-    name: 'Materiais em destaque',
-    description: 'Dê visibilidade aos seus produtos dentro de uma jornada pronta para transformar ambientes.',
-    image_url: '/landing/carousel-room-tropical.jpg',
-    cta_label: 'Anunciar minha loja',
+    name: 'Loja 3',
+    description: 'Variedade, tendência e o melhor para seu projeto.',
+    image_url: '',
+    cta_label: 'Anuncie sua loja',
+    link_url: STORE_CONTACT_URL,
+  },
+  {
+    id: 'partner',
+    name: 'Loja 4',
+    description: 'Sua marca em destaque para clientes e instaladores da sua região.',
+    image_url: '',
+    cta_label: 'Anuncie sua loja',
     link_url: STORE_CONTACT_URL,
   },
 ];
@@ -153,7 +161,7 @@ const roleCards = [
     id: 'cliente',
     type: 'client',
     title: 'Área do cliente',
-    description: 'Acompanhe pedidos, compare interessados e escolha o profissional ideal.',
+    description: 'Acompanhe pedidos, converse com instaladores e escolha o profissional ideal.',
     label: 'Ir para clientes',
     to: REQUEST_PATH,
   },
@@ -161,7 +169,7 @@ const roleCards = [
     id: 'instalador',
     type: 'installer',
     title: 'Área do instalador',
-    description: 'Receba solicitações da sua região e organize seus atendimentos.',
+    description: 'Recebe solicitações da sua região e gerencia seus atendimentos.',
     label: 'Entrar como instalador',
     to: INSTALLER_LOGIN_PATH,
   },
@@ -169,7 +177,7 @@ const roleCards = [
     id: 'lojista',
     type: 'store',
     title: 'Área do lojista',
-    description: 'Anuncie sua loja, ganhe visibilidade e gere novos contatos.',
+    description: 'Anuncia sua loja, ganha visibilidade e gera novos contatos.',
     label: 'Anunciar minha loja',
     href: STORE_CONTACT_URL,
   },
@@ -256,7 +264,6 @@ function StoreCarousel() {
       return {
         ...items[itemIndex],
         itemIndex,
-        fallbackImage: fallbackStores[itemIndex % fallbackStores.length].image_url,
       };
     })
   ));
@@ -278,7 +285,7 @@ function StoreCarousel() {
   }, [cardCount, items.length]);
 
   useEffect(() => {
-    if (paused || items.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (paused || items.length < 2) {
       return undefined;
     }
 
@@ -330,11 +337,6 @@ function StoreCarousel() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="lp2-store-rail-head">
-        <span><Symbol type="store" /> Lojas em destaque</span>
-        <span>Sua seleção de lojas</span>
-      </div>
-
       <div aria-live="polite" className="lp2-store-rail-body">
         <button aria-label="Ver loja anterior" className="lp2-store-rail-arrow" onClick={() => move(-1)} type="button">←</button>
 
@@ -344,7 +346,7 @@ function StoreCarousel() {
             onTransitionEnd={finishTransition}
             style={{
               '--carousel-columns': cardCount,
-              '--carousel-position': displayPosition,
+              '--carousel-offset': `${displayPosition * -100}%`,
             }}
           >
             {trackPages.map((page, pageIndex) => (
@@ -355,16 +357,21 @@ function StoreCarousel() {
               >
                 {page.map((store, slot) => (
                   <article className="lp2-store-card" key={`${store.id}-${store.itemIndex}-${slot}`}>
-                    <img
-                      alt={`Vitrine de ${store.name}`}
-                      loading={pageIndex === displayPosition ? 'eager' : 'lazy'}
-                      onError={(event) => {
-                        event.currentTarget.src = store.fallbackImage;
-                      }}
-                      src={store.image_url || store.fallbackImage}
-                    />
-                    <div>
-                      <p>{stores.length ? 'Selecionada pela InstalaPro' : 'Espaço para sua marca'}</p>
+                    <div className={`lp2-store-card-visual${store.image_url ? '' : ' is-fallback'}`}>
+                      {store.image_url ? (
+                        <img
+                          alt={`Vitrine de ${store.name}`}
+                          loading={pageIndex === displayPosition ? 'eager' : 'lazy'}
+                          onError={(event) => {
+                            event.currentTarget.parentElement.classList.add('is-fallback');
+                            event.currentTarget.remove();
+                          }}
+                          src={store.image_url}
+                        />
+                      ) : null}
+                      <Symbol type="store" />
+                    </div>
+                    <div className="lp2-store-card-content">
                       <h2>{store.name}</h2>
                       <span>{store.description}</span>
                       <a
@@ -415,6 +422,7 @@ function Hero() {
         <i />
         <i />
         <i />
+        <i />
       </div>
 
       <div className="lp2-intro">
@@ -437,8 +445,8 @@ function Hero() {
         </div>
 
         <p className="lp2-copy">
-          Você cria seu pedido e instaladores da sua região <em>respondem</em>.
-          Lojas selecionadas <em>aparecem em destaque</em> e ajudam a transformar o seu ambiente.
+          Você cria seu pedido e instaladores da sua região <em>respondem</em>.<br />
+          Lojas parceiras <em>anunciam</em>, ganham visibilidade e <em>geram oportunidades</em>.
         </p>
 
         <div className="lp2-actions">
