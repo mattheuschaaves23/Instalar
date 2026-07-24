@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const WORDMARK_URL = '/brand/instalapro-logo.png';
+const WORDMARK_URL = '/brand/instalapro-logo-transparent.png';
 
 export default function BrandWordmark({ size = 'md', className = '' }) {
   const [imageError, setImageError] = useState(false);

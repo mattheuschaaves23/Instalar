@@ -47,7 +47,7 @@ const fallbackStores = [
 function Brand() {
   return (
     <Link aria-label="InstalaPro — início" className="lp2-brand" to="/">
-      <img alt="InstalaPro" src="/brand/instalapro-logo.png" />
+      <img alt="InstalaPro" src="/brand/instalapro-logo-transparent.png" />
     </Link>
   );
 }
