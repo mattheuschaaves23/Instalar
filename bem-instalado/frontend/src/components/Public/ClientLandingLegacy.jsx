@@ -188,9 +188,10 @@ function RoleCard({ card, index }) {
     <>
       <span className="lp2-role-index">0{index + 1}</span>
       <Symbol type={card.type} />
-      <h2>{card.title}</h2>
-      <i />
-      <p>{card.description}</p>
+      <span className="lp2-role-copy">
+        <h2>{card.title}</h2>
+        <p>{card.description}</p>
+      </span>
       <span className="lp2-role-arrow" aria-hidden="true">→</span>
       <span className="lp2-sr-only">{card.label}</span>
     </>
@@ -460,8 +461,17 @@ function Hero() {
         </div>
       </div>
 
-      <div aria-label="Áreas da plataforma" className="lp2-hero-roles" id="acessos">
-        {roleCards.map((card, index) => <RoleCard card={card} index={index} key={card.id} />)}
+      <div className="lp2-hero-side">
+        <div aria-hidden="true" className="lp2-photo">
+          <img
+            alt=""
+            fetchPriority="high"
+            src="/landing/hero-wallpaper-editorial.jpg"
+          />
+        </div>
+        <div aria-label="Áreas da plataforma" className="lp2-hero-roles" id="acessos">
+          {roleCards.map((card, index) => <RoleCard card={card} index={index} key={card.id} />)}
+        </div>
       </div>
 
       <StoreCarousel />
