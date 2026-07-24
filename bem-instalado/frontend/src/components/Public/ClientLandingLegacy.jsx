@@ -444,10 +444,6 @@ function Hero() {
           <Link className="lp2-primary" to={REQUEST_PATH}>
             Criar meu pedido <span aria-hidden="true">→</span>
           </Link>
-          <a className="lp2-secondary" href="#acessos">
-            <span aria-hidden="true">▶</span>
-            Entender como funciona
-          </a>
         </div>
       </div>
 

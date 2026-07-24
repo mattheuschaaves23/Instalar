@@ -526,8 +526,7 @@
   margin-top: 1.35rem;
 }
 
-.lp2-primary,
-.lp2-secondary {
+.lp2-primary {
   display: inline-flex;
   min-height: 56px;
   align-items: center;
@@ -554,36 +553,12 @@
   transition: transform 0.25s ease;
 }
 
-.lp2-secondary {
-  gap: 0.65rem;
-  border-bottom: 1px solid rgba(248, 244, 236, 0.32);
-  color: rgba(248, 244, 236, 0.78);
-  padding: 0.55rem 0.15rem;
-}
-
-.lp2-secondary span {
-  display: grid;
-  width: 27px;
-  height: 27px;
-  place-items: center;
-  border: 1px solid rgba(233, 173, 56, 0.55);
-  border-radius: 50%;
-  color: var(--lp2-gold-soft);
-  font-size: 0.58rem;
-}
-
-.lp2-primary:hover,
-.lp2-secondary:hover {
+.lp2-primary:hover {
   transform: translateY(-3px);
 }
 
 .lp2-primary:hover span {
   transform: translateX(4px);
-}
-
-.lp2-secondary:hover {
-  border-bottom-color: var(--lp2-gold);
-  color: var(--lp2-text);
 }
 
 .lp2-network {
@@ -1432,16 +1407,9 @@
     margin-top: 1.05rem;
   }
 
-  .lp2-primary,
-  .lp2-secondary {
+  .lp2-primary {
     width: 100%;
     min-width: 0;
-  }
-
-  .lp2-secondary {
-    min-height: 46px;
-    border: 1px solid rgba(248, 244, 236, 0.16);
-    border-radius: 3px 14px 3px 14px;
   }
 
   .lp2-network {
@@ -1595,8 +1563,7 @@
     margin-top: 0.75rem;
   }
 
-  .lp2-primary,
-  .lp2-secondary {
+  .lp2-primary {
     min-height: 47px;
   }
 
