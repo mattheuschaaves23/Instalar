@@ -183,17 +183,15 @@ const roleCards = [
   },
 ];
 
-function RoleCard({ card, index }) {
+function RoleCard({ card }) {
   const content = (
     <>
-      <span className="lp2-role-index">0{index + 1}</span>
       <Symbol type={card.type} />
       <span className="lp2-role-copy">
         <h2>{card.title}</h2>
-        <p>{card.description}</p>
       </span>
       <span className="lp2-role-arrow" aria-hidden="true">→</span>
-      <span className="lp2-sr-only">{card.label}</span>
+      <span className="lp2-sr-only">{card.description}</span>
     </>
   );
 
@@ -437,14 +435,6 @@ function Hero() {
           <strong>papel de parede?</strong>
         </h1>
 
-        <div aria-label="Fluxo da plataforma" className="lp2-flow">
-          <span><Symbol type="client" /> Cliente</span>
-          <i aria-hidden="true">↔</i>
-          <span><Symbol type="installer" /> Instalador</span>
-          <i aria-hidden="true">↔</i>
-          <span><Symbol type="store" /> Loja</span>
-        </div>
-
         <p className="lp2-copy">
           Você cria seu pedido e instaladores da sua região <em>respondem</em>.<br />
           Lojas parceiras <em>anunciam</em>, ganham visibilidade e <em>geram oportunidades</em>.
@@ -461,16 +451,20 @@ function Hero() {
         </div>
       </div>
 
-      <div className="lp2-hero-side">
-        <div aria-hidden="true" className="lp2-photo">
-          <img
-            alt=""
-            fetchPriority="high"
-            src="/landing/hero-wallpaper-editorial.jpg"
-          />
+      <div className="lp2-network">
+        <div aria-hidden="true" className="lp2-network-rings">
+          <span />
+          <span />
+          <span />
+          <i />
+          <i />
+          <i />
+        </div>
+        <div aria-hidden="true" className="lp2-network-core">
+          <span>Instala</span><strong>Pro</strong>
         </div>
         <div aria-label="Áreas da plataforma" className="lp2-hero-roles" id="acessos">
-          {roleCards.map((card, index) => <RoleCard card={card} index={index} key={card.id} />)}
+          {roleCards.map((card) => <RoleCard card={card} key={card.id} />)}
         </div>
       </div>
 
