@@ -669,7 +669,7 @@ export default function AdminDashboard() {
     { key: 'requests', label: 'Pedidos', detail: 'Solicitações e interessados' },
     { key: 'users', label: 'Usuários', detail: 'Perfis, permissões e confiança' },
     { key: 'payments', label: 'Pagamentos', detail: 'Cobrança, pendências e status' },
-    { key: 'stores', label: 'Lojas recomendadas', detail: 'Carrossel público e vitrine' },
+    { key: 'stores', label: 'Lojas da página inicial', detail: 'Escolha e ordene o carrossel público' },
     { key: 'announcements', label: 'Comunicados', detail: 'Mensagens globais da plataforma' },
     { key: 'monitoring', label: 'Monitoramento', detail: 'Erros reais do site e da API' },
   ];
@@ -1201,13 +1201,17 @@ export default function AdminDashboard() {
           {activeAdminSection.key === 'stores' ? (
           <section className="admin-content-panel admin-store-panel lux-panel fade-up p-6" style={{ animationDelay: '0.12s' }}>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="eyebrow">Lojas recomendadas</p>
+              <p className="eyebrow">Lojas da página inicial</p>
               {editingStoreId ? (
                 <button className="ghost-button !min-h-0 !px-3 !py-2 text-xs" onClick={resetStoreForm} type="button">
                   Cancelar edição
                 </button>
               ) : null}
             </div>
+
+            <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
+              Você escolhe quais lojas aparecem na landing page. Somente lojas ativas são exibidas, seguindo a ordem definida abaixo.
+            </p>
 
             <form className="admin-form-surface mt-5 grid gap-3" onSubmit={handleStoreSubmit} ref={storeFormRef}>
               <input

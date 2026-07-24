@@ -201,7 +201,8 @@ function RoleCard({ card, index }) {
 
 function StoreCarousel() {
   const [stores, setStores] = useState([]);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [position, setPosition] = useState(1);
+  const [transitionEnabled, setTransitionEnabled] = useState(true);
   const [paused, setPaused] = useState(false);
   const [cycle, setCycle] = useState(0);
   const [visibleCount, setVisibleCount] = useState(() => {
@@ -220,7 +221,7 @@ function StoreCarousel() {
           ? response.data.stores.slice(0, 8)
           : [];
         setStores(nextStores);
-        setActiveIndex(0);
+        setPosition(1);
       })
       .catch(() => {
         if (active) setStores([]);
@@ -248,16 +249,33 @@ function StoreCarousel() {
   }, []);
 
   const items = stores.length ? stores : fallbackStores;
-  const currentIndex = activeIndex % items.length;
   const cardCount = Math.min(visibleCount, items.length);
-  const visibleStores = Array.from({ length: cardCount }, (_, slot) => {
-    const itemIndex = (currentIndex + slot) % items.length;
-    return {
-      ...items[itemIndex],
-      itemIndex,
-      fallbackImage: fallbackStores[itemIndex % fallbackStores.length].image_url,
-    };
-  });
+  const pages = items.map((_, pageIndex) => (
+    Array.from({ length: cardCount }, (__, slot) => {
+      const itemIndex = (pageIndex + slot) % items.length;
+      return {
+        ...items[itemIndex],
+        itemIndex,
+        fallbackImage: fallbackStores[itemIndex % fallbackStores.length].image_url,
+      };
+    })
+  ));
+  const trackPages = pages.length > 1
+    ? [pages[pages.length - 1], ...pages, pages[0]]
+    : pages;
+  const currentIndex = pages.length > 1
+    ? (position - 1 + pages.length) % pages.length
+    : 0;
+  const displayPosition = pages.length > 1 ? position : 0;
+
+  useEffect(() => {
+    setTransitionEnabled(false);
+    setPosition(1);
+    const frame = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => setTransitionEnabled(true));
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [cardCount, items.length]);
 
   useEffect(() => {
     if (paused || items.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -265,19 +283,40 @@ function StoreCarousel() {
     }
 
     const timer = window.setInterval(() => {
-      setActiveIndex((index) => (index + 1) % items.length);
+      setTransitionEnabled(true);
+      setPosition((index) => index + 1);
     }, 4600);
 
     return () => window.clearInterval(timer);
   }, [cycle, items.length, paused]);
 
   const selectSlide = (index) => {
-    setActiveIndex((index + items.length) % items.length);
+    setTransitionEnabled(true);
+    setPosition(((index + pages.length) % pages.length) + 1);
     setCycle((value) => value + 1);
   };
 
   const move = (direction) => {
-    selectSlide(currentIndex + direction);
+    setTransitionEnabled(true);
+    setPosition((index) => {
+      if (direction > 0 && index >= pages.length + 1) return index;
+      if (direction < 0 && index <= 0) return index;
+      return index + direction;
+    });
+    setCycle((value) => value + 1);
+  };
+
+  const finishTransition = (event) => {
+    if (event.target !== event.currentTarget || event.propertyName !== 'transform') return;
+    if (pages.length < 2) return;
+
+    if (position === 0 || position === pages.length + 1) {
+      setTransitionEnabled(false);
+      setPosition(position === 0 ? pages.length : 1);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => setTransitionEnabled(true));
+      });
+    }
   };
 
   return (
@@ -293,33 +332,53 @@ function StoreCarousel() {
     >
       <div className="lp2-store-rail-head">
         <span><Symbol type="store" /> Lojas em destaque</span>
-        <span>Escolhidas para o seu projeto</span>
+        <span>Sua seleção de lojas</span>
       </div>
 
       <div aria-live="polite" className="lp2-store-rail-body">
         <button aria-label="Ver loja anterior" className="lp2-store-rail-arrow" onClick={() => move(-1)} type="button">←</button>
 
         <div className="lp2-store-rail-window">
-          <div className="lp2-store-rail-track" key={`${currentIndex}-${cardCount}`}>
-            {visibleStores.map((store, slot) => (
-              <article className="lp2-store-card" key={`${store.id}-${store.itemIndex}-${slot}`}>
-                <img
-                  alt={`Vitrine de ${store.name}`}
-                  loading={slot === 0 ? 'eager' : 'lazy'}
-                  onError={(event) => {
-                    event.currentTarget.src = store.fallbackImage;
-                  }}
-                  src={store.image_url || store.fallbackImage}
-                />
-                <div>
-                  <p>{stores.length ? 'Loja parceira' : 'Espaço para sua marca'}</p>
-                  <h2>{store.name}</h2>
-                  <span>{store.description}</span>
-                  <a href={store.link_url || STORE_CONTACT_URL} rel="noreferrer" target="_blank">
-                    {store.cta_label || 'Visitar loja'} <i aria-hidden="true">↗</i>
-                  </a>
-                </div>
-              </article>
+          <div
+            className={`lp2-store-rail-track${transitionEnabled ? '' : ' is-jumping'}`}
+            onTransitionEnd={finishTransition}
+            style={{
+              '--carousel-columns': cardCount,
+              '--carousel-position': displayPosition,
+            }}
+          >
+            {trackPages.map((page, pageIndex) => (
+              <div
+                aria-hidden={pageIndex !== displayPosition}
+                className="lp2-store-rail-page"
+                key={`page-${pageIndex}`}
+              >
+                {page.map((store, slot) => (
+                  <article className="lp2-store-card" key={`${store.id}-${store.itemIndex}-${slot}`}>
+                    <img
+                      alt={`Vitrine de ${store.name}`}
+                      loading={pageIndex === displayPosition ? 'eager' : 'lazy'}
+                      onError={(event) => {
+                        event.currentTarget.src = store.fallbackImage;
+                      }}
+                      src={store.image_url || store.fallbackImage}
+                    />
+                    <div>
+                      <p>{stores.length ? 'Selecionada pela InstalaPro' : 'Espaço para sua marca'}</p>
+                      <h2>{store.name}</h2>
+                      <span>{store.description}</span>
+                      <a
+                        href={store.link_url || STORE_CONTACT_URL}
+                        rel="noreferrer"
+                        tabIndex={pageIndex === displayPosition ? 0 : -1}
+                        target="_blank"
+                      >
+                        {store.cta_label || 'Visitar loja'} <i aria-hidden="true">↗</i>
+                      </a>
+                    </div>
+                  </article>
+                ))}
+              </div>
             ))}
           </div>
         </div>
@@ -369,8 +428,17 @@ function Hero() {
           <strong>papel de parede?</strong>
         </h1>
 
+        <div aria-label="Fluxo da plataforma" className="lp2-flow">
+          <span><Symbol type="client" /> Cliente</span>
+          <i aria-hidden="true">↔</i>
+          <span><Symbol type="installer" /> Instalador</span>
+          <i aria-hidden="true">↔</i>
+          <span><Symbol type="store" /> Loja</span>
+        </div>
+
         <p className="lp2-copy">
-          Crie seu pedido, encontre profissionais da sua região e descubra lojas que ajudam a transformar o seu ambiente.
+          Você cria seu pedido e instaladores da sua região <em>respondem</em>.
+          Lojas selecionadas <em>aparecem em destaque</em> e ajudam a transformar o seu ambiente.
         </p>
 
         <div className="lp2-actions">
@@ -378,17 +446,9 @@ function Hero() {
             Criar meu pedido <span aria-hidden="true">→</span>
           </Link>
           <a className="lp2-secondary" href="#acessos">
-            <span aria-hidden="true">↓</span>
-            Como funciona
+            <span aria-hidden="true">▶</span>
+            Entender como funciona
           </a>
-        </div>
-
-        <div aria-label="Fluxo da plataforma" className="lp2-flow">
-          <span><Symbol type="client" /> Cliente</span>
-          <i aria-hidden="true">↔</i>
-          <span><Symbol type="installer" /> Instalador</span>
-          <i aria-hidden="true">↔</i>
-          <span><Symbol type="store" /> Loja</span>
         </div>
       </div>
 
