@@ -197,9 +197,10 @@
   background: transparent;
 }
 
-.lp2-access-trigger .lp2-symbol-client::before,
-.lp2-access-trigger .lp2-symbol-client::after {
-  border-color: #0a0804;
+.lp2-access-trigger .lp2-symbol svg {
+  width: 100%;
+  height: 100%;
+  color: #0a0804;
 }
 
 .lp2-access-menu {
@@ -386,16 +387,6 @@
   content: '';
 }
 
-.lp2-badge span {
-  display: grid;
-  width: 23px;
-  height: 23px;
-  place-items: center;
-  border: 1px solid rgba(233, 173, 56, 0.35);
-  border-radius: 50%;
-  font-size: 0.75rem;
-}
-
 .lp2-intro h1 {
   width: min(730px, 109%);
   margin-top: 1.65rem;
@@ -420,89 +411,20 @@
 
 .lp2-symbol {
   position: relative;
-  display: inline-block;
+  display: inline-grid;
   width: 44px;
   height: 44px;
   flex: 0 0 auto;
+  place-items: center;
   border: 1px solid rgba(233, 173, 56, 0.32);
   border-radius: 50%;
   background: rgba(233, 173, 56, 0.035);
 }
 
-.lp2-symbol-client::before {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  width: 9px;
-  height: 9px;
-  border: 1.8px solid var(--lp2-gold);
-  border-radius: 50%;
-  content: '';
-  transform: translateX(-50%);
-}
-
-.lp2-symbol-client::after {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  width: 18px;
-  height: 10px;
-  border: 1.8px solid var(--lp2-gold);
-  border-bottom: 0;
-  border-radius: 12px 12px 0 0;
-  content: '';
-  transform: translateX(-50%);
-}
-
-.lp2-symbol-installer::before {
-  position: absolute;
-  top: 11px;
-  left: 50%;
-  width: 23px;
-  height: 12px;
-  border: 1.8px solid var(--lp2-gold);
-  border-radius: 14px 14px 3px 3px;
-  content: '';
-  transform: translateX(-50%);
-}
-
-.lp2-symbol-installer::after {
-  position: absolute;
-  top: 24px;
-  left: 50%;
-  width: 27px;
-  height: 2px;
-  border-radius: 3px;
-  background: var(--lp2-gold);
-  box-shadow: 0 5px 0 -0.5px rgba(233, 173, 56, 0.72);
-  content: '';
-  transform: translateX(-50%);
-}
-
-.lp2-symbol-store::before {
-  position: absolute;
-  top: 9px;
-  left: 50%;
-  width: 24px;
-  height: 9px;
-  border: 1.8px solid var(--lp2-gold);
-  border-radius: 3px 3px 8px 8px;
-  background: repeating-linear-gradient(90deg, transparent 0 4px, rgba(233, 173, 56, 0.62) 4px 5.5px);
-  content: '';
-  transform: translateX(-50%);
-}
-
-.lp2-symbol-store::after {
-  position: absolute;
-  top: 18px;
-  left: 50%;
-  width: 20px;
-  height: 17px;
-  border: 1.8px solid var(--lp2-gold);
-  border-top: 0;
-  background: linear-gradient(90deg, transparent 0 59%, rgba(233, 173, 56, 0.78) 59% 65%, transparent 65%);
-  content: '';
-  transform: translateX(-50%);
+.lp2-symbol svg {
+  width: 54%;
+  height: 54%;
+  color: var(--lp2-gold-soft);
 }
 
 .lp2-copy {
@@ -528,36 +450,47 @@
 
 .lp2-primary {
   display: inline-flex;
-  min-height: 56px;
+  min-width: 310px;
+  min-height: 70px;
   align-items: center;
-  justify-content: center;
-  font-size: 0.82rem;
-  font-weight: 780;
+  justify-content: space-between;
+  border-radius: 4px 23px 4px 23px;
+  background: linear-gradient(120deg, #f3bd4c, #ffda88 52%, #d58f1d);
+  box-shadow:
+    0 18px 48px rgba(192, 124, 16, 0.26),
+    inset 0 1px rgba(255, 255, 255, 0.42);
+  color: #0b0803;
+  padding: 0.85rem 1rem 0.85rem 1.55rem;
+  font-size: 0.98rem;
+  font-weight: 800;
   transition:
-    color 0.25s ease,
+    box-shadow 0.25s ease,
     transform 0.25s ease;
 }
 
-.lp2-primary {
-  min-width: 244px;
-  justify-content: space-between;
-  border-radius: 3px 18px 3px 18px;
-  background: linear-gradient(120deg, #f3bf52, #f6d27e 55%, #ce891b);
-  box-shadow: 0 16px 44px rgba(192, 124, 16, 0.2);
-  color: #0b0803;
-  padding: 0.75rem 1.05rem 0.75rem 1.3rem;
-}
-
 .lp2-primary span {
-  font-size: 1.15rem;
-  transition: transform 0.25s ease;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(11, 8, 3, 0.18);
+  border-radius: 50%;
+  background: rgba(11, 8, 3, 0.09);
+  font-size: 1.2rem;
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease;
 }
 
 .lp2-primary:hover {
+  box-shadow:
+    0 22px 58px rgba(192, 124, 16, 0.36),
+    inset 0 1px rgba(255, 255, 255, 0.5);
   transform: translateY(-3px);
 }
 
 .lp2-primary:hover span {
+  background: rgba(11, 8, 3, 0.14);
   transform: translateX(4px);
 }
 
@@ -653,8 +586,8 @@
   left: 50%;
   z-index: 2;
   display: flex;
-  width: 178px;
-  height: 178px;
+  width: 188px;
+  height: 188px;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(233, 173, 56, 0.42);
@@ -667,7 +600,7 @@
     0 0 0 30px rgba(233, 173, 56, 0.018),
     0 30px 70px rgba(0, 0, 0, 0.48);
   color: var(--lp2-text);
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   letter-spacing: -0.045em;
   transform: translate(-50%, -50%);
 }
@@ -704,7 +637,7 @@
 
 .lp2-role {
   position: absolute;
-  width: 188px;
+  width: 205px;
 }
 
 .lp2-role:nth-child(1) {
@@ -725,7 +658,7 @@
 .lp2-role > a {
   position: relative;
   display: flex;
-  min-height: 64px;
+  min-height: 70px;
   align-items: center;
   gap: 0.7rem;
   border: 1px solid rgba(233, 173, 56, 0.28);
@@ -764,8 +697,8 @@
 }
 
 .lp2-role .lp2-symbol {
-  width: 46px;
-  height: 46px;
+  width: 50px;
+  height: 50px;
   border-color: rgba(233, 173, 56, 0.42);
   background: rgba(233, 173, 56, 0.08);
 }
@@ -776,7 +709,7 @@
 
 .lp2-role h2 {
   color: var(--lp2-text);
-  font-size: 0.76rem;
+  font-size: 0.82rem;
   font-weight: 720;
   letter-spacing: 0.02em;
   line-height: 1.15;
@@ -908,19 +841,12 @@
 }
 
 .lp2-store-card-visual.is-fallback .lp2-symbol {
-  display: block;
+  display: grid;
 }
 
-.lp2-store-card-visual .lp2-symbol-store::before {
-  top: 13px;
-  width: 36px;
-  height: 13px;
-}
-
-.lp2-store-card-visual .lp2-symbol-store::after {
-  top: 26px;
-  width: 32px;
-  height: 28px;
+.lp2-store-card-visual .lp2-symbol svg {
+  width: 52%;
+  height: 52%;
 }
 
 .lp2-store-card-content {
@@ -1379,11 +1305,6 @@
     width: 24px;
   }
 
-  .lp2-badge span {
-    width: 20px;
-    height: 20px;
-  }
-
   .lp2-intro h1 {
     margin-top: 1.15rem;
     font-size: clamp(3.35rem, 15.4vw, 5rem);
@@ -1410,6 +1331,7 @@
   .lp2-primary {
     width: 100%;
     min-width: 0;
+    min-height: 64px;
   }
 
   .lp2-network {
@@ -1564,7 +1486,7 @@
   }
 
   .lp2-primary {
-    min-height: 47px;
+    min-height: 58px;
   }
 
   .lp2-network {

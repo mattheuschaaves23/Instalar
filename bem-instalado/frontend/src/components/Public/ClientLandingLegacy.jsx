@@ -53,7 +53,43 @@ function Brand() {
 }
 
 function Symbol({ type }) {
-  return <span aria-hidden="true" className={`lp2-symbol lp2-symbol-${type}`} />;
+  const commonProps = {
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    strokeWidth: 1.8,
+    viewBox: '0 0 24 24',
+  };
+
+  const paths = {
+    client: (
+      <>
+        <circle cx="12" cy="8.1" r="3.2" />
+        <path d="M5 20a7 7 0 0 1 14 0" />
+      </>
+    ),
+    installer: (
+      <>
+        <path d="M5 7.5A1.5 1.5 0 0 1 6.5 6H16a2 2 0 0 1 2 2v2H9a2 2 0 0 0-2 2v6" />
+        <path d="M9 18h4" />
+        <path d="M13 18v2.5" />
+      </>
+    ),
+    store: (
+      <>
+        <path d="M4 21V6.5A1.5 1.5 0 0 1 5.5 5H14v16" />
+        <path d="M14 21V3.5A1.5 1.5 0 0 1 15.5 2H19a1 1 0 0 1 1 1V21" />
+        <path d="M8 9h2M8 13h2M8 17h2M16 9h1.5M16 13h1.5M16 17h1.5" />
+      </>
+    ),
+  };
+
+  return (
+    <span aria-hidden="true" className={`lp2-symbol lp2-symbol-${type}`}>
+      <svg {...commonProps}>{paths[type] || paths.client}</svg>
+    </span>
+  );
 }
 
 function Header() {
@@ -426,7 +462,6 @@ function Hero() {
 
       <div className="lp2-intro">
         <p className="lp2-badge">
-          <span aria-hidden="true">◎</span>
           Clientes, instaladores e lojas no mesmo lugar
         </p>
 
