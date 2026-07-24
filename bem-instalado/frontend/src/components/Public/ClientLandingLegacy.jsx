@@ -204,6 +204,11 @@ function StoreCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [cycle, setCycle] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(() => {
+    if (typeof window === 'undefined') return 3;
+    if (window.innerWidth < 720) return 1;
+    return window.innerWidth < 1120 ? 2 : 3;
+  });
 
   useEffect(() => {
     let active = true;
@@ -226,10 +231,33 @@ function StoreCarousel() {
     };
   }, []);
 
+  useEffect(() => {
+    const updateVisibleCount = () => {
+      if (window.innerWidth < 720) {
+        setVisibleCount(1);
+      } else if (window.innerWidth < 1120) {
+        setVisibleCount(2);
+      } else {
+        setVisibleCount(3);
+      }
+    };
+
+    updateVisibleCount();
+    window.addEventListener('resize', updateVisibleCount);
+    return () => window.removeEventListener('resize', updateVisibleCount);
+  }, []);
+
   const items = stores.length ? stores : fallbackStores;
   const currentIndex = activeIndex % items.length;
-  const activeStore = items[currentIndex];
-  const fallbackImage = fallbackStores[currentIndex % fallbackStores.length].image_url;
+  const cardCount = Math.min(visibleCount, items.length);
+  const visibleStores = Array.from({ length: cardCount }, (_, slot) => {
+    const itemIndex = (currentIndex + slot) % items.length;
+    return {
+      ...items[itemIndex],
+      itemIndex,
+      fallbackImage: fallbackStores[itemIndex % fallbackStores.length].image_url,
+    };
+  });
 
   useEffect(() => {
     if (paused || items.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -238,7 +266,7 @@ function StoreCarousel() {
 
     const timer = window.setInterval(() => {
       setActiveIndex((index) => (index + 1) % items.length);
-    }, 5200);
+    }, 4600);
 
     return () => window.clearInterval(timer);
   }, [cycle, items.length, paused]);
@@ -263,44 +291,53 @@ function StoreCarousel() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <img
-        alt={`Ambiente em destaque de ${activeStore.name}`}
-        className="lp2-carousel-image"
-        key={`${activeStore.id}-${currentIndex}`}
-        loading="eager"
-        src={activeStore.image_url || fallbackImage}
-      />
-      <div className="lp2-carousel-shade" />
-
-      <div className="lp2-carousel-top">
+      <div className="lp2-store-rail-head">
         <span><Symbol type="store" /> Lojas em destaque</span>
-        <span>{String(currentIndex + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</span>
+        <span>Escolhidas para o seu projeto</span>
       </div>
 
-      <div aria-live="polite" className="lp2-carousel-content">
-        <p>{stores.length ? 'Parceiro InstalaPro' : 'Sua marca pode estar aqui'}</p>
-        <h2>{activeStore.name}</h2>
-        <span>{activeStore.description}</span>
-        <a href={activeStore.link_url || STORE_CONTACT_URL} rel="noreferrer" target="_blank">
-          {activeStore.cta_label || 'Visitar loja'} <i aria-hidden="true">↗</i>
-        </a>
-      </div>
+      <div aria-live="polite" className="lp2-store-rail-body">
+        <button aria-label="Ver loja anterior" className="lp2-store-rail-arrow" onClick={() => move(-1)} type="button">←</button>
 
-      <div className="lp2-carousel-controls">
-        <button aria-label="Ver loja anterior" onClick={() => move(-1)} type="button">←</button>
-        <div aria-label="Escolher loja" className="lp2-carousel-dots">
-          {items.map((store, index) => (
-            <button
-              aria-label={`Ver ${store.name}`}
-              aria-pressed={index === currentIndex}
-              className={index === currentIndex ? 'is-active' : ''}
-              key={store.id}
-              onClick={() => selectSlide(index)}
-              type="button"
-            />
-          ))}
+        <div className="lp2-store-rail-window">
+          <div className="lp2-store-rail-track" key={`${currentIndex}-${cardCount}`}>
+            {visibleStores.map((store, slot) => (
+              <article className="lp2-store-card" key={`${store.id}-${store.itemIndex}-${slot}`}>
+                <img
+                  alt={`Vitrine de ${store.name}`}
+                  loading={slot === 0 ? 'eager' : 'lazy'}
+                  onError={(event) => {
+                    event.currentTarget.src = store.fallbackImage;
+                  }}
+                  src={store.image_url || store.fallbackImage}
+                />
+                <div>
+                  <p>{stores.length ? 'Loja parceira' : 'Espaço para sua marca'}</p>
+                  <h2>{store.name}</h2>
+                  <span>{store.description}</span>
+                  <a href={store.link_url || STORE_CONTACT_URL} rel="noreferrer" target="_blank">
+                    {store.cta_label || 'Visitar loja'} <i aria-hidden="true">↗</i>
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
-        <button aria-label="Ver próxima loja" onClick={() => move(1)} type="button">→</button>
+
+        <button aria-label="Ver próxima loja" className="lp2-store-rail-arrow" onClick={() => move(1)} type="button">→</button>
+      </div>
+
+      <div aria-label="Escolher loja" className="lp2-store-rail-dots">
+        {items.map((store, index) => (
+          <button
+            aria-label={`Ver ${store.name}`}
+            aria-pressed={index === currentIndex}
+            className={index === currentIndex ? 'is-active' : ''}
+            key={store.id}
+            onClick={() => selectSlide(index)}
+            type="button"
+          />
+        ))}
       </div>
 
       {!paused && items.length > 1 ? (
@@ -355,27 +392,11 @@ function Hero() {
         </div>
       </div>
 
-      <StoreCarousel />
-    </section>
-  );
-}
-
-function AudienceSection() {
-  return (
-    <section className="lp2-audiences" id="acessos">
-      <header>
-        <div>
-          <p>Escolha seu caminho</p>
-          <h2>Direto para o que você precisa.</h2>
-        </div>
-        <span>
-          Cliente publica. Instalador responde. Loja ganha visibilidade.
-        </span>
-      </header>
-
-      <div className="lp2-roles">
+      <div aria-label="Áreas da plataforma" className="lp2-hero-roles" id="acessos">
         {roleCards.map((card, index) => <RoleCard card={card} index={index} key={card.id} />)}
       </div>
+
+      <StoreCarousel />
     </section>
   );
 }
@@ -387,7 +408,6 @@ export default function ClientLandingLegacy() {
       <Header />
       <main id="conteudo">
         <Hero />
-        <AudienceSection />
       </main>
     </div>
   );

@@ -243,11 +243,16 @@
 .lp2-stage {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(610px, 1.18fr);
-  min-height: 610px;
+  grid-template-areas:
+    'intro roles'
+    'carousel carousel';
+  grid-template-columns: minmax(440px, 0.88fr) minmax(620px, 1.12fr);
+  min-height: 700px;
   align-items: center;
-  gap: clamp(2.5rem, 5vw, 6rem);
+  column-gap: clamp(2.5rem, 4vw, 5rem);
+  row-gap: 1.2rem;
   overflow: visible;
+  padding-bottom: 1.2rem;
 }
 
 .lp2-orbits {
@@ -311,7 +316,8 @@
 .lp2-intro {
   position: relative;
   z-index: 2;
-  padding: 2.4rem 0 2.4rem 1.2rem;
+  grid-area: intro;
+  padding: 1.5rem 0 1.5rem 1.2rem;
   animation: lp2-rise 0.7s ease both;
 }
 
@@ -571,48 +577,11 @@
   background: rgba(227, 172, 50, 0.05);
 }
 
-.lp2-audiences {
-  position: relative;
-  border-top: 1px solid rgba(227, 172, 50, 0.2);
-  padding: 4.6rem 0 1rem;
-}
-
-.lp2-audiences > header {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 3rem;
-  align-items: end;
-  margin-bottom: 2rem;
-}
-
-.lp2-audiences > header > div > p {
-  margin-bottom: 0.65rem;
-  color: var(--lp2-gold-soft);
-  font-size: 0.61rem;
-  font-weight: 750;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.lp2-audiences > header h2 {
-  font-size: clamp(2.3rem, 4vw, 4.4rem);
-  font-weight: 720;
-  letter-spacing: -0.06em;
-  line-height: 0.95;
-}
-
-.lp2-audiences > header > span {
-  justify-self: end;
-  max-width: 480px;
-  color: var(--lp2-muted);
-  font-size: 0.84rem;
-  line-height: 1.7;
-}
-
-.lp2-roles {
+.lp2-hero-roles {
   position: relative;
   z-index: 2;
   display: grid;
+  grid-area: roles;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   animation: lp2-rise 0.7s 0.12s ease both;
@@ -625,7 +594,7 @@
 .lp2-role > a {
   position: relative;
   display: flex;
-  min-height: 268px;
+  min-height: 342px;
   flex-direction: column;
   align-items: flex-start;
   overflow: hidden;
@@ -748,216 +717,6 @@
   transform: translateX(8px);
 }
 
-.lp2-store-carousel {
-  position: relative;
-  z-index: 3;
-  min-height: 510px;
-  overflow: hidden;
-  border: 1px solid rgba(227, 172, 50, 0.42);
-  border-radius: 28px;
-  background: #0a0907;
-  box-shadow:
-    0 34px 90px rgba(0, 0, 0, 0.44),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.025);
-  animation: lp2-rise 0.75s 0.12s ease both;
-}
-
-.lp2-carousel-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  animation: lp2-carousel-image 0.85s cubic-bezier(0.2, 0.7, 0.25, 1) both;
-}
-
-.lp2-carousel-shade {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(4, 4, 3, 0.34) 0%, rgba(4, 4, 3, 0.03) 38%, rgba(4, 4, 3, 0.9) 100%),
-    linear-gradient(90deg, rgba(4, 4, 3, 0.4), transparent 58%);
-}
-
-.lp2-carousel-top {
-  position: absolute;
-  top: 1.3rem;
-  right: 1.3rem;
-  left: 1.3rem;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  color: rgba(248, 245, 239, 0.76);
-  font-size: 0.58rem;
-  font-weight: 720;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.lp2-carousel-top > span:first-child {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.65rem;
-  border: 1px solid rgba(248, 245, 239, 0.22);
-  border-radius: 999px;
-  background: rgba(5, 5, 4, 0.5);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  padding: 0.5rem 0.8rem;
-}
-
-.lp2-carousel-top .lp2-symbol {
-  width: 24px;
-  height: 24px;
-  border: 0;
-}
-
-.lp2-carousel-top .lp2-symbol-store::before {
-  top: 3px;
-  width: 17px;
-  height: 6px;
-}
-
-.lp2-carousel-top .lp2-symbol-store::after {
-  top: 9px;
-  width: 15px;
-  height: 13px;
-}
-
-.lp2-carousel-content {
-  position: absolute;
-  right: 1.7rem;
-  bottom: 4.4rem;
-  left: 1.7rem;
-  z-index: 3;
-  max-width: 590px;
-}
-
-.lp2-carousel-content > p {
-  margin-bottom: 0.65rem;
-  color: var(--lp2-gold-soft);
-  font-size: 0.58rem;
-  font-weight: 750;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-.lp2-carousel-content h2 {
-  overflow: hidden;
-  color: #fff;
-  font-size: clamp(2.2rem, 3.4vw, 3.9rem);
-  font-weight: 680;
-  letter-spacing: -0.06em;
-  line-height: 0.95;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.lp2-carousel-content > span {
-  display: block;
-  max-width: 500px;
-  margin-top: 0.8rem;
-  color: rgba(248, 245, 239, 0.7);
-  font-size: 0.82rem;
-  line-height: 1.65;
-}
-
-.lp2-carousel-content > a {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1.15rem;
-  border-radius: 999px;
-  background: var(--lp2-gold);
-  color: #090702;
-  padding: 0.65rem 0.8rem 0.65rem 1.1rem;
-  font-size: 0.66rem;
-  font-weight: 780;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  transition:
-    background 0.25s ease,
-    transform 0.25s ease;
-}
-
-.lp2-carousel-content > a i {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  border-radius: 50%;
-  background: #090702;
-  color: var(--lp2-gold-soft);
-  font-size: 0.85rem;
-  font-style: normal;
-}
-
-.lp2-carousel-content > a:hover {
-  background: var(--lp2-gold-soft);
-  transform: translateY(-2px);
-}
-
-.lp2-carousel-controls {
-  position: absolute;
-  right: 1.4rem;
-  bottom: 1.1rem;
-  left: 1.4rem;
-  z-index: 4;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 1rem;
-}
-
-.lp2-carousel-controls > button {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border: 1px solid rgba(248, 245, 239, 0.28);
-  border-radius: 50%;
-  background: rgba(5, 5, 4, 0.55);
-  color: var(--lp2-text);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.lp2-carousel-controls > button:hover {
-  border-color: var(--lp2-gold);
-  background: var(--lp2-gold);
-  color: #090702;
-}
-
-.lp2-carousel-dots {
-  display: flex;
-  justify-content: center;
-  gap: 0.45rem;
-}
-
-.lp2-carousel-dots button {
-  width: 20px;
-  height: 4px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(248, 245, 239, 0.34);
-  padding: 0;
-  transition:
-    background 0.2s ease,
-    width 0.25s ease;
-}
-
-.lp2-carousel-dots button.is-active {
-  width: 38px;
-  background: var(--lp2-gold);
-}
-
 .lp2-carousel-progress {
   position: absolute;
   right: 0;
@@ -974,7 +733,247 @@
   height: 100%;
   background: var(--lp2-gold);
   transform-origin: left;
-  animation: lp2-carousel-progress 5.2s linear both;
+  animation: lp2-carousel-progress 4.6s linear both;
+}
+
+.lp2-store-carousel {
+  position: relative;
+  z-index: 3;
+  grid-area: carousel;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(227, 172, 50, 0.34);
+  border-radius: 24px;
+  background:
+    linear-gradient(105deg, rgba(227, 172, 50, 0.045), transparent 38%),
+    rgba(5, 5, 4, 0.88);
+  padding: 0.8rem 0.9rem 0.72rem;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.018);
+  animation: lp2-rise 0.75s 0.12s ease both;
+}
+
+.lp2-store-rail-head {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 3.9rem 0.6rem;
+  color: rgba(248, 245, 239, 0.45);
+  font-size: 0.55rem;
+  font-weight: 720;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.lp2-store-rail-head > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--lp2-gold-soft);
+}
+
+.lp2-store-rail-head .lp2-symbol {
+  width: 27px;
+  height: 27px;
+}
+
+.lp2-store-rail-head .lp2-symbol-store::before {
+  top: 4px;
+  width: 17px;
+  height: 6px;
+}
+
+.lp2-store-rail-head .lp2-symbol-store::after {
+  top: 10px;
+  width: 15px;
+  height: 13px;
+}
+
+.lp2-store-rail-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.lp2-store-rail-window {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lp2-store-rail-track {
+  display: grid;
+  height: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.lp2-store-card {
+  display: grid;
+  min-width: 0;
+  min-height: 138px;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(227, 172, 50, 0.3);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(227, 172, 50, 0.055), transparent 48%),
+    rgba(9, 8, 6, 0.94);
+  padding: 0.75rem;
+  animation: lp2-carousel-card 0.55s cubic-bezier(0.2, 0.72, 0.25, 1) both;
+  transition:
+    border-color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.lp2-store-card:nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.lp2-store-card:nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+.lp2-store-card:hover {
+  border-color: rgba(227, 172, 50, 0.72);
+  transform: translateY(-3px);
+}
+
+.lp2-store-card > img {
+  width: 112px;
+  height: 112px;
+  border: 1px solid rgba(227, 172, 50, 0.2);
+  border-radius: 14px;
+  object-fit: cover;
+  filter: saturate(0.88) contrast(1.04);
+}
+
+.lp2-store-card > div {
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.lp2-store-card p {
+  margin-bottom: 0.3rem;
+  color: var(--lp2-gold);
+  font-size: 0.48rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.lp2-store-card h2 {
+  overflow: hidden;
+  color: var(--lp2-text);
+  font-size: clamp(1.05rem, 1.45vw, 1.42rem);
+  font-weight: 660;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lp2-store-card > div > span {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 0.38rem;
+  color: var(--lp2-muted);
+  font-size: 0.66rem;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.lp2-store-card a {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 27px;
+  align-items: center;
+  gap: 0.45rem;
+  overflow: hidden;
+  margin-top: 0.5rem;
+  border: 1px solid rgba(227, 172, 50, 0.42);
+  border-radius: 999px;
+  color: var(--lp2-gold-soft);
+  padding: 0.32rem 0.65rem;
+  font-size: 0.52rem;
+  font-weight: 740;
+  letter-spacing: 0.035em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.lp2-store-card a:hover {
+  border-color: var(--lp2-gold);
+  background: var(--lp2-gold);
+  color: #090702;
+}
+
+.lp2-store-card a i {
+  font-size: 0.65rem;
+  font-style: normal;
+}
+
+.lp2-store-rail-arrow {
+  align-self: center;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid rgba(227, 172, 50, 0.34);
+  border-radius: 50%;
+  background: rgba(4, 4, 3, 0.75);
+  color: var(--lp2-gold-soft);
+  font-size: 1rem;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.lp2-store-rail-arrow:hover {
+  border-color: var(--lp2-gold);
+  background: var(--lp2-gold);
+  color: #090702;
+  transform: scale(1.06);
+}
+
+.lp2-store-rail-dots {
+  display: flex;
+  min-height: 18px;
+  align-items: end;
+  justify-content: center;
+  gap: 0.4rem;
+  padding-top: 0.55rem;
+}
+
+.lp2-store-rail-dots button {
+  width: 7px;
+  height: 7px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(248, 245, 239, 0.2);
+  padding: 0;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.lp2-store-rail-dots button.is-active {
+  background: var(--lp2-gold);
+  box-shadow: 0 0 12px rgba(227, 172, 50, 0.72);
+  transform: scale(1.2);
 }
 
 @keyframes lp2-rise {
@@ -1000,14 +999,14 @@
   }
 }
 
-@keyframes lp2-carousel-image {
+@keyframes lp2-carousel-card {
   from {
     opacity: 0;
-    transform: scale(1.07);
+    transform: translateX(14px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateX(0);
   }
 }
 
@@ -1043,9 +1042,9 @@
   }
 
   .lp2-stage {
-    grid-template-columns: minmax(0, 0.84fr) minmax(540px, 1.16fr);
-    min-height: 570px;
-    gap: 2rem;
+    grid-template-columns: minmax(360px, 0.84fr) minmax(520px, 1.16fr);
+    min-height: 680px;
+    column-gap: 2rem;
   }
 
   .lp2-intro {
@@ -1057,13 +1056,22 @@
   }
 
   .lp2-role > a {
-    min-height: 258px;
+    min-height: 310px;
     padding-right: 1.15rem;
     padding-left: 1.15rem;
   }
 
   .lp2-store-carousel {
-    min-height: 480px;
+    min-height: 0;
+  }
+
+  .lp2-store-card {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+
+  .lp2-store-card > img {
+    width: 96px;
+    height: 112px;
   }
 }
 
@@ -1187,6 +1195,10 @@
   }
 
   .lp2-stage {
+    grid-template-areas:
+      'intro'
+      'carousel'
+      'roles';
     grid-template-columns: 1fr;
     min-height: 0;
     gap: 1rem;
@@ -1203,24 +1215,12 @@
   }
 
   .lp2-store-carousel {
-    min-height: 500px;
+    min-height: 0;
   }
 
-  .lp2-audiences {
-    margin-top: 3rem;
-  }
-
-  .lp2-audiences > header {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .lp2-audiences > header > span {
-    justify-self: start;
-  }
-
-  .lp2-roles {
+  .lp2-hero-roles {
     grid-template-columns: repeat(3, minmax(260px, 1fr));
+    margin-top: 1.5rem;
   }
 
   .lp2-role > a {
@@ -1354,72 +1354,55 @@
   }
 
   .lp2-store-carousel {
-    min-height: 390px;
+    min-height: 0;
     border-radius: 20px;
+    padding: 0.7rem 0.65rem 0.65rem;
   }
 
-  .lp2-carousel-top {
-    top: 0.9rem;
-    right: 0.9rem;
-    left: 0.9rem;
+  .lp2-store-rail-head {
+    padding: 0 0.2rem 0.55rem;
   }
 
-  .lp2-carousel-content {
-    right: 1.1rem;
-    bottom: 4.2rem;
-    left: 1.1rem;
+  .lp2-store-rail-head > span:last-child {
+    display: none;
   }
 
-  .lp2-carousel-content h2 {
-    font-size: clamp(2rem, 9vw, 3rem);
+  .lp2-store-rail-body {
+    gap: 0.4rem;
   }
 
-  .lp2-carousel-content > span {
-    display: -webkit-box;
-    overflow: hidden;
-    font-size: 0.74rem;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  .lp2-carousel-content > a {
-    min-height: 40px;
-    margin-top: 0.8rem;
-  }
-
-  .lp2-carousel-controls {
-    right: 0.9rem;
-    bottom: 0.75rem;
-    left: 0.9rem;
-  }
-
-  .lp2-carousel-controls > button {
+  .lp2-store-rail-arrow {
     width: 34px;
     height: 34px;
   }
 
-  .lp2-carousel-dots button {
-    width: 13px;
+  .lp2-store-card {
+    min-height: 154px;
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 0.75rem;
+    border-radius: 15px;
+    padding: 0.65rem;
   }
 
-  .lp2-carousel-dots button.is-active {
-    width: 25px;
+  .lp2-store-card > img {
+    width: 92px;
+    height: 126px;
+    border-radius: 11px;
   }
 
-  .lp2-audiences {
-    margin-top: 2.7rem;
-    padding-top: 3rem;
+  .lp2-store-card h2 {
+    font-size: 1.1rem;
   }
 
-  .lp2-audiences > header {
-    margin-bottom: 1.5rem;
+  .lp2-store-card > div > span {
+    font-size: 0.62rem;
   }
 
-  .lp2-audiences > header h2 {
-    font-size: clamp(2.45rem, 12vw, 3.5rem);
+  .lp2-store-card a {
+    font-size: 0.47rem;
   }
 
-  .lp2-roles {
+  .lp2-hero-roles {
     width: calc(100% + 1rem);
     grid-auto-columns: 82vw;
     grid-auto-flow: column;
@@ -1431,7 +1414,7 @@
     scrollbar-width: none;
   }
 
-  .lp2-roles::-webkit-scrollbar {
+  .lp2-hero-roles::-webkit-scrollbar {
     display: none;
   }
 
