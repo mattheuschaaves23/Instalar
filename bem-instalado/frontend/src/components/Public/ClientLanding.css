@@ -208,6 +208,24 @@
   transform: rotate(9deg);
 }
 
+/* O cabeçalho começa sobre a imagem do hero. Reforce o contraste nesse
+   estado para que o acesso continue legível mesmo com temas e estilos
+   globais aplicados pelo navegador. */
+.lp6-header:not(.is-scrolled) .lp6-login,
+.lp6-header:not(.is-scrolled) .lp6-login:visited {
+  background: #15120c !important;
+  border-color: var(--lp6-gold) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.lp6-header:not(.is-scrolled) .lp6-login > span {
+  color: #090704 !important;
+  -webkit-text-fill-color: #090704 !important;
+  text-shadow: none;
+}
+
 /* Full-bleed hero */
 
 .lp6-hero {

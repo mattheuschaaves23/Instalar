@@ -1,4 +1,4 @@
-const CACHE_NAME = 'instalapro-papelperto-v4';
+const CACHE_NAME = 'instalapro-papelperto-v5';
 const APP_SHELL = ['/', '/cliente', '/cliente/entrar', '/manifest.webmanifest', '/brand/instalapro-logo.png', '/brand/instalapro-icon.png'];
 
 self.addEventListener('install', (event) => {
