@@ -173,11 +173,14 @@
   padding: 0.4rem 0.45rem 0.4rem 1.05rem;
   border: 1px solid rgba(var(--site-accent-rgb), 0.58);
   border-radius: 999px;
-  background: rgba(5, 5, 5, 0.34);
-  color: #fff;
+  /* A foto do topo e o tema claro podem mudar bastante de luminosidade.
+     Manter esta ação em uma superfície escura evita texto herdado sem contraste. */
+  background: rgba(5, 5, 5, 0.84);
+  color: #ffffff !important;
   font-size: 0.72rem;
   font-weight: 820;
   backdrop-filter: blur(12px);
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.24);
   transition:
     background-color 180ms ease,
     border-color 180ms ease,
@@ -191,7 +194,7 @@
   place-items: center;
   border-radius: 50%;
   background: var(--lp6-gold);
-  color: #090704;
+  color: #090704 !important;
   transition: transform 180ms ease;
 }
 
@@ -1174,8 +1177,9 @@ html[data-site-theme='light'] .lp6-header.is-scrolled .site-theme-toggle {
 }
 
 html[data-site-theme='light'] .lp6-header.is-scrolled .lp6-login {
-  background: var(--lp6-gold);
-  color: #090704;
+  background: #15120c;
+  color: #ffffff !important;
+  box-shadow: 0 7px 16px rgba(38, 28, 9, 0.16);
 }
 
 html[data-site-theme='light'] .lp6-store-copy {
