@@ -33,9 +33,23 @@ const connectionString = normalizeConnectionString(
 );
 const hasCompleteDiscreteConfig = Boolean(process.env.DB_HOST && process.env.DB_NAME && process.env.DB_USER);
 
+function positiveIntegerEnv(name, fallback, minimum = 1) {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value >= minimum ? value : fallback;
+}
+
 const shouldUseSsl =
   firstEnvValue('DATABASE_SSL', 'BANCO_DE_DADOS_SSL') === 'true' ||
   (process.env.NODE_ENV === 'production' && Boolean(connectionString) && firstEnvValue('DATABASE_SSL', 'BANCO_DE_DADOS_SSL') !== 'false');
+
+// Vercel functions are short-lived and may be created in parallel. A large
+// default pool keeps Neon compute active unnecessarily, so production uses a
+// single reusable connection unless the provider explicitly overrides it.
+const poolTuning = {
+  max: positiveIntegerEnv('DB_POOL_MAX', process.env.VERCEL ? 1 : 10),
+  idleTimeoutMillis: positiveIntegerEnv('DB_IDLE_TIMEOUT_MS', process.env.VERCEL ? 5000 : 10000),
+  connectionTimeoutMillis: positiveIntegerEnv('DB_CONNECTION_TIMEOUT_MS', 8000),
+};
 
 function withOptionalSsl(config) {
   return shouldUseSsl
@@ -48,7 +62,7 @@ function withOptionalSsl(config) {
 
 const pool = new Pool(
   connectionString
-    ? withOptionalSsl({ connectionString })
+    ? withOptionalSsl({ connectionString, ...poolTuning })
     : hasCompleteDiscreteConfig
       ? withOptionalSsl({
           user: process.env.DB_USER,
@@ -56,6 +70,7 @@ const pool = new Pool(
           host: process.env.DB_HOST,
           port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
           database: process.env.DB_NAME,
+          ...poolTuning,
         })
       : withOptionalSsl({
           user: process.env.DB_USER,
@@ -63,6 +78,7 @@ const pool = new Pool(
           host: process.env.DB_HOST,
           port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
           database: process.env.DB_NAME,
+          ...poolTuning,
         })
 );
 
