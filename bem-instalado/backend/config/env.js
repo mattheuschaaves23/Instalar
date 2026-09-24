@@ -14,4 +14,28 @@ function firstEnvValue(...names) {
   return '';
 }
 
-module.exports = { firstEnvValue };
+const ENV_ALIASES = {
+  APP_URL: ['URL_DO_APLICATIVO'],
+  FRONTEND_URL: ['URL_FRONTEND'],
+  SMTP_USER: ['USUÁRIO SMTP'],
+  SMTP_PORT: ['PORTA_SMTP'],
+  SMTP_SECURE: ['SMTP_SEGURO'],
+  SENTRY_DSN: ['SENTINELA_DSN'],
+  TURNSTILE_SECRET_KEY: ['CHAVE SECRETA DA CATRACA'],
+  OPERATIONS_TOKEN: ['TOKEN_DE_OPERAÇÕES'],
+  TWO_FACTOR_ENCRYPTION_KEY: ['CHAVE DE CRIPTOGRAFIA DE DOIS FATORES'],
+  DATABASE_SSL: ['BANCO_DE_DADOS_SSL'],
+};
+
+function applyEnvironmentAliases() {
+  for (const [canonical, aliases] of Object.entries(ENV_ALIASES)) {
+    if (!String(process.env[canonical] || '').trim()) {
+      const value = firstEnvValue(...aliases);
+      if (value) process.env[canonical] = value;
+    }
+  }
+}
+
+applyEnvironmentAliases();
+
+module.exports = { applyEnvironmentAliases, firstEnvValue };

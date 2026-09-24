@@ -12,7 +12,7 @@ function firstEnvValue(...names) {
 function isEmailEnabled() {
   return Boolean(
     firstEnvValue('SMTP_HOST') &&
-      firstEnvValue('SMTP_USER') &&
+      firstEnvValue('SMTP_USER', 'USUÁRIO SMTP') &&
       firstEnvValue('SMTP_PASSWORD', 'SMTP_PASS')
   );
 }
@@ -28,7 +28,7 @@ function createTransporter() {
     greetingTimeout: 8000,
     socketTimeout: 12000,
     auth: {
-      user: firstEnvValue('SMTP_USER'),
+      user: firstEnvValue('SMTP_USER', 'USUÁRIO SMTP'),
       pass: firstEnvValue('SMTP_PASSWORD', 'SMTP_PASS'),
     },
   });
@@ -48,7 +48,7 @@ async function sendEmailMessage({ to, subject, text, html }) {
     throw error;
   }
 
-  const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER');
+  const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER', 'USUÁRIO SMTP');
   await createTransporter().sendMail({ from, to: recipient, subject, text, html });
 }
 
@@ -94,7 +94,7 @@ async function sendMarketplaceEmail({ to, subject, title, body, actionLabel, act
     return { sent: false, reason: 'smtp_not_configured' };
   }
 
-  const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER');
+  const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER', 'USUÁRIO SMTP');
   const transporter = {
     sendMail: (message) => queueTransactionalEmail({ to, message, category: 'marketplace' }),
   };
