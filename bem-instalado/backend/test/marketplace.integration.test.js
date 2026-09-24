@@ -53,6 +53,14 @@ test('cadastro, pagamento, pedido, interesse e escolha do instalador', { skip: !
     const token = registration.body.token;
     const authHeaders = { Authorization: `Bearer ${token}` };
 
+    // O fluxo de integração não envia e-mail real. Marque a conta de teste
+    // como verificada para exercitar as rotas protegidas sem relaxar a regra
+    // de confirmação de e-mail no ambiente de produção.
+    await pool.query(
+      'UPDATE users SET email_verified_at = NOW() WHERE id = $1',
+      [installerId]
+    );
+
     const installerProfile = await requestJson(baseUrl, '/api/users/profile', { headers: authHeaders });
     assert.equal(installerProfile.response.status, 200, JSON.stringify(installerProfile.body));
     assert.ok(Array.isArray(installerProfile.body.installation_gallery));
@@ -78,6 +86,11 @@ test('cadastro, pagamento, pedido, interesse e escolha do instalador', { skip: !
     clientId = clientRegistration.body.user.id;
     assert.equal(clientRegistration.body.user.account_type, 'client');
     const clientHeaders = { Authorization: `Bearer ${clientRegistration.body.token}` };
+
+    await pool.query(
+      'UPDATE users SET email_verified_at = NOW() WHERE id = $1',
+      [clientId]
+    );
 
     const payment = await requestJson(baseUrl, '/api/subscriptions/pay', {
       method: 'POST', headers: authHeaders, body: JSON.stringify({}),
@@ -121,6 +134,11 @@ test('cadastro, pagamento, pedido, interesse e escolha do instalador', { skip: !
     assert.equal(secondRegistration.response.status, 201, JSON.stringify(secondRegistration.body));
     secondInstallerId = secondRegistration.body.user.id;
     const secondInstallerHeaders = { Authorization: `Bearer ${secondRegistration.body.token}` };
+
+    await pool.query(
+      'UPDATE users SET email_verified_at = NOW() WHERE id = $1',
+      [secondInstallerId]
+    );
 
     await pool.query(
       `UPDATE users SET city = 'Palhoça', state = 'SC', latitude = -27.6460, longitude = -48.6685,
