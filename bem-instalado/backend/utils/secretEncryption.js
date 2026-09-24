@@ -1,9 +1,10 @@
 const crypto = require('crypto');
+const { firstEnvValue } = require('../config/env');
 
 const PREFIX = 'v1:';
 
 function getKey() {
-  const raw = String(process.env.TWO_FACTOR_ENCRYPTION_KEY || '').trim();
+  const raw = firstEnvValue('TWO_FACTOR_ENCRYPTION_KEY', 'CHAVE DE CRIPTOGRAFIA DE DOIS FATORES');
   if (!raw) {
     if (process.env.NODE_ENV === 'production') return null;
     return crypto.createHash('sha256').update(String(process.env.JWT_SECRET || 'instalapro-development-only')).digest();

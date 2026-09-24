@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 require('dotenv').config();
+const { firstEnvValue } = require('./env');
 
 function normalizeConnectionString(value) {
   if (!value) {
@@ -19,12 +20,14 @@ function normalizeConnectionString(value) {
   }
 }
 
-const connectionString = normalizeConnectionString(process.env.DATABASE_URL);
+const connectionString = normalizeConnectionString(
+  firstEnvValue('DATABASE_URL', 'POSTGRES_URL', 'POSTGRES_URL_NO_SSL')
+);
 const hasCompleteDiscreteConfig = Boolean(process.env.DB_HOST && process.env.DB_NAME && process.env.DB_USER);
 
 const shouldUseSsl =
-  process.env.DATABASE_SSL === 'true' ||
-  (process.env.NODE_ENV === 'production' && Boolean(connectionString) && process.env.DATABASE_SSL !== 'false');
+  firstEnvValue('DATABASE_SSL', 'BANCO_DE_DADOS_SSL') === 'true' ||
+  (process.env.NODE_ENV === 'production' && Boolean(connectionString) && firstEnvValue('DATABASE_SSL', 'BANCO_DE_DADOS_SSL') !== 'false');
 
 function withOptionalSsl(config) {
   return shouldUseSsl

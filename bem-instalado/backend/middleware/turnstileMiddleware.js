@@ -1,7 +1,8 @@
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const { firstEnvValue } = require('../config/env');
 
 function getSecret() {
-  return String(process.env.TURNSTILE_SECRET_KEY || '').trim();
+  return firstEnvValue('TURNSTILE_SECRET_KEY', 'CHAVE SECRETA DA CATRACA');
 }
 
 function isTurnstileEnabled() {

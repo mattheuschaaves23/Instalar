@@ -42,3 +42,18 @@ test('rejects an unknown operational token', () => {
   restoreEnv('OPERATIONS_TOKEN', previousOperationsToken);
   restoreEnv('CRON_SECRET', previousCronSecret);
 });
+
+test('accepts the translated operations token alias used by the first Vercel setup', () => {
+  const previousOperationsToken = process.env.OPERATIONS_TOKEN;
+  const previousCronSecret = process.env.CRON_SECRET;
+  const previousAlias = process.env['TOKEN_DE_OPERAÇÕES'];
+  delete process.env.OPERATIONS_TOKEN;
+  delete process.env.CRON_SECRET;
+  process.env['TOKEN_DE_OPERAÇÕES'] = 'translated-operational-token-123456789';
+
+  assert.equal(hasOperationsAccess(requestWithToken(process.env['TOKEN_DE_OPERAÇÕES'])), true);
+
+  restoreEnv('OPERATIONS_TOKEN', previousOperationsToken);
+  restoreEnv('CRON_SECRET', previousCronSecret);
+  restoreEnv('TOKEN_DE_OPERAÇÕES', previousAlias);
+});

@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { firstEnvValue } = require('../config/env');
 
 function suppliedToken(req) {
   const authorization = String(req.get('authorization') || '');
@@ -17,8 +18,10 @@ function hasExpectedToken(received, expected) {
 
 function hasOperationsAccess(req) {
   const received = suppliedToken(req);
-  const acceptedTokens = [process.env.OPERATIONS_TOKEN, process.env.CRON_SECRET]
-    .map((value) => String(value || '').trim())
+  const acceptedTokens = [
+    firstEnvValue('OPERATIONS_TOKEN', 'TOKEN_DE_OPERAÇÕES'),
+    firstEnvValue('CRON_SECRET'),
+  ]
     .filter(Boolean);
 
   return acceptedTokens.some((expected) => hasExpectedToken(received, expected));

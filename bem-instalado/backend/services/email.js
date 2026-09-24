@@ -19,11 +19,11 @@ function isEmailEnabled() {
 
 function createTransporter() {
   const nodemailer = require('nodemailer');
-  const port = Number(firstEnvValue('SMTP_PORT') || 587);
+  const port = Number(firstEnvValue('SMTP_PORT', 'PORTA_SMTP') || 587);
   return nodemailer.createTransport({
     host: firstEnvValue('SMTP_HOST'),
     port,
-    secure: String(firstEnvValue('SMTP_SECURE')).toLowerCase() === 'true' || port === 465,
+    secure: String(firstEnvValue('SMTP_SECURE', 'SMTP_SEGURO')).toLowerCase() === 'true' || port === 465,
     connectionTimeout: 8000,
     greetingTimeout: 8000,
     socketTimeout: 12000,

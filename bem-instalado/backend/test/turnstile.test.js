@@ -64,3 +64,17 @@ test('Turnstile libera token confirmado pelo provedor', async () => {
   if (previousSecret === undefined) delete process.env.TURNSTILE_SECRET_KEY;
   else process.env.TURNSTILE_SECRET_KEY = previousSecret;
 });
+
+test('Turnstile reconhece o alias traduzido da chave secreta', () => {
+  const previousSecret = process.env.TURNSTILE_SECRET_KEY;
+  const previousAlias = process.env['CHAVE SECRETA DA CATRACA'];
+  delete process.env.TURNSTILE_SECRET_KEY;
+  process.env['CHAVE SECRETA DA CATRACA'] = 'turnstile-secret-alias-test';
+
+  assert.equal(isTurnstileEnabled(), true);
+
+  if (previousSecret === undefined) delete process.env.TURNSTILE_SECRET_KEY;
+  else process.env.TURNSTILE_SECRET_KEY = previousSecret;
+  if (previousAlias === undefined) delete process.env['CHAVE SECRETA DA CATRACA'];
+  else process.env['CHAVE SECRETA DA CATRACA'] = previousAlias;
+});

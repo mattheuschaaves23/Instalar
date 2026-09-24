@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { firstEnvValue } = require('../config/env');
 
 const SENSITIVE_VALUE = /(?:bearer\s+)?[a-z0-9._-]{24,}/gi;
 const EMAIL_VALUE = /[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi;
@@ -14,7 +15,7 @@ function clean(value, maxLength = 2000) {
     .slice(0, maxLength);
 }
 
-function parseDsn(rawDsn = process.env.SENTRY_DSN) {
+function parseDsn(rawDsn = firstEnvValue('SENTRY_DSN', 'SENTINELA_DSN')) {
   const dsn = String(rawDsn || '').trim();
   if (!dsn) return null;
 
