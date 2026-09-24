@@ -21,7 +21,15 @@ function normalizeConnectionString(value) {
 }
 
 const connectionString = normalizeConnectionString(
-  firstEnvValue('DATABASE_URL', 'POSTGRES_URL', 'POSTGRES_URL_NO_SSL')
+  firstEnvValue(
+    'DATABASE_URL',
+    'POSTGRES_URL',
+    'POSTGRES_PRISMA_URL',
+    'URL_PRISMA_POSTGRES',
+    'BANCO DE DADOS POSTGRES',
+    'BANCO_DE_DADOS_POSTGRES',
+    'POSTGRES_URL_NO_SSL'
+  )
 );
 const hasCompleteDiscreteConfig = Boolean(process.env.DB_HOST && process.env.DB_NAME && process.env.DB_USER);
 
