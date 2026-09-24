@@ -124,6 +124,10 @@ test('Asaas cria checkout mensal, ativa assinatura e reverte acesso após estorn
     });
     assert.equal(registration.response.status, 201, JSON.stringify(registration.body));
     installerId = registration.body.user.id;
+    // The integration test does not deliver a real verification email. Mark
+    // the fixture as verified so the test reaches the subscription flow that
+    // it is intended to exercise; production still enforces verification.
+    await pool.query('UPDATE users SET email_verified_at = NOW() WHERE id = $1', [installerId]);
     const authHeaders = { Authorization: `Bearer ${registration.body.token}` };
 
     await pool.query(
