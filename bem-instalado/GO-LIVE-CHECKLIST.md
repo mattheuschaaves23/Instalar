@@ -4,7 +4,7 @@ Este arquivo separa o que já existe no código do que depende de uma configura�
 
 ## Configurar na Vercel
 
-Cadastre em Preview e Production: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `APP_URL`, `TWO_FACTOR_ENCRYPTION_KEY`, variáveis SMTP, credenciais Asaas, `OPERATIONS_TOKEN`, `ALERT_WEBHOOK_URL` e `ALERT_WEBHOOK_AUTHORIZATION` quando usados.
+Cadastre em Preview e Production: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `APP_URL`, variáveis SMTP, credenciais Asaas, `OPERATIONS_TOKEN`, `ALERT_WEBHOOK_URL` e `ALERT_WEBHOOK_AUTHORIZATION` quando usados.
 
 `OPERATIONS_TOKEN` deve ser longo, exclusivo e nunca pode entrar no código, navegador, screenshot ou monitor público. A senha de aplicativo Gmail compartilhada durante a configuração anterior deve ser revogada no Google e recriada; a nova senha fica somente nas variáveis da Vercel.
 
@@ -45,7 +45,7 @@ Registre data, responsável, backup usado, duração e resultado de cada restaur
 
 - Web usa sessão `HttpOnly` e CSRF; aplicativo nativo usa token somente no armazenamento seguro.
 - Novas contas por senha confirmam e-mail antes de ações sensíveis.
-- 2FA usa segredo criptografado e códigos de recuperação de uso único.
+- O acesso por senha não exige código adicional; os campos legados de verificação em duas etapas não são usados. A administração exige sessão autenticada e permissão de administrador.
 - A pessoa pode baixar os próprios dados no painel, em **Configurações > Privacidade**. Senhas, segredos 2FA e tokens não entram no arquivo.
 - Solicitações LGPD de clientes ou pessoas sem login vão para `instalaproo@gmail.com`; registre identidade, escopo, data e resposta. Meta operacional: até 15 dias, salvo obrigação legal diferente.
 - O upload valida formato e tamanho, mas antivírus/quarentena requer um serviço externo. Não anuncie análise antifraude automática até conectar um scanner e aprovar o processo de revisão.
@@ -71,7 +71,7 @@ Antes de divulgar, defina por escrito: cancelamento, visita sem execução, atra
 
 Em banco de homologação e Asaas Sandbox, execute e registre o fluxo inteiro:
 
-1. cadastro por senha, confirmação de e-mail, login, 2FA e recuperação;
+1. cadastro por senha, confirmação de e-mail, login, permissão de administrador e recuperação;
 2. pedido, interesse, escolha de instalador, proposta, aceite, agenda, pagamento e conclusão;
 3. webhook pago, estorno e prevenção de conflito simultâneo de agenda;
 4. SMTP indisponível, rotina de reenvio, alerta e push;

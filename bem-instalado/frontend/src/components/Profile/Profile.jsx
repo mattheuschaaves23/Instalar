@@ -4,11 +4,6 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
-import {
-  disable2FARequest,
-  enable2FARequest,
-  setup2FARequest,
-} from '../../services/auth';
 import PageIntro from '../Layout/PageIntro';
 import { installationDayOptions, formatInstallationDays } from '../../utils/installerDays';
 import { useSubscription } from '../../contexts/SubscriptionContext';
@@ -49,7 +44,6 @@ const initialForm = {
   accepts_service_contract: true,
   provides_warranty: true,
   warranty_days: 90,
-  two_factor_enabled: false,
 };
 
 const initialSlotForm = {
@@ -117,7 +111,6 @@ function calculateSecurityScore(form) {
     Number(form.warranty_days || 0) > 0,
     Boolean(form.emergency_contact),
     Boolean(form.emergency_phone),
-    Boolean(form.two_factor_enabled),
   ];
 
   const complete = points.filter(Boolean).length;
@@ -146,16 +139,11 @@ export default function Profile() {
   const { isPro, planAccess, refreshSubscription } = useSubscription();
   const [form, setForm] = useState(initialForm);
   const [activeProfileTab, setActiveProfileTab] = useState('profile');
-  const [setup, setSetup] = useState(null);
-  const [token, setToken] = useState('');
-  const [disableToken, setDisableToken] = useState('');
-  const [securitySaving, setSecuritySaving] = useState(false);
   const [saving, setSaving] = useState(false);
   const [availabilityMonth, setAvailabilityMonth] = useState(buildMonthKey());
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [slotSaving, setSlotSaving] = useState(false);
-  const [recoveryCodes, setRecoveryCodes] = useState([]);
   const [slotForm, setSlotForm] = useState(() => ({
     ...initialSlotForm,
     slot_date: buildDateKey(),
@@ -422,66 +410,6 @@ export default function Profile() {
       toast.error(error.response?.data?.error || 'Não foi possível atualizar o perfil.');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleSetup2FA = async () => {
-    setSecuritySaving(true);
-    try {
-      const response = await setup2FARequest();
-      setSetup(response);
-      toast.success('Escaneie o QR Code e confirme o código para ativar o 2FA.');
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Não foi possível iniciar o 2FA.');
-    } finally {
-      setSecuritySaving(false);
-    }
-  };
-
-  const handleCopy2FAKey = async () => {
-    if (!setup?.secret) return;
-
-    try {
-      await navigator.clipboard.writeText(setup.secret);
-      toast.success('Chave copiada. Cole-a no Google Authenticator.');
-    } catch (_error) {
-      toast.error('Não foi possível copiar automaticamente. Selecione a chave abaixo.');
-    }
-  };
-
-  const handleEnable2FA = async () => {
-    setSecuritySaving(true);
-    try {
-      const result = await enable2FARequest({ setupToken: setup.setupToken, token: token.trim() });
-      const profile = await api.get('/users/profile');
-      setForm(normalizeProfilePayload(profile.data));
-      setUser((current) => ({ ...current, ...profile.data }));
-      setSetup(null);
-      setToken('');
-      setRecoveryCodes(result.recovery_codes || []);
-      toast.success('2FA ativado. Guarde os códigos de recuperação.');
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Não foi possível ativar o 2FA.');
-    } finally {
-      setSecuritySaving(false);
-    }
-  };
-
-  const handleDisable2FA = async () => {
-    setSecuritySaving(true);
-    try {
-      await disable2FARequest({ token: disableToken.trim() });
-      const profile = await api.get('/users/profile');
-      setForm(normalizeProfilePayload(profile.data));
-      setUser((current) => ({ ...current, ...profile.data }));
-      setSetup(null);
-      setToken('');
-      setDisableToken('');
-      toast.success('2FA desativado.');
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Não foi possível desativar o 2FA.');
-    } finally {
-      setSecuritySaving(false);
     }
   };
 
@@ -1076,9 +1004,6 @@ export default function Profile() {
               <p className="eyebrow">Conta</p>
               <h2 className="mt-2 text-2xl font-semibold text-[var(--text)]">Segurança</h2>
             </div>
-            <span className="status-pill" data-tone={form.two_factor_enabled ? 'success' : 'pending'}>
-              2FA {form.two_factor_enabled ? 'ativo' : 'não configurado'}
-            </span>
           </div>
 
           <div className="grid gap-4 py-5 sm:grid-cols-[140px_1fr]">
@@ -1094,92 +1019,13 @@ export default function Profile() {
           </div>
 
           <div className="border-t border-[var(--line)] pt-5">
-            <h3 className="text-lg font-semibold text-[var(--text)]">Autenticação em dois fatores</h3>
-            <p className="mt-1 text-sm text-[var(--muted)]">Obrigatória para acessar o painel administrativo.</p>
-
-            {!form.two_factor_enabled ? (
-              <div className="mt-4 space-y-4">
-                {!setup ? (
-                  <button className="gold-button" disabled={securitySaving} onClick={handleSetup2FA} type="button">
-                    {securitySaving ? 'Preparando...' : 'Configurar 2FA'}
-                  </button>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
-                    <div className="space-y-4">
-                      <p className="text-sm text-[var(--muted)]">Abra o autenticador, adicione esta conta e informe o código gerado.</p>
-                      {setup.otpauth_url ? (
-                        <a className="gold-button flex w-full items-center justify-center sm:w-fit" href={setup.otpauth_url}>
-                          Abrir app autenticador
-                        </a>
-                      ) : null}
-                      <div className="rounded-[14px] border border-[var(--line)] px-4 py-3 text-sm text-[var(--muted)]">
-                        <p className="break-all">Chave manual: <span className="text-[var(--gold-strong)]">{setup.secret}</span></p>
-                        <button className="ghost-button mt-3 !min-h-0 !px-3 !py-2 text-xs" onClick={handleCopy2FAKey} type="button">
-                          Copiar chave
-                        </button>
-                      </div>
-                      <label className="block">
-                        <span className="field-label">Código de 6 dígitos</span>
-                        <input
-                          autoComplete="one-time-code"
-                          className="field-input"
-                          inputMode="numeric"
-                          maxLength={6}
-                          onChange={(event) => setToken(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                          placeholder="000000"
-                          value={token}
-                        />
-                      </label>
-                      <button
-                        className="gold-button"
-                        disabled={securitySaving || token.length !== 6}
-                        onClick={handleEnable2FA}
-                        type="button"
-                      >
-                        {securitySaving ? 'Ativando...' : 'Ativar 2FA'}
-                      </button>
-                    </div>
-                    <img
-                      alt="QR Code de autenticação"
-                      className="w-full rounded-[14px] border border-[var(--line)] bg-white p-3"
-                      src={setup.qrCode}
-                    />
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                <label className="block">
-                  <span className="field-label">Código atual para desativar</span>
-                  <input
-                    autoComplete="one-time-code"
-                    className="field-input"
-                    inputMode="numeric"
-                    maxLength={6}
-                    onChange={(event) => setDisableToken(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="000000"
-                    value={disableToken}
-                  />
-                </label>
-                <button
-                  className="ghost-button"
-                  disabled={securitySaving || disableToken.length !== 6}
-                  onClick={handleDisable2FA}
-                  type="button"
-                >
-                  {securitySaving ? 'Desativando...' : 'Desativar 2FA'}
-                </button>
-              </div>
-            )}
-            {recoveryCodes.length > 0 ? (
-              <div className="mt-5 border-t border-[var(--line)] pt-5">
-                <p className="font-semibold text-[var(--text)]">Códigos de recuperação</p>
-                <p className="mt-1 text-sm text-[var(--muted)]">Guarde-os agora. Cada um funciona uma vez.</p>
-                <div className="mt-4 grid grid-cols-2 gap-2 font-mono text-sm sm:grid-cols-3">
-                  {recoveryCodes.map((code) => <code className="rounded bg-white/60 px-2 py-1 dark:bg-black/20" key={code}>{code}</code>)}
-                </div>
-              </div>
-            ) : null}
+            <h3 className="text-lg font-semibold text-[var(--text)]">Senha e recuperação</h3>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Seu acesso usa e-mail e senha. Para trocar a senha, solicite um link de redefinição no seu e-mail.
+            </p>
+            <Link className="ghost-button mt-4" to="/instalador/recuperar-senha">
+              Redefinir minha senha
+            </Link>
           </div>
         </section>
       )}

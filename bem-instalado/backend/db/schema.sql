@@ -31,6 +31,7 @@
   latitude NUMERIC(10, 7),
   longitude NUMERIC(10, 7),
   service_radius_km INTEGER NOT NULL DEFAULT 80,
+  -- Campos legados preservados para compatibilidade; não são usados no acesso.
   two_factor_enabled BOOLEAN DEFAULT FALSE,
   two_factor_secret VARCHAR(255),
   auth_version INTEGER NOT NULL DEFAULT 0,

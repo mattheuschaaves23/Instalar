@@ -33,13 +33,6 @@ const passwordRecoveryLimiter = createRateLimiter({
   message: 'Muitas tentativas de recuperação de senha. Aguarde alguns minutos.',
 });
 
-const twoFactorLimiter = createRateLimiter({
-  windowMs: 5 * 60 * 1000,
-  max: 10,
-  keyGenerator: (req) => `${req.ip || 'unknown'}:2fa:${req.userId || 'anonymous'}`,
-  message: 'Muitas tentativas de autenticação em dois fatores. Aguarde alguns minutos.',
-});
-
 router.get('/capabilities', controller.getCapabilities);
 router.get('/csrf', issueCsrfToken);
 router.post('/register', authBurstLimiter, requireTurnstile, controller.register);
@@ -53,8 +46,5 @@ router.post('/verify-email', authBurstLimiter, controller.verifyEmail);
 router.get('/session', auth, controller.getSession);
 router.post('/logout', controller.logout);
 router.post('/resend-verification', auth, authBurstLimiter, controller.resendEmailVerification);
-router.get('/2fa/setup', auth, twoFactorLimiter, controller.setup2FA);
-router.post('/2fa/enable', auth, twoFactorLimiter, controller.enable2FA);
-router.post('/2fa/disable', auth, twoFactorLimiter, controller.disable2FA);
 
 module.exports = router;

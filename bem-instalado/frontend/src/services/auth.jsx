@@ -96,18 +96,3 @@ export async function getProfileRequest() {
   const response = await api.get('/users/profile', { timeout: 12000 });
   return response.data;
 }
-
-export async function setup2FARequest() {
-  const response = await api.get('/auth/2fa/setup');
-  return response.data;
-}
-
-export async function enable2FARequest(payload) {
-  const response = await api.post('/auth/2fa/enable', payload);
-  return response.data;
-}
-
-export async function disable2FARequest(payload) {
-  const response = await api.post('/auth/2fa/disable', payload);
-  return response.data;
-}

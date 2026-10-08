@@ -134,18 +134,14 @@ export default function ClientLogin() {
   const navigate = useNavigate();
   const { loading, login, registerClient, user } = useAuth();
   const authCapabilities = useAuthCapabilities();
-  const [form, setForm] = useState({ name: '', phone: '', email: '', password: '', twoFactorToken: '' });
-  const [needs2FA, setNeeds2FA] = useState(false);
+  const [form, setForm] = useState({ name: '', phone: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
-  const submitLabel = useMemo(
-    () => (isRegistering ? 'Criar minha conta' : needs2FA ? 'Validar acesso' : 'Entrar'),
-    [isRegistering, needs2FA]
-  );
+  const submitLabel = isRegistering ? 'Criar minha conta' : 'Entrar';
   const nextPath = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return sanitizeClientNextPath(params.get('next') || location.state?.from);
@@ -208,13 +204,7 @@ export default function ClientLogin() {
         return;
       }
 
-      const result = await login({ ...form, email: form.email.trim().toLowerCase(), account_type: 'client' });
-
-      if (result.twoFactorRequired) {
-        setNeeds2FA(true);
-        toast('Digite o código 2FA para concluir o acesso.');
-        return;
-      }
+      await login({ ...form, email: form.email.trim().toLowerCase(), account_type: 'client' });
 
       toast.success('Login realizado.');
       navigate(nextPath, { replace: true });
@@ -223,12 +213,6 @@ export default function ClientLogin() {
         setTurnstileToken('');
         setTurnstileResetKey((current) => current + 1);
       }
-      if (error.response?.status === 401 && error.response?.data?.twoFactorRequired) {
-        setNeeds2FA(true);
-        toast('Digite o código 2FA para concluir o acesso.');
-        return;
-      }
-
       const suggestedPortal = error.response?.data?.suggested_portal;
       toast.error(getAuthRequestErrorMessage(error));
       if (suggestedPortal) {
@@ -241,7 +225,6 @@ export default function ClientLogin() {
 
   const toggleRegistration = () => {
     setIsRegistering((current) => !current);
-    setNeeds2FA(false);
     setTurnstileToken('');
     setTurnstileResetKey((current) => current + 1);
   };
@@ -400,24 +383,6 @@ export default function ClientLogin() {
                 </button>
               </div>
             </label>
-
-            {needs2FA && !isRegistering ? (
-              <label className="client-login-field">
-                <span>Código 2FA</span>
-                <div className="client-login-input-wrap">
-                  <ClientLoginIcon name="lock" />
-                  <input
-                    autoComplete="one-time-code"
-                  inputMode="text"
-                  maxLength={16}
-                    name="twoFactorToken"
-                    onChange={handleChange}
-                  placeholder="000000 ou código de recuperação"
-                    value={form.twoFactorToken}
-                  />
-                </div>
-              </label>
-            ) : null}
 
             {authCapabilities.password_reset && !isRegistering ? (
               <Link className="client-login-forgot" to="/cliente/recuperar-senha">

@@ -597,8 +597,7 @@ exports.getProfile = async (req, res) => {
           safety_notes,
           accepts_service_contract,
           provides_warranty,
-          warranty_days,
-          two_factor_enabled
+          warranty_days
         FROM users
         WHERE id = $1
       `,
@@ -835,8 +834,7 @@ exports.updateProfile = async (req, res) => {
           safety_notes,
           accepts_service_contract,
           provides_warranty,
-          warranty_days,
-          two_factor_enabled
+          warranty_days
       `,
       [
         name ?? null,

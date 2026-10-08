@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
@@ -174,7 +174,7 @@ const trustItems = [
   {
     icon: 'shield',
     title: 'Sessão protegida',
-    copy: 'Acesso com senha e opção de verificação em duas etapas.',
+    copy: 'Acesso com senha e recuperação por e-mail.',
   },
   {
     icon: 'headset',
@@ -192,15 +192,12 @@ export default function Login() {
   const navigate = useNavigate();
   const { loading, login, logout, user } = useAuth();
   const authCapabilities = useAuthCapabilities();
-  const [form, setForm] = useState({ email: '', password: '', twoFactorToken: '' });
-  const [needs2FA, setNeeds2FA] = useState(false);
+  const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [oauthSubmitting, setOauthSubmitting] = useState(false);
   const canUseGoogle = authCapabilities.oauth.google && !isIosInstallerApp();
-
-  const submitLabel = useMemo(() => (needs2FA ? 'Validar acesso' : 'Entrar'), [needs2FA]);
 
   useEffect(() => {
     if (loading) {
@@ -245,26 +242,14 @@ export default function Login() {
     setSubmitting(true);
 
     try {
-      const result = await login(
+      await login(
         { ...form, email: form.email.trim().toLowerCase(), account_type: 'installer' },
         { remember: rememberMe }
       );
 
-      if (result.twoFactorRequired) {
-        setNeeds2FA(true);
-        toast('Digite o código 2FA para concluir o acesso.');
-        return;
-      }
-
       toast.success('Acesso liberado.');
       navigate('/dashboard', { replace: true });
     } catch (error) {
-      if (error.response?.status === 401 && error.response?.data?.twoFactorRequired) {
-        setNeeds2FA(true);
-        toast('Digite o código 2FA para concluir o acesso.');
-        return;
-      }
-
       const suggestedPortal = error.response?.data?.suggested_portal;
       toast.error(
         IS_INSTALLER_APP && suggestedPortal
@@ -423,24 +408,6 @@ export default function Login() {
               </div>
             </label>
 
-            {needs2FA ? (
-              <label className="installer-login-field">
-                <span>Código 2FA</span>
-                <div className="installer-login-input-wrap">
-                  <InstallerLoginIcon name="lock" />
-                  <input
-                    autoComplete="one-time-code"
-                        inputMode="text"
-                        maxLength={16}
-                    name="twoFactorToken"
-                    onChange={handleChange}
-                        placeholder="000000 ou código de recuperação"
-                    value={form.twoFactorToken}
-                  />
-                </div>
-              </label>
-            ) : null}
-
             <div className="installer-login-options">
               <label className="installer-login-remember">
                 <input
@@ -459,7 +426,7 @@ export default function Login() {
             </div>
 
             <button className="installer-login-submit" disabled={submitting} type="submit">
-              <span>{submitting ? 'Entrando...' : submitLabel}</span>
+              <span>{submitting ? 'Entrando...' : 'Entrar'}</span>
               <InstallerLoginIcon name="arrow" />
             </button>
 

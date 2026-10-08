@@ -3,7 +3,6 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/database');
 const { jwtSecret, jwtExpiresIn } = require('../config/auth');
-const { buildOtpAuthUrl, generateSecret, verifyToken, generateQrCode } = require('../utils/totp');
 const { logAudit } = require('../utils/auditLog');
 const { normalizeEmail } = require('../utils/adminAccess');
 const {
@@ -11,14 +10,12 @@ const {
   sendEmailVerificationEmail,
   sendPasswordResetEmail,
 } = require('../services/email');
-const { decryptSecret, encryptSecret, isEncryptionConfigured } = require('../utils/secretEncryption');
 const { clearCsrfCookie } = require('../middleware/csrfMiddleware');
 
 const REGISTER_PLAN_PRICE = Number(process.env.SUBSCRIPTION_PRICE || 49.9);
 const PASSWORD_RESET_EXPIRATION_MINUTES = Number(process.env.PASSWORD_RESET_EXPIRATION_MINUTES || 30);
 const EMAIL_VERIFICATION_EXPIRATION_MINUTES = Number(process.env.EMAIL_VERIFICATION_EXPIRATION_MINUTES || 30);
 const OAUTH_STATE_EXPIRES_IN = '10m';
-const TWO_FACTOR_SETUP_EXPIRES_IN = '10m';
 const SESSION_COOKIE_NAME = 'instalapro_session';
 const SESSION_COOKIE_MAX_AGE_MS = Number(process.env.SESSION_COOKIE_MAX_AGE_MS || 7 * 24 * 60 * 60 * 1000);
 const OAUTH_ALLOWED_ROLES = new Set(['installer', 'client']);
@@ -74,28 +71,6 @@ function tokenHash(token) {
 
 function createRandomToken() {
   return crypto.randomBytes(32).toString('hex');
-}
-
-function createRecoveryCodes() {
-  return Array.from({ length: 10 }, () => crypto.randomBytes(5).toString('hex').toUpperCase());
-}
-
-function normalizeRecoveryCode(value) {
-  return String(value || '').trim().replace(/[^a-z\d]/gi, '').toUpperCase();
-}
-
-async function consumeRecoveryCode(userId, value) {
-  const code = normalizeRecoveryCode(value);
-  if (!code) return false;
-
-  const result = await pool.query(
-    `UPDATE two_factor_recovery_codes
-     SET used_at = NOW()
-     WHERE user_id = $1 AND code_hash = $2 AND used_at IS NULL
-     RETURNING id`,
-    [userId, tokenHash(code)]
-  );
-  return result.rowCount > 0;
 }
 
 async function createEmailVerificationToken(db, userId) {
@@ -414,7 +389,6 @@ function sanitizeUser(user) {
     default_price_per_roll: user.default_price_per_roll,
     default_removal_price: user.default_removal_price,
     is_admin: Boolean(user.is_admin),
-    two_factor_enabled: Boolean(user.two_factor_enabled),
     email_verified: Boolean(user.email_verified_at),
   };
 }
@@ -438,7 +412,6 @@ async function fetchSanitizedUserById(userId) {
         default_price_per_roll,
         default_removal_price,
         is_admin,
-        two_factor_enabled,
         email_verified_at,
         auth_version
       FROM users
@@ -647,7 +620,6 @@ async function registerPasswordAccount(req, res, accountType) {
           default_price_per_roll,
           default_removal_price,
           is_admin,
-          two_factor_enabled,
           auth_version
       `,
       [
@@ -727,7 +699,7 @@ exports.registerClient = (req, res) => registerPasswordAccount(req, res, 'client
 
 exports.login = async (req, res) => {
   try {
-    const { email, password, twoFactorToken } = req.body;
+    const { email, password } = req.body;
     const expectedAccountType = normalizeAccountType(req.body?.account_type || req.body?.role);
     const requestedAccountType = expectedAccountType || 'installer';
     const normalizedEmail = normalizeEmail(email);
@@ -777,48 +749,6 @@ exports.login = async (req, res) => {
         req,
       });
       return res.status(401).json({ error: 'Credenciais inválidas.' });
-    }
-
-    if (user.two_factor_enabled) {
-      if (!twoFactorToken) {
-        await logAudit({
-          actorUserId: user.id,
-          action: 'auth.login_requires_2fa',
-          entityType: 'user',
-          entityId: user.id,
-          metadata: { email: user.email },
-          req,
-        });
-        return res.status(401).json({ error: 'Código 2FA necessário.', twoFactorRequired: true });
-      }
-
-      let validSecondFactor = false;
-      let usedRecoveryCode = false;
-
-      try {
-        validSecondFactor = verifyToken(decryptSecret(user.two_factor_secret), twoFactorToken);
-      } catch (_error) {
-        return res.status(503).json({
-          error: 'A validação em duas etapas está temporariamente indisponível. Tente novamente mais tarde.',
-          code: 'TWO_FACTOR_ENCRYPTION_NOT_CONFIGURED',
-        });
-      }
-
-      if (!validSecondFactor) {
-        usedRecoveryCode = await consumeRecoveryCode(user.id, twoFactorToken);
-      }
-
-      if (!validSecondFactor && !usedRecoveryCode) {
-        await logAudit({
-          actorUserId: user.id,
-          action: 'auth.login_failed_invalid_2fa',
-          entityType: 'user',
-          entityId: user.id,
-          metadata: { email: user.email },
-          req,
-        });
-        return res.status(401).json({ error: 'Código 2FA inválido.' });
-      }
     }
 
     await logAudit({
@@ -998,178 +928,6 @@ exports.handleOAuthCallback = async (req, res) => {
     }).catch(() => null);
 
     return redirectOAuthResult(req, res, { role, next, platform, error: redirectError });
-  }
-};
-
-exports.setup2FA = async (req, res) => {
-  try {
-    if (!isEncryptionConfigured()) {
-      return res.status(503).json({
-        error: 'A proteção criptográfica do 2FA ainda não foi configurada.',
-        code: 'TWO_FACTOR_ENCRYPTION_NOT_CONFIGURED',
-      });
-    }
-
-    const { rows } = await pool.query(
-      'SELECT email, two_factor_enabled FROM users WHERE id = $1',
-      [req.userId]
-    );
-    const user = rows[0];
-
-    if (!user) {
-      return res.status(404).json({ error: 'Usuário não encontrado.' });
-    }
-
-    if (user.two_factor_enabled) {
-      return res.status(409).json({ error: 'O 2FA já está ativo nesta conta.' });
-    }
-
-    const secret = generateSecret();
-    const qrCode = await generateQrCode(secret.base32, user.email);
-    const setupToken = jwt.sign(
-      { purpose: '2fa_setup', userId: req.userId, secret: secret.base32 },
-      jwtSecret,
-      { expiresIn: TWO_FACTOR_SETUP_EXPIRES_IN }
-    );
-    return res.json({
-      secret: secret.base32,
-      qrCode,
-      otpauth_url: buildOtpAuthUrl(secret.base32, user.email),
-      setupToken,
-    });
-  } catch (_error) {
-    return res.status(500).json({ error: 'Erro ao configurar 2FA.' });
-  }
-};
-
-exports.enable2FA = async (req, res) => {
-  let db;
-  try {
-    const { setupToken, token } = req.body;
-    let setup;
-
-    try {
-      setup = jwt.verify(String(setupToken || ''), jwtSecret);
-    } catch (_error) {
-      return res.status(400).json({ error: 'A configuração do 2FA expirou. Inicie novamente.' });
-    }
-
-    if (
-      setup.purpose !== '2fa_setup' ||
-      Number(setup.userId) !== Number(req.userId) ||
-      !setup.secret ||
-      !token ||
-      !verifyToken(setup.secret, token)
-    ) {
-      return res.status(400).json({ error: 'Dados de 2FA inválidos.' });
-    }
-
-    const recoveryCodes = createRecoveryCodes();
-    db = await pool.connect();
-    await db.query('BEGIN');
-    const enabled = await db.query(
-      `
-        UPDATE users
-        SET two_factor_secret = $1, two_factor_enabled = true, updated_at = NOW()
-        WHERE id = $2 AND two_factor_enabled = false
-        RETURNING id
-      `,
-      [encryptSecret(setup.secret), req.userId]
-    );
-
-    if (!enabled.rows[0]) {
-      await db.query('ROLLBACK');
-      return res.status(409).json({ error: 'O 2FA já está ativo nesta conta.' });
-    }
-
-    await db.query('DELETE FROM two_factor_recovery_codes WHERE user_id = $1', [req.userId]);
-    for (const code of recoveryCodes) {
-      await db.query(
-        'INSERT INTO two_factor_recovery_codes (user_id, code_hash) VALUES ($1, $2)',
-        [req.userId, tokenHash(normalizeRecoveryCode(code))]
-      );
-    }
-    await db.query('COMMIT');
-
-    await logAudit({
-      actorUserId: req.userId,
-      action: 'auth.2fa_enabled',
-      entityType: 'user',
-      entityId: req.userId,
-      req,
-    });
-
-    return res.json({ success: true, recovery_codes: recoveryCodes });
-  } catch (error) {
-    await db?.query('ROLLBACK').catch(() => null);
-    if (error.code === 'TWO_FACTOR_ENCRYPTION_NOT_CONFIGURED') {
-      return res.status(503).json({ error: error.message, code: error.code });
-    }
-    return res.status(500).json({ error: 'Erro ao ativar 2FA.' });
-  } finally {
-    db?.release();
-  }
-};
-
-exports.disable2FA = async (req, res) => {
-  try {
-    const current = await pool.query(
-      'SELECT two_factor_enabled, two_factor_secret FROM users WHERE id = $1 LIMIT 1',
-      [req.userId]
-    );
-    const user = current.rows[0];
-    const token = String(req.body?.token || '').trim();
-
-    if (!user) {
-      return res.status(404).json({ error: 'Usuário não encontrado.' });
-    }
-
-    if (!user.two_factor_enabled || !user.two_factor_secret) {
-      return res.status(409).json({ error: 'O 2FA já está desativado.' });
-    }
-
-    let validToken = false;
-    try {
-      validToken = Boolean(token) && verifyToken(decryptSecret(user.two_factor_secret), token);
-    } catch (_error) {
-      return res.status(503).json({
-        error: 'A validação em duas etapas está temporariamente indisponível.',
-        code: 'TWO_FACTOR_ENCRYPTION_NOT_CONFIGURED',
-      });
-    }
-
-    if (!validToken) {
-      await logAudit({
-        actorUserId: req.userId,
-        action: 'auth.2fa_disable_failed',
-        entityType: 'user',
-        entityId: req.userId,
-        req,
-      });
-      return res.status(400).json({ error: 'Código de autenticação inválido.' });
-    }
-
-    await pool.query(
-      `
-        UPDATE users
-        SET two_factor_secret = NULL, two_factor_enabled = false, updated_at = NOW()
-        WHERE id = $1
-      `,
-      [req.userId]
-    );
-    await pool.query('DELETE FROM two_factor_recovery_codes WHERE user_id = $1', [req.userId]);
-
-    await logAudit({
-      actorUserId: req.userId,
-      action: 'auth.2fa_disabled',
-      entityType: 'user',
-      entityId: req.userId,
-      req,
-    });
-
-    return res.json({ success: true });
-  } catch (_error) {
-    return res.status(500).json({ error: 'Erro ao desativar 2FA.' });
   }
 };
 

@@ -157,9 +157,6 @@ api.interceptors.response.use(
         redirectTo(error.response?.data?.account_type === 'client' ? '/cliente' : '/dashboard');
       }
 
-      if (status === 403 && code === 'ADMIN_TWO_FACTOR_REQUIRED') {
-        redirectTo('/profile?security=2fa');
-      }
     }
 
     return Promise.reject(error);

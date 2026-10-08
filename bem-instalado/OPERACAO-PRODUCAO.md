@@ -12,7 +12,6 @@ Cadastre estas variáveis em **Vercel > Project > Settings > Environment Variabl
 | `JWT_SECRET` | Chave longa, aleatória e exclusiva para as sessões. |
 | `FRONTEND_URL` e `APP_URL` | URL pública final, por exemplo `https://seu-dominio.com.br`. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Envio de confirmação de e-mail, proposta e avisos operacionais. Use uma senha de aplicativo quando o provedor exigir. |
-| `TWO_FACTOR_ENCRYPTION_KEY` | Chave aleatória de 32 bytes (base64 ou hexadecimal) para criptografar os segredos de 2FA no banco. Não altere essa chave depois que houver 2FA ativo. |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | JSON inteiro, em uma só linha, da conta de serviço Firebase. Habilita o envio FCM pelo servidor. |
 
 O deploy executa somente as migrations versionadas; ele não recria o schema nem apaga dados. Para um banco local novo, use o comando de inicialização local já existente, nunca em produção.
@@ -21,7 +20,7 @@ O deploy executa somente as migrations versionadas; ele não recria o schema nem
 
 Contas criadas com senha recebem um link de confirmação. Enquanto o e-mail não é confirmado, ações protegidas da conta ficam bloqueadas. As sessões web passam a usar o cookie `HttpOnly` `instalapro_session`; o token não é salvo no `localStorage` do navegador. Aplicativos nativos continuam usando o armazenamento seguro do dispositivo.
 
-O 2FA agora criptografa o segredo antes de gravar no banco e mostra dez códigos de recuperação uma única vez. Administradores sem 2FA são redirecionados ao perfil para ativá-lo antes de entrar no painel administrativo.
+O acesso por senha não exige código de autenticação adicional. A administração continua restrita a contas autenticadas com permissão de administrador. Os campos antigos de verificação em duas etapas permanecem no banco apenas para compatibilidade e não são lidos nem usados para autorizar o acesso; não é necessário migrar ou apagar contas existentes.
 
 ## Push Android e iPhone
 
@@ -43,7 +42,7 @@ As páginas públicas recebem título, descrição, canonical e Open Graph no na
 ## Verificação após o deploy
 
 1. Crie uma conta com senha e confirme o e-mail pelo link recebido.
-2. Envie um certificado de instalador e, como admin com 2FA, aprove-o em **Aprovações**.
+2. Envie um certificado de instalador e, como administrador autenticado, aprove-o em **Aprovações**.
 3. Como cliente, publique um pedido, escolha o instalador, aceite uma proposta e confira o horário na Agenda.
 4. Confira e-mail e push para proposta, aceite e atualização do serviço.
 5. Abra `/robots.txt` e `/sitemap.xml` diretamente no domínio público e envie o sitemap ao Search Console.
