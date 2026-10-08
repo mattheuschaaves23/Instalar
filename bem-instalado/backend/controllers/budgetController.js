@@ -1,6 +1,5 @@
 ﻿const fs = require('fs/promises');
 const pool = require('../config/database');
-const { installmentInfo, installmentAmountLabel, installmentConditionsLabel } = require('../../shared/installmentTerms.mjs');
 const generateBudgetPDF = require('../utils/generatePDF');
 const generateWhatsAppLink = require('../utils/whatsapp');
 const {
@@ -952,6 +951,7 @@ exports.sendWhatsApp = async (req, res) => {
       return res.status(404).json({ error: 'Orçamento não encontrado.' });
     }
 
+    const { installmentInfo, installmentAmountLabel, installmentConditionsLabel } = await import('../../shared/installmentTerms.mjs');
     const installment = installmentInfo(budget);
     const installmentText = installment.enabled
       ? ` Parcelamento disponível: até ${installmentAmountLabel(installment)}. ${installmentConditionsLabel(installment)}`

@@ -3,7 +3,6 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
-const { installmentInfo, installmentAmountLabel, installmentConditionsLabel } = require('../../shared/installmentTerms.mjs');
 
 const COLORS = {
   bg: '#0F0D09',
@@ -474,10 +473,10 @@ function drawTotalsPanel(doc, budget, installment, y, width) {
     `Pagamento à vista: ${total}`,
     upfrontTermsDescription ? `Formas à vista: ${upfrontTermsDescription}` : 'Formas à vista: não informadas',
     installment.enabled
-      ? `Pagamento parcelado: ${installmentAmountLabel(installment)}`
+      ? `Pagamento parcelado: ${installment.amountLabel}`
       : 'Pagamento parcelado: não habilitado',
     installment.enabled
-      ? installmentConditionsLabel(installment)
+      ? installment.conditionsLabel
       : '',
   ];
   const textWidth = width - 28;
@@ -604,7 +603,9 @@ function drawFooter(doc, pageNumber, pageCount, budgetId, user, isPro, branding)
   doc.text(rightText, doc.page.width - MARGIN - doc.widthOfString(rightText), footerY, fixedText);
 }
 
-module.exports = function generateBudgetPDF({ budget, client, environments, user, isPro = false, branding = null }) {
+module.exports = async function generateBudgetPDF({ budget, client, environments, user, isPro = false, branding = null }) {
+  // Vercel's runtime loader does not support require(ESM), even on recent Node.
+  const { installmentInfo, installmentAmountLabel, installmentConditionsLabel } = await import('../../shared/installmentTerms.mjs');
   return new Promise((resolve, reject) => {
     // Em ambientes serverless, como a Vercel, somente a pasta temporária do SO é gravável.
     // O identificador aleatório evita que duas requisições do mesmo orçamento disputem o mesmo arquivo.
@@ -653,7 +654,8 @@ module.exports = function generateBudgetPDF({ budget, client, environments, user
     const rightHeight = drawInfoBox(doc, 'Cliente e local', clientLines, MARGIN + halfWidth + gap, y, halfWidth);
     y += Math.max(leftHeight, rightHeight) + 16;
 
-    const installment = installmentInfo(budget);
+    const terms = installmentInfo(budget);
+    const installment = { ...terms, amountLabel: installmentAmountLabel(terms), conditionsLabel: installmentConditionsLabel(terms) };
     const metricWidth = (contentWidth - gap * 3) / 4;
     drawMetricCard(doc, 'Rolos', `${toNumber(budget.total_rolls)} un`, MARGIN, y, metricWidth);
     drawMetricCard(doc, 'Área total', `${toNumber(budget.total_area).toFixed(2)} m²`, MARGIN + metricWidth + gap, y, metricWidth);

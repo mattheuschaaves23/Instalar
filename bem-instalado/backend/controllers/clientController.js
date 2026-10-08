@@ -1,5 +1,4 @@
 const pool = require('../config/database');
-const { normalizeDocument, isValidDocument: hasValidDocument } = require('../../shared/documents.mjs');
 const {
   getInstallerPlanAccess,
   isLimitReached,
@@ -21,6 +20,7 @@ function normalizeClientType(value) {
 
 exports.createClient = async (req, res) => {
   try {
+    const { normalizeDocument, isValidDocument: hasValidDocument } = await import('../../shared/documents.mjs');
     const {
       name,
       phone,
@@ -154,6 +154,7 @@ exports.getClient = async (req, res) => {
 
 exports.updateClient = async (req, res) => {
   try {
+    const { normalizeDocument, isValidDocument: hasValidDocument } = await import('../../shared/documents.mjs');
     const {
       name,
       phone,

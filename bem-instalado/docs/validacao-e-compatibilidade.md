@@ -23,7 +23,7 @@ Referência: https://tailwindcss.com/docs/upgrade-guide#browser-requirements
 - O frontend verifica se os scripts gerados pelo Vite continuam permitidos pela
   política de segurança configurada em `vercel.json`.
 
-Em 08/10/2026, a validação local passou com 92 testes backend (nenhum ignorado),
+Em 08/10/2026, a validação local passou com 93 testes backend (nenhum ignorado),
 87 testes frontend e zero vulnerabilidades reportadas por `npm audit` em ambos.
 Isso não garante ausência de todo bug nem substitui homologação de cobranças reais,
 entrega de e-mails, uploads e notificações em dispositivos reais.
