@@ -8,6 +8,7 @@ import { clearOAuthErrorFromUrl, getOAuthErrorMessage } from '../../utils/oauthM
 import { getAuthRequestErrorMessage } from '../../utils/authErrorMessage';
 import useAuthCapabilities from '../../hooks/useAuthCapabilities';
 import BrandWordmark from '../Layout/BrandWordmark';
+import GoogleIcon from './GoogleIcon';
 
 function ClientLoginIcon({ name }) {
   const common = {
@@ -448,9 +449,9 @@ export default function ClientLogin() {
 
                 <div className="client-login-socials">
                   {authCapabilities.oauth.google ? (
-                    <button onClick={() => handleSocialLogin('google')} type="button">
-                      <span className="client-login-google">G</span>
-                      <span>Google</span>
+                    <button className="auth-google-button" onClick={() => handleSocialLogin('google')} type="button">
+                      <GoogleIcon />
+                      <span>Continuar com Google</span>
                     </button>
                   ) : null}
                 </div>

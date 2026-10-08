@@ -474,6 +474,7 @@ export default function Login() {
                 <div className="installer-login-socials">
                   {canUseGoogle ? (
                     <button
+                      className="auth-google-button"
                       disabled={oauthSubmitting}
                       onClick={() => handleSocialLogin('google')}
                       type="button"

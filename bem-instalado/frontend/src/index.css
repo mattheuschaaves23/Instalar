@@ -28430,7 +28430,7 @@ html[data-site-theme='dark'] .panel-v3 .settings-panel--danger {
 
 .dashboard-reference-layout .subscription-v3-plans {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 1.25rem;
 }
 
@@ -33642,3 +33642,47 @@ html[data-site-theme='dark'] .pdf-branding-actions .gold-button { border-color: 
 html[data-site-theme='dark'] .pdf-branding-pro-notice { border-color: #735b25; background: #241d11; color: #f0d78f; }
 html[data-site-theme='dark'] .pdf-branding-pro-notice span { color: #dcc589; }
 html[data-site-theme='dark'] .pdf-branding-preview { border-color: #4a4a4a; box-shadow: none; }
+
+/* Google sign-in: consistent contrast and sizing across login screens. */
+html[data-site-theme] .client-login-socials button.auth-google-button,
+html[data-site-theme] .installer-login-socials button.auth-google-button {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.75rem 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border: 1px solid #b8c2cc;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  color: #263238 !important;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 2px 5px rgba(24, 39, 55, 0.07);
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+html[data-site-theme] button.auth-google-button span {
+  color: #263238 !important;
+}
+
+.auth-google-icon,
+.auth-google-button .installer-login-google-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+}
+
+html[data-site-theme] button.auth-google-button:hover:not(:disabled) {
+  background: #f3f6fa;
+  border-color: #8292a4;
+  box-shadow: 0 3px 8px rgba(24, 39, 55, 0.12);
+}
+
+html[data-site-theme] button.auth-google-button:focus-visible {
+  outline: 3px solid #4285f4;
+  outline-offset: 3px;
+}
