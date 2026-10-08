@@ -15820,6 +15820,8 @@ body {
 }
 
 .installer-login-left {
+  --text: #ffffff;
+  --muted: #e8e4dd;
   min-height: 48rem;
   padding: 3.6rem 3.6rem 8.4rem;
   display: grid;
@@ -15851,7 +15853,7 @@ body {
   height: 100%;
   object-fit: cover;
   object-position: center top;
-  filter: saturate(0.96) brightness(0.88);
+  filter: saturate(0.96) brightness(1);
   z-index: -2;
 }
 
@@ -15859,11 +15861,14 @@ body {
   background:
     radial-gradient(24rem 26rem at 64% 32%, rgba(var(--site-accent-rgb), 0.18), transparent 66%),
     linear-gradient(90deg, rgba(5, 5, 5, 0.99) 0%, rgba(5, 5, 5, 0.96) 42%, rgba(5, 5, 5, 0.28) 76%, rgba(5, 5, 5, 0.1) 100%),
-    linear-gradient(180deg, rgba(5, 5, 5, 0.06), rgba(5, 5, 5, 0.72));
+    linear-gradient(180deg, transparent, rgba(5, 5, 5, 0.25));
   z-index: -1;
 }
 
 .installer-login-brand {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: #fffaf0;
   position: relative;
   z-index: 1;
   display: inline-flex;
@@ -15871,6 +15876,49 @@ body {
   gap: 0.78rem;
   width: max-content;
   max-width: 100%;
+}
+
+.auth-login-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: start;
+  justify-self: start;
+  min-height: 44px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #b8c4cb;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  color: #24343d !important;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+html[data-site-theme] .auth-login-back span {
+  color: #24343d !important;
+}
+
+.auth-login-back:hover,
+.auth-login-back:focus-visible {
+  background: #edf3f6;
+  outline: 2px solid #947000;
+  outline-offset: 2px;
+}
+
+html[data-site-theme] .installer-login-left .brand-wordmark-image {
+  filter: none;
+}
+
+html[data-site-theme] .installer-login-left .installer-login-kicker,
+html[data-site-theme] .installer-login-left .installer-login-copy h1 span,
+html[data-site-theme] .installer-login-left .installer-login-benefit-icon {
+  color: #ffd477 !important;
+}
+
+html[data-site-theme] .installer-login-left .installer-login-description,
+html[data-site-theme] .installer-login-left .installer-login-benefits p {
+  color: #e8e4dd !important;
 }
 
 .installer-login-logo-mark {

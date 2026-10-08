@@ -251,6 +251,9 @@ export default function ClientLogin() {
 
   return (
     <main className="client-login-page">
+      <Link className="auth-login-back" to="/">
+        <span aria-hidden="true">←</span> Voltar
+      </Link>
       <section className="client-login-frame">
         <div className="client-login-left">
           <img alt="" className="client-login-bg" src="/landing/sala-preto-dourado.png" />
