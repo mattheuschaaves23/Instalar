@@ -16536,6 +16536,8 @@ body {
 }
 
 .client-login-left {
+  --text: #ffffff;
+  --muted: #e8e4dd;
   min-height: 42rem;
   padding: 4rem 4.1rem 3.4rem;
   display: grid;
@@ -16566,15 +16568,15 @@ body {
   height: 100%;
   object-fit: cover;
   object-position: 40% center;
-  filter: saturate(0.9) brightness(0.56);
+  filter: saturate(0.95) brightness(0.95);
   z-index: -2;
 }
 
 .client-login-left-overlay {
   background:
     radial-gradient(26rem 26rem at 42% 28%, rgba(var(--site-accent-rgb), 0.14), transparent 70%),
-    linear-gradient(90deg, rgba(5, 5, 5, 0.96) 0%, rgba(5, 5, 5, 0.84) 42%, rgba(5, 5, 5, 0.52) 100%),
-    linear-gradient(180deg, rgba(5, 5, 5, 0.08), rgba(5, 5, 5, 0.74));
+    linear-gradient(90deg, rgba(5, 5, 5, 0.78) 0%, rgba(5, 5, 5, 0.62) 42%, rgba(5, 5, 5, 0.2) 100%),
+    linear-gradient(180deg, transparent, rgba(5, 5, 5, 0.25));
   z-index: -1;
 }
 
@@ -16584,6 +16586,24 @@ body {
   gap: 0.78rem;
   width: max-content;
   max-width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: #fffaf0;
+}
+
+html[data-site-theme] .client-login-left .brand-wordmark-image {
+  filter: none;
+}
+
+html[data-site-theme] .client-login-left .client-login-kicker,
+html[data-site-theme] .client-login-left .client-login-copy h1 span,
+html[data-site-theme] .client-login-left .client-login-benefit-icon {
+  color: #ffd477 !important;
+}
+
+html[data-site-theme] .client-login-left .client-login-description,
+html[data-site-theme] .client-login-left .client-login-benefits p {
+  color: #e8e4dd !important;
 }
 
 .client-login-logo-mark {
