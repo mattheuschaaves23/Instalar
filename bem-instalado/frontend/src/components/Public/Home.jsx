@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -20,8 +20,8 @@ import Turnstile, { isTurnstileEnabled } from '../Security/Turnstile';
 import './Home.css';
 import './RequestComposer.css';
 import PageMetadata from './PageMetadata';
-
-const AnimatedLocationGlobe = lazy(() => import('./AnimatedLocationGlobe'));
+import { RequestDetails, RequestReview } from './RequestStages';
+import RequestLocationMap from './RequestLocationMap';
 
 const AUTO_LOCATION_SESSION_KEY = 'papelperto_client_location_checked';
 const INSTALLERS_PER_PAGE = 6;
@@ -335,6 +335,46 @@ function AppIcon({ name, className = '' }) {
       return <svg {...commonProps}><path d="M4 12h16m-6-6 6 6-6 6" /></svg>;
     case 'chevron-down':
       return <svg {...commonProps}><path d="m6 9 6 6 6-6" /></svg>;
+    case 'check':
+      return <svg {...commonProps}><path d="m5 12 4 4L19 6" /></svg>;
+    case 'plus':
+      return <svg {...commonProps}><circle cx="12" cy="12" r="9" /><path d="M7 12h10M12 7v10" /></svg>;
+    case 'sofa':
+      return <svg {...commonProps}><path d="M6 12V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5M6 12a2 2 0 0 0-4 0v6h20v-6a2 2 0 0 0-4 0v3H6v-3ZM5 18v3m14-3v3" /></svg>;
+    case 'bed':
+      return <svg {...commonProps}><path d="M3 18V6h18v12M3 14h18M3 18v3m18-3v3M7 10h3v4H7Zm7 0h3v4h-3Z" /></svg>;
+    case 'utensils':
+      return <svg {...commonProps}><path d="M4 3v5a3 3 0 0 0 6 0V3M7 3v18M19 3c-3 3-4 6-4 10h4M19 3v18" /></svg>;
+    case 'shower':
+      return <svg {...commonProps}><path d="M8 9V7a4 4 0 0 1 8 0v2M6 11h12M8 15v1m4-1v1m4-1v1M6 19v1m6-1v1m6-1v1" /></svg>;
+    case 'door':
+      return <svg {...commonProps}><path d="M5 21V3h14v18M2 21h20M15 12h.01" /></svg>;
+    case 'store':
+      return <svg {...commonProps}><path d="M4 10v11h16V10M3 10l2-7h14l2 7M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0M9 3v7m6-7v7M9 21v-6h6v6" /></svg>;
+    case 'dots':
+      return <svg {...commonProps}><circle cx="4" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="20" cy="12" r="1" /></svg>;
+    case 'cart':
+      return <svg {...commonProps}><path d="M2 3h3l3 13h11l3-10H6M10 21h.01M18 21h.01" /><circle cx="10" cy="20" r="1" /><circle cx="18" cy="20" r="1" /></svg>;
+    case 'ruler':
+      return <svg {...commonProps}><path d="m3 16 13-13 5 5L8 21 3 16ZM13 6l2 2m-5 1 2 2m-5 1 2 2m-5 1 2 2" /></svg>;
+    case 'pencil-ruler':
+      return <svg {...commonProps}><path d="m4 3 17 17-4 1L3 7l1-4Zm12 0 5 5-7 7-5-5 7-7ZM8 14l-5 7 7-5M15 6l2 2M11 10l2 2" /></svg>;
+    case 'worker':
+      return <svg {...commonProps}><path d="M6 8a6 6 0 0 1 12 0M4 8h16M7 8v3a5 5 0 0 0 10 0V8M3 21v-2a5 5 0 0 1 5-5l4 4 4-4a5 5 0 0 1 5 5v2H3Zm5-3v3m8-3v3" /></svg>;
+    case 'bolt':
+      return <svg {...commonProps}><path d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z" /></svg>;
+    case 'calendar':
+      return <svg {...commonProps}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M7 2v6m10-6v6" /></svg>;
+    case 'clock':
+      return <svg {...commonProps}><circle cx="12" cy="12" r="9" /><path d="M12 6v6h5" /></svg>;
+    case 'phone':
+      return <svg {...commonProps}><path d="m8 3 3 5-3 2c2 3 3 4 6 6l2-3 5 3c1 1-1 5-3 5C11 21 3 13 3 6c0-2 4-4 5-3Z" /></svg>;
+    case 'whatsapp':
+      return <svg {...commonProps}><path d="M5 19 2 22l1-6a9 9 0 1 1 2 3Z" /><path d="m9 7 1 3-1 1 4 4 1-1 3 1c0 3-3 3-6 1s-5-6-3-8l1-1Z" /></svg>;
+    case 'mail':
+      return <svg {...commonProps}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 6 9 7 9-7" /></svg>;
+    case 'box':
+      return <svg {...commonProps}><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm0 20V12M3 7l9 5 9-5" /></svg>;
     case 'smile':
       return (
         <svg {...commonProps}>
@@ -698,6 +738,8 @@ export default function Home() {
   const accountRequestRestoreRef = useRef(false);
   const previousInterestCountRef = useRef(null);
   const claimedRequestRef = useRef(null);
+  const guidedAddressInputRef = useRef(null);
+  const previousRequestStepRef = useRef(0);
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [directory, setDirectory] = useState({ installers: [], ranking: [], reviews: [], marketplace: null });
   const [loading, setLoading] = useState(true);
@@ -762,6 +804,19 @@ export default function Home() {
     [requestInterests]
   );
   const unreadNotifications = notifications.filter((notification) => !notification.read);
+
+  useEffect(() => {
+    if (previousRequestStepRef.current === requestStep) return;
+    previousRequestStepRef.current = requestStep;
+    if (hasGuidedRequest || isTrackingRoute || isAccountRequestsRoute) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById('busca')?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [requestStep, hasGuidedRequest, isTrackingRoute, isAccountRequestsRoute]);
 
   const filteredInstallers = useMemo(() => {
     const categoryFiltered = directory.installers.filter((installer) => matchesCategory(installer, category));
@@ -1016,8 +1071,8 @@ export default function Home() {
     setConfirmedLocationQuery(displayName);
     setGuidedLocationAccuracy(gpsRegionOnly && Number.isFinite(Number(accuracy)) ? Number(accuracy) : null);
     setGuidedLocationTarget({
-      latitude: Number(location.latitude),
-      longitude: Number(location.longitude),
+      latitude: location.latitude == null ? null : Number(location.latitude),
+      longitude: location.longitude == null ? null : Number(location.longitude),
       label: location.label || displayName,
       city: location.city || '',
       state,
@@ -1722,6 +1777,7 @@ export default function Home() {
   };
 
   const handleGuidedLocationContinue = async () => {
+    if (guidedLocating || guidedLocationResolving) return;
     if (
       confirmedLocationQuery &&
       (serviceRequest.city.trim() || serviceRequest.state.trim())
@@ -2029,14 +2085,22 @@ export default function Home() {
                   onClick={() => setRequestStep(index)}
                   type="button"
                 >
-                  <span>{index + 1}</span>
+                  <span aria-hidden="true">{index < requestStep ? <AppIcon name="check" /> : index + 1}</span>
                   {step.label}
                 </button>
               ))}
             </div>
           </div>
 
-          <form className="client-app-request-form" onSubmit={handleGuidedSearch}>
+          <form className="client-app-request-form" onSubmit={(event) => {
+            if (requestStep === LAST_REQUEST_STEP) {
+              handleGuidedSearch(event);
+            } else {
+              event.preventDefault();
+              if (requestStep === 2) handleGuidedLocationContinue();
+              else handleRequestNext();
+            }
+          }}>
             <span className="request-stage-label">Etapa {requestStep + 1} de {REQUEST_STEPS.length}</span>
             {requestStep === 0 ? (
               <div className="client-app-request-panel client-app-request-panel--service">
@@ -2098,133 +2162,13 @@ export default function Home() {
             ) : null}
 
             {requestStep === 1 ? (
-              <div className="client-app-request-panel client-app-request-panel--details">
-                <div className="client-app-simple-heading">
-                  <span>2</span>
-                  <div>
-                    <h3>Detalhes do serviço</h3>
-                    <p>Marque as opções que descrevem o trabalho.</p>
-                  </div>
-                </div>
-
-                <div className="client-app-detail-layout">
-                  <section className="client-app-detail-section client-app-detail-single" aria-labelledby="rooms-heading">
-                    <div className="client-app-detail-titleline">
-                      <span>1</span>
-                      <div>
-                        <strong id="rooms-heading">Onde vai instalar?</strong>
-                        <small>Toque para adicionar ou remover.</small>
-                      </div>
-                    </div>
-                    <div className="client-app-room-stream" role="group" aria-label="Ambientes do serviço">
-                      {ROOM_OPTIONS.map((room) => {
-                        const isSelected = selectedRooms.includes(room);
-
-                        return (
-                          <button
-                            className={isSelected ? 'is-selected' : ''}
-                            key={room}
-                            onClick={() => toggleRequestRoom(room)}
-                            type="button"
-                          >
-                            <span aria-hidden="true" />
-                            {room}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="client-app-detail-hint">
-                      {selectedRooms.length > 0
-                        ? `${selectedRooms.length} ambiente${selectedRooms.length === 1 ? '' : 's'} selecionado${selectedRooms.length === 1 ? '' : 's'}`
-                        : 'Nenhum ambiente selecionado ainda'}
-                    </div>
-                  </section>
-
-                  <section className="client-app-detail-section client-app-detail-single" aria-labelledby="material-heading">
-                    <div className="client-app-detail-titleline">
-                      <span>2</span>
-                      <div>
-                        <strong id="material-heading">Material</strong>
-                        <small>Ajuda o profissional a entender a visita.</small>
-                      </div>
-                    </div>
-                    <div className="client-app-material-list" role="group" aria-label="Status do material">
-                      {MATERIAL_STATUS_OPTIONS.map((item) => (
-                        <button
-                          className={serviceRequest.materialStatus === item.value ? 'is-selected' : ''}
-                          key={item.value}
-                          onClick={() => updateServiceRequest('materialStatus', item.value)}
-                          type="button"
-                        >
-                          <span aria-hidden="true" />
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-                </div>
-
-                <section className="client-app-detail-section client-app-detail-single client-app-measure-section" aria-labelledby="measure-heading">
-                  <div className="client-app-detail-titleline">
-                    <span>3</span>
-                    <div>
-                      <strong id="measure-heading">Medidas ou visita</strong>
-                      <small>Não sabe as medidas? Você pode pedir uma visita.</small>
-                    </div>
-                  </div>
-
-                  <div className="client-app-measure-options" role="group" aria-label="Situação das medidas">
-                    {MEASUREMENT_OPTIONS.map((item) => (
-                      <button
-                        className={serviceRequest.measurementStatus === item.value ? 'is-selected' : ''}
-                        key={item.value}
-                        onClick={() => updateMeasurementStatus(item.value)}
-                        type="button"
-                      >
-                        <strong>{item.label}</strong>
-                        <span>{item.description}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  {serviceRequest.measurementStatus === 'known' ? (
-                    <div className="client-app-detail-quick-fields">
-                      <label className="client-app-request-field client-app-request-field--line">
-                        <span>Medida aproximada</span>
-                        <input
-                          onChange={(event) => updateServiceRequest('wallSize', event.target.value)}
-                          placeholder="Ex.: sala 3m x 2,6m; cozinha 2m"
-                          value={serviceRequest.wallSize}
-                        />
-                      </label>
-                      <label className="client-app-request-field client-app-request-field--line">
-                        <span>Quantidade de rolos</span>
-                        <input
-                          inputMode="numeric"
-                          onChange={(event) => updateServiceRequest('rollCount', event.target.value)}
-                          placeholder="Ex.: 4 rolos no total"
-                          value={serviceRequest.rollCount}
-                        />
-                      </label>
-                    </div>
-                  ) : serviceRequest.measurementStatus ? (
-                    <div className="client-app-measure-note">
-                      <strong>
-                        {serviceRequest.measurementStatus === 'visit'
-                          ? 'Visita técnica marcada como preferência.'
-                          : 'Medidas ficam para confirmar depois.'}
-                      </strong>
-                      <span>
-                        {serviceRequest.measurementStatus === 'visit'
-                          ? 'Os profissionais vão ver que precisam combinar uma visita antes do orçamento final.'
-                          : 'O instalador pode orientar a quantidade de papel e conferir as paredes pelo atendimento.'}
-                      </span>
-                    </div>
-                  ) : null}
-                </section>
-
+              <RequestDetails request={serviceRequest} rooms={selectedRooms} roomOptions={ROOM_OPTIONS}
+                materialOptions={MATERIAL_STATUS_OPTIONS} measurementOptions={MEASUREMENT_OPTIONS}
+                onToggleRoom={toggleRequestRoom} onChange={updateServiceRequest}
+                onMeasurementChange={updateMeasurementStatus} Icon={AppIcon}>
                 <details className="client-app-optional-details">
                   <summary>
+                    <AppIcon name="plus" />
                     <span>Adicionar observação ou fotos</span>
                     <small>Opcional</small>
                   </summary>
@@ -2265,39 +2209,25 @@ export default function Home() {
                     </div>
                   </div>
                 </details>
-              </div>
+              </RequestDetails>
             ) : null}
 
             {requestStep === 2 ? (
               <div className="client-app-request-panel client-app-request-panel--location">
-                <div className="client-app-simple-heading client-app-location-heading">
-                  <span>3</span>
+                <div className="client-app-simple-heading">
                   <div>
                     <h3>Onde será o serviço?</h3>
-                    <p>Digite o endereço ou use sua localização atual.</p>
+                    <p>Informe o endereço da instalação.</p>
                   </div>
                 </div>
 
-                <div className="client-app-location-experience">
-                  <div className="client-app-location-globe-shell">
-                    <Suspense fallback={<div className="client-app-location-globe-loading">Preparando mapa...</div>}>
-                      <AnimatedLocationGlobe
-                        locating={guidedLocating}
-                        resolving={guidedLocationResolving}
-                        target={guidedLocationTarget}
-                      />
-                    </Suspense>
-                  </div>
-
-                  <div className="client-app-pertolar-location">
-                    <span className="client-app-pertolar-location-icon" aria-hidden="true">
-                      <AppIcon name="map-pin" />
-                    </span>
-
-                    <div className="client-app-pertolar-location-field">
+                <div className="request-address-layout">
+                    <div className="request-address-field request-editable-field">
                       <label htmlFor="guided-installation-address">
                         Endereço da instalação
                       </label>
+                      <div className="request-address-input">
+                      <AppIcon name="search" />
                       <input
                         aria-autocomplete="list"
                         aria-controls="guided-location-suggestions"
@@ -2305,6 +2235,8 @@ export default function Home() {
                         aria-expanded={locationSuggestionsOpen}
                         autoComplete="off"
                         id="guided-installation-address"
+                        ref={guidedAddressInputRef}
+                        disabled={guidedLocating || guidedLocationResolving}
                         onBlur={() => window.setTimeout(() => setLocationSuggestionsOpen(false), 120)}
                         onChange={(event) => updateGuidedLocationQuery(event.target.value)}
                         onFocus={() => locationOptions.length > 0 && setLocationSuggestionsOpen(true)}
@@ -2312,9 +2244,12 @@ export default function Home() {
                         role="combobox"
                         value={locationQuery}
                       />
+                      </div>
                       <small
                         className={locationLoadError ? 'is-error' : ''}
                         id="guided-location-feedback"
+                        role="status"
+                        aria-live="polite"
                       >
                         {locationLoadError ||
                           (guidedLocating
@@ -2332,7 +2267,7 @@ export default function Home() {
 
                       {locationSuggestionsOpen && locationOptions.length > 0 ? (
                         <ul
-                          className="client-app-pertolar-suggestions"
+                          className="request-address-suggestions"
                           id="guided-location-suggestions"
                           role="listbox"
                         >
@@ -2359,9 +2294,8 @@ export default function Home() {
                       ) : null}
                     </div>
 
-                    <div className="client-app-pertolar-location-actions">
                       <button
-                        className="client-app-pertolar-locate"
+                        className="request-locate-button"
                         disabled={guidedLocating || guidedLocationResolving}
                         onClick={requestGuidedLocation}
                         type="button"
@@ -2369,99 +2303,34 @@ export default function Home() {
                         <AppIcon name="target" />
                         {guidedLocating ? 'Localizando...' : 'Minha localização'}
                       </button>
-                      <button
-                        className="client-app-pertolar-submit"
-                        disabled={guidedLocating || guidedLocationResolving}
-                        onClick={handleGuidedLocationContinue}
-                        type="button"
-                      >
-                        <span>{guidedLocationResolving ? 'Confirmando...' : 'Continuar'}</span>
-                        <span aria-hidden="true">&rarr;</span>
-                      </button>
-                    </div>
-                  </div>
                 </div>
+
+                {confirmedLocationQuery ? (
+                  <div className="request-selected-address">
+                    <span className="request-selected-address-pin" aria-hidden="true"><AppIcon name="map-pin" /></span>
+                    <div>
+                      <strong>{guidedLocationAccuracy !== null ? 'Região encontrada' : 'Endereço selecionado'}</strong>
+                      {serviceRequest.addressReference || serviceRequest.neighborhood ? (
+                        <span>{[guidedLocationTarget?.label || serviceRequest.addressReference, serviceRequest.neighborhood].filter(Boolean).join(' · ')}</span>
+                      ) : null}
+                      <span>{[serviceRequest.city, serviceRequest.state].filter(Boolean).join(', ')}</span>
+                    </div>
+                    <span className="request-address-check" aria-hidden="true"><AppIcon name="check" /></span>
+                    <button onClick={() => {
+                      guidedAddressInputRef.current?.focus();
+                      guidedAddressInputRef.current?.select();
+                    }} type="button">Alterar</button>
+                  </div>
+                ) : null}
+                <RequestLocationMap target={guidedLocationTarget} regionOnly={guidedLocationAccuracy !== null} />
               </div>
             ) : null}
 
             {requestStep === 3 ? (
-              <div className="client-app-request-panel client-app-request-panel--review">
-                <div className="client-app-simple-heading">
-                  <span>4</span>
-                  <div>
-                    <h3>Tudo certo?</h3>
-                    <p>Escolha o prazo e confirme seu pedido.</p>
-                  </div>
-                </div>
-
-                <div className="client-app-review-layout">
-                  <section className="client-app-review-block">
-                    <div>
-                      <strong>Quando precisa?</strong>
-                      <span>Escolha a melhor opção para você.</span>
-                    </div>
-                    <div className="client-app-option-list" role="group" aria-label="Prazo desejado">
-                      {URGENCY_OPTIONS.map((item) => (
-                        <button
-                          className={serviceRequest.urgency === item.value ? 'is-selected' : ''}
-                          key={item.value}
-                          onClick={() => updateServiceRequest('urgency', item.value)}
-                          type="button"
-                        >
-                          <span className="client-app-option-dot" aria-hidden="true" />
-                          <span>
-                            <strong>{item.label}</strong>
-                            <small>{item.description}</small>
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section className="client-app-review-block">
-                    <div>
-                      <strong>Como prefere falar?</strong>
-                      <span>Seu contato só será liberado para quem você escolher.</span>
-                    </div>
-                    <div className="client-app-option-list" role="group" aria-label="Preferência de contato">
-                      {CONTACT_PREFERENCE_OPTIONS.map((item) => (
-                        <button
-                          className={serviceRequest.contactPreference === item.value ? 'is-selected' : ''}
-                          key={item.value}
-                          onClick={() => updateServiceRequest('contactPreference', item.value)}
-                          type="button"
-                        >
-                          <span className="client-app-option-dot" aria-hidden="true" />
-                          <span>
-                            <strong>{item.label}</strong>
-                            <small>{item.description}</small>
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-                </div>
-
-                <div className="client-app-clean-summary" aria-label="Resumo do pedido">
-                  <div>
-                    <span>Pedido</span>
-                    <strong>
-                      {[selectedServiceRequest?.title, requestSnapshot.room].filter(Boolean).join(' · ') ||
-                        'Não informado'}
-                    </strong>
-                  </div>
-                  <div>
-                    <span>Local e medidas</span>
-                    <strong>
-                      {[
-                        [serviceRequest.city, serviceRequest.state.toUpperCase()].filter(Boolean).join(' - '),
-                        requestSnapshot.measurementDetail,
-                      ].filter(Boolean).join(' · ') ||
-                        'Não informado'}
-                    </strong>
-                  </div>
-                </div>
-              </div>
+              <RequestReview request={serviceRequest} snapshot={requestSnapshot}
+                locationLabel={guidedLocationTarget?.label}
+                urgencyOptions={URGENCY_OPTIONS} contactOptions={CONTACT_PREFERENCE_OPTIONS}
+                onChange={updateServiceRequest} onEdit={setRequestStep} Icon={AppIcon} />
             ) : null}
 
             <div className="client-app-request-actions">
@@ -2477,13 +2346,19 @@ export default function Home() {
                 >
                   Voltar
                 </button>
-                {requestStep === 2 ? null : requestStep < LAST_REQUEST_STEP ? (
-                  <button className="client-app-search-submit" onClick={handleRequestNext} type="button">
+                {requestStep === 2 ? (
+                  <button key="location-continue" className="client-app-search-submit" disabled={guidedLocating || guidedLocationResolving}
+                    onClick={handleGuidedLocationContinue} type="button">
+                    {guidedLocationResolving ? 'Confirmando...' : 'Continuar'} <AppIcon name="arrow-right" />
+                  </button>
+                ) : requestStep < LAST_REQUEST_STEP ? (
+                  <button key="step-continue" className="client-app-search-submit" onClick={handleRequestNext} type="button">
                     Continuar <AppIcon name="arrow-right" />
                   </button>
                 ) : (
-                  <button className="client-app-search-submit" type="submit">
+                  <button key="review-submit" className="client-app-search-submit" type="submit">
                     Continuar para publicar
+                    <AppIcon name="arrow-right" />
                   </button>
                 )}
               </div>

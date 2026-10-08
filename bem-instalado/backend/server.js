@@ -132,7 +132,7 @@ app.use(
         defaultSrc: ["'self'"],
         baseUri: ["'self'"],
         connectSrc: ["'self'", 'https://*.ingest.sentry.io', 'https://challenges.cloudflare.com'],
-        frameSrc: ["'self'", 'https://challenges.cloudflare.com'],
+        frameSrc: ["'self'", 'https://challenges.cloudflare.com', 'https://www.openstreetmap.org'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
         formAction: ["'self'"],
         frameAncestors: ["'none'"],
