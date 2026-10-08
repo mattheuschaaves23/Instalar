@@ -74,9 +74,14 @@ const api = axios.create({
   withCredentials: true,
 });
 
-function isLoginRoute(pathname) {
-  return ['/instalador/entrar', '/cliente/entrar', '/login'].some((route) =>
-    String(pathname || '').startsWith(route)
+function isAuthEntryRoute(pathname) {
+  // Restoring the previous session may return 401 while a visitor opens an
+  // email reset link. These public forms must remain open and keep its token.
+  return [
+    '/instalador/entrar', '/cliente/entrar', '/login',
+    '/instalador/recuperar-senha', '/cliente/recuperar-senha',
+  ].some((route) =>
+    String(pathname || '') === route || String(pathname || '').startsWith(`${route}/`)
   );
 }
 
@@ -141,7 +146,7 @@ api.interceptors.response.use(
       if (
         status === 401 &&
         INVALID_SESSION_CODES.has(code) &&
-        !isLoginRoute(window.location.pathname) &&
+        !isAuthEntryRoute(window.location.pathname) &&
         !(isPublicRoute(window.location.pathname) && !getAuthToken())
       ) {
         void clearAuthToken();
