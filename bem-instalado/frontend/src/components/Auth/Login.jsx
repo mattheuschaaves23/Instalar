@@ -302,7 +302,7 @@ export default function Login() {
   };
 
   return (
-    <main className={`installer-login-page${IS_INSTALLER_APP ? ' installer-app-login-page' : ''}`}>
+    <main className={`installer-login-page${IS_INSTALLER_APP ? ' installer-app-login-page' : ' auth-web-login'}`}>
       <Link className="auth-login-back" to={IS_INSTALLER_APP ? '/instalador/boas-vindas' : '/'}>
         <span aria-hidden="true">←</span> Voltar
       </Link>

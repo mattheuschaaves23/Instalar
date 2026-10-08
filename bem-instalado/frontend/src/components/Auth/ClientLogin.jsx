@@ -251,7 +251,7 @@ export default function ClientLogin() {
   };
 
   return (
-    <main className="client-login-page">
+    <main className="client-login-page auth-web-login">
       <Link className="auth-login-back" to="/">
         <span aria-hidden="true">←</span> Voltar
       </Link>
