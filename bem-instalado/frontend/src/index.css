@@ -15868,7 +15868,8 @@ body {
 .installer-login-brand {
   padding: 0.75rem 1rem;
   border-radius: 0.75rem;
-  background: #fffaf0;
+  background: rgba(10, 10, 10, 0.76);
+  border: 1px solid rgba(222, 186, 116, 0.25);
   position: relative;
   z-index: 1;
   display: inline-flex;
@@ -15907,7 +15908,7 @@ html[data-site-theme] .auth-login-back span {
 }
 
 html[data-site-theme] .installer-login-left .brand-wordmark-image {
-  filter: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
 }
 
 html[data-site-theme] .installer-login-left .installer-login-kicker,
@@ -16636,11 +16637,12 @@ html[data-site-theme] .installer-login-left .installer-login-benefits p {
   max-width: 100%;
   padding: 0.75rem 1rem;
   border-radius: 0.75rem;
-  background: #fffaf0;
+  background: rgba(10, 10, 10, 0.76);
+  border: 1px solid rgba(222, 186, 116, 0.25);
 }
 
 html[data-site-theme] .client-login-left .brand-wordmark-image {
-  filter: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
 }
 
 html[data-site-theme] .client-login-left .client-login-kicker,
