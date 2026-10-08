@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 import { formatPanelBadgeCount, getPanelBadgeValue, usePanelBadgeCounts } from './panelBadgeCounts';
 import { hasAdminAccess } from '../../utils/adminAccess';
 import BrandMark from './BrandMark';
@@ -110,6 +111,7 @@ export function SidebarContent({ allowCollapse = false, badgeCounts, collapsed =
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const { isPro, loading, subscription } = useSubscription();
   const canSeeAdmin = !IS_INSTALLER_APP && hasAdminAccess(user);
   const navItems = useMemo(() => {
     const visibleItems = PANEL_NAV_ITEMS.filter((item) => !item.webOnly || !IS_INSTALLER_APP);
@@ -127,7 +129,7 @@ export function SidebarContent({ allowCollapse = false, badgeCounts, collapsed =
       <div className="ref-panel-brand">
         <BrandWordmark className="ref-panel-wordmark" size="sm" />
         <BrandMark className="ref-panel-logo ref-panel-collapsed-logo" />
-        <button aria-label={allowCollapse ? 'Recolher menu' : 'Fechar menu'} onClick={onToggleCollapse || onNavigate} type="button">
+        <button aria-label={allowCollapse ? (collapsed ? 'Expandir menu' : 'Recolher menu') : 'Fechar menu'} onClick={onToggleCollapse || onNavigate} type="button">
           {allowCollapse ? <span>{collapsed ? '>' : '<'}</span> : <PanelIcon size={18} type="close" />}
         </button>
       </div>
@@ -136,7 +138,7 @@ export function SidebarContent({ allowCollapse = false, badgeCounts, collapsed =
         <span className="ref-panel-avatar">{initials}</span>
         <div>
           <strong>{userName}</strong>
-          <small>Instalador Pro</small>
+          <small>{loading && !subscription ? 'Consultando plano' : isPro ? 'Instalador Pro' : 'Instalador Grátis'}</small>
         </div>
       </div>
 

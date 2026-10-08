@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import { formatDocument, isValidDocument, normalizeDocument } from '../../../../shared/documents.mjs';
 
 const BRAZILIAN_STATES = [
   ['AC', 'Acre'], ['AL', 'Alagoas'], ['AP', 'Amapá'], ['AM', 'Amazonas'], ['BA', 'Bahia'], ['CE', 'Ceará'],
@@ -40,23 +41,6 @@ function formatPhone(value) {
   if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
   if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-}
-
-function formatDocument(value, clientType) {
-  const digits = digitsOnly(value).slice(0, clientType === 'company' ? 14 : 11);
-
-  if (clientType === 'company') {
-    return digits
-      .replace(/^(\d{2})(\d)/, '$1.$2')
-      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-      .replace(/\.(\d{3})(\d)/, '.$1/$2')
-      .replace(/(\d{4})(\d)/, '$1-$2');
-  }
-
-  return digits
-    .replace(/^(\d{3})(\d)/, '$1.$2')
-    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/\.(\d{3})(\d)/, '.$1-$2');
 }
 
 function formatZipCode(value) {
@@ -217,9 +201,10 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (saving) return;
+    const documentUnchanged = client && form.client_type === (client.client_type === 'company' ? 'company' : 'person')
+      && normalizeDocument(form.document_id) === normalizeDocument(client.document_id);
 
-    const documentLength = digitsOnly(form.document_id).length;
-    const requiredDocumentLength = isCompany ? 14 : 11;
     const hasCompleteAddress = [form.zip_code, form.street, form.house_number, form.neighborhood, form.city, form.state]
       .every((value) => String(value || '').trim());
 
@@ -228,7 +213,7 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
       return;
     }
 
-    if (documentLength !== requiredDocumentLength) {
+    if (!documentUnchanged && !isValidDocument(form.document_id, form.client_type)) {
       toast.error(`Informe um ${documentLabel} válido.`);
       return;
     }
@@ -252,6 +237,11 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
         whatsapp: (form.whatsapp || form.phone).trim(),
         state: form.state.toUpperCase(),
       };
+      // An unrelated edit must not replace or invalidate a legacy document.
+      if (documentUnchanged) {
+        delete payload.document_id;
+        delete payload.client_type;
+      }
       const response = client?.id
         ? await api.put(`/clients/${client.id}`, payload)
         : await api.post('/clients', payload);
@@ -307,7 +297,7 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
               </label>
               <label className="client-form-field">
                 <span>{documentLabel} <b>*</b></span>
-                <input inputMode="numeric" name="document_id" onChange={handleChange} placeholder={documentPlaceholder} value={form.document_id} />
+                <input inputMode={isCompany ? 'text' : 'numeric'} maxLength={isCompany ? 18 : 14} name="document_id" onChange={handleChange} placeholder={documentPlaceholder} value={form.document_id} />
               </label>
               {isCompany ? (
                 <label className="client-form-field">

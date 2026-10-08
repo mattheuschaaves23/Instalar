@@ -18,18 +18,38 @@ export function getWebPushSupport() {
     return { supported: false, reason: 'unsupported' };
   }
   if (!vapidPublicKey()) return { supported: false, reason: 'not_configured' };
-  return { supported: true, permission: Notification.permission };
+  // Browser permission alone does not confirm device registration for this account.
+  return { supported: true, permission: window.Notification.permission, enabled: false };
+}
+
+export function webPushStatusMessage(status) {
+  if (status.enabled) return 'Notificações ativadas neste navegador para esta conta.';
+  if (status.reason === 'not_configured') return 'As notificações do navegador ainda não foram configuradas no site. Os avisos continuam disponíveis no painel.';
+  if (!status.supported) return 'Este navegador não oferece notificações push. Os avisos continuam disponíveis no painel.';
+  if (status.permission === 'denied') return 'Permita notificações nas configurações do navegador e tente novamente.';
+  if (status.reason === 'service_worker_unavailable') return 'O serviço de notificações não iniciou. Recarregue a página e tente novamente.';
+  return 'Ative neste dispositivo para receber oportunidades e mudanças de agenda.';
 }
 
 export async function registerWebPushNotifications() {
   const support = getWebPushSupport();
   if (!support.supported) return support;
 
-  let permission = Notification.permission;
-  if (permission === 'default') permission = await Notification.requestPermission();
+  let permission = window.Notification.permission;
+  if (permission === 'default') permission = await window.Notification.requestPermission();
   if (permission !== 'granted') return { supported: true, permission, enabled: false };
 
-  const registration = await navigator.serviceWorker.ready;
+  let timer;
+  let registration;
+  try {
+    registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((resolve) => { timer = setTimeout(() => resolve(null), 10000); }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!registration) return { supported: true, permission, enabled: false, reason: 'service_worker_unavailable' };
   let subscription = await registration.pushManager.getSubscription();
   if (!subscription) {
     subscription = await registration.pushManager.subscribe({

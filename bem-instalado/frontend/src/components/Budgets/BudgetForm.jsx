@@ -6,6 +6,7 @@ import { formatCurrency } from '../../utils/formatters';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import PlanUsage from '../Subscription/PlanUsage';
 import ClientForm from '../Clients/ClientForm';
+import { installmentInfo, installmentAmountLabel, installmentConditionsLabel, paymentOptionsLabel } from '../../../../shared/installmentTerms.mjs';
 
 const INSTALLMENT_OPTIONS = Array.from({ length: 11 }, (_, index) => index + 2);
 const INTEREST_FREE_INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1);
@@ -272,6 +273,13 @@ export default function BudgetForm() {
     ? Math.max(0, Number(installmentInterestRate || 0))
     : 0;
   const pixDiscountPercent = Number(upfrontPaymentTerms.pix?.discount || 0);
+  const installmentPreview = installmentInfo({
+    total_amount: grandTotal,
+    installment_enabled: installmentEnabled,
+    installments_count: normalizedInstallments,
+    interest_free_installments: normalizedInterestFreeInstallments,
+    installment_interest_rate: normalizedInstallmentInterestRate,
+  });
   const pixPreviewValue = grandTotal * (1 - (pixDiscountPercent / 100));
   const selectedUpfrontPaymentTerms = useMemo(
     () =>
@@ -506,7 +514,7 @@ export default function BudgetForm() {
     <section className="budget-modern-shell">
       <form className="budget-modern-form" id="budget-modern-form" onSubmit={handleSubmit}>
         <header className="budget-modern-topbar fade-up">
-          <button className="budget-modern-back-button" onClick={() => navigate('/budgets')} type="button">
+          <button aria-label="Voltar aos orçamentos" className="budget-modern-back-button" onClick={() => navigate('/budgets')} type="button">
             <BudgetIcon type="back" />
           </button>
 
@@ -839,13 +847,8 @@ export default function BudgetForm() {
                                 ? `Pix: ${formatCurrency(pixPreviewValue)}${pixDiscountPercent > 0 ? ` com ${pixDiscountPercent}% de desconto` : ''}`
                                 : 'Pix: configure a opção à vista ao lado'}
                             </span>
-                            <span>Cartão: até {normalizedInstallments}x de {formatCurrency(grandTotal / normalizedInstallments)}</span>
-                            <small>
-                              Sem juros até {normalizedInterestFreeInstallments}x
-                              {normalizedInterestFreeInstallments < normalizedInstallments
-                                ? ` • juros após: ${normalizedInstallmentInterestRate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% a.m.`
-                                : ''}
-                            </small>
+                            <span>Cartão: até {installmentAmountLabel(installmentPreview)}</span>
+                            <small>{installmentConditionsLabel(installmentPreview)}</small>
                           </div>
                         </>
                       ) : null}
@@ -978,7 +981,7 @@ export default function BudgetForm() {
                   <div className="budget-modern-send-checks">
                     <div><span>Cliente</span><strong>{selectedClient?.name}</strong></div>
                     <div><span>Total</span><strong>{formatCurrency(grandTotal)}</strong></div>
-                    <div><span>Pagamento</span><strong>{installmentEnabled ? `${normalizedInstallments}x + à vista` : 'À vista'}</strong></div>
+                    <div><span>Pagamento</span><strong>{paymentOptionsLabel({ enabled: installmentEnabled, count: normalizedInstallments }, selectedUpfrontPaymentTerms.length > 0)}</strong></div>
                   </div>
 
                   <div className="budget-modern-stage-actions">
@@ -1115,8 +1118,8 @@ export default function BudgetForm() {
                       <div className="budget-modern-review-payment-grid">
                         <div className="budget-modern-review-payment-card">
                           <span>Parcelado no cartão</span>
-                          <strong>{installmentEnabled ? `${normalizedInstallments}x de ${formatCurrency(grandTotal / normalizedInstallments)}` : 'Não oferecido'}</strong>
-                          <small>{installmentEnabled ? 'Sem desconto de pagamento à vista.' : 'Ative caso queira oferecer parcelamento.'}</small>
+                          <strong>{installmentEnabled ? installmentAmountLabel(installmentPreview) : 'Não oferecido'}</strong>
+                          <small>{installmentEnabled ? installmentConditionsLabel(installmentPreview) : 'Ative caso queira oferecer parcelamento.'}</small>
                         </div>
                         <div className="budget-modern-review-payment-card">
                           <span>À vista</span>

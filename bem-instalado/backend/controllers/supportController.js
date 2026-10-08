@@ -396,7 +396,7 @@ async function emitIdeaUpdate(req, idea, eventName = 'support:idea_updated') {
 
 exports.getMyConversation = async (req, res) => {
   try {
-    const authUser = await getAuthUser(req.userId, db);
+    const authUser = await getAuthUser(req.userId);
 
     if (!authUser) {
       return res.status(401).json({ error: 'Usuário não autenticado.' });
@@ -504,7 +504,8 @@ exports.sendMessage = async (req, res) => {
 
   try {
     db = await pool.connect();
-    const authUser = await getAuthUser(req.userId);
+    // Reuse this connection: the production pool may have only one slot.
+    const authUser = await getAuthUser(req.userId, db);
 
     if (!authUser) {
       return res.status(401).json({ error: 'Usuário não autenticado.' });
@@ -569,7 +570,7 @@ exports.sendMessage = async (req, res) => {
       sender_name: authUser.business_name || authUser.name,
       sender_is_admin: Boolean(authUser.is_admin),
     };
-    const summary = await getConversationSummary(conversation.id);
+    const summary = await getConversationSummary(conversation.id, db);
 
     await emitConversationUpdate(req, summary, fullMessage);
 

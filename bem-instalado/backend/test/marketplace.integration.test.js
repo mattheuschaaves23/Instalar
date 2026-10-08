@@ -65,6 +65,19 @@ test('cadastro, pagamento, pedido, interesse e escolha do instalador', { skip: !
     assert.equal(installerProfile.response.status, 200, JSON.stringify(installerProfile.body));
     assert.ok(Array.isArray(installerProfile.body.installation_gallery));
 
+    const support = await requestJson(baseUrl, '/api/support/me', { headers: authHeaders });
+    assert.equal(support.response.status, 200, JSON.stringify(support.body));
+    assert.equal(support.body.conversation.installer_id, installerId);
+    const sentMessage = await requestJson(baseUrl, '/api/support/messages', {
+      method: 'POST', headers: authHeaders,
+      body: JSON.stringify({ body: 'Mensagem fictícia para validar o suporte local.' }),
+    });
+    assert.equal(sentMessage.response.status, 201, JSON.stringify(sentMessage.body));
+    const supportHistory = await requestJson(baseUrl, '/api/support/me', { headers: authHeaders });
+    assert.equal(supportHistory.response.status, 200, JSON.stringify(supportHistory.body));
+    assert.equal(supportHistory.body.messages.length, 1);
+    assert.equal(supportHistory.body.messages[0].body, 'Mensagem fictícia para validar o suporte local.');
+
     const unsafeCertificate = await requestJson(baseUrl, '/api/users/profile', {
       method: 'PUT',
       headers: authHeaders,

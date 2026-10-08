@@ -15,11 +15,10 @@ function getMessaging() {
   const serviceAccount = firebaseConfig();
   if (!serviceAccount) return null;
   try {
-    const admin = require('firebase-admin');
-    if (!admin.apps.length) {
-      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    }
-    return admin.messaging();
+    const { getApps, initializeApp, cert } = require('firebase-admin/app');
+    const { getMessaging: messagingForApp } = require('firebase-admin/messaging');
+    const app = getApps()[0] || initializeApp({ credential: cert(serviceAccount) });
+    return messagingForApp(app);
   } catch (error) {
     console.error('Push não inicializado:', error.message);
     return null;

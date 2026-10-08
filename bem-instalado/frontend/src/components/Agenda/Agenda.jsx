@@ -430,10 +430,10 @@ export default function Agenda() {
             </div>
 
             <div className="agenda-modern-calendar-controls">
-              <button className="agenda-modern-icon-button" onClick={() => setViewDate((current) => addMonths(current, -1))} type="button">
+              <button aria-label="Mês anterior" className="agenda-modern-icon-button" onClick={() => setViewDate((current) => addMonths(current, -1))} type="button">
                 <AgendaIcon type="chevron-left" />
               </button>
-              <button className="agenda-modern-icon-button" onClick={() => setViewDate((current) => addMonths(current, 1))} type="button">
+              <button aria-label="Próximo mês" className="agenda-modern-icon-button" onClick={() => setViewDate((current) => addMonths(current, 1))} type="button">
                 <AgendaIcon type="chevron-right" />
               </button>
             </div>

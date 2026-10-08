@@ -233,7 +233,7 @@ export default function Clients() {
   return (
     <section className="client-intake-shell">
       <header className="client-intake-topbar fade-up">
-        <button className="client-intake-back" onClick={() => navigate('/dashboard')} type="button">
+        <button aria-label="Voltar ao início" className="client-intake-back" onClick={() => navigate('/dashboard')} type="button">
           <ClientUiIcon type="back" />
         </button>
 
@@ -242,7 +242,7 @@ export default function Clients() {
           <p>Consulte e mantenha atualizada a sua carteira</p>
         </div>
 
-        <button className="client-intake-save" onClick={openClientForm} type="button">
+        <button aria-label="Novo cliente" className="client-intake-save" onClick={openClientForm} type="button">
           <ClientUiIcon type="plus" />
           <span>Novo cliente</span>
         </button>

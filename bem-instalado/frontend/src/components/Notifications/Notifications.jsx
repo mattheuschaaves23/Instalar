@@ -5,7 +5,7 @@ import PageIntro from '../Layout/PageIntro';
 import PaginationControls from '../Layout/PaginationControls';
 import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import { formatDateTime, formatStatusLabel } from '../../utils/formatters';
-import { getWebPushSupport, registerWebPushNotifications } from '../../services/webPushNotifications';
+import { getWebPushSupport, registerWebPushNotifications, webPushStatusMessage } from '../../services/webPushNotifications';
 
 const NOTIFICATIONS_PER_PAGE = 8;
 
@@ -39,13 +39,14 @@ export default function Notifications() {
   };
 
   const activateWebPush = async () => {
+    if (activatingWebPush) return;
     try {
       setActivatingWebPush(true);
       const result = await registerWebPushNotifications();
       setWebPush({ ...getWebPushSupport(), ...result });
       if (result.enabled) toast.success('Notificações do navegador ativadas.');
       else if (result.permission === 'denied') toast.error('As notificações foram bloqueadas no navegador.');
-      else toast.error('As notificações do navegador ainda não estão disponíveis.');
+      else toast.error(result.permission === 'default' ? 'A permissão para notificações não foi concedida.' : webPushStatusMessage(result));
     } catch (_error) {
       toast.error('Não foi possível ativar as notificações agora.');
     } finally {
@@ -84,20 +85,16 @@ export default function Notifications() {
           <p>Notificações</p>
           <h2>Receba avisos mesmo com o painel fechado</h2>
           <span>
-            {webPush.enabled || webPush.permission === 'granted'
-              ? 'Seu navegador está autorizado a receber avisos desta conta.'
-              : webPush.supported
-                ? 'Ative uma vez neste dispositivo para receber oportunidades e mudanças de agenda.'
-                : 'Notificações no navegador exigem uma versão atualizada do Chrome, Edge, Firefox ou Safari.'}
+            {webPushStatusMessage(webPush)}
           </span>
         </div>
         <button
           className="gold-button"
-          disabled={!webPush.supported || activatingWebPush || webPush.enabled || webPush.permission === 'granted'}
+          disabled={!webPush.supported || activatingWebPush || webPush.enabled}
           onClick={activateWebPush}
           type="button"
         >
-          {activatingWebPush ? 'Ativando...' : webPush.enabled || webPush.permission === 'granted' ? 'Ativado neste navegador' : 'Ativar notificações'}
+          {activatingWebPush ? 'Ativando...' : webPush.enabled ? 'Ativado neste navegador' : 'Ativar notificações'}
         </button>
       </aside>
 

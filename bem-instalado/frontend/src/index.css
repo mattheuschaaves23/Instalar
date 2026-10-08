@@ -1,8 +1,40 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..700,25&family=Public+Sans:wght@400;500;600;700;800&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss" source("./");
+
+/* Keep the existing v3 defaults while using the maintained v4 compiler. */
+@theme {
+  --default-ring-width: 3px;
+  --default-ring-color: #3b82f6;
+}
+
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: #e5e7eb;
+  }
+  input::placeholder, textarea::placeholder {
+    color: #9ca3af;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  dialog {
+    margin: auto;
+  }
+}
+
+/* These forms use top margins between visible fields, as before the upgrade. */
+@utility space-y-* {
+  & > :not(:last-child) {
+    margin-block-start: 0;
+    margin-block-end: 0;
+  }
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(--value(integer) * 0.25rem * (1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(--value(integer) * 0.25rem * var(--tw-space-y-reverse));
+  }
+}
 
 :root {
   --bg: #e3e1dc;
@@ -13444,7 +13476,7 @@ body {
 }
 
 .client-intake-mobile-list {
-  display: none;
+  display: grid;
 }
 
 .client-intake-mobile-dock {
@@ -33602,6 +33634,16 @@ html[data-site-theme='dark'] .client-form-submit:hover:not(:disabled) { backgrou
 .pdf-branding-preview-lines p + p { padding-top: .38rem; border-top: 1px solid #edf0ef; }
 .pdf-branding-preview-lines b { color: #263942; }
 .pdf-branding-preview footer { display: flex; justify-content: space-between; gap: .6rem; padding: .7rem .95rem; background: #171512; color: #c6c0b6; font-size: .56rem; }
+/* The PDF preview stays dark even when the surrounding panel is light. */
+.dashboard-reference-layout .pdf-branding-preview header .pdf-branding-preview-logo,
+.dashboard-reference-layout .pdf-branding-preview header .pdf-branding-preview-brand strong {
+  color: var(--pdf-accent) !important;
+}
+.dashboard-reference-layout .pdf-branding-preview header .pdf-branding-preview-brand small,
+.dashboard-reference-layout .pdf-branding-preview header .pdf-branding-preview-photo,
+.dashboard-reference-layout .pdf-branding-preview footer span {
+  color: #f5f2ec !important;
+}
 .pdf-branding-preview-note { margin: .65rem .15rem 0; color: #71868d; font-size: .68rem; line-height: 1.45; }
 
 @media (max-width: 1050px) {

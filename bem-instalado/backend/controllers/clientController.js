@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { normalizeDocument, isValidDocument: hasValidDocument } = require('../../shared/documents.mjs');
 const {
   getInstallerPlanAccess,
   isLimitReached,
@@ -16,15 +17,6 @@ function normalizeNullableString(value) {
 
 function normalizeClientType(value) {
   return String(value || '').trim().toLowerCase() === 'company' ? 'company' : 'person';
-}
-
-function normalizeDocument(value) {
-  const document = String(value || '').replace(/\D/g, '');
-  return document || null;
-}
-
-function hasValidDocument(document, clientType) {
-  return clientType === 'company' ? document?.length === 14 : document?.length === 11;
 }
 
 exports.createClient = async (req, res) => {
@@ -58,7 +50,7 @@ exports.createClient = async (req, res) => {
       return res.status(400).json({ error: 'Informe a pessoa responsável pela empresa.' });
     }
 
-    if (!name || !phone) {
+    if (!normalizeNullableString(name) || !normalizeNullableString(phone)) {
       return res.status(400).json({ error: 'Nome e telefone são obrigatórios.' });
     }
 
@@ -182,9 +174,22 @@ exports.updateClient = async (req, res) => {
 
     const clientType = client_type === undefined ? null : normalizeClientType(client_type);
     const document = document_id === undefined ? null : normalizeDocument(document_id);
+    const existingResult = await pool.query('SELECT * FROM clients WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+    const existing = existingResult.rows[0];
+    if (!existing) return res.status(404).json({ error: 'Cliente não encontrado.' });
 
-    if (clientType && document_id !== undefined && !hasValidDocument(document, clientType)) {
-      return res.status(400).json({ error: `Informe um ${clientType === 'company' ? 'CNPJ' : 'CPF'} válido.` });
+    const effectiveType = clientType || normalizeClientType(existing.client_type);
+    // Preserve legacy documents when editing unrelated fields, but validate every document/type change.
+    if ((document_id !== undefined || client_type !== undefined)
+      && !hasValidDocument(document_id === undefined ? existing.document_id : document, effectiveType)) {
+      return res.status(400).json({ error: `Informe um ${effectiveType === 'company' ? 'CNPJ' : 'CPF'} válido.` });
+    }
+    if ((name !== undefined && !normalizeNullableString(name)) || (phone !== undefined && !normalizeNullableString(phone))) {
+      return res.status(400).json({ error: 'Nome e telefone são obrigatórios.' });
+    }
+    if (effectiveType === 'company' && (client_type !== undefined || contact_name !== undefined)
+      && !normalizeNullableString(contact_name === undefined ? existing.contact_name : contact_name)) {
+      return res.status(400).json({ error: 'Informe a pessoa responsável pela empresa.' });
     }
 
     const { rows } = await pool.query(

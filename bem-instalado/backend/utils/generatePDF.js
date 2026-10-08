@@ -3,6 +3,7 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
+const { installmentInfo, installmentAmountLabel, installmentConditionsLabel } = require('../../shared/installmentTerms.mjs');
 
 const COLORS = {
   bg: '#0F0D09',
@@ -130,27 +131,6 @@ function resolveBranding(branding, user, isPro) {
   };
 }
 
-function installmentInfo(budget) {
-  const enabled = Boolean(budget?.installment_enabled);
-  const count = Number(budget?.installments_count || 1);
-  const normalizedCount = enabled && count >= 2 ? Math.min(count, 12) : 1;
-  const interestFreeCount = Math.min(
-    normalizedCount,
-    Math.max(1, Number(budget?.interest_free_installments || normalizedCount))
-  );
-  const interestRate = Math.max(0, toNumber(budget?.installment_interest_rate));
-  const total = toNumber(budget?.total_amount);
-  const installmentValue = normalizedCount > 1 ? total / normalizedCount : total;
-
-  return {
-    enabled: normalizedCount > 1,
-    count: normalizedCount,
-    interestFreeCount,
-    interestRate,
-    installmentValue,
-  };
-}
-
 const UPFRONT_PAYMENT_LABELS = {
   pix: 'Pix',
   boleto: 'Boleto',
@@ -219,6 +199,8 @@ function drawMainHeader(doc, budget, user, isPro, branding) {
   doc.restore();
 
   let leftX = MARGIN;
+  const rightBlockWidth = 170;
+  const rightX = pageWidth - MARGIN - rightBlockWidth - (photo ? 60 : 0);
 
   if (logo) {
     try {
@@ -229,28 +211,31 @@ function drawMainHeader(doc, budget, user, isPro, branding) {
     }
   }
 
+  const leftTextWidth = rightX - leftX - 16;
   doc.fillColor(branding.accentColor).font('Helvetica-Bold').fontSize(19).text(branding.brandName, leftX, 28, {
-    width: 270,
+    width: leftTextWidth,
+    height: 24,
     ellipsis: true,
   });
   doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(13).text(branding.documentTitle, leftX, 52, {
-    width: 280,
+    width: leftTextWidth,
+    height: 18,
     ellipsis: true,
   });
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(10).text('Documento profissional para apresentação e fechamento.', leftX, 70);
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9).text('Documento profissional para apresentação e fechamento.', leftX, 76, {
+    width: leftTextWidth, height: 24, ellipsis: true,
+  });
 
-  const rightBlockWidth = 232;
-  const rightX = pageWidth - MARGIN - rightBlockWidth - (photo ? 60 : 0);
   const badgeText = statusLabel(budget.status);
   const badgeWidth = 88;
   const badgeX = rightX + rightBlockWidth - badgeWidth;
   const badgeY = 20;
 
-  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(12).text(`ORÇAMENTO #${budget.id}`, rightX, 34, {
+  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(12).text(`ORÇAMENTO #${budget.id}`, rightX, 54, {
     width: rightBlockWidth,
     align: 'right',
   });
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(10).text(`Emissão: ${formatDate(new Date())}`, rightX, 52, {
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(10).text(`Emissão: ${formatDate(new Date())}`, rightX, 76, {
     width: rightBlockWidth,
     align: 'right',
   });
@@ -316,9 +301,10 @@ function drawSectionTitle(doc, title, y) {
 }
 
 function drawInfoBox(doc, title, lines, x, y, width) {
-  const lineHeight = 14;
   const contentTop = y + 28;
-  const boxHeight = 34 + lines.length * lineHeight + 10;
+  doc.font('Helvetica').fontSize(10);
+  const heights = lines.map((line) => Math.max(14, doc.heightOfString(line, { width: width - 24 }) + 3));
+  const boxHeight = 34 + heights.reduce((sum, height) => sum + height, 0) + 10;
 
   doc.save();
   doc.roundedRect(x, y, width, boxHeight, 10).fillAndStroke(COLORS.panel, COLORS.border);
@@ -328,11 +314,13 @@ function drawInfoBox(doc, title, lines, x, y, width) {
     width: width - 24,
   });
 
+  let lineY = contentTop;
   lines.forEach((line, index) => {
-    doc.fillColor(COLORS.text).font('Helvetica').fontSize(10).text(line, x + 12, contentTop + index * lineHeight, {
+    doc.fillColor(COLORS.text).font('Helvetica').fontSize(10).text(line, x + 12, lineY, {
       width: width - 24,
       ellipsis: true,
     });
+    lineY += heights[index];
   });
 
   return boxHeight;
@@ -486,10 +474,10 @@ function drawTotalsPanel(doc, budget, installment, y, width) {
     `Pagamento à vista: ${total}`,
     upfrontTermsDescription ? `Formas à vista: ${upfrontTermsDescription}` : 'Formas à vista: não informadas',
     installment.enabled
-      ? `Pagamento parcelado: ${installment.count}x de ${formatCurrency(installment.installmentValue)}`
+      ? `Pagamento parcelado: ${installmentAmountLabel(installment)}`
       : 'Pagamento parcelado: não habilitado',
     installment.enabled
-      ? `Sem juros até ${installment.interestFreeCount}x${installment.interestFreeCount < installment.count ? ` • juros após: ${installment.interestRate.toFixed(2)}% a.m.` : ''}`
+      ? installmentConditionsLabel(installment)
       : '',
   ];
   const textWidth = width - 28;
@@ -599,9 +587,21 @@ function drawFooter(doc, pageNumber, pageCount, budgetId, user, isPro, branding)
     : 'Criado gratuitamente com InstalaPro';
   const rightText = `Página ${pageNumber} de ${pageCount}`;
 
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(8.5).text(leftText, MARGIN, footerY, { width: 220 });
-  doc.text(centerText, MARGIN + 150, footerY, { width: 220, align: 'center' });
-  doc.text(rightText, doc.page.width - MARGIN - 120, footerY, { width: 120, align: 'right' });
+  // Footer is positioned outside the flowing content area. Never let text()
+  // paginate here: it would add three empty pages while numbering each page.
+  const contentWidth = doc.page.width - MARGIN * 2;
+  const widths = [165, contentWidth - 255, 90];
+  doc.font('Helvetica').fontSize(8.5);
+  const singleLine = (value, width) => {
+    let text = value;
+    while (text.length && doc.widthOfString(text) > width) text = text.slice(0, -1);
+    return text === value ? text : `${text.slice(0, -3)}...`;
+  };
+  const center = singleLine(centerText, widths[1]);
+  const fixedText = { width: 0, lineBreak: false };
+  doc.fillColor(COLORS.muted).text(singleLine(leftText, widths[0]), MARGIN, footerY, fixedText);
+  doc.text(center, MARGIN + widths[0] + (widths[1] - doc.widthOfString(center)) / 2, footerY, fixedText);
+  doc.text(rightText, doc.page.width - MARGIN - doc.widthOfString(rightText), footerY, fixedText);
 }
 
 module.exports = function generateBudgetPDF({ budget, client, environments, user, isPro = false, branding = null }) {
@@ -661,7 +661,7 @@ module.exports = function generateBudgetPDF({ budget, client, environments, user
     drawMetricCard(
       doc,
       'Parcelamento',
-      installment.enabled ? `${installment.count}x de ${formatCurrency(installment.installmentValue)}` : 'À vista',
+      installment.enabled ? `${installment.count}x • valor base` : 'À vista',
       MARGIN + (metricWidth + gap) * 3,
       y,
       metricWidth
@@ -696,9 +696,26 @@ module.exports = function generateBudgetPDF({ budget, client, environments, user
     y = drawSectionTitle(doc, 'Resumo e fechamento', y);
     y += drawTotalsPanel(doc, budget, installment, y, contentWidth) + 12;
     if (resolvedBranding.closingText) {
+      doc.font('Helvetica').fontSize(10);
+      const closingHeight = Math.max(62, doc.heightOfString(resolvedBranding.closingText, { width: contentWidth - 28, lineGap: 2 }) + 42);
+      if (!canFit(doc, y, closingHeight)) {
+        doc.addPage();
+        drawSubHeader(doc, budget, resolvedBranding);
+        y = 72;
+      }
       y += drawBrandMessage(doc, 'Mensagem final', resolvedBranding.closingText, y, contentWidth, resolvedBranding) + 12;
     }
+    if (!canFit(doc, y, 110)) {
+      doc.addPage();
+      drawSubHeader(doc, budget, resolvedBranding);
+      y = 72;
+    }
     y += drawCommercialPanel(doc, budget, y, contentWidth) + 12;
+    if (!canFit(doc, y, 190)) {
+      doc.addPage();
+      drawSubHeader(doc, budget, resolvedBranding);
+      y = 72;
+    }
     drawScopeAndSignature(doc, y, contentWidth, toText(user.name));
 
     const pageRange = doc.bufferedPageRange();

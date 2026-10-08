@@ -7,7 +7,7 @@
     "node": ">=22.12"
   },
   "scripts": {
-    "dev": "nodemon server.js",
+    "dev": "node --watch server.js",
     "db:init": "node scripts/initDatabase.js",
     "db:migrate": "node scripts/migrateDatabase.js",
     "db:migrate:deploy": "node scripts/migrateDatabase.js",
@@ -16,18 +16,18 @@
     "seed:demo:clear": "node scripts/seedDemoData.js --clear",
     "test:papelperto": "node ../scripts/verifyPapelPertoIntegration.js",
     "test": "node --test --test-concurrency=1 test/*.test.js",
-    "test:integration": "node --test test/marketplace.integration.test.js",
+    "test:integration": "node --test --test-concurrency=1 test/asaas.integration.test.js test/budgetWorkflow.integration.test.js test/marketplace.integration.test.js",
     "start": "npm run db:init && npm run db:migrate && node server.js",
     "build:web": "node -e \"const fs=require('fs');const path=require('path');fs.rmSync(path.resolve(process.cwd(),'..','frontend','build'),{recursive:true,force:true});\" && npm --prefix ../frontend install && npm --prefix ../frontend run build"
   },
   "dependencies": {
     "@vercel/blob": "^2.6.1",
     "bcrypt": "^6.0.0",
-    "compression": "^1.7.5",
+    "compression": "^1.8.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.21.1",
-    "firebase-admin": "^13.7.0",
+    "express": "^4.22.3",
+    "firebase-admin": "^14.5.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.4.0",
@@ -36,8 +36,5 @@
     "pg": "^8.13.1",
     "qrcode": "^1.5.4",
     "web-push": "^3.6.7"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.7"
   }
 }

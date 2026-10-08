@@ -7,6 +7,7 @@ import PaginationControls from '../Layout/PaginationControls';
 import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import { formatCurrency, formatDateTime, formatStatusLabel } from '../../utils/formatters';
 import PlanUsage from '../Subscription/PlanUsage';
+import { installmentInfo, installmentAmountLabel, installmentConditionsLabel } from '../../../../shared/installmentTerms.mjs';
 
 const BUDGETS_PER_PAGE = 6;
 
@@ -21,21 +22,14 @@ function formatToDatetimeLocal(date) {
 }
 
 function formatPaymentTerms(budget) {
-  const isInstallment = Boolean(budget.installment_enabled);
-  const count = Number(budget.installments_count || 1);
-  const total = Number(budget.total_amount || 0);
-
-  if (!isInstallment || count <= 1) {
-    return 'Pagamento à vista';
-  }
-
-  return `${count}x de ${formatCurrency(total / count)}`;
+  return installmentAmountLabel(installmentInfo(budget));
 }
 
 export default function Budgets() {
   const [budgets, setBudgets] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [approvalDraft, setApprovalDraft] = useState({ budgetId: null, scheduleDate: '' });
+  const [mutatingBudgetId, setMutatingBudgetId] = useState(null);
 
   const loadBudgets = async () => {
     try {
@@ -66,11 +60,13 @@ export default function Budgets() {
   };
 
   const approveBudget = async () => {
+    if (mutatingBudgetId) return;
     if (!approvalDraft.budgetId || !approvalDraft.scheduleDate) {
       toast.error('Escolha a data e a hora da instalação.');
       return;
     }
 
+    setMutatingBudgetId(approvalDraft.budgetId);
     try {
       await api.put(`/budgets/${approvalDraft.budgetId}/approve`, {
         schedule_date: `${approvalDraft.scheduleDate.replace('T', ' ')}:00`,
@@ -82,16 +78,22 @@ export default function Budgets() {
       notifyPanelBadgeCountsChanged();
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível aprovar o orçamento.');
+    } finally {
+      setMutatingBudgetId(null);
     }
   };
 
   const rejectBudget = async (budgetId) => {
+    if (mutatingBudgetId) return;
+    setMutatingBudgetId(budgetId);
     try {
       await api.put(`/budgets/${budgetId}/reject`);
       toast.success('Orçamento rejeitado.');
-      loadBudgets();
+      await loadBudgets();
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível rejeitar o orçamento.');
+    } finally {
+      setMutatingBudgetId(null);
     }
   };
 
@@ -182,15 +184,16 @@ export default function Budgets() {
                     <p>Total calculado {formatCurrency(budget.total_amount)}</p>
                     <p>{formatPaymentTerms(budget)}</p>
                   </div>
+                  {budget.installment_enabled ? <p className="text-sm text-[var(--muted)]">{installmentConditionsLabel(installmentInfo(budget))}</p> : null}
                 </div>
 
                 <div className="action-cluster flex flex-wrap gap-3">
                   {budget.status === 'pending' ? (
                     <>
-                      <button className="gold-button w-full sm:w-auto" onClick={() => openApprovalModal(budget.id)} type="button">
+                      <button disabled={Boolean(mutatingBudgetId)} className="gold-button w-full sm:w-auto" onClick={() => openApprovalModal(budget.id)} type="button">
                         Aprovar e agendar
                       </button>
-                      <button className="danger-button w-full sm:w-auto" onClick={() => rejectBudget(budget.id)} type="button">
+                      <button disabled={Boolean(mutatingBudgetId)} className="danger-button w-full sm:w-auto" onClick={() => rejectBudget(budget.id)} type="button">
                         Rejeitar
                       </button>
                     </>
@@ -229,9 +232,9 @@ export default function Budgets() {
 
       {approvalDraft.budgetId ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(4,4,4,0.72)] px-4 backdrop-blur-md">
-          <div className="lux-panel w-full max-w-lg p-6 sm:p-7">
+          <div aria-labelledby="budget-approval-title" aria-modal="true" role="dialog" className="lux-panel w-full max-w-lg p-6 sm:p-7">
             <p className="eyebrow">Aprovação guiada</p>
-            <h2 className="mt-3 text-2xl font-semibold text-[var(--text)]">Agendar instalação</h2>
+            <h2 id="budget-approval-title" className="mt-3 text-2xl font-semibold text-[var(--text)]">Agendar instalação</h2>
             <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
               Defina a data e a hora para a instalação antes de aprovar o orçamento.
             </p>
@@ -240,6 +243,7 @@ export default function Budgets() {
               <span className="field-label">Data e hora</span>
               <input
                 className="field-input"
+                disabled={Boolean(mutatingBudgetId)}
                 onChange={(event) =>
                   setApprovalDraft((current) => ({ ...current, scheduleDate: event.target.value }))
                 }
@@ -249,10 +253,10 @@ export default function Budgets() {
             </label>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <button className="gold-button w-full sm:w-auto" onClick={approveBudget} type="button">
-                Confirmar aprovação
+              <button disabled={Boolean(mutatingBudgetId)} className="gold-button w-full sm:w-auto" onClick={approveBudget} type="button">
+                {mutatingBudgetId ? 'Aprovando...' : 'Confirmar aprovação'}
               </button>
-              <button className="ghost-button w-full sm:w-auto" onClick={closeApprovalModal} type="button">
+              <button disabled={Boolean(mutatingBudgetId)} className="ghost-button w-full sm:w-auto" onClick={closeApprovalModal} type="button">
                 Cancelar
               </button>
             </div>

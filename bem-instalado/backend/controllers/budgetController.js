@@ -1,5 +1,6 @@
 ﻿const fs = require('fs/promises');
 const pool = require('../config/database');
+const { installmentInfo, installmentAmountLabel, installmentConditionsLabel } = require('../../shared/installmentTerms.mjs');
 const generateBudgetPDF = require('../utils/generatePDF');
 const generateWhatsAppLink = require('../utils/whatsapp');
 const {
@@ -619,6 +620,35 @@ exports.approveBudget = async (req, res) => {
     await db.query('BEGIN');
     transactionStarted = true;
 
+    // Always acquire locks in this order, including repeated approval requests.
+    await db.query('SELECT pg_advisory_xact_lock($1)', [req.userId]);
+    const existingResult = await db.query('SELECT * FROM budgets WHERE id = $1 AND user_id = $2 FOR UPDATE', [req.params.id, req.userId]);
+    const existing = existingResult.rows[0];
+    if (!existing) {
+      await db.query('ROLLBACK');
+      transactionStarted = false;
+      return res.status(404).json({ error: 'Orçamento não encontrado.' });
+    }
+    if (existing.status === 'approved') {
+      const existingDate = existing.schedule_date instanceof Date
+        ? existing.schedule_date
+        : parseScheduleDateTime(existing.schedule_date)?.parsed;
+      if (parsedScheduleDate && existingDate?.getTime() !== parsedScheduleDate.parsed.getTime()) {
+        await db.query('ROLLBACK');
+        transactionStarted = false;
+        return res.status(409).json({ code: 'BUDGET_ALREADY_APPROVED', error: 'Esse orçamento já foi aprovado. Não é possível mudar o horário repetindo a aprovação.' });
+      }
+      const schedules = await db.query('SELECT * FROM schedules WHERE budget_id = $1 AND user_id = $2 LIMIT 1', [existing.id, req.userId]);
+      await db.query('COMMIT');
+      transactionStarted = false;
+      return res.json({ budget: existing, schedule: schedules.rows[0] || null });
+    }
+    if (existing.status !== 'pending') {
+      await db.query('ROLLBACK');
+      transactionStarted = false;
+      return res.status(409).json({ code: 'BUDGET_STATUS_CONFLICT', error: 'Somente orçamentos pendentes podem ser aprovados.' });
+    }
+
     const budgetResult = await db.query(
       `
         UPDATE budgets
@@ -633,14 +663,13 @@ exports.approveBudget = async (req, res) => {
 
     if (!budget) {
       await db.query('ROLLBACK');
+      transactionStarted = false;
       return res.status(404).json({ error: 'Orçamento não encontrado.' });
     }
 
     let schedule = null;
 
     if (parsedScheduleDate) {
-      // Shared transaction-level PostgreSQL lock with marketplace acceptances.
-      await db.query('SELECT pg_advisory_xact_lock($1)', [req.userId]);
       const clientResult = await db.query(
         `
           SELECT
@@ -803,8 +832,31 @@ exports.approveBudget = async (req, res) => {
 };
 
 exports.rejectBudget = async (req, res) => {
+  let db;
+  let transactionStarted = false;
   try {
-    const { rows } = await pool.query(
+    db = await pool.connect();
+    await db.query('BEGIN');
+    transactionStarted = true;
+    await db.query('SELECT pg_advisory_xact_lock($1)', [req.userId]);
+    const existingResult = await db.query('SELECT * FROM budgets WHERE id = $1 AND user_id = $2 FOR UPDATE', [req.params.id, req.userId]);
+    const existing = existingResult.rows[0];
+    if (!existing) {
+      await db.query('ROLLBACK');
+      transactionStarted = false;
+      return res.status(404).json({ error: 'Orçamento não encontrado.' });
+    }
+    if (existing.status === 'rejected') {
+      await db.query('COMMIT');
+      transactionStarted = false;
+      return res.json(existing);
+    }
+    if (existing.status !== 'pending') {
+      await db.query('ROLLBACK');
+      transactionStarted = false;
+      return res.status(409).json({ code: 'BUDGET_STATUS_CONFLICT', error: 'Somente orçamentos pendentes podem ser rejeitados. Para cancelar uma instalação aprovada, use a agenda.' });
+    }
+    const { rows } = await db.query(
       `
         UPDATE budgets
         SET status = 'rejected', updated_at = NOW()
@@ -815,12 +867,19 @@ exports.rejectBudget = async (req, res) => {
     );
 
     if (!rows[0]) {
+      await db.query('ROLLBACK');
+      transactionStarted = false;
       return res.status(404).json({ error: 'Orçamento não encontrado.' });
     }
 
+    await db.query('COMMIT');
+    transactionStarted = false;
     return res.json(rows[0]);
   } catch (_error) {
+    if (transactionStarted) await db.query('ROLLBACK');
     return res.status(500).json({ error: 'Erro ao rejeitar orçamento.' });
+  } finally {
+    db?.release();
   }
 };
 
@@ -893,15 +952,9 @@ exports.sendWhatsApp = async (req, res) => {
       return res.status(404).json({ error: 'Orçamento não encontrado.' });
     }
 
-    const installmentsEnabled = Boolean(budget.installment_enabled);
-    const installmentsCount = Number(budget.installments_count || 1);
-    const interestFreeInstallments = Math.min(
-      installmentsCount,
-      Math.max(1, Number(budget.interest_free_installments || installmentsCount))
-    );
-    const installmentInterestRate = Math.max(0, Number(budget.installment_interest_rate || 0));
-    const installmentText = installmentsEnabled && installmentsCount > 1
-      ? ` Parcelamento disponível: até ${installmentsCount}x de R$ ${(Number(budget.total_amount || 0) / installmentsCount).toFixed(2)}. Sem juros até ${interestFreeInstallments}x${interestFreeInstallments < installmentsCount ? `; juros após: ${installmentInterestRate.toFixed(2)}% ao mês` : ''}.`
+    const installment = installmentInfo(budget);
+    const installmentText = installment.enabled
+      ? ` Parcelamento disponível: até ${installmentAmountLabel(installment)}. ${installmentConditionsLabel(installment)}`
       : '';
     const upfrontPaymentTerms = formatUpfrontPaymentTerms(budget.payment_terms);
     const upfrontPaymentText = upfrontPaymentTerms

@@ -12,7 +12,8 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       legacy({
-        targets: ['Chrome >= 60', 'ChromeAndroid >= 60', 'Safari >= 11.1', 'iOS >= 11.3'],
+        // Match the CSS/browser requirements of Tailwind 4, including WebViews.
+        targets: ['Chrome >= 111', 'ChromeAndroid >= 111', 'Safari >= 16.4', 'iOS >= 16.4', 'Firefox >= 128'],
       }),
     ],
     define: {
