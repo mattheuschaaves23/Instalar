@@ -22,6 +22,8 @@ const publicController = read('backend/controllers/publicController.js');
 const serviceRequestController = read('backend/controllers/serviceRequestController.js');
 const opportunityRoutes = read('backend/routes/opportunityRoutes.js');
 const reverseGeocoder = read('backend/utils/reverseGeocode.js');
+const reverseStreetGeocoder = read('backend/utils/reverseStreetGeocode.js');
+const requestGeolocation = read('frontend/src/utils/requestGeolocation.js');
 
 assert.match(landing, /api\.get\('\/public\/recommended-stores'/, 'A landing deve carregar as lojas recomendadas pela API.');
 assert.match(adminDashboard, /api\.post\('\/admin\/recommended-stores'/, 'O painel ADM deve permitir adicionar lojas ao carrossel.');
@@ -53,9 +55,10 @@ assert.match(home, /placeholder="CEP, rua, bairro ou cidade"/, 'A localização 
 assert.match(home, /<RequestManualAddress/, 'Um endereço ausente no mapa deve poder ser preenchido manualmente.');
 assert.match(home, /buildManualLocation\(manualAddress\)/, 'O endereço manual deve ser validado antes de avançar.');
 assert.match(home, /className="request-locate-button"/, 'A localização deve continuar oferecendo o GPS.');
-assert.match(home, /navigator\.geolocation\.watchPosition/, 'O GPS deve aguardar a melhor leitura disponível.');
-assert.match(home, /maximumAge: 0/, 'O GPS não deve reutilizar uma localização antiga.');
-assert.match(home, /gpsRegionOnly: true/, 'O GPS deve confirmar apenas a região, sem inventar uma rua próxima.');
+assert.match(requestGeolocation, /geolocation\.watchPosition/, 'O GPS deve aguardar a melhor leitura disponível.');
+assert.match(requestGeolocation, /maximumAge: 0/, 'O GPS não deve reutilizar uma localização antiga.');
+assert.match(home, /controller\.signal, 'address'/, 'Minha localização deve solicitar rua, e não só a região.');
+assert.doesNotMatch(home, /gpsRegionOnly/, 'O formulário não deve descartar a rua encontrada pelo GPS.');
 assert.match(home, /api\.get\('\/public\/location\/search'/, 'O endereço digitado deve consultar sugestões geográficas.');
 assert.match(home, /<RequestLocationMap target=\{guidedLocationTarget\}/, 'A localização deve mostrar o mapa do endereço selecionado.');
 assert.match(locationMap, /www\.openstreetmap\.org\/export\/embed\.html/, 'O mapa deve usar dados geográficos reais, não a imagem de exemplo.');
@@ -73,7 +76,9 @@ assert.match(publicRoutes, /router\.get\('\/service-requests\/:id\/interests'/, 
 assert.match(publicRoutes, /router\.post\('\/service-requests\/:id\/interests\/:interestId\/select'/, 'A escolha final precisa estar registrada.');
 assert.match(opportunityRoutes, /router\.post\('\/:id\/interest'.*expressInterest\);/, 'Instaladores precisam poder demonstrar interesse.');
 assert.match(publicController, /forwardGeocode/, 'O backend deve transformar endereços em cidade e estado para a busca.');
-assert.match(reverseGeocoder, /zoom: '14'/, 'A localização automática deve consultar nível de região, não uma rua aproximada.');
+assert.match(reverseGeocoder, /detail === 'address'/, 'O backend deve separar consulta de região da consulta de endereço.');
+assert.match(reverseStreetGeocoder, /\['house', 'street'\]/, 'O GPS deve buscar ruas e endereços próximos.');
+assert.match(reverseStreetGeocoder, /houseNumber: ''/, 'O GPS não pode atribuir ao cliente o número de uma casa próxima.');
 assert.doesNotMatch(publicController, /generateWhatsAppLink/, 'Perfis públicos não podem liberar contato direto.');
 assert.match(serviceRequestController, /details: row\.details \|\| null/, 'A proposta deve mostrar os detalhes necessários ao instalador.');
 assert.match(serviceRequestController, /photo_urls: row\.photo_urls \|\| \[\]/, 'A proposta deve mostrar as fotos do serviço.');

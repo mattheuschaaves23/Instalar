@@ -66,7 +66,10 @@ function resolveStateCode(geocoding) {
   return STATE_CODES[normalizeText(geocoding.state)] || '';
 }
 
-async function reverseGeocode(lat, lon, acceptLanguage = 'pt-BR') {
+async function reverseGeocode(lat, lon, acceptLanguage = 'pt-BR', detail = 'region') {
+  if (detail === 'address') {
+    return require('./reverseStreetGeocode')(lat, lon, acceptLanguage);
+  }
   const searchParams = new URLSearchParams({
     format: 'jsonv2',
     lat: String(lat),

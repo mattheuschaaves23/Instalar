@@ -632,19 +632,23 @@ exports.reverseLocation = async (req, res) => {
     const lat = Number(req.query.lat);
     const lon = Number(req.query.lon);
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    if (req.query.lat == null || req.query.lon == null || String(req.query.lat).trim() === '' || String(req.query.lon).trim() === '' ||
+      !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
       return res.status(400).json({ error: 'Coordenadas inválidas.' });
     }
 
-    const region = await reverseGeocode(lat, lon, req.headers['accept-language'] || 'pt-BR');
+    const detail = req.query.detail === 'address' ? 'address' : 'region';
+    const region = await reverseGeocode(lat, lon, req.headers['accept-language'] || 'pt-BR', detail);
 
-    if (!region.city && !region.state) {
+    if (!region?.city && !region?.state) {
       return res.status(404).json({ error: 'Não foi possível identificar sua região.' });
     }
 
     return res.json(region);
   } catch (_error) {
-    return res.status(500).json({ error: 'Não foi possível localizar sua região agora.' });
+    return res.status(503).json({ error: req.query.detail === 'address'
+      ? 'Não foi possível consultar sua rua pelo GPS agora. Use o CEP ou informe o endereço manualmente.'
+      : 'Não foi possível localizar sua região agora.' });
   }
 };
 

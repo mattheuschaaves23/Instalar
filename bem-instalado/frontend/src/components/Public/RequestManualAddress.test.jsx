@@ -19,3 +19,15 @@ it('mantém o endereço preenchido e habilita busca somente com CEP completo', (
   expect(markup).toContain('<option value="SC" selected="">');
   expect(markup).not.toMatch(/<button disabled/);
 });
+
+it('mostra a rua encontrada pelo GPS e aviso pequeno de precisão, mantendo campos editáveis', () => {
+  const address = { ...EMPTY_MANUAL_ADDRESS, street: 'Rua Turquesa', neighborhood: 'Bela Vista', city: 'Palhoça', state: 'SC' };
+  const markup = renderToStaticMarkup(<RequestManualAddress address={address} gps gpsAccuracy={20} />);
+  expect(markup).toContain('Rua encontrada pelo GPS. Confira o endereço');
+  expect(markup).toContain('value="Rua Turquesa"');
+  expect(markup).toContain('value="Bela Vista"');
+  expect(markup).toContain('OpenStreetMap');
+  expect(markup).toContain('O número deve ser informado por você.');
+  const imprecise = renderToStaticMarkup(<RequestManualAddress address={address} gps gpsAccuracy={800} />);
+  expect(imprecise).toContain('GPS com baixa precisão');
+});

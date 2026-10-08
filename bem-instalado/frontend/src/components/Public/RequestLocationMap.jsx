@@ -18,12 +18,13 @@ export function getLocationMapUrls(target) {
 
 export default function RequestLocationMap({ target, regionOnly = false }) {
   const urls = getLocationMapUrls(target);
+  const gps = target?.source === 'gps';
   return (
     <div className="request-location-map-block">
       <div className={`request-location-map${urls ? '' : ' is-empty'}`}>
         {urls ? (
           <iframe key={urls.embed} loading="lazy" referrerPolicy="strict-origin-when-cross-origin"
-            src={urls.embed} title={regionOnly ? 'Mapa da região encontrada pelo GPS' : 'Mapa do endereço selecionado'} />
+            src={urls.embed} title={gps ? 'Mapa da localização aproximada pelo GPS' : regionOnly ? 'Mapa da região encontrada pelo GPS' : 'Mapa do endereço selecionado'} />
         ) : (
           <div className="request-map-empty">
             <svg aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" viewBox="0 0 24 24">
@@ -34,7 +35,7 @@ export default function RequestLocationMap({ target, regionOnly = false }) {
         )}
       </div>
       <div className="request-map-caption">
-        <span>{regionOnly ? 'Localização aproximada. Digite a rua para informar o endereço exato.' : 'Confira o local antes de continuar.'}</span>
+        <span>{gps ? 'Ponto aproximado do GPS. Confira a rua e informe o número.' : regionOnly ? 'Localização aproximada. Digite a rua para informar o endereço exato.' : 'Confira o local antes de continuar.'}</span>
         {urls ? <a href={urls.full} rel="noopener noreferrer" target="_blank">Abrir mapa</a> : null}
       </div>
     </div>

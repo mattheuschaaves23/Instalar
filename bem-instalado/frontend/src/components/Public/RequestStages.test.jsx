@@ -95,6 +95,13 @@ describe('mapa do endereço selecionado', () => {
     expect(markup).toContain('Mapa da região encontrada pelo GPS');
     expect(markup).toContain('Localização aproximada');
   });
+  it('a rua encontrada pelo GPS usa marcador original e aviso de conferência', () => {
+    const markup = renderToStaticMarkup(<RequestLocationMap target={{ latitude: -23.561414, longitude: -46.655881, source: 'gps' }} />);
+    expect(markup).toContain('Mapa da localização aproximada pelo GPS');
+    expect(markup).toContain('Confira a rua e informe o número.');
+    expect(markup).toContain('-23.561414');
+    expect(markup).toContain('-46.655881');
+  });
   it('permite o mapa na política de segurança de produção sem liberar qualquer iframe', () => {
     const vercel = JSON.parse(readFileSync(new URL('../../../../../vercel.json', import.meta.url), 'utf8'));
     const policy = vercel.headers[0].headers.find((header) => header.key === 'Content-Security-Policy').value;

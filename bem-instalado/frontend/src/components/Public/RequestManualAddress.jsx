@@ -1,10 +1,14 @@
 import { BRAZIL_STATE_OPTIONS, postalDigits } from '../../utils/requestAddress';
+import { describeGpsAddress } from '../../utils/requestGeolocation';
 
-export default function RequestManualAddress({ address, onChange, onLookupPostal, lookingUp }) {
+export default function RequestManualAddress({ address, onChange, onLookupPostal, lookingUp, gps = false, gpsAccuracy = null }) {
   return (
     <fieldset className="request-manual-address">
       <legend>Endereço da instalação</legend>
-      <p>Use o CEP para preencher ou digite o endereço. O mapa não é obrigatório.</p>
+      {gps ? <>
+        <p className="request-gps-feedback" role="status">{describeGpsAddress(address, gpsAccuracy)}</p>
+        <p className="request-gps-credit">Dados de <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap</a>. O número deve ser informado por você.</p>
+      </> : <p>Use o CEP para preencher ou digite o endereço. O mapa não é obrigatório.</p>}
       <div className="request-manual-grid">
         <label className="request-editable-field request-manual-cep">
           <span>CEP <small>(opcional)</small></span>
