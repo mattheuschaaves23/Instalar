@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import ThemeToggle from '../Layout/ThemeToggle';
 import api from '../../services/api';
 import './ClientLanding.css';
 import PageMetadata from './PageMetadata';
@@ -61,7 +60,6 @@ function Header() {
       </nav>
 
       <div className="lp6-header-actions">
-        <ThemeToggle />
         <Link className="lp6-login" to={CLIENT_LOGIN_PATH}>
           Entrar <span aria-hidden="true">↗</span>
         </Link>
