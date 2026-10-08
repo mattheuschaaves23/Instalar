@@ -18,6 +18,7 @@ import BrandWordmark from '../Layout/BrandWordmark';
 import PaginationControls from '../Layout/PaginationControls';
 import Turnstile, { isTurnstileEnabled } from '../Security/Turnstile';
 import './Home.css';
+import './RequestComposer.css';
 import PageMetadata from './PageMetadata';
 
 const AnimatedLocationGlobe = lazy(() => import('./AnimatedLocationGlobe'));
@@ -49,19 +50,19 @@ const PLACE_TYPE_OPTIONS = [
   {
     value: 'residential',
     title: 'Casa ou apartamento',
-    description: 'Residência, apartamento, sobrado ou área interna.',
+    description: 'Residência e áreas internas',
     icon: 'home',
   },
   {
     value: 'commercial',
     title: 'Empresa ou loja',
-    description: 'Ambiente comercial, recepção, vitrine ou escritório.',
+    description: 'Espaços comerciais',
     icon: 'building',
   },
   {
     value: 'other',
     title: 'Outro local',
-    description: 'Condomínio, consultório, área comum ou outro espaço.',
+    description: 'Outros ambientes',
     icon: 'map-pin',
   },
 ];
@@ -70,26 +71,26 @@ const PAPER_TYPE_OPTIONS = [
   {
     value: 'vinyl',
     title: 'Papel vinílico',
-    description: 'Material lavável, resistente e de maior durabilidade.',
+    description: 'Lavável e resistente',
     icon: 'roller',
   },
   {
     value: 'textured',
     title: 'Texturizado',
-    description: 'Papel com relevo, textura ou acabamento especial.',
+    description: 'Relevo e acabamento',
     icon: 'texture',
   },
   {
     value: 'adhesive',
     title: 'Adesivo',
-    description: 'Material autocolante ou adesivo decorativo.',
+    description: 'Autocolante decorativo',
     icon: 'sticker',
   },
   {
     value: 'all',
     title: 'Ainda não sei',
-    description: 'Quero orientação do profissional.',
-    icon: 'users',
+    description: 'Quero orientação',
+    icon: 'question',
   },
 ];
 
@@ -305,17 +306,15 @@ function AppIcon({ name, className = '' }) {
     case 'texture':
       return (
         <svg {...commonProps}>
-          <rect x="4" y="4" width="16" height="16" rx="2.4" />
-          <path d="M8 8h8M8 12h8M8 16h8" />
-          <path d="M8 8v8M12 8v8M16 8v8" />
+          <path d="M3 6c3-5 4 5 7 0s4 5 7 0 4 0 4 0M3 12c3-5 4 5 7 0s4 5 7 0 4 0 4 0M3 18c3-5 4 5 7 0s4 5 7 0 4 0 4 0" />
         </svg>
       );
     case 'roller':
       return (
         <svg {...commonProps}>
-          <path d="M5 7.5A1.5 1.5 0 0 1 6.5 6H16a2 2 0 0 1 2 2v2H9a2 2 0 0 0-2 2v6" />
-          <path d="M9 18h4" />
-          <path d="M13 18v2.5" />
+          <path d="m4 13 9-9a5 5 0 0 1 7 7l-9 9" />
+          <ellipse cx="7" cy="17" rx="5" ry="4.5" transform="rotate(45 7 17)" />
+          <circle cx="7" cy="17" r="1.4" />
         </svg>
       );
     case 'sticker':
@@ -323,9 +322,19 @@ function AppIcon({ name, className = '' }) {
         <svg {...commonProps}>
           <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H18a1 1 0 0 1 1 1v10.5A6.5 6.5 0 0 1 12.5 21h-5A2.5 2.5 0 0 1 5 18.5v-13Z" />
           <path d="M12 21v-4.5A2.5 2.5 0 0 1 14.5 14H19" />
-          <path d="M8.5 8h7M8.5 11h4" />
         </svg>
       );
+    case 'question':
+      return (
+        <svg {...commonProps}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.8-2.5 2-2.5 4M12 17h.01" />
+        </svg>
+      );
+    case 'arrow-right':
+      return <svg {...commonProps}><path d="M4 12h16m-6-6 6 6-6 6" /></svg>;
+    case 'chevron-down':
+      return <svg {...commonProps}><path d="m6 9 6 6 6-6" /></svg>;
     case 'smile':
       return (
         <svg {...commonProps}>
@@ -511,23 +520,6 @@ function getMeasurementSummary(request) {
   }
 
   return 'Medidas a confirmar pelo profissional';
-}
-
-function getRequestCompleteness(request) {
-  const filled = [
-    request.placeType,
-    request.service,
-    getRequestRooms(request).length > 0,
-    request.materialStatus,
-    request.city || request.state,
-    request.neighborhood || request.zipCode,
-    request.urgency,
-    request.contactPreference,
-    request.measurementStatus || request.wallSize || request.rollCount,
-    String(request.details || '').trim().length >= 12,
-  ].filter(Boolean).length;
-
-  return Math.round((filled / 10) * 100);
 }
 
 function getClientRequestStatusLabel(status) {
@@ -756,10 +748,6 @@ export default function Home() {
   const selectedServiceRequest = useMemo(
     () => getServiceRequestOption(serviceRequest.service),
     [serviceRequest.service]
-  );
-  const requestCompleteness = useMemo(
-    () => getRequestCompleteness(serviceRequest),
-    [serviceRequest]
   );
   const requestSnapshot = useMemo(
     () => buildClientRequestSnapshot(serviceRequest),
@@ -1663,6 +1651,10 @@ export default function Home() {
   };
 
   const handleRequestBack = () => {
+    if (requestStep === 0) {
+      navigate('/');
+      return;
+    }
     setRequestStep((current) => Math.max(current - 1, 0));
   };
 
@@ -1846,8 +1838,10 @@ export default function Home() {
     navigate('/cliente', { replace: true });
   };
 
+  const isRequestComposer = !hasGuidedRequest && !isTrackingRoute && !isAccountRequestsRoute;
+
   return (
-    <div className="client-app-page" id="top">
+    <div className={`client-app-page${isRequestComposer ? ' client-request-redesign' : ''}`} id="top">
       <PageMetadata
         canonicalPath="/cliente"
         description="Publique seu pedido de instalação de papel de parede e acompanhe propostas e agendamentos com profissionais verificados."
@@ -1857,7 +1851,11 @@ export default function Home() {
       <div className="client-app-shell">
         <header className="client-app-topbar fade-up">
           <div className="client-app-brand">
-            <BrandWordmark className="client-app-brand-wordmark" size="sm" />
+            {isRequestComposer ? (
+              <Link aria-label="InstalaPro — página inicial" className="request-brand-wordmark" to="/">
+                Instala<span>Pro</span>
+              </Link>
+            ) : <BrandWordmark className="client-app-brand-wordmark" size="sm" />}
           </div>
 
           <div className="client-app-top-actions">
@@ -1897,6 +1895,7 @@ export default function Home() {
                 </div>
                 <Link className="client-app-chip-link" to={accountHomePath}>
                   {accountLinkLabel}
+                  {isRequestComposer ? <AppIcon name="chevron-down" /> : null}
                 </Link>
                 <button className="client-app-chip-link client-app-logout-button" onClick={handleLogout} type="button">
                   Sair
@@ -2013,57 +2012,49 @@ export default function Home() {
         <section className="client-app-request-card fade-up" id="busca">
           <div className="client-app-request-head">
             <div>
-              <p className="client-app-kicker">Publique o que você precisa</p>
-              <h1>Receba interesse de instaladores próximos</h1>
-              <p>Responda quatro etapas rápidas. Depois compare os interessados e escolha quem chamar.</p>
+              <h1>Encontre um instalador</h1>
+              <p>Conte o que você precisa e compare os profissionais interessados.</p>
             </div>
+            <span className="request-new-badge">Novo pedido</span>
+          </div>
 
-            <div className="client-app-request-side">
-              <div className="client-app-request-progress" aria-label="Etapas do pedido">
-                {REQUEST_STEPS.map((step, index) => (
-                  <button
-                    className={index === requestStep ? 'is-active' : index < requestStep ? 'is-done' : ''}
-                    disabled={index > requestStep}
-                    key={step.value}
-                    onClick={() => setRequestStep(index)}
-                    type="button"
-                  >
-                    <span>{index + 1}</span>
-                    {step.label}
-                  </button>
-                ))}
-              </div>
-              <div className="client-app-request-score" aria-label={`Pedido ${requestCompleteness}% completo`}>
-                <div className="client-app-request-score-copy">
-                  <strong>Etapa {requestStep + 1} de {REQUEST_STEPS.length}</strong>
-                  <span>{requestCompleteness}% preenchido</span>
-                </div>
-                <div className="client-app-request-score-bar">
-                  <span style={{ width: `${requestCompleteness}%` }} />
-                </div>
-              </div>
+          <div className="client-app-request-side">
+            <div className="client-app-request-progress" aria-label="Etapas do pedido">
+              {REQUEST_STEPS.map((step, index) => (
+                <button
+                  aria-current={index === requestStep ? 'step' : undefined}
+                  className={index === requestStep ? 'is-active' : index < requestStep ? 'is-done' : ''}
+                  disabled={index > requestStep}
+                  key={step.value}
+                  onClick={() => setRequestStep(index)}
+                  type="button"
+                >
+                  <span>{index + 1}</span>
+                  {step.label}
+                </button>
+              ))}
             </div>
           </div>
 
           <form className="client-app-request-form" onSubmit={handleGuidedSearch}>
+            <span className="request-stage-label">Etapa {requestStep + 1} de {REQUEST_STEPS.length}</span>
             {requestStep === 0 ? (
               <div className="client-app-request-panel client-app-request-panel--service">
                 <div className="client-app-simple-heading">
-                  <span>1</span>
                   <div>
                     <h3>Qual serviço você precisa?</h3>
-                    <p>Escolha o local e o tipo de papel.</p>
+                    <p>Selecione uma opção em cada grupo.</p>
                   </div>
                 </div>
 
                 <section className="client-app-choice-section" aria-labelledby="place-type-heading">
                   <div className="client-app-choice-title">
                     <strong id="place-type-heading">Onde será instalado?</strong>
-                    <small>Escolha uma opção</small>
                   </div>
                   <div className="client-app-service-grid client-app-service-grid--place">
                     {PLACE_TYPE_OPTIONS.map((item) => (
                       <button
+                        aria-pressed={serviceRequest.placeType === item.value}
                         className={serviceRequest.placeType === item.value ? 'is-selected' : ''}
                         key={item.value}
                         onClick={() => updateServiceRequest('placeType', item.value)}
@@ -2074,6 +2065,7 @@ export default function Home() {
                         </span>
                         <strong>{item.title}</strong>
                         <span>{item.description}</span>
+                        {serviceRequest.placeType === item.value ? <span aria-hidden="true" className="request-choice-check">✓</span> : null}
                       </button>
                     ))}
                   </div>
@@ -2082,11 +2074,11 @@ export default function Home() {
                 <section className="client-app-choice-section" aria-labelledby="paper-type-heading">
                   <div className="client-app-choice-title">
                     <strong id="paper-type-heading">Qual é o tipo de papel?</strong>
-                    <small>Escolha a opção mais próxima</small>
                   </div>
                   <div className="client-app-service-grid client-app-service-grid--paper">
                     {PAPER_TYPE_OPTIONS.map((item) => (
                       <button
+                        aria-pressed={serviceRequest.service === item.value}
                         className={serviceRequest.service === item.value ? 'is-selected' : ''}
                         key={item.value}
                         onClick={() => updateServiceRequest('service', item.value)}
@@ -2097,6 +2089,7 @@ export default function Home() {
                         </span>
                         <strong>{item.title}</strong>
                         <span>{item.description}</span>
+                        {serviceRequest.service === item.value ? <span aria-hidden="true" className="request-choice-check">✓</span> : null}
                       </button>
                     ))}
                   </div>
@@ -2472,23 +2465,28 @@ export default function Home() {
             ) : null}
 
             <div className="client-app-request-actions">
-              <button
-                className="client-app-ghost-button"
-                disabled={requestStep === 0}
-                onClick={handleRequestBack}
-                type="button"
-              >
-                Voltar
-              </button>
-              {requestStep === 2 ? null : requestStep < LAST_REQUEST_STEP ? (
-                <button className="client-app-search-submit" onClick={handleRequestNext} type="button">
-                  {requestStep === 0 ? 'Continuar para detalhes' : 'Continuar para localização'}
+              <p className="request-contact-note">
+                <AppIcon name="shield" />
+                Você escolhe com quem compartilhar seu contato.
+              </p>
+              <div className="request-action-buttons">
+                <button
+                  className="client-app-ghost-button"
+                  onClick={handleRequestBack}
+                  type="button"
+                >
+                  Voltar
                 </button>
-              ) : (
-                <button className="client-app-search-submit" type="submit">
-                  Continuar para publicar
-                </button>
-              )}
+                {requestStep === 2 ? null : requestStep < LAST_REQUEST_STEP ? (
+                  <button className="client-app-search-submit" onClick={handleRequestNext} type="button">
+                    Continuar <AppIcon name="arrow-right" />
+                  </button>
+                ) : (
+                  <button className="client-app-search-submit" type="submit">
+                    Continuar para publicar
+                  </button>
+                )}
+              </div>
             </div>
           </form>
         </section>
