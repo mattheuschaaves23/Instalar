@@ -653,14 +653,15 @@ exports.searchLocation = async (req, res) => {
     const query = String(req.query.q || '').trim();
     const suggest = String(req.query.suggest || '') === '1';
 
-    if (query.length < 3) {
-      return res.status(400).json({ error: 'Digite um endereço com pelo menos 3 caracteres.' });
+    if (query.length < 3 || query.length > 180) {
+      return res.status(400).json({ error: 'Digite um CEP ou endereço entre 3 e 180 caracteres.' });
     }
 
     const suggestions = await forwardGeocode(
       query,
-      suggest ? 6 : 1,
-      req.headers['accept-language'] || 'pt-BR'
+      suggest ? 12 : 1,
+      req.headers['accept-language'] || 'pt-BR',
+      { city: req.query.city, state: req.query.state }
     );
 
     if (suggest) {
@@ -669,14 +670,14 @@ exports.searchLocation = async (req, res) => {
 
     if (!suggestions.length) {
       return res.status(404).json({
-        error: 'Não encontramos esse endereço. Tente incluir a cidade e o estado.',
+        error: 'Endereço não encontrado na busca. Use o CEP ou informe rua, cidade e estado manualmente.',
       });
     }
 
     return res.json(suggestions[0]);
   } catch (_error) {
     return res.status(503).json({
-      error: 'Não conseguimos localizar esse endereço agora. Tente novamente em instantes.',
+      error: 'Busca indisponível agora. Você pode informar o endereço manualmente para continuar.',
     });
   }
 };

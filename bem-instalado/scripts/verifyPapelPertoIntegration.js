@@ -49,7 +49,9 @@ assert.match(home, /Publique para os instaladores da região/, 'A publicação d
 assert.match(home, /Chamar este instalador/, 'O cliente deve escolher quem chamar somente entre os interessados.');
 assert.doesNotMatch(home, /className="client-app-request-receipt/, 'O resumo do pedido não deve ser repetido após a busca.');
 assert.doesNotMatch(home, /className="client-app-finder-intro/, 'A introdução dos resultados não deve duplicar informações já confirmadas.');
-assert.match(home, /placeholder="Rua, bairro ou cidade"/, 'A localização deve usar o campo único do Pertolar.');
+assert.match(home, /placeholder="CEP, rua, bairro ou cidade"/, 'A localização deve oferecer busca rápida por CEP.');
+assert.match(home, /<RequestManualAddress/, 'Um endereço ausente no mapa deve poder ser preenchido manualmente.');
+assert.match(home, /buildManualLocation\(manualAddress\)/, 'O endereço manual deve ser validado antes de avançar.');
 assert.match(home, /className="request-locate-button"/, 'A localização deve continuar oferecendo o GPS.');
 assert.match(home, /navigator\.geolocation\.watchPosition/, 'O GPS deve aguardar a melhor leitura disponível.');
 assert.match(home, /maximumAge: 0/, 'O GPS não deve reutilizar uma localização antiga.');

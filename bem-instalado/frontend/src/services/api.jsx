@@ -124,6 +124,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Changing a search query deliberately cancels the previous request.
+    // This is not an outage and should not be reported to error monitoring.
+    if (axios.isCancel(error)) return Promise.reject(error);
     const status = error.response?.status;
     const code = error.response?.data?.code || '';
 

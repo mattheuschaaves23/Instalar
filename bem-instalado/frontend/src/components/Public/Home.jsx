@@ -23,6 +23,8 @@ import PageMetadata from './PageMetadata';
 import { RequestDetails, RequestReview } from './RequestStages';
 import RequestLocationMap from './RequestLocationMap';
 import ApprovedRequestIcon from './RequestIcon';
+import RequestManualAddress from './RequestManualAddress';
+import { EMPTY_MANUAL_ADDRESS, addressSearchKey, isPostalQuery, manualAddressFromLocation, manualAddressFromQuery, buildManualLocation, postalDigits } from '../../utils/requestAddress';
 
 const AUTO_LOCATION_SESSION_KEY = 'papelperto_client_location_checked';
 const INSTALLERS_PER_PAGE = 6;
@@ -160,10 +162,10 @@ const INITIAL_REQUEST_CONTACT = {
   email: '',
 };
 const LAST_REQUEST_STEP = REQUEST_STEPS.length - 1;
-const GUIDED_LOCATION_TARGET_ACCURACY = 50;
-const GUIDED_LOCATION_TIMEOUT = 10000;
+const GUIDED_LOCATION_TARGET_ACCURACY = 150;
+const GUIDED_LOCATION_TIMEOUT = 3500;
 
-function getPreciseBrowserPosition() {
+function getPreciseBrowserPosition(signal) {
   return new Promise((resolve, reject) => {
     let bestPosition = null;
     let watchId = null;
@@ -182,8 +184,13 @@ function getPreciseBrowserPosition() {
       if (timeoutId !== null) {
         window.clearTimeout(timeoutId);
       }
+      signal?.removeEventListener('abort', onAbort);
       callback(value);
     };
+
+    const onAbort = () => finish(reject, new DOMException('Busca cancelada', 'AbortError'));
+    if (signal?.aborted) { onAbort(); return; }
+    signal?.addEventListener('abort', onAbort, { once: true });
 
     watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -745,6 +752,9 @@ export default function Home() {
   const claimedRequestRef = useRef(null);
   const guidedAddressInputRef = useRef(null);
   const previousRequestStepRef = useRef(0);
+  const locationCacheRef = useRef(new Map());
+  const locationSearchRef = useRef(null);
+  const locationOperationRef = useRef(null);
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [directory, setDirectory] = useState({ installers: [], ranking: [], reviews: [], marketplace: null });
   const [loading, setLoading] = useState(true);
@@ -769,6 +779,12 @@ export default function Home() {
   const [guidedLocationResolving, setGuidedLocationResolving] = useState(false);
   const [guidedLocationTarget, setGuidedLocationTarget] = useState(null);
   const [guidedLocationAccuracy, setGuidedLocationAccuracy] = useState(null);
+  const [manualLocation, setManualLocation] = useState(false);
+  const [manualAddress, setManualAddress] = useState(EMPTY_MANUAL_ADDRESS);
+  const [postalLookingUp, setPostalLookingUp] = useState(false);
+  const [locationRegionHint, setLocationRegionHint] = useState({});
+  const [locationSearchCompleted, setLocationSearchCompleted] = useState(false);
+  const [activeLocationOption, setActiveLocationOption] = useState(-1);
   const [requestContact, setRequestContact] = useState(INITIAL_REQUEST_CONTACT);
   const [publishingRequest, setPublishingRequest] = useState(false);
   const [publishedRequest, setPublishedRequest] = useState(null);
@@ -877,9 +893,10 @@ export default function Home() {
     }
   }, []);
 
-  const reverseLocation = useCallback(async (latitude, longitude) => {
+  const reverseLocation = useCallback(async (latitude, longitude, signal) => {
     const response = await api.get('/public/location/reverse', {
       params: { lat: latitude, lon: longitude },
+      signal, timeout: 4500,
     });
 
     return response.data;
@@ -990,14 +1007,26 @@ export default function Home() {
   }, [category, quickFilter, sortBy]);
 
   useEffect(() => {
+    if (requestStep !== 2) {
+      locationOperationRef.current?.abort();
+      locationOperationRef.current = null;
+      setGuidedLocating(false);
+      setGuidedLocationResolving(false);
+      setPostalLookingUp(false);
+    }
+    return () => locationOperationRef.current?.abort();
+  }, [requestStep]);
+
+  useEffect(() => {
     const query = locationQuery.trim();
 
     if (
       requestStep !== 2 ||
+      manualLocation ||
       query.length < 3 ||
+      (/^(?:cep\s*:?\s*)?[\d\s-]+$/i.test(query) && !isPostalQuery(query)) ||
       query === confirmedLocationQuery ||
-      guidedLocating ||
-      guidedLocationResolving
+      guidedLocating
     ) {
       setLocationSuggestionsOpen(false);
       setLoadingLocations(false);
@@ -1005,23 +1034,40 @@ export default function Home() {
     }
 
     let cancelled = false;
+    const controller = new AbortController();
+    const key = addressSearchKey(query, locationRegionHint);
+    const cached = locationCacheRef.current.get(key);
+    if (cached && cached.expires > Date.now()) {
+      setLocationOptions(cached.options);
+      setLocationSuggestionsOpen(cached.options.length > 0);
+      setLocationSearchCompleted(true);
+      setLoadingLocations(false);
+      return undefined;
+    }
     const timer = window.setTimeout(async () => {
+      if (locationOperationRef.current) return;
       setLoadingLocations(true);
       setLocationLoadError('');
       setLocationSuggestionsOpen(true);
 
       try {
-        const response = await api.get('/public/location/search', {
-          params: { q: query, suggest: 1 },
+        const search = api.get('/public/location/search', {
+          params: { q: query, suggest: 1, city: locationRegionHint.city, state: locationRegionHint.state },
+          signal: controller.signal, timeout: 4500,
         });
+        locationSearchRef.current = { key, search };
+        const response = await search;
 
         if (!cancelled) {
           const suggestions = response.data?.suggestions || [];
           setLocationOptions(suggestions);
           setLocationSuggestionsOpen(suggestions.length > 0);
+          setLocationSearchCompleted(true);
+          if (locationCacheRef.current.size >= 128) locationCacheRef.current.delete(locationCacheRef.current.keys().next().value);
+          locationCacheRef.current.set(key, { options: suggestions, expires: Date.now() + (suggestions.length ? 60000 : 5000) });
         }
       } catch (error) {
-        if (!cancelled) {
+        if (!cancelled && !controller.signal.aborted) {
           setLocationOptions([]);
           setLocationSuggestionsOpen(false);
           setLocationLoadError(
@@ -1033,16 +1079,19 @@ export default function Home() {
           setLoadingLocations(false);
         }
       }
-    }, 320);
+    }, 220);
 
     return () => {
       cancelled = true;
+      controller.abort();
       window.clearTimeout(timer);
+      if (locationSearchRef.current?.key === key) locationSearchRef.current = null;
     };
   }, [
     confirmedLocationQuery,
     guidedLocating,
-    guidedLocationResolving,
+    manualLocation,
+    locationRegionHint,
     locationQuery,
     requestStep,
   ]);
@@ -1082,10 +1131,16 @@ export default function Home() {
       city: location.city || '',
       state,
       neighborhood: gpsRegionOnly ? '' : location.neighborhood || '',
+      source: location.source || 'gps',
     });
     setLocationOptions([]);
     setLocationSuggestionsOpen(false);
     setLocationLoadError('');
+    setActiveLocationOption(-1);
+    setLocationRegionHint({ city: location.city || '', state });
+    setManualAddress(gpsRegionOnly
+      ? { ...EMPTY_MANUAL_ADDRESS, city: location.city || '', state }
+      : manualAddressFromLocation(location));
   };
 
   const loadRequestInterests = useCallback(async (request = publishedRequest) => {
@@ -1694,8 +1749,8 @@ export default function Home() {
       return false;
     }
 
-    if (requestStep === 2 && !serviceRequest.city.trim() && !serviceRequest.state.trim()) {
-      toast.error('Informe sua cidade ou estado para encontrar profissionais próximos.');
+    if (requestStep === 2 && (!serviceRequest.city.trim() || !serviceRequest.state.trim())) {
+      toast.error('Informe sua cidade e estado para encontrar profissionais próximos.');
       return false;
     }
 
@@ -1718,14 +1773,26 @@ export default function Home() {
     setRequestStep((current) => Math.max(current - 1, 0));
   };
 
+  const cancelLocationOperation = () => {
+    locationOperationRef.current?.abort();
+    locationOperationRef.current = null;
+    setGuidedLocating(false);
+    setGuidedLocationResolving(false);
+    setPostalLookingUp(false);
+  };
+
   const updateGuidedLocationQuery = (value) => {
+    cancelLocationOperation();
     setLocationQuery(value);
     setConfirmedLocationQuery('');
     setLocationOptions([]);
     setLocationSuggestionsOpen(false);
     setLocationLoadError('');
+    setLocationSearchCompleted(false);
+    setActiveLocationOption(-1);
     setGuidedLocationTarget(null);
     setGuidedLocationAccuracy(null);
+    setManualAddress(EMPTY_MANUAL_ADDRESS);
     setServiceRequest((current) => ({
       ...current,
       city: '',
@@ -1736,56 +1803,99 @@ export default function Home() {
     }));
   };
 
-  const requestGuidedLocation = () => {
+  const openManualLocation = () => {
+    cancelLocationOperation();
+    if (!confirmedLocationQuery) {
+      setManualAddress(manualAddressFromQuery(locationQuery, locationRegionHint));
+    }
+    setManualLocation(true);
+    setLocationSuggestionsOpen(false);
+    setLocationLoadError('');
+  };
+
+  const updateManualAddress = (field, value) => {
+    cancelLocationOperation();
+    setManualAddress((current) => ({ ...current, [field]: value }));
+    setLocationLoadError('');
+  };
+
+  const lookupManualPostal = async () => {
+    cancelLocationOperation();
+    const controller = new AbortController();
+    locationOperationRef.current = controller;
+    setPostalLookingUp(true);
+    setLocationLoadError('');
+    try {
+      const response = await api.get('/public/location/search', {
+        params: { q: postalDigits(manualAddress.zipCode) }, signal: controller.signal, timeout: 4500,
+      });
+      if (controller.signal.aborted) return;
+      const address = manualAddressFromLocation(response.data);
+      setManualAddress((current) => ({ ...current, ...address, number: current.number, complement: current.complement }));
+    } catch (error) {
+      if (!controller.signal.aborted) setLocationLoadError(error.response?.data?.error || 'Não foi possível consultar o CEP. Você pode preencher o endereço manualmente.');
+    } finally {
+      if (locationOperationRef.current === controller) {
+        locationOperationRef.current = null;
+        setPostalLookingUp(false);
+      }
+    }
+  };
+
+  const requestGuidedLocation = async () => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
       toast.error('Seu navegador não oferece localização automática.');
       return;
     }
 
+    cancelLocationOperation();
+    const controller = new AbortController();
+    locationOperationRef.current = controller;
     setGuidedLocating(true);
     setLocationLoadError('');
     setLocationOptions([]);
     setLocationSuggestionsOpen(false);
     setGuidedLocationAccuracy(null);
 
-    getPreciseBrowserPosition()
-      .then(async (position) => {
-        try {
-          const region = await reverseLocation(position.coords.latitude, position.coords.longitude);
-          selectLocationOption(region, {
-            gpsRegionOnly: true,
-            accuracy: position.coords.accuracy,
-          });
-          toast.success(
-            region.city
-              ? `Região encontrada: ${region.city}. Confira a rua antes de continuar.`
-              : 'Região encontrada. Confira a rua antes de continuar.'
-          );
-        } catch (error) {
-          const message =
-            error.response?.data?.error || 'Não foi possível localizar sua região agora.';
-          setLocationLoadError(message);
-          toast.error(message);
-        } finally {
-          setGuidedLocating(false);
-        }
-      })
-      .catch((error) => {
-        const message =
-          error?.code === 1
-            ? 'Permita a localização ou digite seu endereço para continuar.'
-            : 'Não foi possível obter uma localização precisa. Digite seu endereço.';
-        setGuidedLocating(false);
+    try {
+      const position = await getPreciseBrowserPosition(controller.signal);
+      if (controller.signal.aborted) return;
+      const region = await reverseLocation(position.coords.latitude, position.coords.longitude, controller.signal);
+      if (controller.signal.aborted) return;
+      selectLocationOption(region, { gpsRegionOnly: true, accuracy: position.coords.accuracy });
+      toast.success(`Região encontrada: ${region.city}. Você pode informar a rua manualmente.`);
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        const message = error?.code === 1
+          ? 'Permita a localização ou use o CEP ou endereço manual.'
+          : error.response?.data?.error || 'Não foi possível localizar sua região. Use o CEP ou endereço manual.';
         setLocationLoadError(message);
-        toast.error(message);
-      });
+      }
+    } finally {
+      if (locationOperationRef.current === controller) {
+        locationOperationRef.current = null;
+        setGuidedLocating(false);
+      }
+    }
   };
 
   const handleGuidedLocationContinue = async () => {
+    if (manualLocation) {
+      try {
+        const address = buildManualLocation(manualAddress);
+        cancelLocationOperation();
+        selectLocationOption(address);
+        setManualLocation(false);
+        setRequestStep((current) => Math.min(current + 1, LAST_REQUEST_STEP));
+      } catch (error) {
+        setLocationLoadError(error.message);
+      }
+      return;
+    }
     if (guidedLocating || guidedLocationResolving) return;
     if (
       confirmedLocationQuery &&
-      (serviceRequest.city.trim() || serviceRequest.state.trim())
+      serviceRequest.city.trim() && serviceRequest.state.trim()
     ) {
       setRequestStep((current) => Math.min(current + 1, LAST_REQUEST_STEP));
       return;
@@ -1793,27 +1903,44 @@ export default function Home() {
 
     const query = locationQuery.trim();
     if (query.length < 3) {
-      toast.error('Digite sua rua, bairro ou cidade para continuar.');
+      setLocationLoadError('Use o CEP, busque a rua ou informe o endereço manualmente.');
       return;
     }
 
     setGuidedLocationResolving(true);
     setLocationLoadError('');
+    const controller = new AbortController();
+    locationOperationRef.current = controller;
 
     try {
-      const response = await api.get('/public/location/search', {
-        params: { q: query },
-      });
-      selectLocationOption(response.data);
-      setRequestStep((current) => Math.min(current + 1, LAST_REQUEST_STEP));
+      const key = addressSearchKey(query, locationRegionHint);
+      const cached = locationCacheRef.current.get(key);
+      const pending = locationSearchRef.current;
+      const response = cached && cached.expires > Date.now()
+        ? { data: { suggestions: cached.options } }
+        : await (pending?.key === key ? pending.search : api.get('/public/location/search', {
+          params: { q: query, suggest: 1, city: locationRegionHint.city, state: locationRegionHint.state },
+          signal: controller.signal, timeout: 4500,
+        }));
+      if (controller.signal.aborted) return;
+      const options = response.data?.suggestions || [];
+      if (options.length === 1) {
+        selectLocationOption(options[0]);
+        setRequestStep((current) => Math.min(current + 1, LAST_REQUEST_STEP));
+      } else {
+        setLocationOptions(options);
+        setLocationSuggestionsOpen(options.length > 0);
+        setLocationLoadError(options.length
+          ? 'Escolha um endereço da lista ou informe o endereço manualmente.'
+          : 'Não encontramos esse endereço. Use o CEP ou informe o endereço manualmente.');
+      }
     } catch (error) {
-      const message =
-        error.response?.data?.error ||
-        'Não encontramos esse endereço. Tente incluir a cidade e o estado.';
-      setLocationLoadError(message);
-      toast.error(message);
+      if (!controller.signal.aborted) setLocationLoadError(error.response?.data?.error || 'Busca indisponível. Informe o endereço manualmente para continuar.');
     } finally {
-      setGuidedLocationResolving(false);
+      if (locationOperationRef.current === controller) {
+        locationOperationRef.current = null;
+        setGuidedLocationResolving(false);
+      }
     }
   };
 
@@ -2222,10 +2349,20 @@ export default function Home() {
                 <div className="client-app-simple-heading">
                   <div>
                     <h3>Onde será o serviço?</h3>
-                    <p>Informe o endereço da instalação.</p>
+                    <p>Busque pelo CEP ou informe o endereço.</p>
                   </div>
                 </div>
 
+                {manualLocation ? (
+                  <div>
+                    <RequestManualAddress address={manualAddress} onChange={updateManualAddress}
+                      onLookupPostal={lookupManualPostal} lookingUp={postalLookingUp} />
+                    {locationLoadError ? <p className="request-address-error" role="alert">{locationLoadError}</p> : null}
+                    <div className="request-address-alternative">
+                      <button onClick={() => { cancelLocationOperation(); setManualLocation(false); setLocationLoadError(''); }} type="button">Voltar à busca de endereços</button>
+                    </div>
+                  </div>
+                ) : <>
                 <div className="request-address-layout">
                     <div className="request-address-field request-editable-field">
                       <label htmlFor="guided-installation-address">
@@ -2238,14 +2375,28 @@ export default function Home() {
                         aria-controls="guided-location-suggestions"
                         aria-describedby="guided-location-feedback"
                         aria-expanded={locationSuggestionsOpen}
+                        aria-activedescendant={activeLocationOption >= 0 && locationSuggestionsOpen ? `guided-location-option-${activeLocationOption}` : undefined}
                         autoComplete="off"
                         id="guided-installation-address"
                         ref={guidedAddressInputRef}
-                        disabled={guidedLocating || guidedLocationResolving}
+                        maxLength={180}
                         onBlur={() => window.setTimeout(() => setLocationSuggestionsOpen(false), 120)}
                         onChange={(event) => updateGuidedLocationQuery(event.target.value)}
                         onFocus={() => locationOptions.length > 0 && setLocationSuggestionsOpen(true)}
-                        placeholder="Rua, bairro ou cidade"
+                        onKeyDown={(event) => {
+                          if (event.key === 'Escape') setLocationSuggestionsOpen(false);
+                          if (['ArrowDown', 'ArrowUp'].includes(event.key) && locationOptions.length) {
+                            event.preventDefault();
+                            setLocationSuggestionsOpen(true);
+                            setActiveLocationOption((current) => (current + (event.key === 'ArrowDown' ? 1 : -1) + locationOptions.length) % locationOptions.length);
+                          }
+                          if (event.key === 'Enter' && locationSuggestionsOpen && activeLocationOption >= 0) {
+                            event.preventDefault();
+                            cancelLocationOperation();
+                            selectLocationOption(locationOptions[activeLocationOption]);
+                          }
+                        }}
+                        placeholder="CEP, rua, bairro ou cidade"
                         role="combobox"
                         value={locationQuery}
                       />
@@ -2267,7 +2418,9 @@ export default function Home() {
                                   ? guidedLocationAccuracy !== null
                                     ? `GPS encontrou ${[serviceRequest.city, serviceRequest.state].filter(Boolean).join(' - ')} (precisão aproximada de ${Math.round(guidedLocationAccuracy)} m). Digite a rua para informar o endereço exato.`
                                     : `Endereço confirmado — ${[serviceRequest.city, serviceRequest.state].filter(Boolean).join(', ')}`
-                                  : 'Digite o endereço da instalação ou use sua localização.')}
+                                  : locationSearchCompleted && !locationOptions.length
+                                    ? 'Não apareceu? Use o CEP completo ou informe o endereço manualmente.'
+                                    : 'Com o CEP, a rua, o bairro e a cidade são preenchidos mais rápido.')}
                       </small>
 
                       {locationSuggestionsOpen && locationOptions.length > 0 ? (
@@ -2279,9 +2432,10 @@ export default function Home() {
                           {locationOptions.map((location, index) => (
                             <li key={`${location.latitude}-${location.longitude}-${index}`}>
                               <button
+                                id={`guided-location-option-${index}`}
                                 onMouseDown={(event) => event.preventDefault()}
-                                onClick={() => selectLocationOption(location)}
-                                aria-selected="false"
+                                onClick={() => { cancelLocationOperation(); selectLocationOption(location); }}
+                                aria-selected={activeLocationOption === index}
                                 role="option"
                                 type="button"
                               >
@@ -2310,24 +2464,30 @@ export default function Home() {
                       </button>
                 </div>
 
+                <div className="request-address-alternative">
+                  <span>Seu endereço não aparece na busca?</span>
+                  <button onClick={openManualLocation} type="button">Informar endereço manualmente</button>
+                </div>
+
                 {confirmedLocationQuery ? (
                   <div className="request-selected-address">
                     <span className="request-selected-address-pin" aria-hidden="true"><RequestIcon name="address-pin" /></span>
                     <div>
-                      <strong>{guidedLocationAccuracy !== null ? 'Região encontrada' : 'Endereço selecionado'}</strong>
+                      <strong>{guidedLocationAccuracy !== null ? 'Região encontrada' : guidedLocationTarget?.source === 'viacep' ? 'CEP encontrado' : 'Endereço selecionado'}</strong>
                       {serviceRequest.addressReference || serviceRequest.neighborhood ? (
                         <span>{[guidedLocationTarget?.label || serviceRequest.addressReference, serviceRequest.neighborhood].filter(Boolean).join(' · ')}</span>
                       ) : null}
                       <span>{[serviceRequest.city, serviceRequest.state].filter(Boolean).join(', ')}</span>
+                      {serviceRequest.zipCode ? <span>CEP {serviceRequest.zipCode}</span> : null}
                     </div>
                     <span className="request-address-check" aria-hidden="true"><RequestIcon name="check" /></span>
-                    <button onClick={() => {
-                      guidedAddressInputRef.current?.focus();
-                      guidedAddressInputRef.current?.select();
-                    }} type="button">Alterar</button>
+                    <button onClick={openManualLocation} type="button">Editar endereço</button>
                   </div>
                 ) : null}
-                <RequestLocationMap target={guidedLocationTarget} regionOnly={guidedLocationAccuracy !== null} />
+                {Number.isFinite(guidedLocationTarget?.latitude) && Number.isFinite(guidedLocationTarget?.longitude)
+                  ? <RequestLocationMap target={guidedLocationTarget} regionOnly={guidedLocationAccuracy !== null} />
+                  : confirmedLocationQuery ? <p className="request-address-map-note">Endereço confirmado. Você pode continuar sem o mapa.</p> : null}
+                </>}
               </div>
             ) : null}
 
