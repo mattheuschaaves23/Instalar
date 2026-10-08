@@ -10,7 +10,9 @@ function read(relativePath) {
 
 const app = read('frontend/src/App.jsx');
 const home = read('frontend/src/components/Public/Home.jsx');
-const locationGlobe = read('frontend/src/components/Public/AnimatedLocationGlobe.jsx');
+const requestStages = read('frontend/src/components/Public/RequestStages.jsx');
+const locationMap = read('frontend/src/components/Public/RequestLocationMap.jsx');
+const requestIcon = read('frontend/src/components/Public/RequestIcon.jsx');
 const landing = read('frontend/src/components/Public/ClientLanding.jsx');
 const adminDashboard = read('frontend/src/components/Admin/AdminDashboard.jsx');
 const apiClient = read('frontend/src/services/api.jsx');
@@ -33,10 +35,14 @@ assert.match(home, /api\.get\('\/public\/installers'/, 'O PapelPerto deve consul
 assert.match(home, /setShowPublishForm\(true\);/, 'A busca guiada deve seguir diretamente para a publicação do pedido.');
 assert.match(home, /document\.getElementById\('publicar-pedido'\)/, 'Ao concluir os dados, o cliente deve seguir para a publicação.');
 assert.match(home, />\s*Continuar para publicar\s*</, 'O pedido guiado deve terminar com a ação de publicar.');
-assert.match(home, /Responda quatro etapas rápidas/, 'O fluxo do cliente deve explicar que possui apenas quatro etapas.');
+const requestSteps = home.match(/const REQUEST_STEPS = \[([\s\S]*?)\];/)?.[1] || '';
+assert.deepStrictEqual([...requestSteps.matchAll(/label: '([^']+)'/g)].map((match) => match[1]),
+  ['Serviço', 'Detalhes', 'Localização', 'Confirmar'], 'O fluxo deve manter as quatro etapas aprovadas.');
+assert.match(home, /Etapa \{requestStep \+ 1\} de \{REQUEST_STEPS\.length\}/, 'O cliente deve enxergar a etapa atual e o total de etapas.');
 assert.doesNotMatch(home, /serviceIntroStep|detailStep/, 'O fluxo não deve voltar a criar subetapas que confundem o cliente.');
 assert.match(home, /className="client-app-optional-details"/, 'Observações e fotos opcionais devem ficar recolhidas.');
-assert.match(home, /className="client-app-clean-summary"/, 'A confirmação deve usar um resumo compacto e organizado.');
+assert.match(home, /<RequestReview/, 'A confirmação deve usar o componente de resumo compacto.');
+assert.match(requestStages, /className="request-summary-grid"/, 'A confirmação deve usar um resumo compacto e organizado.');
 assert.match(home, /className="client-app-result-overview/, 'Após preencher, o cliente deve ver um resumo curto do pedido.');
 assert.match(home, /className="client-app-results-filters/, 'Filtros avançados devem ficar recolhidos após a busca.');
 assert.match(home, /Publique para os instaladores da região/, 'A publicação deve explicar que os profissionais próximos receberão o pedido.');
@@ -44,14 +50,16 @@ assert.match(home, /Chamar este instalador/, 'O cliente deve escolher quem chama
 assert.doesNotMatch(home, /className="client-app-request-receipt/, 'O resumo do pedido não deve ser repetido após a busca.');
 assert.doesNotMatch(home, /className="client-app-finder-intro/, 'A introdução dos resultados não deve duplicar informações já confirmadas.');
 assert.match(home, /placeholder="Rua, bairro ou cidade"/, 'A localização deve usar o campo único do Pertolar.');
-assert.match(home, /className="client-app-pertolar-locate"/, 'A localização deve oferecer o GPS como no Pertolar.');
+assert.match(home, /className="request-locate-button"/, 'A localização deve continuar oferecendo o GPS.');
 assert.match(home, /navigator\.geolocation\.watchPosition/, 'O GPS deve aguardar a melhor leitura disponível.');
 assert.match(home, /maximumAge: 0/, 'O GPS não deve reutilizar uma localização antiga.');
 assert.match(home, /gpsRegionOnly: true/, 'O GPS deve confirmar apenas a região, sem inventar uma rua próxima.');
 assert.match(home, /api\.get\('\/public\/location\/search'/, 'O endereço digitado deve consultar sugestões geográficas.');
-assert.match(home, /<AnimatedLocationGlobe/, 'A localizacao deve exibir o globo animado do Pertolar.');
-assert.match(locationGlobe, /geoOrthographic/, 'O globo deve usar uma projecao geografica real.');
-assert.match(locationGlobe, /requestAnimationFrame/, 'O globo deve girar continuamente.');
+assert.match(home, /<RequestLocationMap target=\{guidedLocationTarget\}/, 'A localização deve mostrar o mapa do endereço selecionado.');
+assert.match(locationMap, /www\.openstreetmap\.org\/export\/embed\.html/, 'O mapa deve usar dados geográficos reais, não a imagem de exemplo.');
+assert.match(locationMap, /marker: `\$\{latitude\},\$\{longitude\}`/, 'O mapa deve marcar as coordenadas selecionadas.');
+assert.match(home, /ApprovedRequestIcon/, 'As etapas devem usar os ícones recortados do modelo aprovado.');
+assert.match(requestIcon, /alt="" aria-hidden="true"/, 'Os ícones decorativos não devem interferir na leitura dos campos.');
 assert.ok(
   home.indexOf('id="resultados"') < home.indexOf('id="publicar-pedido"'),
   'Os resultados precisam aparecer antes da publicação opcional do pedido.'
