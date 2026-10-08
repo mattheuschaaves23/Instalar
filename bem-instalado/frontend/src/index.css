@@ -15822,6 +15822,7 @@ body {
 .installer-login-left {
   --text: #ffffff;
   --muted: #e8e4dd;
+  background: #080808;
   min-height: 48rem;
   padding: 3.6rem 3.6rem 8.4rem;
   display: grid;
@@ -15853,15 +15854,15 @@ body {
   height: 100%;
   object-fit: cover;
   object-position: center top;
-  filter: saturate(0.96) brightness(1);
+  filter: saturate(1) brightness(1.22);
   z-index: -2;
 }
 
 .installer-login-left-overlay {
   background:
     radial-gradient(24rem 26rem at 64% 32%, rgba(var(--site-accent-rgb), 0.18), transparent 66%),
-    linear-gradient(90deg, rgba(5, 5, 5, 0.99) 0%, rgba(5, 5, 5, 0.96) 42%, rgba(5, 5, 5, 0.28) 76%, rgba(5, 5, 5, 0.1) 100%),
-    linear-gradient(180deg, transparent, rgba(5, 5, 5, 0.25));
+    linear-gradient(90deg, rgba(5, 5, 5, 0.99) 0%, rgba(5, 5, 5, 0.96) 42%, rgba(5, 5, 5, 0.16) 65%, transparent 100%),
+    linear-gradient(180deg, transparent, rgba(5, 5, 5, 0.08));
   z-index: -1;
 }
 
@@ -16464,13 +16465,13 @@ html[data-site-theme] .installer-login-left .installer-login-benefits p {
 
   .installer-login-worker-photo {
     width: 54%;
-    opacity: 0.76;
+    opacity: 1;
   }
 
   .installer-login-left-overlay {
     background:
-      linear-gradient(90deg, rgba(5, 5, 5, 0.98) 0%, rgba(5, 5, 5, 0.87) 62%, rgba(5, 5, 5, 0.3) 100%),
-      linear-gradient(180deg, rgba(5, 5, 5, 0.08), rgba(5, 5, 5, 0.78));
+      linear-gradient(90deg, rgba(5, 5, 5, 0.98) 0%, rgba(5, 5, 5, 0.85) 52%, rgba(5, 5, 5, 0.2) 100%),
+      linear-gradient(180deg, transparent, rgba(5, 5, 5, 0.2));
   }
 
   .installer-login-logo-mark {
