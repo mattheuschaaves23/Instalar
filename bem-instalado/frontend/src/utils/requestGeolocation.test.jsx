@@ -68,6 +68,8 @@ describe('GPS para endereço de instalação', () => {
   it('avisa quando o GPS é impreciso ou a rua não está mapeada', () => {
     expect(describeGpsAddress({ street: 'Rua Turquesa' }, 20)).toMatch(/Rua encontrada/);
     expect(describeGpsAddress({ street: 'Rua Turquesa' }, 800)).toMatch(/baixa precisão/);
+    expect(describeGpsAddress({ street: 'Rua Turquesa' }, 50000)).toMatch(/50 km/);
+    expect(describeGpsAddress({ street: 'Rua Turquesa' }, 50000)).toMatch(/pode estar incorreta.*use o CEP/);
     expect(describeGpsAddress({ street: 'Rua Turquesa' }, null)).toMatch(/baixa precisão/);
     expect(describeGpsAddress({ city: 'Palhoça' }, 20)).toMatch(/Informe a rua/);
   });

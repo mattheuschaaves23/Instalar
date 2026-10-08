@@ -47,8 +47,11 @@ export function describeGpsAddress(address, accuracy) {
   }
   const precise = typeof accuracy === 'number' && Number.isFinite(accuracy) && accuracy >= 0;
   if (!precise || accuracy > 100) {
-    const range = precise ? ` (aproximadamente ${Math.round(accuracy).toLocaleString('pt-BR')} m)` : '';
-    return `GPS com baixa precisão${range}. Confira a rua encontrada e informe o número.`;
+    const distance = accuracy >= 1000
+      ? `${(accuracy / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km`
+      : `${Math.round(accuracy).toLocaleString('pt-BR')} m`;
+    const range = precise ? ` (margem aproximada de ${distance})` : '';
+    return `GPS com baixa precisão${range}. A rua sugerida pode estar incorreta. Confira o endereço ou use o CEP.`;
   }
   return 'Rua encontrada pelo GPS. Confira o endereço e informe o número.';
 }

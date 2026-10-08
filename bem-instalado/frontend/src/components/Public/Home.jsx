@@ -1806,7 +1806,12 @@ export default function Home() {
         setConfirmedLocationQuery('');
         setLocationQuery('');
       }
-      toast.success(address.street ? 'Rua encontrada. Confira o endereço.' : 'Região encontrada. Complete a rua para continuar.');
+      const accuracy = position.coords.accuracy;
+      if (address.street && !(typeof accuracy === 'number' && Number.isFinite(accuracy) && accuracy >= 0 && accuracy <= 100)) {
+        toast('GPS aproximado. Confira o endereço ou use o CEP.');
+      } else {
+        toast.success(address.street ? 'Rua encontrada. Confira o endereço.' : 'Região encontrada. Complete a rua para continuar.');
+      }
     } catch (error) {
       if (!controller.signal.aborted) {
         const message = error?.code === 1
