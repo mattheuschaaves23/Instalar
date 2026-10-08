@@ -16802,10 +16802,8 @@ html[data-site-theme] .client-login-left .client-login-benefits p {
   gap: 1.05rem;
   border: 1px solid rgba(var(--site-accent-strong-rgb), 0.86);
   border-radius: 0.45rem;
-  color: #fff;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006)),
-    rgba(8, 8, 8, 0.72);
+  color: #211806;
+  background: #efbd4d;
   font-size: 1.03rem;
   font-weight: 700;
   text-decoration: none;
@@ -16819,7 +16817,18 @@ html[data-site-theme] .client-login-left .client-login-benefits p {
 .client-login-installer-link:focus-visible {
   transform: translateY(-1px);
   border-color: var(--site-accent-strong);
-  background: rgba(24, 18, 8, 0.9);
+  background: #f8cc68;
+}
+
+html[data-site-theme] .client-login-installer-link,
+html[data-site-theme] .client-login-installer-link span,
+html[data-site-theme] .client-login-installer-link svg {
+  color: #211806 !important;
+}
+
+.client-login-installer-link:focus-visible {
+  outline: 3px solid #947000;
+  outline-offset: 3px;
 }
 
 .client-login-installer-link > svg {
