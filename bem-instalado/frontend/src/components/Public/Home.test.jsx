@@ -28,6 +28,7 @@ describe('novo visual do pedido do cliente', () => {
       expect(markup).toContain(label);
     }
     expect(markup).toContain('Você escolhe com quem compartilhar seu contato.');
+    expect(markup.match(/<img alt="" aria-hidden="true" class="request-image-icon"/g)).toHaveLength(9);
     expect(markup).not.toContain('client-app-request-score');
   });
 

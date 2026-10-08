@@ -1,4 +1,15 @@
 /* Approved client request concept. Scope avoids changing tracking/account pages. */
+.client-request-redesign .request-image-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: contain;
+  flex-shrink: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
 html[data-site-theme] .client-app-page.client-request-redesign {
   --text: #111318;
   --muted: #5e626b;
@@ -280,7 +291,7 @@ html[data-site-theme] .client-request-redesign .client-app-service-icon {
   color: #111318 !important;
 }
 
-.client-request-redesign .client-app-service-icon svg { width: 48px; height: 48px; stroke-width: 1.3; }
+.client-request-redesign .client-app-service-icon :is(svg, .request-image-icon) { width: 48px; height: 48px; stroke-width: 1.3; }
 html[data-site-theme] .client-request-redesign .request-choice-check {
   position: absolute;
   top: 12px;
@@ -317,7 +328,7 @@ html[data-site-theme] .client-request-redesign .request-contact-note {
   color: #5e626b !important;
 }
 
-.client-request-redesign .request-contact-note svg { width: 28px; height: 28px; flex: 0 0 28px; color: #111318; }
+.client-request-redesign .request-contact-note :is(svg, .request-image-icon) { width: 28px; height: 28px; flex: 0 0 28px; color: #111318; }
 .client-request-redesign .request-action-buttons { display: flex; align-items: center; gap: 12px; }
 html[data-site-theme] .client-request-redesign .client-app-request-actions button {
   min-height: 52px;
@@ -343,12 +354,12 @@ html[data-site-theme] .client-request-redesign .client-app-request-actions .clie
   font-weight: 650;
 }
 
-.client-request-redesign .client-app-search-submit svg { width: 20px; height: 20px; }
+.client-request-redesign .client-app-search-submit :is(svg, .request-image-icon) { width: 20px; height: 20px; }
 html[data-site-theme] .client-request-redesign .client-app-request-actions .client-app-search-submit:hover { background: #d5a535 !important; }
 .client-request-redesign :is(button, a):focus-visible { outline: 3px solid #a77919; outline-offset: 4px; }
 
 /* Details, address and review share the same compact choice system. */
-.client-request-redesign .client-app-request-progress button span svg { width: 26px; height: 26px; }
+.client-request-redesign .client-app-request-progress button span :is(svg, .request-image-icon) { width: 26px; height: 26px; }
 .client-request-redesign :is(.client-app-request-panel--details, .client-app-request-panel--location, .client-app-request-panel--review) .client-app-simple-heading { margin-bottom: 22px; }
 .client-request-redesign .request-form-section { min-width: 0; }
 .client-request-redesign .request-form-section + .request-form-section { margin-top: 22px; }
@@ -386,7 +397,7 @@ html[data-site-theme] .client-request-redesign .request-choice:hover { border-co
 .client-request-redesign .request-choice-grid--rooms .request-choice strong { font-size: 13px; }
 .client-request-redesign .request-choice-grid--rooms .request-choice-icon { width: 30px; height: 30px; flex-basis: 30px; }
 html[data-site-theme] .client-request-redesign .request-choice .request-choice-check { top: 8px; right: 8px; width: 22px; height: 22px; }
-.client-request-redesign .request-choice-check svg { width: 15px; height: 15px; stroke-width: 2; }
+.client-request-redesign .request-choice-check :is(svg, .request-image-icon) { width: 20px; height: 20px; stroke-width: 2; }
 .client-request-redesign .request-measure-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; margin-top: 12px; }
 .client-request-redesign .request-editable-field { display: grid; gap: 6px; min-width: 0; }
 html[data-site-theme] .client-request-redesign .request-editable-field > :is(span, label) { font-size: 16px; color: #555b65 !important; font-weight: 400; }
@@ -408,7 +419,7 @@ html[data-site-theme] .client-request-redesign :is(input, textarea)::placeholder
 html[data-site-theme] .client-request-redesign .request-measure-hint { margin: 12px 0 0; font-size: 14px; line-height: 1.5; color: #5e626b !important; }
 html[data-site-theme] .client-request-redesign .client-app-optional-details { margin-top: 20px; border: 0; border-top: 1px solid #e1e3e6; border-radius: 0; background: transparent; }
 html[data-site-theme] .client-request-redesign .client-app-optional-details summary { min-height: 58px; gap: 16px; padding: 10px 0; color: #111318 !important; font-size: 15px; font-weight: 400; }
-.client-request-redesign .client-app-optional-details summary > svg { width: 28px; height: 28px; flex: 0 0 28px; }
+.client-request-redesign .client-app-optional-details summary > :is(svg, .request-image-icon) { width: 28px; height: 28px; flex: 0 0 28px; }
 .client-request-redesign .client-app-optional-details summary::after { content: ''; width: 8px; height: 8px; margin-right: 4px; border-right: 1.5px solid #555b65; border-bottom: 1.5px solid #555b65; border-radius: 0; background: none; transform: rotate(45deg); }
 .client-request-redesign .client-app-optional-details[open] summary::after { content: ''; transform: rotate(225deg); }
 html[data-site-theme] .client-request-redesign .client-app-optional-details summary small { font-size: 13px; font-weight: 400; color: #656c77 !important; }
@@ -426,18 +437,19 @@ html[data-site-theme] .client-request-redesign .client-app-photo-grid figcaption
 .client-request-redesign .request-address-field { position: relative; }
 html[data-site-theme] .client-request-redesign .request-address-field label { font-size: 18px; font-weight: 600; color: #111318 !important; }
 .client-request-redesign .request-address-input { position: relative; }
-.client-request-redesign .request-address-input > svg { position: absolute; top: 16px; left: 16px; width: 24px; height: 24px; pointer-events: none; }
+.client-request-redesign .request-address-input > :is(svg, .request-image-icon) { position: absolute; top: 16px; left: 16px; width: 24px; height: 24px; pointer-events: none; }
 html[data-site-theme] .client-request-redesign .request-address-input input { min-height: 56px; padding-left: 54px; }
 html[data-site-theme] .client-request-redesign .request-address-field > small { font-size: 13px; line-height: 1.45; color: #656c77 !important; }
 html[data-site-theme] .client-request-redesign .request-address-field > small.is-error { color: #ae2839 !important; }
 html[data-site-theme] .client-request-redesign .request-locate-button { display: inline-flex; align-items: center; justify-content: center; gap: 16px; min-height: 56px; margin-top: 30px; padding: 12px 22px; border: 1px solid #959ba5 !important; border-radius: 6px !important; background: #fff !important; color: #111318 !important; font-size: 15px; font-weight: 500; box-shadow: none; }
-.client-request-redesign .request-locate-button svg { width: 26px; height: 26px; }
+.client-request-redesign .request-locate-button :is(svg, .request-image-icon) { width: 26px; height: 26px; }
 .client-request-redesign button:disabled { cursor: not-allowed; }
 .client-request-redesign :is(.request-locate-button, .client-app-search-submit):disabled { opacity: 0.6; }
 .client-request-redesign .request-address-suggestions { position: absolute; top: 90px; left: 0; right: 0; z-index: 10; display: grid; margin: 0; padding: 6px; list-style: none; border: 1px solid #d3d6db; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px #28231a15; }
 html[data-site-theme] .client-request-redesign .request-address-suggestions button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border: 0 !important; border-radius: 5px !important; background: #fff !important; color: #111318 !important; text-align: left; box-shadow: none; }
 html[data-site-theme] .client-request-redesign .request-address-suggestions button:hover { background: #fffaf0 !important; }
 .client-request-redesign .request-address-suggestions button > span:last-child { min-width: 0; display: grid; gap: 4px; }
+.client-request-redesign .request-address-suggestions .request-image-icon { width: 24px; height: 24px; }
 .client-request-redesign .request-address-suggestions strong { font-size: 15px; font-weight: 600; }
 html[data-site-theme] .client-request-redesign .request-address-suggestions small { color: #5e626b !important; font-size: 13px; overflow-wrap: anywhere; }
 html[data-site-theme] .client-request-redesign .request-address-suggestions .client-app-pertolar-suggestion-pin { width: 28px; height: 28px; flex: 0 0 28px; background: transparent; color: #a77919 !important; }
@@ -448,7 +460,7 @@ html[data-site-theme] .client-request-redesign .request-address-suggestions .cli
 .client-request-redesign .request-selected-address strong { font-size: 17px; font-weight: 650; }
 html[data-site-theme] .client-request-redesign .request-selected-address > div > span { font-size: 15px; color: #5e626b !important; overflow-wrap: anywhere; }
 .client-request-redesign .request-address-check { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%; background: #ca951e; color: #fff; }
-.client-request-redesign .request-address-check svg { width: 20px; height: 20px; }
+.client-request-redesign .request-address-check :is(svg, .request-image-icon) { width: 22px; height: 22px; }
 html[data-site-theme] .client-request-redesign .request-selected-address button { min-height: 44px; padding: 8px 0 8px 24px; border: 0 !important; border-left: 1px solid #ded5c4 !important; border-radius: 0 !important; background: transparent !important; color: #966b0d !important; font-size: 15px; box-shadow: none; }
 .client-request-redesign .request-location-map-block { margin-top: 16px; }
 .client-request-redesign .request-location-map { height: 220px; overflow: hidden; border: 1px solid #d3d6db; border-radius: 8px; background: #f5f4f1; }
@@ -545,14 +557,15 @@ html[data-site-theme] .client-request-redesign .request-review-extras p { margin
   html[data-site-theme] .client-request-redesign .client-app-service-grid--paper button > span:not(.client-app-service-icon):not(.request-choice-check) { grid-column: 1; }
   html[data-site-theme] .client-request-redesign .client-app-service-icon { width: 36px; height: 36px; }
   html[data-site-theme] .client-request-redesign .client-app-service-grid--paper .client-app-service-icon { grid-row: auto; }
-  .client-request-redesign .client-app-service-icon svg { width: 34px; height: 34px; }
+  .client-request-redesign .client-app-service-icon :is(svg, .request-image-icon) { width: 34px; height: 34px; }
   .client-request-redesign .client-app-service-grid strong { font-size: 15px; }
   html[data-site-theme] .client-request-redesign .client-app-service-grid button > span:not(.client-app-service-icon):not(.request-choice-check) { font-size: 13px; }
   html[data-site-theme] .client-request-redesign .request-choice-check { width: 22px; height: 22px; font-size: 14px; top: 8px; right: 8px; }
+  .client-request-redesign .request-choice-check .request-image-icon { width: 17px; height: 17px; }
   .client-request-redesign .client-app-choice-section + .client-app-choice-section { margin-top: 24px; padding-top: 24px; }
   .client-request-redesign .client-app-request-actions { flex-direction: column; align-items: stretch; gap: 20px; margin-top: 24px; padding-top: 24px; }
   html[data-site-theme] .client-request-redesign .request-contact-note { font-size: 12px; gap: 10px; }
-  .client-request-redesign .request-contact-note svg { width: 22px; height: 22px; flex-basis: 22px; }
+  .client-request-redesign .request-contact-note :is(svg, .request-image-icon) { width: 22px; height: 22px; flex-basis: 22px; }
   .client-request-redesign .request-action-buttons { display: grid; grid-template-columns: 1fr 1.3fr; }
   html[data-site-theme] .client-request-redesign .client-app-request-actions button,
   html[data-site-theme] .client-request-redesign .client-app-request-actions .client-app-search-submit { min-width: 0; width: 100%; font-size: 14px; padding: 10px; }

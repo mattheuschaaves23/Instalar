@@ -22,6 +22,7 @@ import './RequestComposer.css';
 import PageMetadata from './PageMetadata';
 import { RequestDetails, RequestReview } from './RequestStages';
 import RequestLocationMap from './RequestLocationMap';
+import ApprovedRequestIcon from './RequestIcon';
 
 const AUTO_LOCATION_SESSION_KEY = 'papelperto_client_location_checked';
 const INSTALLERS_PER_PAGE = 6;
@@ -221,6 +222,10 @@ function getPreciseBrowserPosition() {
       finish(reject, new Error('LOCATION_TIMEOUT'));
     }, GUIDED_LOCATION_TIMEOUT);
   });
+}
+
+function RequestIcon(props) {
+  return <ApprovedRequestIcon {...props} Fallback={AppIcon} />;
 }
 
 function AppIcon({ name, className = '' }) {
@@ -2085,7 +2090,7 @@ export default function Home() {
                   onClick={() => setRequestStep(index)}
                   type="button"
                 >
-                  <span aria-hidden="true">{index < requestStep ? <AppIcon name="check" /> : index + 1}</span>
+                  <span aria-hidden="true">{index < requestStep ? <RequestIcon name="check" /> : index + 1}</span>
                   {step.label}
                 </button>
               ))}
@@ -2125,11 +2130,11 @@ export default function Home() {
                         type="button"
                       >
                         <span className="client-app-service-icon">
-                          <AppIcon name={item.icon} />
+                          <RequestIcon name={item.icon} />
                         </span>
                         <strong>{item.title}</strong>
                         <span>{item.description}</span>
-                        {serviceRequest.placeType === item.value ? <span aria-hidden="true" className="request-choice-check">✓</span> : null}
+                        {serviceRequest.placeType === item.value ? <span aria-hidden="true" className="request-choice-check"><RequestIcon name="check" /></span> : null}
                       </button>
                     ))}
                   </div>
@@ -2149,11 +2154,11 @@ export default function Home() {
                         type="button"
                       >
                         <span className="client-app-service-icon">
-                          <AppIcon name={item.icon} />
+                          <RequestIcon name={item.icon} />
                         </span>
                         <strong>{item.title}</strong>
                         <span>{item.description}</span>
-                        {serviceRequest.service === item.value ? <span aria-hidden="true" className="request-choice-check">✓</span> : null}
+                        {serviceRequest.service === item.value ? <span aria-hidden="true" className="request-choice-check"><RequestIcon name="check" /></span> : null}
                       </button>
                     ))}
                   </div>
@@ -2165,10 +2170,10 @@ export default function Home() {
               <RequestDetails request={serviceRequest} rooms={selectedRooms} roomOptions={ROOM_OPTIONS}
                 materialOptions={MATERIAL_STATUS_OPTIONS} measurementOptions={MEASUREMENT_OPTIONS}
                 onToggleRoom={toggleRequestRoom} onChange={updateServiceRequest}
-                onMeasurementChange={updateMeasurementStatus} Icon={AppIcon}>
+                onMeasurementChange={updateMeasurementStatus} Icon={RequestIcon}>
                 <details className="client-app-optional-details">
                   <summary>
-                    <AppIcon name="plus" />
+                    <RequestIcon name="plus" />
                     <span>Adicionar observação ou fotos</span>
                     <small>Opcional</small>
                   </summary>
@@ -2227,7 +2232,7 @@ export default function Home() {
                         Endereço da instalação
                       </label>
                       <div className="request-address-input">
-                      <AppIcon name="search" />
+                      <RequestIcon name="search" />
                       <input
                         aria-autocomplete="list"
                         aria-controls="guided-location-suggestions"
@@ -2281,7 +2286,7 @@ export default function Home() {
                                 type="button"
                               >
                                 <span className="client-app-pertolar-suggestion-pin" aria-hidden="true">
-                                  <AppIcon name="map-pin" />
+                                  <RequestIcon name="address-pin" />
                                 </span>
                                 <span>
                                   <strong>{location.label || location.city}</strong>
@@ -2300,14 +2305,14 @@ export default function Home() {
                         onClick={requestGuidedLocation}
                         type="button"
                       >
-                        <AppIcon name="target" />
+                        <RequestIcon name="target" />
                         {guidedLocating ? 'Localizando...' : 'Minha localização'}
                       </button>
                 </div>
 
                 {confirmedLocationQuery ? (
                   <div className="request-selected-address">
-                    <span className="request-selected-address-pin" aria-hidden="true"><AppIcon name="map-pin" /></span>
+                    <span className="request-selected-address-pin" aria-hidden="true"><RequestIcon name="address-pin" /></span>
                     <div>
                       <strong>{guidedLocationAccuracy !== null ? 'Região encontrada' : 'Endereço selecionado'}</strong>
                       {serviceRequest.addressReference || serviceRequest.neighborhood ? (
@@ -2315,7 +2320,7 @@ export default function Home() {
                       ) : null}
                       <span>{[serviceRequest.city, serviceRequest.state].filter(Boolean).join(', ')}</span>
                     </div>
-                    <span className="request-address-check" aria-hidden="true"><AppIcon name="check" /></span>
+                    <span className="request-address-check" aria-hidden="true"><RequestIcon name="check" /></span>
                     <button onClick={() => {
                       guidedAddressInputRef.current?.focus();
                       guidedAddressInputRef.current?.select();
@@ -2330,12 +2335,12 @@ export default function Home() {
               <RequestReview request={serviceRequest} snapshot={requestSnapshot}
                 locationLabel={guidedLocationTarget?.label}
                 urgencyOptions={URGENCY_OPTIONS} contactOptions={CONTACT_PREFERENCE_OPTIONS}
-                onChange={updateServiceRequest} onEdit={setRequestStep} Icon={AppIcon} />
+                onChange={updateServiceRequest} onEdit={setRequestStep} Icon={RequestIcon} />
             ) : null}
 
             <div className="client-app-request-actions">
               <p className="request-contact-note">
-                <AppIcon name="shield" />
+                <RequestIcon name="shield" />
                 Você escolhe com quem compartilhar seu contato.
               </p>
               <div className="request-action-buttons">
@@ -2349,16 +2354,16 @@ export default function Home() {
                 {requestStep === 2 ? (
                   <button key="location-continue" className="client-app-search-submit" disabled={guidedLocating || guidedLocationResolving}
                     onClick={handleGuidedLocationContinue} type="button">
-                    {guidedLocationResolving ? 'Confirmando...' : 'Continuar'} <AppIcon name="arrow-right" />
+                    {guidedLocationResolving ? 'Confirmando...' : 'Continuar'} <RequestIcon name="arrow-right" />
                   </button>
                 ) : requestStep < LAST_REQUEST_STEP ? (
                   <button key="step-continue" className="client-app-search-submit" onClick={handleRequestNext} type="button">
-                    Continuar <AppIcon name="arrow-right" />
+                    Continuar <RequestIcon name="arrow-right" />
                   </button>
                 ) : (
                   <button key="review-submit" className="client-app-search-submit" type="submit">
                     Continuar para publicar
-                    <AppIcon name="arrow-right" />
+                    <RequestIcon name="arrow-right" />
                   </button>
                 )}
               </div>

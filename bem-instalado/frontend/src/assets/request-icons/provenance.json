@@ -1,0 +1,343 @@
+{
+  "method": "Direct native-pixel crops with transparent background; no generated or redrawn artwork.",
+  "sources": {
+    "service": {
+      "filename": "codex-clipboard-68e2c9ca-e0de-424d-80bc-409da3645879.png",
+      "sha256": "69f744e619c9407f9ece939af1d54cab042a9196706f7a0401ec2b3ff8ec0e53"
+    },
+    "details": {
+      "filename": "02-detalhes.png",
+      "sha256": "cc86c12c20f7804bf08593b4bc88eba50b7979ce1e74d2147b5e14ac56d2de1c"
+    },
+    "location": {
+      "filename": "03-localizacao.png",
+      "sha256": "1d2ef0e4d7dfe4ca2f2c4f4e5980afa546eb8ce5fc84af4c7bbb7a0f030cc3f4"
+    },
+    "review": {
+      "filename": "04-confirmar.png",
+      "sha256": "8d3bc59cb2c1e60b4f2468f304292ca5cb2306fb090ab8e40b269633b4e094e8"
+    }
+  },
+  "icons": {
+    "home": {
+      "source": "service",
+      "crop": [
+        139,
+        510,
+        202,
+        575
+      ],
+      "size": 59
+    },
+    "building": {
+      "source": "service",
+      "crop": [
+        591,
+        510,
+        657,
+        575
+      ],
+      "size": 61
+    },
+    "map-pin": {
+      "source": "service",
+      "crop": [
+        1037,
+        508,
+        1092,
+        577
+      ],
+      "size": 62
+    },
+    "roller": {
+      "source": "service",
+      "crop": [
+        127,
+        746,
+        197,
+        817
+      ],
+      "size": 68
+    },
+    "texture": {
+      "source": "service",
+      "crop": [
+        467,
+        747,
+        525,
+        814
+      ],
+      "size": 58
+    },
+    "sticker": {
+      "source": "service",
+      "crop": [
+        805,
+        747,
+        872,
+        815
+      ],
+      "size": 59
+    },
+    "question": {
+      "source": "service",
+      "crop": [
+        1144,
+        747,
+        1213,
+        815
+      ],
+      "size": 65
+    },
+    "shield": {
+      "source": "service",
+      "crop": [
+        99,
+        916,
+        138,
+        959
+      ],
+      "size": 39
+    },
+    "arrow-right": {
+      "source": "service",
+      "crop": [
+        1367,
+        925,
+        1392,
+        952
+      ],
+      "size": 21
+    },
+    "check": {
+      "source": "service",
+      "crop": [
+        500,
+        499,
+        520,
+        517
+      ],
+      "size": 22
+    },
+    "sofa": {
+      "source": "details",
+      "crop": [
+        130,
+        446,
+        181,
+        489
+      ],
+      "size": 45
+    },
+    "bed": {
+      "source": "details",
+      "crop": [
+        321,
+        445,
+        372,
+        489
+      ],
+      "size": 45
+    },
+    "utensils": {
+      "source": "details",
+      "crop": [
+        522,
+        444,
+        559,
+        490
+      ],
+      "size": 38
+    },
+    "shower": {
+      "source": "details",
+      "crop": [
+        705,
+        442,
+        746,
+        491
+      ],
+      "size": 43
+    },
+    "door": {
+      "source": "details",
+      "crop": [
+        901,
+        442,
+        948,
+        491
+      ],
+      "size": 43
+    },
+    "store": {
+      "source": "details",
+      "crop": [
+        1091,
+        444,
+        1138,
+        490
+      ],
+      "size": 42
+    },
+    "dots": {
+      "source": "details",
+      "crop": [
+        1271,
+        451,
+        1313,
+        482
+      ],
+      "size": 33
+    },
+    "cart": {
+      "source": "details",
+      "crop": [
+        581,
+        580,
+        635,
+        632
+      ],
+      "size": 47
+    },
+    "pencil-ruler": {
+      "source": "details",
+      "crop": [
+        137,
+        704,
+        187,
+        754
+      ],
+      "size": 44
+    },
+    "ruler": {
+      "source": "details",
+      "crop": [
+        586,
+        700,
+        648,
+        759
+      ],
+      "size": 53
+    },
+    "worker": {
+      "source": "details",
+      "crop": [
+        1027,
+        703,
+        1081,
+        755
+      ],
+      "size": 47
+    },
+    "plus": {
+      "source": "details",
+      "crop": [
+        97,
+        871,
+        139,
+        914
+      ],
+      "size": 38
+    },
+    "search": {
+      "source": "location",
+      "crop": [
+        115,
+        465,
+        153,
+        503
+      ],
+      "size": 34
+    },
+    "target": {
+      "source": "location",
+      "crop": [
+        1215,
+        462,
+        1261,
+        507
+      ],
+      "size": 39
+    },
+    "address-pin": {
+      "source": "location",
+      "crop": [
+        132,
+        542,
+        187,
+        610
+      ],
+      "size": 60
+    },
+    "bolt": {
+      "source": "review",
+      "crop": [
+        140,
+        452,
+        184,
+        512
+      ],
+      "size": 52
+    },
+    "calendar": {
+      "source": "review",
+      "crop": [
+        476,
+        455,
+        526,
+        508
+      ],
+      "size": 47
+    },
+    "clock": {
+      "source": "review",
+      "crop": [
+        1142,
+        452,
+        1200,
+        509
+      ],
+      "size": 53
+    },
+    "whatsapp": {
+      "source": "review",
+      "crop": [
+        140,
+        611,
+        198,
+        669
+      ],
+      "size": 51
+    },
+    "phone": {
+      "source": "review",
+      "crop": [
+        593,
+        612,
+        646,
+        666
+      ],
+      "size": 50
+    },
+    "mail": {
+      "source": "review",
+      "crop": [
+        1037,
+        615,
+        1094,
+        664
+      ],
+      "size": 52
+    },
+    "box": {
+      "source": "review",
+      "crop": [
+        816,
+        752,
+        869,
+        809
+      ],
+      "size": 49
+    }
+  }
+}
