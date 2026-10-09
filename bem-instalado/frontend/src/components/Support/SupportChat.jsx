@@ -163,7 +163,9 @@ export default function SupportChat() {
           setMessages(conversationResponse.data?.messages || []);
           setSelectedConversationId(currentConversation?.id || null);
           setIdeas(ideasList);
-          await api.post('/support/me/read').catch(() => null);
+          // Read receipts must not keep the conversation hidden while the
+          // secondary request waits for the API.
+          void api.post('/support/me/read').catch(() => null);
         }
       } catch (error) {
         toast.error(error.response?.data?.error || 'Não foi possível carregar o suporte.');

@@ -4,6 +4,10 @@ import NativeOAuthBridge from './components/Auth/NativeOAuthBridge';
 import DecoratingWallLoader from './components/Layout/DecoratingWallLoader';
 import ClientLanding from './components/Public/ClientLanding';
 import { useAuth } from './contexts/AuthContext';
+import AdminRoute from './components/Layout/AdminRoute';
+import ProtectedRoute from './components/Layout/ProtectedRoute';
+import RoutePrefetch from './components/Layout/RoutePrefetch';
+import { routeModules } from './utils/routeModules';
 
 const IS_INSTALLER_APP = process.env.REACT_APP_INSTALLER_APP === 'true';
 const INSTALLER_APP_PATHS = [
@@ -25,36 +29,34 @@ const INSTALLER_APP_PATHS = [
   '/support',
 ];
 
-const ClientLogin = lazy(() => import('./components/Auth/ClientLogin'));
-const InstallerOnboarding = lazy(() => import('./components/Auth/InstallerOnboarding'));
-const Login = lazy(() => import('./components/Auth/Login'));
-const MobileOAuthRedirect = lazy(() => import('./components/Auth/MobileOAuthRedirect'));
-const OAuthCallback = lazy(() => import('./components/Auth/OAuthCallback'));
-const PasswordRecovery = lazy(() => import('./components/Auth/PasswordRecovery'));
-const Register = lazy(() => import('./components/Auth/Register'));
-const AdminDashboard = lazy(() => import('./components/Admin/AdminDashboard'));
-const Agenda = lazy(() => import('./components/Agenda/Agenda'));
-const Budgets = lazy(() => import('./components/Budgets/Budgets'));
-const BudgetForm = lazy(() => import('./components/Budgets/BudgetForm'));
-const Clients = lazy(() => import('./components/Clients/Clients'));
-const Dashboard = lazy(() => import('./components/Dashboard/Dashboard'));
-const AdminRoute = lazy(() => import('./components/Layout/AdminRoute'));
-const Layout = lazy(() => import('./components/Layout/Layout'));
-const ProtectedRoute = lazy(() => import('./components/Layout/ProtectedRoute'));
-const Notifications = lazy(() => import('./components/Notifications/Notifications'));
-const Opportunities = lazy(() => import('./components/Opportunities/Opportunities'));
-const Profile = lazy(() => import('./components/Profile/Profile'));
-const PdfBranding = lazy(() => import('./components/PdfBranding/PdfBranding'));
-const Home = lazy(() => import('./components/Public/Home'));
-const InstallerProfile = lazy(() => import('./components/Public/InstallerProfile'));
-const LegalPage = lazy(() => import('./components/Public/LegalPage'));
-const AccountDeletionPage = lazy(() => import('./components/Public/AccountDeletionPage'));
-const ReviewsDashboard = lazy(() => import('./components/Reviews/ReviewsDashboard'));
-const Settings = lazy(() => import('./components/Settings/Settings'));
-const SupportChat = lazy(() => import('./components/Support/SupportChat'));
-const Subscription = lazy(() => import('./components/Subscription/Subscription'));
-const AppDownload = lazy(() => import('./components/AppDownload/AppDownload'));
-const EmailVerification = lazy(() => import('./components/Auth/EmailVerification'));
+const ClientLogin = lazy(routeModules.ClientLogin);
+const InstallerOnboarding = lazy(routeModules.InstallerOnboarding);
+const Login = lazy(routeModules.Login);
+const MobileOAuthRedirect = lazy(routeModules.MobileOAuthRedirect);
+const OAuthCallback = lazy(routeModules.OAuthCallback);
+const PasswordRecovery = lazy(routeModules.PasswordRecovery);
+const Register = lazy(routeModules.Register);
+const AdminDashboard = lazy(routeModules.AdminDashboard);
+const Agenda = lazy(routeModules.Agenda);
+const Budgets = lazy(routeModules.Budgets);
+const BudgetForm = lazy(routeModules.BudgetForm);
+const Clients = lazy(routeModules.Clients);
+const Dashboard = lazy(routeModules.Dashboard);
+const Layout = lazy(routeModules.Layout);
+const Notifications = lazy(routeModules.Notifications);
+const Opportunities = lazy(routeModules.Opportunities);
+const Profile = lazy(routeModules.Profile);
+const PdfBranding = lazy(routeModules.PdfBranding);
+const Home = lazy(routeModules.Home);
+const InstallerProfile = lazy(routeModules.InstallerProfile);
+const LegalPage = lazy(routeModules.LegalPage);
+const AccountDeletionPage = lazy(routeModules.AccountDeletionPage);
+const ReviewsDashboard = lazy(routeModules.ReviewsDashboard);
+const Settings = lazy(routeModules.Settings);
+const SupportChat = lazy(routeModules.SupportChat);
+const Subscription = lazy(routeModules.Subscription);
+const AppDownload = lazy(routeModules.AppDownload);
+const EmailVerification = lazy(routeModules.EmailVerification);
 
 function RouteLoading() {
   return (
@@ -91,6 +93,7 @@ function InstallerAppGuard({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <RoutePrefetch />
       <NativeOAuthBridge />
       <InstallerAppGuard>
         <Suspense fallback={<RouteLoading />}>

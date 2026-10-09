@@ -1,9 +1,18 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import InstallerPanelShell from './InstallerPanelShell';
 import { EmailVerificationNotice } from '../Auth/EmailVerification';
+import DecoratingWallLoader from './DecoratingWallLoader';
+
+function PageOutlet() {
+  return (
+    <Suspense fallback={<DecoratingWallLoader embedded phrase="Abrindo esta área do painel." />}>
+      <Outlet />
+    </Suspense>
+  );
+}
 
 const PANEL_ROUTE_PREFIXES = [
   '/agenda',
@@ -38,7 +47,7 @@ export default function Layout() {
       <div className="app-layout dashboard-reference-layout installer-workspace aqua-panel-theme">
         <InstallerPanelShell>
           <EmailVerificationNotice />
-          <Outlet />
+          <PageOutlet />
         </InstallerPanelShell>
       </div>
     );
@@ -53,7 +62,7 @@ export default function Layout() {
         <main className="mx-auto w-full max-w-[1480px] px-4 pb-10 pt-6 sm:px-5 lg:px-8 xl:px-10">
           <div className="min-w-0 space-y-6">
             <EmailVerificationNotice />
-            <Outlet />
+            <PageOutlet />
           </div>
         </main>
       </div>
