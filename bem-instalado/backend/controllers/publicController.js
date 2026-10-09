@@ -4,6 +4,17 @@ const { buildAvailableDates } = require('../utils/installerAvailability');
 const reverseGeocode = require('../utils/reverseGeocode');
 const forwardGeocode = require('../utils/forwardGeocode');
 const { normalizeSearchText } = require('../utils/textSearch');
+const { logApplicationError } = require('../utils/errorMonitoring');
+
+function reportLocationError(error, req) {
+  void logApplicationError({
+    source: 'location', message: 'Falha ao consultar o serviço de endereços.',
+    stack: error.stack, statusCode: 503,
+    // Do not send address searches or GPS coordinates to monitoring providers.
+    req: { method: req.method, originalUrl: req.path },
+    metadata: { errorCode: error.code || 'LOCATION_PROVIDER_FAILED' },
+  }).catch(() => null);
+}
 
 const MARKETPLACE_URL = process.env.MARKETPLACE_URL || 'https://www.beminstalado.com.br';
 const MARKETPLACE_CTA_LABEL = process.env.MARKETPLACE_CTA_LABEL || 'Visitar loja oficial';
@@ -645,7 +656,8 @@ exports.reverseLocation = async (req, res) => {
     }
 
     return res.json(region);
-  } catch (_error) {
+  } catch (error) {
+    reportLocationError(error, req);
     return res.status(503).json({ error: req.query.detail === 'address'
       ? 'Não foi possível consultar sua rua pelo GPS agora. Use o CEP ou informe o endereço manualmente.'
       : 'Não foi possível localizar sua região agora.' });
@@ -679,7 +691,8 @@ exports.searchLocation = async (req, res) => {
     }
 
     return res.json(suggestions[0]);
-  } catch (_error) {
+  } catch (error) {
+    reportLocationError(error, req);
     return res.status(503).json({
       error: 'Busca indisponível agora. Você pode informar o endereço manualmente para continuar.',
     });

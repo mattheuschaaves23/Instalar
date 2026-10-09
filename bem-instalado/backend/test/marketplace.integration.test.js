@@ -306,6 +306,17 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
       assert.equal((await respond(decision, 'Resposta fictícia')).response.status, 200);
       assert.equal((await sendProposal()).response.status, 201);
     }
+    await pool.query("UPDATE service_requests SET status = 'canceled' WHERE id = $1", [serviceRequest.id]);
+    const canceledReply = await respond('accept');
+    assert.equal(canceledReply.response.status, 409);
+    assert.equal(canceledReply.body.code, 'REQUEST_NOT_ACTIVE');
+    assert.equal((await pool.query('SELECT id FROM service_bookings WHERE service_request_id = $1', [serviceRequest.id])).rowCount, 0);
+    await pool.query("UPDATE service_requests SET status = 'proposal_sent' WHERE id = $1", [serviceRequest.id]);
+    await pool.query("UPDATE service_proposals SET scheduled_start = NOW() - INTERVAL '2 days', scheduled_end = NOW() - INTERVAL '1 day' WHERE service_request_id = $1", [serviceRequest.id]);
+    const expiredReply = await respond('accept');
+    assert.equal(expiredReply.response.status, 409);
+    assert.equal(expiredReply.body.code, 'PROPOSAL_TIME_EXPIRED');
+    assert.equal((await sendProposal()).response.status, 201);
     const accepted = await respond('accept');
     assert.equal(accepted.response.status, 200, JSON.stringify(accepted.body));
     assert.equal(accepted.body.proposal.booking_status, 'scheduled');

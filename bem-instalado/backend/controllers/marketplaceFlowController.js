@@ -286,8 +286,18 @@ exports.respondToProposal = async (req, res) => {
       await db.query('ROLLBACK');
       return res.status(409).json({ error: 'Não há uma proposta pendente para responder.' });
     }
+    if (!['selected', 'proposal_sent'].includes(request.status)) {
+      await db.query('ROLLBACK');
+      return res.status(409).json({ error: 'Este pedido já foi encerrado ou não aceita respostas.', code: 'REQUEST_NOT_ACTIVE' });
+    }
 
     if (decision === 'accept') {
+      if (new Date(proposal.scheduled_start) <= new Date()) {
+        await db.query(`UPDATE service_proposals SET status = 'change_requested', client_response_message = $2, responded_at = NOW(), updated_at = NOW() WHERE id = $1`, [proposal.id, 'O horário da proposta já passou. Envie uma nova opção.']);
+        await db.query("UPDATE service_requests SET status = 'selected', updated_at = NOW() WHERE id = $1", [requestId]);
+        await db.query('COMMIT');
+        return res.status(409).json({ error: 'O horário da proposta já passou. Peça uma nova opção ao instalador.', code: 'PROPOSAL_TIME_EXPIRED' });
+      }
       // Shared transaction-level PostgreSQL lock with the legacy budget scheduler.
       await db.query('SELECT pg_advisory_xact_lock($1)', [proposal.installer_id]);
       const overlap = await db.query(
