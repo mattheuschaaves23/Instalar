@@ -17,6 +17,7 @@ exports.run = async (_req, res) => {
     res.set('Cache-Control', 'no-store');
     return res.json({
       ok: true,
+      healthy: email.failed === 0 && deliveries.failed === 0 && (heartbeat.sent || heartbeat.reason === 'betterstack_not_configured'),
       ran_at: new Date().toISOString(),
       email,
       deliveries,

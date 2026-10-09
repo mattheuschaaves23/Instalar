@@ -2,6 +2,7 @@ const pool = require('../config/database');
 const { sendMarketplaceEmail } = require('../services/email');
 const { sendPushToUser } = require('../services/push');
 const { notifyOperationalAlert } = require('../services/operationalAlerts');
+const { logApplicationError } = require('../utils/errorMonitoring');
 
 function text(value, max = 2000) {
   return String(value || '').trim().slice(0, max);
@@ -77,7 +78,7 @@ async function loadInstallerRequest(db, installerId, requestId, { lock = false }
      FROM service_requests sr
      LEFT JOIN users u ON u.id = sr.client_user_id
      WHERE sr.id = $1 AND sr.selected_installer_id = $2
-     ${lock ? 'FOR UPDATE' : ''}`,
+     ${lock ? 'FOR UPDATE OF sr' : ''}`,
     [requestId, installerId]
   );
   return result.rows[0] || null;
@@ -101,6 +102,17 @@ async function emailSafely(payload) {
       message: 'Falha ao enviar e-mail transacional do marketplace.',
     });
   });
+}
+
+async function reportFailure(error, req) {
+  // Logging also uses the pool: callers must release their transaction first.
+  await logApplicationError({
+    message: 'Falha no fluxo de proposta ou agendamento.',
+    stack: error.stack,
+    metadata: { errorCode: error.code || 'UNEXPECTED_ERROR' },
+    source: 'marketplace-flow',
+    req: { method: req.method, originalUrl: req.path, userId: req.userId },
+  }).catch(() => null);
 }
 
 exports.getInstallerProposal = async (req, res) => {
@@ -188,6 +200,8 @@ exports.sendProposal = async (req, res) => {
       'info'
     );
     await db.query('COMMIT');
+    db.release();
+    db = null;
 
     await emailSafely({
       to: request.client_account_email || request.client_email,
@@ -205,8 +219,11 @@ exports.sendProposal = async (req, res) => {
     }).catch(() => null);
 
     return res.status(201).json({ proposal: serializeProposal(proposal) });
-  } catch (_error) {
+  } catch (error) {
     await db?.query('ROLLBACK').catch(() => null);
+    db?.release();
+    db = null;
+    await reportFailure(error, req);
     return res.status(500).json({ error: 'Não foi possível enviar a proposta.' });
   } finally {
     db?.release();
@@ -256,6 +273,15 @@ exports.respondToProposal = async (req, res) => {
       [requestId]
     );
     const proposal = proposalResult.rows[0];
+    const decisionStatus = { accept: 'accepted', request_changes: 'change_requested', reject: 'rejected' }[decision];
+    if (proposal?.status === decisionStatus && (decision === 'accept' || (proposal.client_response_message || '') === message)) {
+      const fresh = await db.query(
+        `SELECT sp.*, sb.status AS booking_status FROM service_proposals sp LEFT JOIN service_bookings sb ON sb.proposal_id = sp.id WHERE sp.id = $1`,
+        [proposal.id]
+      );
+      await db.query('COMMIT');
+      return res.json({ proposal: serializeProposal(fresh.rows[0]), request_status: request.status });
+    }
     if (!proposal || !['sent', 'change_requested'].includes(proposal.status)) {
       await db.query('ROLLBACK');
       return res.status(409).json({ error: 'Não há uma proposta pendente para responder.' });
@@ -328,10 +354,11 @@ exports.respondToProposal = async (req, res) => {
       ? `O cliente aceitou a proposta do pedido #${requestId}. O horário está confirmado.`
       : `O cliente respondeu à proposta do pedido #${requestId}.${message ? ` Mensagem: ${message}` : ''}`;
     await createNotification(db, proposal.installer_id, title, notification, decision === 'accept' ? 'success' : 'info');
+    const fresh = await db.query(`SELECT sp.*, sb.status AS booking_status FROM service_proposals sp LEFT JOIN service_bookings sb ON sb.proposal_id = sp.id WHERE sp.id = $1`, [proposal.id]);
+    const installerResult = await db.query('SELECT email FROM users WHERE id = $1', [proposal.installer_id]);
     await db.query('COMMIT');
-
-    const fresh = await pool.query(`SELECT sp.*, sb.status AS booking_status FROM service_proposals sp LEFT JOIN service_bookings sb ON sb.proposal_id = sp.id WHERE sp.id = $1`, [proposal.id]);
-    const installerResult = await pool.query('SELECT email FROM users WHERE id = $1', [proposal.installer_id]);
+    db.release();
+    db = null;
     await emailSafely({
       to: installerResult.rows[0]?.email,
       subject: `${title} - InstalaPro`,
@@ -349,12 +376,15 @@ exports.respondToProposal = async (req, res) => {
     return res.json({ proposal: serializeProposal(fresh.rows[0]), request_status: decision === 'accept' ? 'scheduled' : 'selected' });
   } catch (error) {
     await db?.query('ROLLBACK').catch(() => null);
+    db?.release();
+    db = null;
     if (error.code === '23P01') {
       return res.status(409).json({
         error: 'Esse horário acabou de ficar indisponível. Peça uma nova opção ao instalador.',
         code: 'BOOKING_TIME_CONFLICT',
       });
     }
+    await reportFailure(error, req);
     return res.status(500).json({ error: 'Não foi possível registrar sua resposta.' });
   } finally {
     db?.release();
@@ -378,22 +408,24 @@ exports.updateServiceProgress = async (req, res) => {
       return res.status(404).json({ error: 'Serviço não encontrado.' });
     }
     const bookingResult = await db.query(
-      `UPDATE service_bookings SET status = $2, updated_at = NOW()
+      `UPDATE service_bookings SET status = $2::text, updated_at = NOW()
        WHERE service_request_id = $1 AND installer_id = $3
          AND (($2 = 'in_progress' AND status = 'scheduled') OR ($2 IN ('completed', 'canceled') AND status IN ('scheduled', 'in_progress')))
        RETURNING *`,
       [requestId, status, req.userId]
     );
     if (!bookingResult.rows[0]) {
+      const current = await db.query('SELECT * FROM service_bookings WHERE service_request_id = $1 AND installer_id = $2 AND status = $3', [requestId, req.userId, status]);
       await db.query('ROLLBACK');
+      if (current.rows[0]) return res.json({ booking: current.rows[0], request_status: request.status });
       return res.status(409).json({ error: 'Esta alteração não é válida para o estado atual do agendamento.' });
     }
     const requestStatus = status === 'completed' ? 'closed' : status === 'canceled' ? 'canceled' : 'in_progress';
     await db.query(
       `UPDATE service_requests
-       SET status = $2,
-           completed_at = CASE WHEN $2 = 'closed' THEN NOW() ELSE completed_at END,
-           canceled_at = CASE WHEN $2 = 'canceled' THEN NOW() ELSE canceled_at END,
+       SET status = $2::text,
+           completed_at = CASE WHEN $2::text = 'closed' THEN NOW() ELSE completed_at END,
+           canceled_at = CASE WHEN $2::text = 'canceled' THEN NOW() ELSE canceled_at END,
            updated_at = NOW()
        WHERE id = $1`,
       [requestId, requestStatus]
@@ -401,6 +433,8 @@ exports.updateServiceProgress = async (req, res) => {
     const title = status === 'in_progress' ? 'Serviço em andamento' : status === 'completed' ? 'Serviço concluído' : 'Serviço cancelado';
     await createNotification(db, request.client_user_id, title, `O instalador atualizou o pedido #${requestId}.`, status === 'completed' ? 'success' : 'info');
     await db.query('COMMIT');
+    db.release();
+    db = null;
     await emailSafely({
       to: request.client_account_email || request.client_email,
       subject: `${title} - InstalaPro`,
@@ -416,8 +450,11 @@ exports.updateServiceProgress = async (req, res) => {
       data: { route: '/cliente/pedidos', requestId },
     }).catch(() => null);
     return res.json({ booking: bookingResult.rows[0], request_status: requestStatus });
-  } catch (_error) {
+  } catch (error) {
     await db?.query('ROLLBACK').catch(() => null);
+    db?.release();
+    db = null;
+    await reportFailure(error, req);
     return res.status(500).json({ error: 'Não foi possível atualizar o serviço.' });
   } finally {
     db?.release();

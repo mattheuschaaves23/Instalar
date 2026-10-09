@@ -34,7 +34,7 @@ function createTransporter() {
   });
 }
 
-async function sendEmailMessage({ to, subject, text, html }) {
+async function sendEmailMessage({ to, subject, text, html, timeoutMs = 12000 }) {
   if (!isEmailEnabled()) {
     const error = new Error('smtp_not_configured');
     error.code = 'SMTP_NOT_CONFIGURED';
@@ -49,7 +49,24 @@ async function sendEmailMessage({ to, subject, text, html }) {
   }
 
   const from = firstEnvValue('SMTP_FROM') || firstEnvValue('SMTP_USER', 'USUÁRIO SMTP');
-  await createTransporter().sendMail({ from, to: recipient, subject, text, html });
+  const transporter = createTransporter();
+  let timeout;
+  try {
+    await Promise.race([
+      transporter.sendMail({ from, to: recipient, subject, text, html }),
+      new Promise((_resolve, reject) => {
+        timeout = setTimeout(() => {
+          const error = new Error('smtp_delivery_timeout');
+          error.code = 'SMTP_DELIVERY_TIMEOUT';
+          reject(error);
+          transporter.close?.();
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
+    transporter.close?.();
+  }
 }
 
 function escapeHtml(value) {

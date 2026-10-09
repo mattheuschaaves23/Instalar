@@ -15,13 +15,26 @@ async function requestJson(baseUrl, path, options = {}) {
   return { response, body };
 }
 
-test('cadastro, pagamento, pedido, interesse e escolha do instalador', { skip: !enabled }, async () => {
+test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulado', { skip: !enabled }, async (t) => {
   process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
   process.env.DATABASE_SSL = 'false';
   process.env.NODE_ENV = 'test';
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'integration-test-secret-with-at-least-32-characters';
   process.env.ALLOW_MANUAL_SUBSCRIPTION_CONFIRMATION = 'true';
   process.env.FRONTEND_URL = 'http://127.0.0.1:3000';
+  process.env.DB_POOL_MAX = '1';
+  process.env.SMTP_HOST = 'smtp.example.test';
+  process.env.SMTP_USER = 'qa@example.test';
+  process.env.SMTP_PASSWORD = 'local-test-only';
+  const sentMail = [];
+  t.mock.method(require('nodemailer'), 'createTransport', () => ({
+    async sendMail(message) {
+      assert.match(message.to, /@example\.test$/);
+      sentMail.push(message);
+      return { messageId: 'local-test-only' };
+    },
+    close() {},
+  }));
 
   const pool = require('../config/database');
   const { app, ensureRuntimeSchema } = require('../server');
@@ -50,6 +63,14 @@ test('cadastro, pagamento, pedido, interesse e escolha do instalador', { skip: !
     });
     assert.equal(registration.response.status, 201, JSON.stringify(registration.body));
     installerId = registration.body.user.id;
+    assert.equal(registration.body.email_verification.delivery, 'sent');
+    const verificationToken = new URL(sentMail.find((mail) => mail.to === email).text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token');
+    const verified = await requestJson(baseUrl, '/api/auth/verify-email', {
+      method: 'POST', body: JSON.stringify({ token: verificationToken }),
+    });
+    assert.equal(verified.response.status, 200, JSON.stringify(verified.body));
+    const registerAudit = await pool.query("SELECT action FROM audit_logs WHERE actor_user_id = $1 AND action IN ('auth.register_success', 'auth.email_verified')", [installerId]);
+    assert.equal(registerAudit.rowCount, 2);
     const token = registration.body.token;
     const authHeaders = { Authorization: `Bearer ${token}` };
 
@@ -263,13 +284,48 @@ test('cadastro, pagamento, pedido, interesse e escolha do instalador', { skip: !
     assert.equal(notSelectedOpportunity.client_phone, null);
     assert.equal(notSelectedOpportunity.address_reference, null);
 
-    const completion = await requestJson(baseUrl, `/api/public/service-requests/${serviceRequest.id}/status`, {
-      method: 'PATCH',
-      headers: clientHeaders,
-      body: JSON.stringify({ status: 'closed' }),
-    });
-    assert.equal(completion.response.status, 200, JSON.stringify(completion.body));
-    assert.equal(completion.body.request.status, 'closed');
+    const proposalPath = `/api/opportunities/${serviceRequest.id}/proposal`;
+    const responsePath = `/api/public/service-requests/${serviceRequest.id}/proposal/respond`;
+    const proposed = {
+      amount: 400, scope: 'Instalação fictícia',
+      scheduled_start: new Date(Date.now() + 20 * 86400000).toISOString(),
+      scheduled_end: new Date(Date.now() + 20 * 86400000 + 3600000).toISOString(),
+    };
+    const sendProposal = () => requestJson(baseUrl, proposalPath, { method: 'POST', headers: authHeaders, body: JSON.stringify(proposed) });
+    const respond = (decision, message = '') => requestJson(baseUrl, responsePath, { method: 'POST', headers: clientHeaders, body: JSON.stringify({ decision, message }) });
+    const sent = await sendProposal();
+    assert.equal(sent.response.status, 201, JSON.stringify(sent.body));
+    const unauthorizedProposal = await requestJson(baseUrl, proposalPath, { method: 'POST', headers: secondInstallerHeaders, body: JSON.stringify(proposed) });
+    assert.equal(unauthorizedProposal.response.status, 404);
+    const readProposal = await requestJson(baseUrl, `/api/public/service-requests/${serviceRequest.id}/proposal`, { headers: clientHeaders });
+    assert.equal(readProposal.body.proposal.amount, 400);
+    for (const decision of ['request_changes', 'reject']) {
+      const reply = await respond(decision, 'Resposta fictícia');
+      assert.equal(reply.response.status, 200, JSON.stringify(reply.body));
+      assert.equal(reply.body.proposal.status, decision === 'reject' ? 'rejected' : 'change_requested');
+      assert.equal((await respond(decision, 'Resposta fictícia')).response.status, 200);
+      assert.equal((await sendProposal()).response.status, 201);
+    }
+    const accepted = await respond('accept');
+    assert.equal(accepted.response.status, 200, JSON.stringify(accepted.body));
+    assert.equal(accepted.body.proposal.booking_status, 'scheduled');
+    const notificationCount = (await pool.query('SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1', [installerId])).rows[0].count;
+    const acceptedAgain = await respond('accept');
+    assert.equal(acceptedAgain.response.status, 200, JSON.stringify(acceptedAgain.body));
+    assert.equal((await pool.query('SELECT COUNT(*)::int AS count FROM service_bookings WHERE service_request_id = $1', [serviceRequest.id])).rows[0].count, 1);
+    assert.equal((await pool.query('SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1', [installerId])).rows[0].count, notificationCount);
+    assert.equal((await sendProposal()).response.status, 409);
+    for (const status of ['in_progress', 'completed']) {
+      const progress = await requestJson(baseUrl, `/api/opportunities/${serviceRequest.id}/service-status`, {
+        method: 'PATCH', headers: authHeaders, body: JSON.stringify({ status }),
+      });
+      assert.equal(progress.response.status, 200, JSON.stringify(progress.body));
+      assert.equal(progress.body.booking.status, status);
+      const retry = await requestJson(baseUrl, `/api/opportunities/${serviceRequest.id}/service-status`, {
+        method: 'PATCH', headers: authHeaders, body: JSON.stringify({ status }),
+      });
+      assert.equal(retry.response.status, 200, JSON.stringify(retry.body));
+    }
 
     const review = await requestJson(baseUrl, `/api/public/installers/${installerId}/reviews`, {
       method: 'POST',
@@ -294,6 +350,9 @@ test('cadastro, pagamento, pedido, interesse e escolha do instalador', { skip: !
       body: JSON.stringify({ token: forgotPassword.body.reset_token, password: 'NovaSenhaSegura456!' }),
     });
     assert.equal(resetPassword.response.status, 200, JSON.stringify(resetPassword.body));
+    assert.equal((await pool.query("SELECT id FROM audit_logs WHERE actor_user_id = $1 AND action = 'auth.password_reset_success'", [installerId])).rowCount, 1);
+    assert.ok(sentMail.some((mail) => /Nova proposta/.test(mail.subject)));
+    assert.equal((await pool.query("SELECT id FROM outbound_deliveries WHERE recipient = $1 AND status <> 'sent'", [email])).rowCount, 0);
 
     const reusedResetToken = await requestJson(baseUrl, '/api/auth/reset-password', {
       method: 'POST',

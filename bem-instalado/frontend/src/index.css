@@ -10313,9 +10313,7 @@ body {
   width: 60%;
   aspect-ratio: 1;
   border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
-    rgba(12, 11, 9, 0.96);
+  background: var(--surface, #ffffff);
   border: 1px solid var(--line);
   display: grid;
   place-items: center;

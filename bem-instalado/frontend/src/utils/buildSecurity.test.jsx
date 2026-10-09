@@ -17,4 +17,11 @@ describe('publicação com política de segurança', () => {
     expect(css).not.toContain('@tailwind utilities');
     expect(css).toContain('--default-ring-width: 3px');
   });
+  it('compatibilidade nativa acompanha o mínimo do compilador visual', () => {
+    const config = JSON.parse(readFileSync(new URL('../../capacitor.config.json', import.meta.url), 'utf8'));
+    expect(config.android.minWebViewVersion).toBe(111);
+    const project = readFileSync(new URL('../../ios/App/App.xcodeproj/project.pbxproj', import.meta.url), 'utf8');
+    expect([...project.matchAll(/IPHONEOS_DEPLOYMENT_TARGET = ([\d.]+);/g)].map(match => match[1])).toEqual(['16.4', '16.4', '16.4', '16.4']);
+    expect(readFileSync(new URL('../../ios/App/CapApp-SPM/Package.swift', import.meta.url), 'utf8')).toContain('.iOS("16.4")');
+  });
 });

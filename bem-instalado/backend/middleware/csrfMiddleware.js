@@ -73,7 +73,7 @@ function requireCsrfForCookieSession(req, res, next) {
 
   if (!tokensMatch(cookieToken, headerToken)) {
     return res.status(403).json({
-      error: 'NÃ£o foi possÃ­vel validar a proteÃ§Ã£o da sua sessÃ£o. Atualize a pÃ¡gina e tente novamente.',
+      error: 'Não foi possível validar a proteção da sua sessão. Atualize a página e tente novamente.',
       code: 'CSRF_INVALID',
     });
   }

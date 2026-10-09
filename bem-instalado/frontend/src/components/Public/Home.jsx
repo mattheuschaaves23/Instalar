@@ -3024,21 +3024,21 @@ export default function Home() {
 
       {hasGuidedRequest || user ? (
         <nav className="client-app-mobile-dock">
-          <a href="#top">
+          <Link to="/">
             <AppIcon name="home" />
             <span>Início</span>
-          </a>
-          <a href="#busca">
+          </Link>
+          <Link to="/cliente">
             <AppIcon name="search" />
             <span>Buscar</span>
-          </a>
-          <a href="#favoritos">
+          </Link>
+          {SHOW_PUBLIC_INSTALLER_DIRECTORY && hasGuidedRequest && favoriteInstallers.length > 0 ? <a href="#favoritos">
             <AppIcon name="heart" />
             <span>Favoritos</span>
-          </a>
+          </a> : null}
           <a href="https://api.whatsapp.com/send?phone=5548999816000" rel="noreferrer" target="_blank">
             <AppIcon name="message" />
-            <span>Mensagens</span>
+            <span>Ajuda</span>
           </a>
           {user ? (
             <>

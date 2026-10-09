@@ -2,7 +2,7 @@ name: Operação e monitoramento
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '2-57/5 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -94,6 +94,7 @@ jobs:
             --request POST \
             --header "Authorization: Bearer $CRON_SECRET" \
             "$APP_URL/api/operations/run"
+          node -e 'const r = JSON.parse(require("fs").readFileSync("/tmp/operations.json", "utf8")); if (r.ok !== true || r.healthy !== true) { console.error("Rotina concluída com falhas de entrega ou monitoramento."); process.exit(1); }'
 
       - name: Abrir alerta da rotina operacional
         if: failure() && steps.health.outputs.failed == 'false'
@@ -131,3 +132,7 @@ jobs:
               await github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body: '✅ A rotina operacional voltou a concluir normalmente.' });
               await github.rest.issues.update({ owner, repo, issue_number: issue.number, state: 'closed' });
             }
+
+      - name: Marcar verificação de saúde como falha
+        if: always() && steps.health.outputs.failed == 'true'
+        run: exit 1

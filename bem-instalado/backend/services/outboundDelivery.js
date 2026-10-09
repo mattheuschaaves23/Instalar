@@ -119,15 +119,21 @@ async function markFailed(delivery, error) {
   }
 }
 
-async function processEmailDeliveries({ limit = 20, onlyDeliveryId = null } = {}) {
+async function processEmailDeliveries({ limit = 20, onlyDeliveryId = null, timeBudgetMs = 18000 } = {}) {
   const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 50);
-  const deliveries = await claimDeliveries({ limit: safeLimit, onlyDeliveryId });
+  const deadline = Date.now() + Math.min(Math.max(Number(timeBudgetMs) || 18000, 1000), 18000);
+  let claimed = 0;
   let sent = 0;
   let failed = 0;
 
-  for (const delivery of deliveries) {
+  // Claim only the message about to be sent. The rest stays available to other
+  // workers and does not consume an attempt if this serverless call times out.
+  while (claimed < safeLimit && deadline - Date.now() > 1000) {
+    const [delivery] = await claimDeliveries({ limit: 1, onlyDeliveryId });
+    if (!delivery) break;
+    claimed += 1;
     try {
-      await sendEmailMessage({ to: delivery.recipient, ...delivery.payload });
+      await sendEmailMessage({ to: delivery.recipient, ...delivery.payload, timeoutMs: Math.min(12000, Math.max(1, deadline - Date.now() - 1000)) });
       await pool.query(
         `UPDATE outbound_deliveries
          SET status = 'sent', sent_at = NOW(), locked_at = NULL, last_error = NULL, updated_at = NOW()
@@ -141,7 +147,7 @@ async function processEmailDeliveries({ limit = 20, onlyDeliveryId = null } = {}
     }
   }
 
-  return { claimed: deliveries.length, sent, failed };
+  return { claimed, sent, failed };
 }
 
 async function deliverySummary() {

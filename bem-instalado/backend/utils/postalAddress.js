@@ -35,8 +35,28 @@ async function requestPostalAddress(path) {
 async function lookupPostalCode(cep) {
   const normalized = normalizePostalCode(cep);
   if (!normalized) return [];
-  const address = serializePostalAddress(await requestPostalAddress(normalized));
-  return address ? [address] : [];
+  try {
+    const data = await requestPostalAddress(normalized);
+    if (data?.erro) return [];
+    const address = serializePostalAddress(data);
+    if (!address || normalizePostalCode(address.zipCode) !== normalized) throw new Error('Resposta de CEP inválida');
+    return [address];
+  } catch (_primaryError) {
+    // A second provider protects exact CEP searches from a regional outage.
+    // Postal results never pretend to be a GPS point or a house number.
+    const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${normalized}`, {
+      signal: AbortSignal.timeout(3000), headers: { Accept: 'application/json' },
+    });
+    if (response.status === 404) return [];
+    if (!response.ok) throw new Error(`Consulta alternativa de CEP indisponível: ${response.status}`);
+    const data = await response.json();
+    const address = serializePostalAddress({
+      cep: data.cep, logradouro: data.street, bairro: data.neighborhood,
+      localidade: data.city, uf: data.state,
+    });
+    if (!address || normalizePostalCode(address.zipCode) !== normalized) throw new Error('Resposta alternativa de CEP inválida');
+    return [{ ...address, source: 'brasilapi' }];
+  }
 }
 
 function parsePostalSearch(query, context = {}) {

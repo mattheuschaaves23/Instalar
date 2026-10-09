@@ -45,4 +45,15 @@ describe('novo visual do pedido do cliente', () => {
     expect(renderPage('/cliente/pedidos')).not.toContain('client-request-redesign');
     expect(renderPage('/cliente/pedido')).not.toContain('client-request-redesign');
   });
+
+  it('atalhos móveis abrem rotas reais e não oferecem favoritos indisponíveis', () => {
+    authState.user = { id: 1, account_type: 'client', name: 'Cliente de teste' };
+    const markup = renderPage('/cliente/pedidos');
+    const dock = markup.slice(markup.indexOf('<nav class="client-app-mobile-dock"'));
+    expect(dock).toContain('href="/cliente"');
+    expect(dock).toContain('href="/"');
+    expect(dock).not.toContain('href="#busca"');
+    expect(dock).not.toContain('href="#favoritos"');
+    expect(dock).toContain('Ajuda');
+  });
 });

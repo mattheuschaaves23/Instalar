@@ -37,6 +37,39 @@ test('CEP inexistente não é substituído por outro CEP parecido', async (t) =>
   assert.equal(fetch.mock.callCount(), 1);
 });
 
+test('usa BrasilAPI quando ViaCEP falha e conserva o CEP exato, sem inventar GPS', async (t) => {
+  const fetch = mockFetch(t, async (url) => {
+    if (url.includes('viacep')) return { ok: false, status: 503 };
+    assert.equal(url, 'https://brasilapi.com.br/api/cep/v2/88137620');
+    return json({ cep: '88137620', street: postal.logradouro, neighborhood: postal.bairro, city: postal.localidade, state: 'SC', location: { coordinates: { latitude: -27, longitude: -48 } } });
+  });
+  const [address] = await forwardGeocode('88137620');
+  assert.equal(address.source, 'brasilapi');
+  assert.equal(address.street, 'Rua Turquesa');
+  assert.equal(address.latitude, null);
+  assert.equal(address.longitude, null);
+  assert.equal((await forwardGeocode('88137620'))[0].city, 'Palhoça');
+  assert.equal(fetch.mock.callCount(), 2);
+});
+
+test('fallback não aceita CEP trocado nem guarda indisponibilidade no cache', async (t) => {
+  const fetch = mockFetch(t, async (url) => {
+    if (url.includes('viacep')) throw new Error('Tempo esgotado');
+    return json({ cep: '88137621', street: 'Outra rua', city: 'Palhoça', state: 'SC' });
+  });
+  await assert.rejects(forwardGeocode('88137620'), /CEP inválida/);
+  fetch.mock.mockImplementation(async () => json(postal));
+  assert.equal((await forwardGeocode('88137620'))[0].street, 'Rua Turquesa');
+});
+
+test('fallback distingue CEP inexistente de indisponibilidade dos dois provedores', async (t) => {
+  const fetch = mockFetch(t, async (url) => ({ ok: false, status: url.includes('viacep') ? 503 : 404 }));
+  assert.deepEqual(await forwardGeocode('88137620'), []);
+  forwardGeocode.clearCache();
+  fetch.mock.mockImplementation(async () => ({ ok: false, status: 503 }));
+  await assert.rejects(forwardGeocode('88137620'), /indisponível/);
+});
+
 test('CEP incompleto ou inválido não inicia autocomplete aproximado', async (t) => {
   const fetch = mockFetch(t, async () => { throw new Error('Não deveria consultar'); });
   assert.deepEqual(await forwardGeocode('88137'), []);

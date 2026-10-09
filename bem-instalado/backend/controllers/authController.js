@@ -588,6 +588,8 @@ async function registerPasswordAccount(req, res, accountType) {
 
     if (existingUser.rowCount > 0) {
       await db.query('ROLLBACK');
+      db.release();
+      db = null;
       await logAudit({
         actorUserId: null,
         action: 'auth.register_denied_duplicate_email',
@@ -647,6 +649,8 @@ async function registerPasswordAccount(req, res, accountType) {
     verificationToken = await createEmailVerificationToken(db, user.id);
 
     await db.query('COMMIT');
+    db.release();
+    db = null;
     await logAudit({
       actorUserId: user.id,
       action: 'auth.register_success',
@@ -663,11 +667,11 @@ async function registerPasswordAccount(req, res, accountType) {
       to: user.email,
       verificationUrl: buildEmailVerificationUrl(req, verificationToken),
       expiresInMinutes: EMAIL_VERIFICATION_EXPIRATION_MINUTES,
-    }).catch(() => ({ sent: false }));
+    }).catch(() => ({ sent: false, failed: true }));
 
     payload.body.email_verification = {
       required: true,
-      delivery: verificationDelivery.sent ? 'sent' : verificationDelivery.queued ? 'queued' : 'pending_configuration',
+      delivery: verificationDelivery.sent ? 'sent' : verificationDelivery.queued ? 'queued' : verificationDelivery.failed ? 'failed' : 'pending_configuration',
     };
 
     if (accountType === 'installer') {
@@ -1007,6 +1011,8 @@ exports.verifyEmail = async (req, res) => {
     await db.query('UPDATE email_verification_tokens SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL', [verification.user_id]);
     await db.query('UPDATE users SET email_verified_at = COALESCE(email_verified_at, NOW()), updated_at = NOW() WHERE id = $1', [verification.user_id]);
     await db.query('COMMIT');
+    db.release();
+    db = null;
     await logAudit({
       actorUserId: verification.user_id,
       action: 'auth.email_verified',
@@ -1208,6 +1214,8 @@ exports.resetPassword = async (req, res) => {
     );
     await db.query('COMMIT');
     transactionStarted = false;
+    db.release();
+    db = null;
 
     await logAudit({
       actorUserId: resetTokenRow.user_id,

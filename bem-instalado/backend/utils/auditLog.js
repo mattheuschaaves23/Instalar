@@ -20,6 +20,7 @@ async function logAudit({
   entityId = null,
   metadata = {},
   req = null,
+  db = pool,
 }) {
   if (!action) {
     return;
@@ -29,7 +30,7 @@ async function logAudit({
   const userAgent = req ? String(req.headers['user-agent'] || '').slice(0, 255) : null;
 
   try {
-    await pool.query(
+    await db.query(
       `
         INSERT INTO audit_logs (
           actor_user_id,

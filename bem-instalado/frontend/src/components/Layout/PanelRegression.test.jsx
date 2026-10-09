@@ -21,6 +21,15 @@ beforeEach(() => {
 });
 const render = (element) => renderToStaticMarkup(<MemoryRouter>{element}</MemoryRouter>);
 
+it('centro do gráfico usa superfície legível no tema claro', () => {
+  const root = postcss.parse(readFileSync(new URL('../../index.css', import.meta.url), 'utf8'));
+  const backgrounds = [];
+  root.walkRules('.dashboard-neo-donut-hole', rule => {
+    if (rule.parent.type === 'root') rule.walkDecls('background', decl => backgrounds.push(decl.value));
+  });
+  expect(backgrounds.at(-1)).toBe('var(--surface, #ffffff)');
+});
+
 describe('rótulo do plano no menu', () => {
   it.each([[false, 'Instalador Grátis'], [true, 'Instalador Pro']])('usa acesso real quando Pro=%s', (isPro, label) => {
     fixtures.subscription.isPro = isPro;

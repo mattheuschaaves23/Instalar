@@ -93,7 +93,7 @@ export default function AppDownload() {
           <p>Acesse oportunidades, agenda, clientes e orçamentos de onde estiver.</p>
           <div className="installer-app-download-meta">
             <span>Android 7+</span>
-            <span>iOS 15+</span>
+            <span>iOS 16.4+</span>
             <span>Versão {release.version}</span>
             {release.size ? <span>{release.size}</span> : null}
           </div>
@@ -113,7 +113,7 @@ export default function AppDownload() {
 
           <div aria-label="Aplicativo para iPhone aguardando publicação na App Store" className="installer-app-download-button installer-app-download-button--ios">
             <IphoneIcon />
-            <span><small>Pronto para publicar</small><strong>Aplicativo para iPhone</strong></span>
+            <span><small>Em preparação</small><strong>Aplicativo para iPhone</strong></span>
             <b aria-hidden="true">•••</b>
           </div>
         </div>
@@ -130,8 +130,8 @@ export default function AppDownload() {
         <article>
           <span>i</span>
           <div>
-            <strong>iPhone preparado</strong>
-            <p>O aplicativo iOS está pronto e será liberado após a publicação na App Store.</p>
+            <strong>iPhone em preparação</strong>
+            <p>A versão para iOS será disponibilizada após os testes e a aprovação na App Store.</p>
           </div>
         </article>
         <article>

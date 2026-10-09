@@ -61,7 +61,7 @@ jobs:
           test -n "$ANDROID_KEYSTORE_BASE64"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/instalapro-upload.jks"
 
-      - name: Compilar Android App Bundle
+      - name: Compilar APK e Android App Bundle assinados
         working-directory: bem-instalado/frontend/android
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/instalapro-upload.jks
@@ -70,13 +70,16 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew bundleRelease --no-daemon
+          ./gradlew assembleRelease bundleRelease --no-daemon
 
       - name: Preparar arquivo para download
         shell: bash
         run: |
           cp android/app/build/outputs/bundle/release/app-release.aab InstalaPro-Instaladores.aab
+          cp android/app/build/outputs/apk/release/app-release.apk InstalaPro-Instaladores.apk
           sha256sum InstalaPro-Instaladores.aab > InstalaPro-Instaladores.aab.sha256
+          sha256sum InstalaPro-Instaladores.apk > InstalaPro-Instaladores.apk.sha256
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify InstalaPro-Instaladores.apk
 
       - name: Salvar APK e AAB na execução
         uses: actions/upload-artifact@v6
@@ -85,6 +88,8 @@ jobs:
           path: |
             bem-instalado/frontend/InstalaPro-Instaladores.aab
             bem-instalado/frontend/InstalaPro-Instaladores.aab.sha256
+            bem-instalado/frontend/InstalaPro-Instaladores.apk
+            bem-instalado/frontend/InstalaPro-Instaladores.apk.sha256
           if-no-files-found: error
 
       - name: Remover chave temporária

@@ -349,6 +349,7 @@ async function activateSubscription(paymentId, req, paymentData = null) {
     await logAudit({
       actorUserId: req?.userId || null,
       action: 'subscription.payment_activated',
+      db,
       entityType: 'payment',
       entityId: payment.id,
       metadata: {
@@ -470,6 +471,7 @@ async function applyPaymentReversal(localPayment, providerPayment, req, nextStat
       await logAudit({
         actorUserId: req?.userId || null,
         action: 'subscription.payment_reversed',
+        db,
         entityType: 'payment',
         entityId: lockedPayment.id,
         metadata: {

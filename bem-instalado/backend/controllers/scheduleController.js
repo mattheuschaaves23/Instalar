@@ -133,7 +133,7 @@ exports.getSchedules = async (req, res) => {
         id: `marketplace-${row.id}`,
         marketplace_booking_id: row.id,
         source: 'marketplace',
-        title: row.service_label || row.service || 'ServiÃ§o contratado pela plataforma',
+        title: row.service_label || row.service || 'Serviço contratado pela plataforma',
         destination,
         route_links,
       };
