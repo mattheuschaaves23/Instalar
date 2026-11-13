@@ -1,14 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import DecoratingWallLoader from '../Layout/DecoratingWallLoader';
 import './InstallerProfile.css';
 import { formatCurrency, formatLongDate, formatShortDate } from '../../utils/formatters';
 import { formatInstallationDays } from '../../utils/installerDays';
 import PageMetadata from './PageMetadata';
 import Turnstile, { isTurnstileEnabled } from '../Security/Turnstile';
+import {
+  buildClientRequestTrackingHash,
+  readClientRequestTrackingHash,
+  readPublishedClientRequest,
+  writePublishedClientRequest,
+} from '../../utils/clientRequest';
 
 const emptyReviewForm = { reviewer_name: '', reviewer_region: '', rating: 5, comment: '' };
 
@@ -83,24 +90,87 @@ export default function InstallerProfile() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const confirm = useConfirm();
   const [payload, setPayload] = useState(null);
+  const [profileError, setProfileError] = useState('');
+  const [requestContext, setRequestContext] = useState(null);
+  const [selecting, setSelecting] = useState(false);
   const [reviewForm, setReviewForm] = useState(emptyReviewForm);
   const [sendingReview, setSendingReview] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
-  const loadProfile = useCallback(async () => {
-    try {
-      const response = await api.get(`/public/installers/${id}`);
-      setPayload(response.data);
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Não foi possível carregar o perfil do instalador.');
-    }
+  useEffect(() => {
+    let active = true;
+    setPayload(null);
+    setProfileError('');
+    api.get(`/public/installers/${id}`)
+      .then(({ data }) => { if (active) setPayload(data); })
+      .catch((error) => {
+        if (active) setProfileError(error.response?.data?.error || 'Não foi possível carregar o perfil do instalador.');
+      });
+    return () => { active = false; };
   }, [id]);
 
+  const linkedRequest = useMemo(() => {
+    const tracking = readClientRequestTrackingHash(location.hash);
+    const requestId = Number(new URLSearchParams(location.search).get('pedido'));
+    if (!Number.isSafeInteger(requestId) || requestId <= 0) return null;
+    const saved = tracking?.id === requestId ? tracking : readPublishedClientRequest();
+    return { id: requestId, token: saved?.id === requestId ? saved.client_access_token : '' };
+  }, [location.search, location.hash]);
+
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    let active = true;
+    setRequestContext(null);
+    if (!linkedRequest || (!linkedRequest.token && user?.account_type !== 'client')) return undefined;
+
+    const headers = linkedRequest.token ? { 'X-Client-Request-Token': linkedRequest.token } : {};
+    api.get(`/public/service-requests/${linkedRequest.id}/interests`, { headers })
+      .then(({ data }) => {
+        if (!active || !data?.request) return;
+        const interest = data.interests?.find((item) => Number(item.installer_id) === Number(id));
+        setRequestContext({ request: data.request, interest, installerId: id });
+        if (readClientRequestTrackingHash(location.hash)?.id === linkedRequest.id
+          && window.location.hash === location.hash && writePublishedClientRequest(data.request)) {
+          window.history.replaceState(window.history.state, '', `${location.pathname}${location.search}`);
+        }
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [id, linkedRequest, location.hash, location.pathname, location.search, user?.account_type, user?.id]);
+
+  const linkedContext = requestContext?.installerId === id && requestContext.request.id === linkedRequest?.id
+    ? requestContext : null;
+  const request = linkedContext?.request;
+  const interest = linkedContext?.interest;
+  const trackingPath = linkedRequest ? `/cliente/pedido${buildClientRequestTrackingHash(request || linkedRequest)}` : '/cliente';
+  const canChoose = Boolean(interest && request?.status === 'open'
+    && (!request.expires_at || Date.parse(request.expires_at) > Date.now()));
+
+  const chooseInstaller = async () => {
+    if (!canChoose || selecting) return;
+    setSelecting(true);
+    try {
+      const accepted = await confirm({
+        title: 'Escolher este instalador?',
+        message: `Ao escolher ${interest.display_name}, você libera seu WhatsApp e o endereço da instalação para esse profissional. A escolha é definitiva para este pedido.`,
+        confirmText: 'Confirmar escolha',
+      });
+      if (!accepted) return;
+
+      const headers = linkedRequest.token ? { 'X-Client-Request-Token': linkedRequest.token } : {};
+      const { data } = await api.post(`/public/service-requests/${request.id}/interests/${interest.id}/select`, {}, { headers });
+      const selectedRequest = { ...request, ...data.request };
+      writePublishedClientRequest(selectedRequest);
+      toast.success('Instalador escolhido. Acompanhe seu pedido para conversar com o profissional.');
+      navigate(`/cliente/pedido${buildClientRequestTrackingHash(selectedRequest)}`, { replace: true });
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Não foi possível escolher o instalador.');
+    } finally {
+      setSelecting(false);
+    }
+  };
 
   const handleReviewChange = (event) => {
     const { name, value } = event.target;
@@ -171,6 +241,15 @@ export default function InstallerProfile() {
     return [5, 4, 3, 2, 1].map((rating) => ({ rating, count: counts.get(rating) || 0, width: `${((counts.get(rating) || 0) / maximum) * 100}%` }));
   }, [payload?.reviews]);
 
+  if (profileError) return (
+    <main className="ig-installer-profile ig-profile-unavailable">
+      <h1>Perfil indisponível</h1>
+      <p>{profileError}</p>
+      <Link className="ig-profile-primary-action" to={trackingPath}>
+        {linkedRequest ? 'Voltar ao pedido' : 'Encontrar instaladores'}
+      </Link>
+    </main>
+  );
   if (!payload) return <DecoratingWallLoader phrase="Abrindo o perfil deste profissional." />;
 
   const { installer, reviews = [], marketplace: apiMarketplace } = payload;
@@ -178,8 +257,8 @@ export default function InstallerProfile() {
   const gallery = Array.isArray(installer.installation_gallery) ? installer.installation_gallery.filter(Boolean) : [];
   const projectPhotos = gallery.slice(0, 4);
   const slots = Object.entries(groupAvailabilitySlots(installer.availability_slots || [])).sort(([a], [b]) => a.localeCompare(b));
-  const requestId = Number(new URLSearchParams(location.search).get('pedido')) || null;
-  const requestPath = requestId ? '/cliente/pedido' : '/cliente';
+  const requestId = linkedRequest?.id;
+  const requestPath = trackingPath;
   const requestLabel = requestId ? 'Voltar ao pedido' : 'Solicitar orçamento';
   const isOwnProfile = Boolean(user && Number(user.id) === Number(installer.id));
   const profilePhoto = installer.installer_photo || installer.logo;
@@ -191,7 +270,9 @@ export default function InstallerProfile() {
   const reviewCount = Number(installer.review_count || 0);
   const certified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
   const profileActionPath = isOwnProfile ? '/profile' : requestPath;
-  const profileActionLabel = isOwnProfile ? 'Editar perfil' : requestLabel;
+  const profileActionLabel = isOwnProfile ? 'Editar perfil'
+    : interest?.selected ? 'Ver pedido com instalador escolhido' : requestLabel;
+  const chooseAction = canChoose && !isOwnProfile;
   const trustItems = [
     { icon: 'clock', label: 'Horários', value: installer.service_hours || 'A combinar', detail: hasAvailability ? 'Agenda atualizada' : 'Consulte a agenda' },
     { icon: 'briefcase', label: 'Projetos', value: `${gallery.length} no portfólio`, detail: gallery.length ? 'Trabalhos publicados' : 'Portfólio em montagem' },
@@ -241,7 +322,12 @@ export default function InstallerProfile() {
 
           <div className="ig-profile-hero-actions">
             <span className={`ig-profile-availability${hasAvailability ? ' is-open' : ''}`}><i />{hasAvailability ? 'Agenda aberta' : 'Consulte a agenda'}</span>
-            <Link className="ig-profile-primary-action" to={profileActionPath}><ProfileIcon name={isOwnProfile ? 'document' : 'message'} size={18} />{profileActionLabel}</Link>
+            {chooseAction ? (
+              <button className="ig-profile-primary-action ig-profile-choose" disabled={selecting} onClick={chooseInstaller} type="button">
+                <ProfileIcon name="check" size={20} />
+                {selecting ? 'Confirmando escolha…' : 'Escolher este instalador'}
+              </button>
+            ) : <Link className="ig-profile-primary-action" to={profileActionPath}><ProfileIcon name={isOwnProfile ? 'document' : 'message'} size={18} />{profileActionLabel}</Link>}
           </div>
 
           <div className="ig-profile-bio-block">
@@ -326,7 +412,14 @@ export default function InstallerProfile() {
         <aside className="ig-profile-store"><div><span>Parceiro recomendado</span><h2>{marketplace.title}</h2><p>{marketplace.description}</p><small>{(marketplace.highlights || []).slice(0, 2).join(' · ')}</small></div><a href={marketplace.url || 'https://www.beminstalado.com.br'} rel="noreferrer" target="_blank">{marketplace.cta_label || 'Conhecer a loja'} <ProfileIcon name="chevron" size={16} /></a></aside>
       </section>
 
-      <div className="ig-profile-mobile-action"><Link to={profileActionPath}><ProfileIcon name={isOwnProfile ? 'document' : 'message'} size={18} />{profileActionLabel}</Link></div>
+      <div className="ig-profile-mobile-action">
+        {chooseAction ? (
+          <button className="ig-profile-primary-action ig-profile-choose" disabled={selecting} onClick={chooseInstaller} type="button">
+            <ProfileIcon name="check" size={20} />
+            {selecting ? 'Confirmando escolha…' : 'Escolher este instalador'}
+          </button>
+        ) : <Link to={profileActionPath}><ProfileIcon name={isOwnProfile ? 'document' : 'message'} size={18} />{profileActionLabel}</Link>}
+      </div>
     </main>
   );
 }

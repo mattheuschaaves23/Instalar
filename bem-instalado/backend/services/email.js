@@ -84,17 +84,21 @@ async function sendPasswordResetEmail({ to, resetUrl, expiresInMinutes }) {
   return queueTransactionalEmail({ to, message, category: 'password_reset' });
 }
 
-async function sendServiceRequestInterestEmail({ to, clientName, installerName, serviceLabel, trackingUrl }) {
+async function sendServiceRequestInterestEmail({
+  to, clientName, installerName, installerRegion, serviceLabel, trackingUrl, profileUrl, transaction,
+}) {
   const appName = firstEnvValue('APP_NAME') || 'InstalaPro';
   const message = buildServiceRequestInterestMessage({
     appName,
     clientName,
     installerName,
+    installerRegion,
     serviceLabel,
     trackingUrl,
+    profileUrl,
   });
 
-  return queueTransactionalEmail({ to, message, category: 'service_interest' });
+  return queueTransactionalEmail({ to, message, category: 'service_interest', transaction });
 }
 
 async function sendEmailVerificationEmail({ to, verificationUrl, expiresInMinutes }) {
@@ -137,7 +141,7 @@ async function sendMarketplaceEmail({ to, subject, title, body, actionLabel, act
   return delivery;
 }
 
-async function queueTransactionalEmail({ to, message, category }) {
+async function queueTransactionalEmail({ to, message, category, transaction }) {
   if (!isEmailEnabled() || !to) {
     return { sent: false, reason: 'smtp_not_configured' };
   }
@@ -145,7 +149,7 @@ async function queueTransactionalEmail({ to, message, category }) {
   // Loaded lazily: outboundDelivery uses sendEmailMessage to perform the
   // actual SMTP call, while this public helper creates the durable record.
   const { queueEmailDelivery } = require('./outboundDelivery');
-  return queueEmailDelivery({ to, message, category });
+  return queueEmailDelivery({ to, message, category, transaction });
 }
 
 function buildPasswordResetMessage({ appName = 'InstalaPro', resetUrl, expiresInMinutes }) {
@@ -205,13 +209,18 @@ function buildServiceRequestInterestMessage({
   appName = 'InstalaPro',
   clientName,
   installerName,
+  installerRegion,
   serviceLabel,
   trackingUrl,
+  profileUrl,
 }) {
   const safeClientName = escapeHtml(clientName || 'cliente');
   const safeInstallerName = escapeHtml(installerName || 'Um instalador');
   const safeServiceLabel = escapeHtml(serviceLabel || 'seu pedido');
   const safeTrackingUrl = escapeHtml(trackingUrl);
+  const actionUrl = profileUrl || trackingUrl;
+  const actionLabel = profileUrl ? 'Ver perfil e escolher instalador' : 'Acompanhar meu pedido';
+  const instruction = 'Veja o perfil e, se quiser seguir com esse profissional, toque em “Escolher este instalador”.';
 
   return {
     subject: `Novo instalador interessado - ${appName}`,
@@ -219,9 +228,11 @@ function buildServiceRequestInterestMessage({
       `Olá, ${clientName || 'cliente'}.`,
       '',
       `${installerName || 'Um instalador'} demonstrou interesse em ${serviceLabel || 'seu pedido'}.`,
-      'Abra o acompanhamento para conferir o perfil e decidir com quem conversar.',
+      ...(installerRegion ? [`Região de atendimento: ${installerRegion}.`] : []),
+      instruction,
       '',
-      trackingUrl,
+      actionUrl,
+      ...(profileUrl ? [`Acompanhar meu pedido: ${trackingUrl}`] : []),
       '',
       'Seu telefone só será liberado depois que você escolher o profissional.',
     ].join('\n'),
@@ -230,12 +241,14 @@ function buildServiceRequestInterestMessage({
         <h2 style="margin:0 0 12px">Novo instalador interessado</h2>
         <p>Olá, ${safeClientName}.</p>
         <p><strong>${safeInstallerName}</strong> demonstrou interesse em ${safeServiceLabel}.</p>
-        <p>Confira o perfil e decida com quem conversar.</p>
+        ${installerRegion ? `<p>Região de atendimento: ${escapeHtml(installerRegion)}.</p>` : ''}
+        <p>${instruction}</p>
         <p>
-          <a href="${safeTrackingUrl}" style="display:inline-block;padding:12px 18px;background:#e9b52e;color:#111;text-decoration:none;border-radius:8px;font-weight:700">
-            Acompanhar meu pedido
+          <a href="${escapeHtml(actionUrl)}" style="display:inline-block;padding:12px 18px;background:#e9b52e;color:#111;text-decoration:none;border-radius:8px;font-weight:700">
+            ${actionLabel}
           </a>
         </p>
+        ${profileUrl ? `<p><a href="${safeTrackingUrl}">Acompanhar meu pedido</a></p>` : ''}
         <p style="font-size:13px;color:#666">Seu telefone só será liberado depois que você escolher o profissional.</p>
       </div>
     `,

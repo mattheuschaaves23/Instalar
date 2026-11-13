@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const pool = require('../config/database');
 const generateWhatsAppLink = require('../utils/whatsapp');
 const { sendServiceRequestInterestEmail } = require('../services/email');
+const { processEmailDeliveries } = require('../services/outboundDelivery');
 const { sendPushToUser } = require('../services/push');
 const { publicAssetUrl, storeProfileAsset } = require('../services/objectStorage');
 const { normalizeSearchText } = require('../utils/textSearch');
@@ -138,14 +139,23 @@ function getPublicAppUrl(req) {
   }
 }
 
-function buildTrackingUrl(req, request) {
-  const baseUrl = getPublicAppUrl(req);
-  const params = new URLSearchParams({
+function requestAccessHash(request) {
+  return new URLSearchParams({
     pedido: String(request.id),
     acesso: String(request.client_access_token || ''),
-  });
+  }).toString();
+}
 
-  return `${baseUrl}/cliente/pedido#${params.toString()}`;
+function buildTrackingUrl(req, request) {
+  return `${getPublicAppUrl(req)}/cliente/pedido#${requestAccessHash(request)}`;
+}
+
+function interestedProfilePath(requestId, installerId) {
+  return `/installers/${installerId}?pedido=${requestId}`;
+}
+
+function clientAccountId(req) {
+  return req.user?.account_type === 'client' ? req.userId : null;
 }
 
 function joinRegion(item) {
@@ -337,16 +347,16 @@ async function getInstaller(installerId) {
   return installer;
 }
 
-async function getRequestForClient(requestId, token) {
+async function getRequestForClient(requestId, token, accountId = null) {
   const result = await pool.query(
     `
       SELECT *
       FROM service_requests
       WHERE id = $1
-        AND client_access_token = $2
+        AND (client_access_token = NULLIF($2, '') OR client_user_id = $3)
       LIMIT 1
     `,
-    [requestId, token]
+    [requestId, token, accountId]
   );
 
   return result.rows[0] || null;
@@ -844,6 +854,7 @@ exports.getOpportunities = async (req, res) => {
 };
 
 exports.expressInterest = async (req, res) => {
+  let transaction;
   try {
     const requestId = Number(req.params.id);
     const installer = await getInstaller(req.userId);
@@ -865,7 +876,10 @@ exports.expressInterest = async (req, res) => {
       return res.status(400).json({ error: 'Oportunidade inválida.' });
     }
 
-    const requestResult = await pool.query(
+    const planAccess = req.planAccess || await getInstallerPlanAccess(req.userId);
+    transaction = await pool.connect();
+    await transaction.query('BEGIN');
+    const requestResult = await transaction.query(
       `
         SELECT *
         FROM service_requests
@@ -873,6 +887,7 @@ exports.expressInterest = async (req, res) => {
           AND status = 'open'
           AND (expires_at IS NULL OR expires_at > NOW())
         LIMIT 1
+        FOR UPDATE
       `,
       [requestId]
     );
@@ -882,7 +897,7 @@ exports.expressInterest = async (req, res) => {
       return res.status(404).json({ error: 'Oportunidade não encontrada ou já encerrada.' });
     }
 
-    const existingInterest = await pool.query(
+    const existingInterest = await transaction.query(
       `
         SELECT id
         FROM service_request_interests
@@ -891,7 +906,6 @@ exports.expressInterest = async (req, res) => {
       `,
       [requestId, req.userId]
     );
-    const planAccess = req.planAccess || await getInstallerPlanAccess(req.userId);
 
     if (!existingInterest.rowCount && isLimitReached(planAccess, 'monthly_interests')) {
       return upgradeRequired(res, {
@@ -922,7 +936,7 @@ exports.expressInterest = async (req, res) => {
       }
     }
 
-    const interestInsert = await pool.query(
+    const interestInsert = await transaction.query(
       `
         INSERT INTO service_request_interests (request_id, installer_id, status)
         VALUES ($1, $2, 'interested')
@@ -935,47 +949,51 @@ exports.expressInterest = async (req, res) => {
 
     const isNewInterest = interestInsert.rowCount > 0;
 
-    if (!isNewInterest) {
-      await pool.query(
-        `
-          UPDATE service_request_interests
-          SET
-            status = CASE WHEN status = 'selected' THEN 'selected' ELSE 'interested' END,
-            updated_at = NOW()
-          WHERE request_id = $1 AND installer_id = $2
-        `,
-        [requestId, req.userId]
-      );
-    } else {
-      await pool.query('UPDATE service_requests SET last_interest_at = NOW(), updated_at = NOW() WHERE id = $1', [requestId]);
+    let deliveryId;
+    if (isNewInterest) {
+      await transaction.query('UPDATE service_requests SET last_interest_at = NOW(), updated_at = NOW() WHERE id = $1', [requestId]);
+      const installerName = installer.business_name || installer.name || 'Um instalador';
+      const installerRegion = [installer.city, installer.state].filter(Boolean).join(' - ') || installer.service_region;
+      const profilePath = interestedProfilePath(requestId, installer.id);
 
       if (request.client_user_id) {
-        await pool.query(
+        await transaction.query(
           `
-            INSERT INTO notifications (user_id, title, message, type, read)
-            VALUES ($1, $2, $3, 'info', FALSE)
+            INSERT INTO notifications (user_id, title, message, type, read, action_path)
+            VALUES ($1, $2, $3, 'info', FALSE, $4)
           `,
           [
             request.client_user_id,
             'Novo instalador interessado',
-            `${installer.business_name || installer.name || 'Um instalador'} demonstrou interesse no seu pedido.`,
+            `${installerName}${installerRegion ? ` (${installerRegion})` : ''} demonstrou interesse no pedido #${requestId}. Abra o perfil para conhecer e escolher o profissional.`,
+            profilePath,
           ]
         );
       }
 
-      if (request.client_email) {
-        const emailResult = await sendServiceRequestInterestEmail({
+      if (request.client_email && getPublicAppUrl(req)) {
+        const delivery = await sendServiceRequestInterestEmail({
           to: request.client_email,
           clientName: request.client_name,
-          installerName: installer.business_name || installer.name,
+          installerName,
+          installerRegion,
           serviceLabel: request.service_label,
           trackingUrl: buildTrackingUrl(req, request),
-        }).catch((error) => {
-          console.error('Falha ao enviar aviso de novo interesse:', error.message);
-          return { sent: false };
+          profileUrl: `${getPublicAppUrl(req)}${profilePath}#${requestAccessHash(request)}`,
+          transaction,
         });
+        deliveryId = delivery.deliveryId;
+      }
+    }
+    await transaction.query('COMMIT');
+    transaction.release();
+    transaction = null;
 
-        if (emailResult.sent) {
+    if (deliveryId) {
+      // O aviso já está gravado. Se o SMTP falhar, a rotina operacional tenta novamente.
+      try {
+        const delivery = await processEmailDeliveries({ limit: 1, onlyDeliveryId: deliveryId });
+        if (delivery.sent) {
           await pool.query(
             `
               UPDATE service_request_interests
@@ -985,6 +1003,8 @@ exports.expressInterest = async (req, res) => {
             [requestId, req.userId]
           );
         }
+      } catch (error) {
+        console.error('Falha no processamento do aviso de novo interesse:', error.message);
       }
     }
 
@@ -1000,6 +1020,11 @@ exports.expressInterest = async (req, res) => {
     });
   } catch (_error) {
     return res.status(500).json({ error: 'Não foi possível enviar interesse.' });
+  } finally {
+    if (transaction) {
+      await transaction.query('ROLLBACK').catch(() => null);
+      transaction.release();
+    }
   }
 };
 
@@ -1007,12 +1032,13 @@ exports.getPublicServiceRequestInterests = async (req, res) => {
   try {
     const requestId = Number(req.params.id);
     const token = normalizeText(req.headers['x-client-request-token'], 80);
+    const accountId = clientAccountId(req);
 
-    if (!Number.isInteger(requestId) || requestId <= 0 || !token) {
+    if (!Number.isInteger(requestId) || requestId <= 0 || (!token && !accountId)) {
       return res.status(400).json({ error: 'Solicitação inválida.' });
     }
 
-    const request = await getRequestForClient(requestId, token);
+    const request = await getRequestForClient(requestId, token, accountId);
 
     if (!request) {
       return res.status(404).json({ error: 'Solicitação não encontrada.' });
@@ -1044,6 +1070,7 @@ exports.getPublicServiceRequestInterests = async (req, res) => {
         ) reviews ON reviews.installer_id = u.id
         WHERE sri.request_id = $1
           AND sri.status IN ('interested', 'selected')
+          AND u.deleted_at IS NULL
           AND (COALESCE(u.certification_verified, FALSE) = TRUE OR COALESCE(u.is_admin, FALSE) = TRUE)
           AND (COALESCE(u.public_profile, FALSE) = TRUE OR COALESCE(u.is_admin, FALSE) = TRUE)
         ORDER BY
@@ -1071,8 +1098,9 @@ exports.selectServiceRequestInterest = async (req, res) => {
     const requestId = Number(req.params.id);
     const interestId = Number(req.params.interestId);
     const token = normalizeText(req.headers['x-client-request-token'], 80);
+    const accountId = clientAccountId(req);
 
-    if (!Number.isInteger(requestId) || requestId <= 0 || !Number.isInteger(interestId) || interestId <= 0 || !token) {
+    if (!Number.isInteger(requestId) || requestId <= 0 || !Number.isInteger(interestId) || interestId <= 0 || (!token && !accountId)) {
       return res.status(400).json({ error: 'Escolha inválida.' });
     }
 
@@ -1083,10 +1111,10 @@ exports.selectServiceRequestInterest = async (req, res) => {
         SELECT *
         FROM service_requests
         WHERE id = $1
-          AND client_access_token = $2
+          AND (client_access_token = NULLIF($2, '') OR client_user_id = $3)
         FOR UPDATE
       `,
-      [requestId, token]
+      [requestId, token, accountId]
     );
     const request = requestResult.rows[0];
 
@@ -1132,6 +1160,14 @@ exports.selectServiceRequestInterest = async (req, res) => {
       return res.status(409).json({
         error: 'Este pedido já tem um instalador escolhido. A escolha final não pode ser alterada.',
         code: 'INSTALLER_ALREADY_SELECTED',
+      });
+    }
+
+    if (request.status === 'selected') {
+      await client.query('COMMIT');
+      return res.json({
+        request: serializeClientRequest(request),
+        selected_interest: serializeClientInterest(interest, request),
       });
     }
 
@@ -1193,6 +1229,8 @@ exports.selectServiceRequestInterest = async (req, res) => {
     }
 
     await client.query('COMMIT');
+    client.release();
+    client = null;
 
     const updatedRequest = updatedRequestResult.rows[0];
 

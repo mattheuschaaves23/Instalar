@@ -185,6 +185,7 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
       method: 'POST',
       body: JSON.stringify({
         client_name: 'Cliente Teste',
+        client_email: `cliente-${email}`,
         client_phone: '48988888888',
         service: 'wallpaper',
         service_label: 'Instalação de papel de parede',
@@ -235,6 +236,19 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
       method: 'POST', headers: authHeaders, body: JSON.stringify({}),
     });
     assert.equal(interest.response.status, 200, JSON.stringify(interest.body));
+    const repeatedInterest = await requestJson(baseUrl, `/api/opportunities/${serviceRequest.id}/interest`, {
+      method: 'POST', headers: authHeaders, body: JSON.stringify({}),
+    });
+    assert.equal(repeatedInterest.response.status, 200, JSON.stringify(repeatedInterest.body));
+    const interestMail = sentMail.filter((mail) => mail.subject.includes('Novo instalador interessado'));
+    assert.equal(interestMail.length, 1);
+    const profilePath = `/installers/${installerId}?pedido=${serviceRequest.id}`;
+    assert.ok(interestMail[0].text.includes(
+      `${profilePath}#pedido=${serviceRequest.id}&acesso=${serviceRequest.client_access_token}`
+    ));
+    const clientNotices = await requestJson(baseUrl, '/api/notifications', { headers: clientHeaders });
+    assert.equal(clientNotices.response.status, 200);
+    assert.equal(clientNotices.body.filter((item) => item.action_path === profilePath).length, 1);
 
     const secondInterest = await requestJson(baseUrl, `/api/opportunities/${serviceRequest.id}/interest`, {
       method: 'POST', headers: secondInstallerHeaders, body: JSON.stringify({}),
@@ -244,12 +258,19 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
     const interested = await requestJson(
       baseUrl,
       `/api/public/service-requests/${serviceRequest.id}/interests`,
-      { headers: { 'X-Client-Request-Token': serviceRequest.client_access_token } }
+      { headers: clientHeaders }
     );
     assert.equal(interested.response.status, 200, JSON.stringify(interested.body));
     assert.equal(interested.body.interests.length, 2);
     const chosenInterest = interested.body.interests.find((item) => item.installer_id === installerId);
     assert.ok(chosenInterest);
+
+    const unauthorizedSelection = await requestJson(
+      baseUrl,
+      `/api/public/service-requests/${serviceRequest.id}/interests/${chosenInterest.id}/select`,
+      { method: 'POST', headers: authHeaders, body: JSON.stringify({}) }
+    );
+    assert.equal(unauthorizedSelection.response.status, 400);
 
     const selection = await requestJson(
       baseUrl,

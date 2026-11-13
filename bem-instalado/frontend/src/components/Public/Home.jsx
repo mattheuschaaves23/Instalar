@@ -2023,6 +2023,9 @@ export default function Home() {
                           <article key={notification.id}>
                             <strong>{notification.title}</strong>
                             <span>{notification.message}</span>
+                            {/^\/installers\/\d+\?pedido=\d+$/.test(notification.action_path || '') ? (
+                              <Link className="client-app-notification-action" to={notification.action_path}>Ver perfil e escolher</Link>
+                            ) : null}
                           </article>
                         ))
                       )}

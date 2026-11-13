@@ -33857,3 +33857,70 @@ html[data-site-theme] button.auth-google-button:focus-visible {
 
   .auth-web-login .installer-login-trust-bar { margin: 0 0.8rem 0.8rem; }
 }
+
+/* Shared panel surfaces need their own foreground and background in dark mode. */
+html[data-site-theme='dark'] .dashboard-reference-layout.aqua-panel-theme :is(
+  .budget-modern-topbar,
+  .client-intake-topbar,
+  .budget-modern-progress,
+  .settings-segment button:not(.is-selected):not(.is-active),
+  .subscription-v3-secondary,
+  .dashboard-neo-nav,
+  .installer-app-page-status,
+  .support-installer-shell
+) {
+  background: #171614 !important;
+  border-color: #4d4538 !important;
+  color: #f5efe3 !important;
+}
+
+html[data-site-theme='dark'] .dashboard-reference-layout.aqua-panel-theme :is(
+  .ref-panel-search input,
+  .budget-modern-step-label
+) {
+  color: #e4dac9 !important;
+}
+
+html[data-site-theme='dark'] .dashboard-reference-layout.installer-workspace.aqua-panel-theme
+  .budget-modern-calculation-base :is(.budget-modern-field input, .budget-modern-field select, .budget-modern-currency-input) {
+  background: #1e1d1a !important;
+  color: #f5efe3 !important;
+  border-color: #625848 !important;
+}
+
+html[data-site-theme='dark'] .dashboard-reference-layout.aqua-panel-theme :is(
+  .dashboard-neo-view-tab.is-active,
+  .client-form-type-switch button.is-active,
+  .client-form-submit
+),
+html[data-site-theme='dark'] .dashboard-reference-layout.aqua-panel-theme :is(
+  .dashboard-neo-view-tab.is-active,
+  .client-form-type-switch button.is-active,
+  .client-form-submit
+) :is(span, strong, small) {
+  color: #151009 !important;
+}
+
+.dashboard-reference-layout.installer-workspace.aqua-panel-theme .budget-modern-payment-conditions-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.dashboard-reference-layout.installer-workspace.aqua-panel-theme .budget-modern-payment-conditions-body
+  .budget-modern-upfront-payment-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+}
+
+/* The preview is a light sheet of paper inside either panel theme. */
+html[data-site-theme] .dashboard-reference-layout.aqua-panel-theme .pdf-branding-preview-body,
+html[data-site-theme] .dashboard-reference-layout.aqua-panel-theme .pdf-branding-preview-body :is(strong, b, span, p) {
+  color: #31454e !important;
+}
+
+html[data-site-theme] .dashboard-reference-layout.aqua-panel-theme .pdf-branding-preview-body :is(
+  .pdf-branding-preview-meta b,
+  .pdf-branding-preview-message strong,
+  .pdf-branding-preview-details > strong,
+  .pdf-branding-preview-lines > strong
+) {
+  color: color-mix(in srgb, var(--pdf-accent) 65%, #171512) !important;
+}
