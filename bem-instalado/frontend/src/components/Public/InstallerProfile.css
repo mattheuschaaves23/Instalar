@@ -159,10 +159,14 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
 .ig-profile-stats strong { font-size: .93rem; font-weight: 900; }
 .ig-profile-stats span { color: var(--ig-muted); font-weight: 650; }
 
-.ig-profile-tabs { min-height: 4.2rem; display: flex; align-items: end; justify-content: center; gap: 2.2rem; margin: 0 1.65rem; border-bottom: 1px solid var(--ig-line); }
-.ig-profile-tabs a { min-height: 4.15rem; display: inline-flex; align-items: center; gap: .38rem; border-bottom: 2px solid transparent; color: var(--ig-muted); font-size: .68rem; font-weight: 850; letter-spacing: .06em; text-decoration: none; text-transform: uppercase; }
-.ig-profile-tabs a:first-child { border-color: var(--ig-accent); color: var(--ig-accent-deep); }
-.ig-profile-tabs a:hover { color: var(--ig-accent-deep); }
+.ig-profile-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .3rem; margin: 0 1.65rem; border-bottom: 1px solid var(--ig-line); scroll-margin-top: .75rem; }
+.ig-profile-tabs button { min-height: 3.25rem; display: flex; align-items: center; justify-content: center; gap: .38rem; padding: .45rem .25rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--ig-ink); font-size: .76rem; font-weight: 750; cursor: pointer; }
+.ig-profile-tabs button[aria-selected='true'] { border-color: var(--ig-accent); background: var(--ig-accent-soft); color: var(--ig-accent-deep); }
+.ig-profile-tabs button:hover { color: var(--ig-accent-deep); }
+.ig-profile-tabs button:focus-visible,
+.ig-profile-tabpanel:focus-visible { outline: 2px solid var(--ig-accent); outline-offset: -2px; }
+.ig-profile-tabpanel { margin: .9rem 1.65rem 0; }
+.ig-profile-tabpanel[hidden] { display: none; }
 
 .ig-profile-trust-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem; margin: 1.2rem 1.65rem; }
 .ig-profile-trust-grid article { display: flex; min-width: 0; gap: .72rem; align-items: center; padding: 1rem; border: 1px solid var(--ig-line); border-radius: 1rem; background: var(--ig-surface); box-shadow: 0 .55rem 1.5rem rgba(24, 52, 58, .045); }
@@ -174,7 +178,6 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
 .ig-profile-trust-grid b { overflow: hidden; color: var(--ig-muted); font-size: .68rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .ig-profile-trust-grid small { overflow: hidden; color: var(--ig-muted); font-size: .59rem; text-overflow: ellipsis; white-space: nowrap; opacity: .82; }
 
-.ig-profile-showcase { display: grid; grid-template-columns: minmax(0, 1.04fr) minmax(25rem, .96fr); gap: 1rem; margin: 0 1.65rem; }
 .ig-profile-panel { border: 1px solid var(--ig-line); border-radius: 1rem; background: var(--ig-surface); box-shadow: 0 .7rem 1.7rem rgba(24, 52, 58, .05); }
 .ig-panel-heading { min-height: 4rem; display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .9rem 1rem; border-bottom: 1px solid var(--ig-line); }
 .ig-panel-heading > div { display: flex; min-width: 0; gap: .58rem; align-items: center; }
@@ -188,9 +191,6 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
 .ig-project-grid figure { aspect-ratio: .76; margin: 0; overflow: hidden; border-radius: .75rem; background: var(--ig-surface-soft); }
 .ig-project-grid img { width: 100%; height: 100%; object-fit: cover; transition: transform 220ms ease; }
 .ig-project-grid figure:hover img { transform: scale(1.045); }
-.ig-project-more { min-height: 100%; display: grid; place-content: center; justify-items: center; gap: .2rem; padding: .5rem; border: 1px solid color-mix(in srgb, var(--ig-violet) 20%, var(--ig-line)); border-radius: .75rem; background: linear-gradient(145deg, color-mix(in srgb, var(--ig-violet) 9%, var(--ig-surface)), var(--ig-surface)); color: var(--ig-violet); text-align: center; }
-.ig-project-more strong { color: var(--ig-ink); font-size: 1.2rem; line-height: 1; }
-.ig-project-more span { color: var(--ig-muted); font-size: .62rem; font-weight: 700; }
 .ig-project-empty { min-height: 13.25rem; display: grid; place-content: center; justify-items: center; gap: .35rem; padding: 1.3rem; color: var(--ig-muted); text-align: center; }
 .ig-project-empty svg { color: var(--ig-accent); }
 .ig-project-empty strong { margin-top: .25rem; color: var(--ig-ink); font-size: .82rem; }
@@ -222,7 +222,7 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
 .ig-review-empty strong { margin-top: .25rem; color: var(--ig-ink); font-size: .82rem; }
 .ig-review-empty p { max-width: 18rem; margin: 0; font-size: .71rem; line-height: 1.45; }
 
-.ig-profile-agenda { margin: 1rem 1.65rem 0; overflow: hidden; }
+.ig-profile-agenda { overflow: hidden; }
 .ig-profile-agenda .ig-panel-heading > a { padding: .48rem .7rem; border: 1px solid var(--ig-line); border-radius: .6rem; color: var(--ig-accent-deep); font-size: .68rem; font-weight: 850; text-decoration: none; }
 .ig-slot-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .65rem; padding: .85rem; }
 .ig-slot-grid article { display: grid; gap: .32rem; min-height: 4.65rem; padding: .72rem; border: 1px solid var(--ig-line); border-radius: .72rem; background: var(--ig-surface-soft); }
@@ -230,7 +230,7 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
 .ig-slot-grid span { color: var(--ig-accent-deep); font-size: .61rem; font-weight: 750; line-height: 1.35; }
 .ig-profile-note { margin: .85rem; padding: .75rem .85rem; border: 1px dashed var(--ig-line); border-radius: .75rem; background: var(--ig-surface-soft); color: var(--ig-muted); font-size: .73rem; line-height: 1.5; }
 
-.ig-profile-info-grid { display: grid; grid-template-columns: 1.08fr .95fr .98fr; gap: 1rem; margin: 1rem 1.65rem 0; }
+.ig-profile-info-grid { display: grid; grid-template-columns: 1.08fr .95fr .98fr; gap: 1rem; }
 .ig-profile-info-grid .ig-profile-panel { min-width: 0; overflow: hidden; }
 .ig-profile-about-panel > p { margin: .95rem 1rem 0; color: var(--ig-muted); font-size: .74rem; line-height: 1.55; }
 .ig-info-tags { display: flex; flex-wrap: wrap; gap: .35rem; padding: .85rem 1rem 1rem; }
@@ -246,7 +246,7 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
 .ig-profile-prices-panel > div strong { color: var(--ig-ink); font-size: .68rem; font-weight: 850; text-align: right; }
 .ig-profile-prices-panel > small { margin: .75rem 1rem 1rem; color: var(--ig-muted); font-size: .6rem; line-height: 1.45; }
 
-.ig-profile-review-form { margin: 1rem 1.65rem 0; overflow: hidden; }
+.ig-profile-review-form { margin-top: 1rem; overflow: hidden; scroll-margin-top: .75rem; }
 .ig-review-locked { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .7rem; padding: .85rem 1rem; }
 .ig-review-locked p { margin: 0; color: var(--ig-muted); font-size: .74rem; line-height: 1.45; }
 .ig-profile-form { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, .8fr) 8.3rem minmax(13rem, 1.7fr) auto; gap: .6rem; align-items: end; padding: .85rem 1rem 1rem; }
@@ -278,13 +278,9 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
   .ig-profile-avatar-wrap { width: 6.75rem; height: 6.75rem; }
   .ig-profile-tabs,
   .ig-profile-trust-grid,
-  .ig-profile-showcase,
-  .ig-profile-agenda,
-  .ig-profile-info-grid,
-  .ig-profile-review-form,
+  .ig-profile-tabpanel,
   .ig-profile-store { margin-inline: 1rem; }
   .ig-profile-trust-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ig-profile-showcase { grid-template-columns: 1fr; }
   .ig-review-summary-body { grid-template-columns: 9rem minmax(9rem, 1fr) minmax(13rem, 1fr); }
   .ig-profile-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ig-profile-comment-field { grid-column: span 2; }
@@ -317,33 +313,27 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
   .ig-profile-stats { grid-column: 1 / -1; justify-content: space-around; gap: .5rem; margin-top: .3rem; padding-top: .68rem; border-top: 1px solid var(--ig-line); }
   .ig-profile-stats a { display: grid; justify-items: center; gap: .06rem; font-size: .61rem; }
   .ig-profile-stats strong { font-size: .81rem; }
-  .ig-profile-tabs { min-height: 3.25rem; justify-content: space-around; gap: 0; margin-inline: .25rem; }
-  .ig-profile-tabs a { min-height: 3.2rem; font-size: .57rem; }
-  .ig-profile-tabs a span { display: none; }
+  .ig-profile-tabs { gap: .15rem; margin-inline: .25rem; }
+  .ig-profile-tabs button { min-height: 3.2rem; flex-direction: column; gap: .2rem; font-size: clamp(.65rem, 2.7vw, .75rem); }
   .ig-profile-trust-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin: .75rem .25rem; }
   .ig-profile-trust-grid article { gap: .5rem; padding: .7rem; border-radius: .8rem; }
   .ig-trust-icon { width: 2.2rem; height: 2.2rem; border-radius: .65rem; }
   .ig-profile-trust-grid strong { font-size: .64rem; }
   .ig-profile-trust-grid b { font-size: .58rem; }
   .ig-profile-trust-grid small { display: none; }
-  .ig-profile-showcase { gap: .75rem; margin-inline: .25rem; }
   .ig-profile-panel { border-radius: .85rem; }
   .ig-panel-heading { min-height: 3.6rem; padding: .75rem .8rem; }
   .ig-panel-heading h2 { font-size: .85rem; }
   .ig-panel-heading > div > span { width: 1.75rem; height: 1.75rem; }
-  .ig-project-grid { gap: .38rem; padding: .6rem; }
+  .ig-project-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .38rem; padding: .6rem; }
   .ig-project-grid figure { border-radius: .55rem; }
-  .ig-project-more { border-radius: .55rem; }
-  .ig-project-more strong { font-size: 1rem; }
   .ig-review-summary-body { grid-template-columns: 1fr; gap: .7rem; padding: .75rem; }
   .ig-rating-score { grid-template-columns: auto minmax(0, 1fr); justify-content: start; justify-items: start; gap: .35rem .65rem; padding: 0 0 .72rem; border-right: 0; border-bottom: 1px solid var(--ig-line); text-align: left; }
   .ig-rating-score > strong { grid-row: span 2; font-size: 2.2rem; }
   .ig-rating-score > span { align-self: start; }
   .ig-rating-distribution { max-width: 17rem; }
   .ig-review-snippets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ig-profile-agenda,
-  .ig-profile-info-grid,
-  .ig-profile-review-form,
+  .ig-profile-tabpanel,
   .ig-profile-store { margin: .75rem .25rem 0; }
   .ig-slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; padding: .65rem; }
   .ig-slot-grid article { min-height: 4.4rem; padding: .58rem; }

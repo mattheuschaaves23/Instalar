@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -16,6 +16,9 @@ import {
   readPublishedClientRequest,
   writePublishedClientRequest,
 } from '../../utils/clientRequest';
+import {
+  PROFILE_SECTIONS, REVIEW_FORM_ANCHOR, buildProfileSectionHash, readProfileSection,
+} from '../../utils/installerProfileSections';
 
 const emptyReviewForm = { reviewer_name: '', reviewer_region: '', rating: 5, comment: '' };
 
@@ -100,30 +103,48 @@ export default function InstallerProfile() {
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
-  const linkedRequest = useMemo(() => {
-    const tracking = readClientRequestTrackingHash(location.hash);
-    const requestId = Number(new URLSearchParams(location.search).get('pedido'));
-    if (!Number.isSafeInteger(requestId) || requestId <= 0) return null;
-    const saved = tracking?.id === requestId ? tracking : readPublishedClientRequest();
-    return { id: requestId, token: saved?.id === requestId ? saved.client_access_token : '' };
-  }, [location.search, location.hash]);
+  const requestedId = Number(new URLSearchParams(location.search).get('pedido'));
+  const tracking = readClientRequestTrackingHash(location.hash);
+  const saved = tracking?.id === requestedId ? tracking : readPublishedClientRequest();
+  const requestToken = saved?.id === requestedId ? saved.client_access_token : '';
+  const linkedRequest = useMemo(() => Number.isSafeInteger(requestedId) && requestedId > 0
+    ? { id: requestedId, token: requestToken } : null, [requestedId, requestToken]);
 
-  useEffect(() => {
-    let active = true;
-    setPayload(null);
-    setProfileError('');
+  const sectionAnchor = readProfileSection(location.hash);
+  const activeSection = sectionAnchor === REVIEW_FORM_ANCHOR ? 'avaliacoes' : sectionAnchor || 'projetos';
+  const sectionPath = (section) => ({
+    pathname: location.pathname, search: location.search, hash: buildProfileSectionHash(section, location.hash),
+  });
+  const reviewLoginPath = getClientLoginPath(`${location.pathname}${location.search}#${REVIEW_FORM_ANCHOR}`);
+
+  const requestProfile = useCallback(async (signal) => {
     const headers = linkedRequest?.token ? { 'X-Client-Request-Token': linkedRequest.token } : {};
     const params = linkedRequest ? { pedido: linkedRequest.id } : {};
-    api.get(`/public/installers/${id}`, { headers, params })
-      .then(({ data }) => { if (active) setPayload(data); })
+    const { data } = await api.get(`/public/installers/${id}`, { headers, params, signal });
+    return data;
+  }, [id, linkedRequest]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setPayload(null);
+    setProfileError('');
+    requestProfile(controller.signal)
+      .then((data) => { if (!controller.signal.aborted) setPayload(data); })
       .catch((error) => {
-        if (active) setProfileError({
+        if (!controller.signal.aborted) setProfileError({
           status: error.response?.status,
           message: error.response?.data?.error || 'Não foi possível carregar o perfil do instalador.',
         });
       });
-    return () => { active = false; };
-  }, [id, linkedRequest, user?.id, user?.account_type]);
+    return () => controller.abort();
+  }, [requestProfile, user?.id, user?.account_type]);
+
+  const profileLoaded = Boolean(payload);
+  useEffect(() => {
+    if (!profileLoaded || !sectionAnchor) return;
+    const destination = sectionAnchor === REVIEW_FORM_ANCHOR ? REVIEW_FORM_ANCHOR : 'perfil-secoes';
+    document.getElementById(destination)?.scrollIntoView({ block: 'start' });
+  }, [profileLoaded, sectionAnchor]);
 
   useEffect(() => {
     let active = true;
@@ -136,14 +157,17 @@ export default function InstallerProfile() {
         if (!active || !data?.request) return;
         const interest = data.interests?.find((item) => Number(item.installer_id) === Number(id));
         setRequestContext({ request: data.request, interest, installerId: id });
-        if (readClientRequestTrackingHash(location.hash)?.id === linkedRequest.id
-          && window.location.hash === location.hash && writePublishedClientRequest(data.request)) {
-          window.history.replaceState(window.history.state, '', `${location.pathname}${location.search}`);
+        if (linkedRequest.token && writePublishedClientRequest(data.request)) {
+          const currentHash = window.location.hash;
+          if (readClientRequestTrackingHash(currentHash)?.id === linkedRequest.id) {
+            const currentSection = readProfileSection(currentHash);
+            navigate({ hash: currentSection ? `#${currentSection}` : '', search: location.search }, { replace: true });
+          }
         }
       })
       .catch(() => {});
     return () => { active = false; };
-  }, [id, linkedRequest, location.hash, location.pathname, location.search, user?.account_type, user?.id]);
+  }, [id, linkedRequest, location.search, navigate, user?.account_type, user?.id]);
 
   const linkedContext = requestContext?.installerId === id && requestContext.request.id === linkedRequest?.id
     ? requestContext : null;
@@ -190,7 +214,7 @@ export default function InstallerProfile() {
 
     if (!user) {
       toast('Entre para avaliar o instalador escolhido.');
-      navigate(getClientLoginPath(`/installers/${id}#avaliar-instalador`));
+      navigate(reviewLoginPath);
       return;
     }
 
@@ -221,7 +245,12 @@ export default function InstallerProfile() {
       });
       toast.success('Avaliação enviada com sucesso.');
       setReviewForm(emptyReviewForm);
-      await loadProfile();
+      try {
+        const refreshed = await requestProfile();
+        setPayload((current) => current?.installer.id === refreshed.installer.id ? refreshed : current);
+      } catch {
+        toast('Avaliação salva. Reabra o perfil para atualizar a lista.');
+      }
     } catch (error) {
       setTurnstileToken('');
       setTurnstileResetKey((current) => current + 1);
@@ -235,7 +264,22 @@ export default function InstallerProfile() {
     if (user) return;
     event.preventDefault();
     toast('Entre para avaliar este profissional.');
-    navigate(getClientLoginPath(`/installers/${id}#avaliar-instalador`));
+    navigate(reviewLoginPath);
+  };
+
+  const handleTabKeyDown = (event, index) => {
+    const last = PROFILE_SECTIONS.length - 1;
+    const next = {
+      ArrowLeft: index === 0 ? last : index - 1,
+      ArrowRight: index === last ? 0 : index + 1,
+      Home: 0,
+      End: last,
+    }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    const section = PROFILE_SECTIONS[next].id;
+    document.getElementById(`perfil-aba-${section}`)?.focus();
+    if (section !== activeSection) navigate(sectionPath(section));
   };
 
   const ratingDistribution = useMemo(() => {
@@ -267,7 +311,6 @@ export default function InstallerProfile() {
   const { installer, reviews = [], marketplace: apiMarketplace } = payload;
   const marketplace = apiMarketplace || defaultMarketplace;
   const gallery = Array.isArray(installer.installation_gallery) ? installer.installation_gallery.filter(Boolean) : [];
-  const projectPhotos = gallery.slice(0, 4);
   const slots = Object.entries(groupAvailabilitySlots(installer.availability_slots || [])).sort(([a], [b]) => a.localeCompare(b));
   const requestId = linkedRequest?.id;
   const requestPath = trackingPath;
@@ -330,7 +373,7 @@ export default function InstallerProfile() {
             <p className="ig-profile-role">Instalador de papel de parede</p>
             <div className="ig-profile-meta">
               <span><ProfileIcon name="location" size={16} />{locationLabel}</span>
-              {reviewCount ? <a href="#avaliacoes"><ProfileIcon name="star" size={15} /><strong>{rating.toFixed(1)}</strong> ({reviewCount} avaliações)</a> : <span><ProfileIcon name="shield" size={15} />Perfil profissional</span>}
+              {reviewCount ? <Link to={sectionPath('avaliacoes')}><ProfileIcon name="star" size={15} /><strong>{rating.toFixed(1)}</strong> ({reviewCount} avaliações)</Link> : <span><ProfileIcon name="shield" size={15} />Perfil profissional</span>}
             </div>
           </div>
 
@@ -351,18 +394,11 @@ export default function InstallerProfile() {
           </div>
 
           <div aria-label="Estatísticas do profissional" className="ig-profile-stats">
-            <a href="#projetos"><strong>{gallery.length}</strong><span>projetos</span></a>
-            <a href="#avaliacoes"><strong>{reviewCount}</strong><span>avaliações</span></a>
-            <a href="#informacoes"><strong>{installer.unique_clients_served || 0}</strong><span>clientes</span></a>
+            <Link to={sectionPath('projetos')}><strong>{gallery.length}</strong><span>projetos</span></Link>
+            <Link to={sectionPath('avaliacoes')}><strong>{reviewCount}</strong><span>avaliações</span></Link>
+            <Link to={sectionPath('informacoes')}><strong>{installer.unique_clients_served || 0}</strong><span>clientes</span></Link>
           </div>
         </header>
-
-        <nav aria-label="Conteúdos do perfil" className="ig-profile-tabs">
-          <a href="#projetos"><ProfileIcon name="grid" size={16} /><span>Projetos</span></a>
-          <a href="#agenda"><ProfileIcon name="calendar" size={16} /><span>Agenda</span></a>
-          <a href="#avaliacoes"><ProfileIcon name="star" size={16} /><span>Avaliações</span></a>
-          <a href="#informacoes"><ProfileIcon name="document" size={16} /><span>Informações</span></a>
-        </nav>
 
         <section aria-label="Destaques do profissional" className="ig-profile-trust-grid">
           {trustItems.map((item) => (
@@ -373,21 +409,38 @@ export default function InstallerProfile() {
           ))}
         </section>
 
-        <div className="ig-profile-showcase">
-          <section className="ig-profile-panel ig-profile-projects" id="projetos">
-            <div className="ig-panel-heading"><div><span><ProfileIcon name="image" size={18} /></span><h2>Projetos</h2></div>{gallery.length ? <a href="#informacoes">Ver detalhes <ProfileIcon name="chevron" size={15} /></a> : null}</div>
-            {projectPhotos.length ? (
+        <div aria-label="Conteúdos do perfil" className="ig-profile-tabs" id="perfil-secoes" role="tablist">
+          {PROFILE_SECTIONS.map(({ id: section, icon, label }, index) => (
+            <button
+              aria-controls={section}
+              aria-selected={activeSection === section}
+              id={`perfil-aba-${section}`}
+              key={section}
+              onClick={() => navigate(sectionPath(section))}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
+              role="tab"
+              tabIndex={activeSection === section ? 0 : -1}
+              type="button"
+            >
+              <ProfileIcon name={icon} size={16} /><span>{label}</span>
+            </button>
+          ))}
+        </div>
+
+        <section aria-labelledby="perfil-aba-projetos" className="ig-profile-panel ig-profile-projects ig-profile-tabpanel" hidden={activeSection !== 'projetos'} id="projetos" role="tabpanel" tabIndex={0}>
+            <div className="ig-panel-heading"><div><span><ProfileIcon name="image" size={18} /></span><h2>Projetos</h2></div>{gallery.length ? <Link to={sectionPath('informacoes')}>Ver detalhes <ProfileIcon name="chevron" size={15} /></Link> : null}</div>
+            {gallery.length ? (
               <div className="ig-project-grid">
-                {projectPhotos.map((photo, index) => <figure key={`${photo}-${index}`}><img alt={`Projeto ${index + 1} de ${installer.display_name}`} decoding="async" loading="lazy" src={photo} /></figure>)}
-                {gallery.length > projectPhotos.length ? <div className="ig-project-more"><ProfileIcon name="image" size={26} /><strong>+{gallery.length - projectPhotos.length}</strong><span>projetos</span></div> : null}
+                {gallery.map((photo, index) => <figure key={`${photo}-${index}`}><img alt={`Projeto ${index + 1} de ${installer.display_name}`} decoding="async" loading="lazy" src={photo} /></figure>)}
               </div>
             ) : (
               <div className="ig-project-empty"><ProfileIcon name="image" size={28} /><strong>Portfólio em atualização</strong><p>As fotos de instalações publicadas por este profissional aparecerão aqui.</p></div>
             )}
-          </section>
+        </section>
 
-          <section className="ig-profile-panel ig-profile-review-summary" id="avaliacoes">
-            <div className="ig-panel-heading"><div><span><ProfileIcon name="star" size={18} /></span><h2>Avaliações</h2></div>{!isOwnProfile ? <a href="#avaliar-instalador" onClick={requireClientLogin}>Avaliar <ProfileIcon name="chevron" size={15} /></a> : null}</div>
+        <section aria-labelledby="perfil-aba-avaliacoes" className="ig-profile-tabpanel" hidden={activeSection !== 'avaliacoes'} id="avaliacoes" role="tabpanel" tabIndex={0}>
+          <div className="ig-profile-panel ig-profile-review-summary">
+            <div className="ig-panel-heading"><div><span><ProfileIcon name="star" size={18} /></span><h2>Avaliações</h2></div>{!isOwnProfile ? <Link to={sectionPath(REVIEW_FORM_ANCHOR)} onClick={requireClientLogin}>Avaliar <ProfileIcon name="chevron" size={15} /></Link> : null}</div>
             {reviewCount ? (
               <div className="ig-review-summary-body">
                 <div className="ig-rating-score"><strong>{rating.toFixed(1)}</strong><RatingStars value={rating} /><span>{reviewCount} avaliações</span></div>
@@ -399,10 +452,16 @@ export default function InstallerProfile() {
                 </div>
               </div>
             ) : <div className="ig-review-empty"><ProfileIcon name="star" size={27} /><strong>Sem avaliações ainda</strong><p>Clientes poderão avaliar o atendimento após a conclusão do serviço.</p></div>}
+          </div>
+          <section className="ig-profile-panel ig-profile-review-form" id={REVIEW_FORM_ANCHOR}>
+            <div className="ig-panel-heading"><div><span><ProfileIcon name="star" size={18} /></span><div><p>Sua experiência</p><h2>Avalie este instalador</h2></div></div></div>
+            {!user ? <div className="ig-review-locked"><p>Sua avaliação ajuda outras pessoas a escolherem com mais segurança.</p><Link className="ig-profile-primary-action" to={reviewLoginPath}>Entrar para avaliar</Link></div>
+              : isOwnProfile ? <p className="ig-profile-note">Este é o seu perfil. Autoavaliações não são permitidas.</p>
+                : <form className="ig-profile-form" onSubmit={handleReviewSubmit}><label><span>Seu nome</span><input name="reviewer_name" onChange={handleReviewChange} placeholder="Como você quer aparecer" required value={reviewForm.reviewer_name} /></label><label><span>Sua região</span><input name="reviewer_region" onChange={handleReviewChange} placeholder="Cidade ou bairro" value={reviewForm.reviewer_region} /></label><label><span>Nota</span><select name="rating" onChange={handleReviewChange} value={reviewForm.rating}><option value={5}>5 estrelas</option><option value={4}>4 estrelas</option><option value={3}>3 estrelas</option><option value={2}>2 estrelas</option><option value={1}>1 estrela</option></select></label><label className="ig-profile-comment-field"><span>Comentário</span><textarea name="comment" onChange={handleReviewChange} placeholder="Conte como foi sua experiência" rows="3" value={reviewForm.comment} /></label><Turnstile action="installer_review" onExpire={() => setTurnstileToken('')} onVerify={setTurnstileToken} resetKey={turnstileResetKey} /><button className="ig-profile-primary-action" disabled={sendingReview || (isTurnstileEnabled() && !turnstileToken)} type="submit">{sendingReview ? 'Enviando...' : 'Enviar avaliação'}</button></form>}
           </section>
-        </div>
+        </section>
 
-        <section className="ig-profile-panel ig-profile-agenda" id="agenda">
+        <section aria-labelledby="perfil-aba-agenda" className="ig-profile-panel ig-profile-agenda ig-profile-tabpanel" hidden={activeSection !== 'agenda'} id="agenda" role="tabpanel" tabIndex={0}>
           <div className="ig-panel-heading"><div><span><ProfileIcon name="calendar" size={18} /></span><div><p>Disponibilidade</p><h2>Próximos horários livres</h2></div></div><Link to={profileActionPath}>{profileActionLabel}</Link></div>
           {slots.length ? (
             <div className="ig-slot-grid">{slots.slice(0, 4).map(([date, dateSlots]) => <article key={date}><strong>{formatLongDate(`${date}T12:00:00`)}</strong><span>{dateSlots.map((slot) => `${slot.start_time} – ${slot.end_time}`).join(' · ')}</span></article>)}</div>
@@ -411,17 +470,10 @@ export default function InstallerProfile() {
           ) : <p className="ig-profile-note">Este profissional ainda não informou horários livres. Envie o pedido para combinar a melhor data de atendimento.</p>}
         </section>
 
-        <section className="ig-profile-info-grid" id="informacoes">
+        <section aria-labelledby="perfil-aba-informacoes" className="ig-profile-info-grid ig-profile-tabpanel" hidden={activeSection !== 'informacoes'} id="informacoes" role="tabpanel" tabIndex={0}>
           <article className="ig-profile-panel ig-profile-about-panel"><div className="ig-panel-heading"><div><span><ProfileIcon name="briefcase" size={18} /></span><h2>Como atende</h2></div></div><p>{installer.installation_method || 'O ambiente é analisado antes da instalação para orientar o melhor material, preparo e acabamento.'}</p><div className="ig-info-tags"><span>{installer.safety?.accepts_service_contract ? 'Contrato disponível' : 'Combinações registradas'}</span><span>{warrantyLabel}</span><span>{formatInstallationDays(installer.installation_days)}</span></div></article>
           <article className="ig-profile-panel ig-profile-details-panel"><div className="ig-panel-heading"><div><span><ProfileIcon name="document" size={18} /></span><h2>Dados do perfil</h2></div></div><dl><div><dt>Atende em</dt><dd>{installer.service_region || locationLabel}</dd></div><div><dt>Documento</dt><dd>{installer.safety?.document_masked || 'Cadastro profissional'}</dd></div></dl>{installer.certificate_file ? <a href={installer.certificate_file} rel="noreferrer" target="_blank">Ver certificado <ProfileIcon name="chevron" size={15} /></a> : null}</article>
           <article className="ig-profile-panel ig-profile-prices-panel"><div className="ig-panel-heading"><div><span><ProfileIcon name="star" size={18} /></span><h2>Valores de referência</h2></div></div><div><span>Visita técnica</span><strong>{formatCurrency(installer.base_service_cost)}</strong></div><div><span>Deslocamento</span><strong>{formatCurrency(installer.travel_fee)}</strong></div><div><span>Instalação por rolo</span><strong>{formatCurrency(installer.default_price_per_roll)}</strong></div><small>O orçamento final considera as medidas e condições do ambiente.</small></article>
-        </section>
-
-        <section className="ig-profile-panel ig-profile-review-form" id="avaliar-instalador">
-          <div className="ig-panel-heading"><div><span><ProfileIcon name="star" size={18} /></span><div><p>Sua experiência</p><h2>Avalie este instalador</h2></div></div></div>
-          {!user ? <div className="ig-review-locked"><p>Sua avaliação ajuda outras pessoas a escolherem com mais segurança.</p><Link className="ig-profile-primary-action" to={getClientLoginPath(`/installers/${installer.id}#avaliar-instalador`)}>Entrar para avaliar</Link></div>
-            : isOwnProfile ? <p className="ig-profile-note">Este é o seu perfil. Autoavaliações não são permitidas.</p>
-              : <form className="ig-profile-form" onSubmit={handleReviewSubmit}><label><span>Seu nome</span><input name="reviewer_name" onChange={handleReviewChange} placeholder="Como você quer aparecer" required value={reviewForm.reviewer_name} /></label><label><span>Sua região</span><input name="reviewer_region" onChange={handleReviewChange} placeholder="Cidade ou bairro" value={reviewForm.reviewer_region} /></label><label><span>Nota</span><select name="rating" onChange={handleReviewChange} value={reviewForm.rating}><option value={5}>5 estrelas</option><option value={4}>4 estrelas</option><option value={3}>3 estrelas</option><option value={2}>2 estrelas</option><option value={1}>1 estrela</option></select></label><label className="ig-profile-comment-field"><span>Comentário</span><textarea name="comment" onChange={handleReviewChange} placeholder="Conte como foi sua experiência" rows="3" value={reviewForm.comment} /></label><Turnstile action="installer_review" onExpire={() => setTurnstileToken('')} onVerify={setTurnstileToken} resetKey={turnstileResetKey} /><button className="ig-profile-primary-action" disabled={sendingReview || (isTurnstileEnabled() && !turnstileToken)} type="submit">{sendingReview ? 'Enviando...' : 'Enviar avaliação'}</button></form>}
         </section>
 
         <aside className="ig-profile-store"><div><span>Parceiro recomendado</span><h2>{marketplace.title}</h2><p>{marketplace.description}</p><small>{(marketplace.highlights || []).slice(0, 2).join(' · ')}</small></div><a href={marketplace.url || 'https://www.beminstalado.com.br'} rel="noreferrer" target="_blank">{marketplace.cta_label || 'Conhecer a loja'} <ProfileIcon name="chevron" size={16} /></a></aside>
