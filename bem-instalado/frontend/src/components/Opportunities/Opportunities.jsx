@@ -111,7 +111,7 @@ export default function Opportunities() {
       setStats(response.data?.stats || { open: 0, interested: 0, selected: 0, matched: 0 });
     } catch (error) {
       const code = error.response?.data?.code;
-      if (['CERTIFICATION_REQUIRED', 'PUBLIC_PROFILE_REQUIRED', 'PROFILE_LOCATION_REQUIRED'].includes(code)) {
+      if (['PROFILE_ESSENTIALS_REQUIRED', 'PROFILE_LOCATION_REQUIRED', 'EMAIL_VERIFICATION_REQUIRED'].includes(code)) {
         setAccessRequirement({ code, message: error.response?.data?.error });
       } else {
         toast.error(error.response?.data?.error || 'Não foi possível carregar oportunidades.');
@@ -232,11 +232,11 @@ export default function Opportunities() {
       {!loading && accessRequirement ? (
         <div className="opportunity-empty">
           <strong>
-            {accessRequirement.code === 'CERTIFICATION_REQUIRED'
-              ? 'Seu perfil está aguardando verificação.'
+            {accessRequirement.code === 'EMAIL_VERIFICATION_REQUIRED'
+              ? 'Confirme seu e-mail para aceitar pedidos.'
               : accessRequirement.code === 'PROFILE_LOCATION_REQUIRED'
                 ? 'Informe sua região de atendimento.'
-                : 'Publique seu perfil profissional.'}
+                : 'Complete somente os dados essenciais.'}
           </strong>
           <span>{accessRequirement.message}</span>
           <Link className="gold-button" to="/profile">Revisar meu perfil</Link>

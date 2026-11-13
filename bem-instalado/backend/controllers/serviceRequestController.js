@@ -9,6 +9,7 @@ const { normalizeSearchText } = require('../utils/textSearch');
 const forwardGeocode = require('../utils/forwardGeocode');
 const { validateUploadFile } = require('../utils/uploadValidation');
 const { expireOpenServiceRequests } = require('../utils/serviceRequestLifecycle');
+const { getInstallerReadiness, normalizeBrazilianWhatsApp } = require('../utils/installerEligibility');
 const {
   getInstallerPlanAccess,
   isLimitReached,
@@ -174,13 +175,6 @@ function buildInstallerMessage(installer, request) {
   ].join(' ');
 }
 
-function normalizeBrazilianWhatsApp(value) {
-  const digits = String(value || '').replace(/\D/g, '');
-  const local = /^[1-9]\d(?:[2-5]\d{7}|9\d{8})$/;
-  if (local.test(digits)) return `55${digits}`;
-  return digits.startsWith('55') && local.test(digits.slice(2)) ? digits : '';
-}
-
 function buildInterestWhatsAppLink(req, installer, request) {
   if (!request.whatsapp_contact_consent_at || request.status !== 'open'
     || (request.expires_at && new Date(request.expires_at) <= new Date())) return null;
@@ -333,6 +327,8 @@ async function getInstaller(installerId) {
         id,
         name,
         business_name,
+        email,
+        email_verified_at,
         phone,
         city,
         state,
@@ -851,29 +847,21 @@ exports.getOpportunities = async (req, res) => {
         });
       });
 
+    const readiness = getInstallerReadiness(installer);
     return res.json({
       opportunities,
       eligibility: {
-        can_express_interest: Boolean(
-          (installer.is_admin || (installer.certification_verified && installer.public_profile))
-          && !isLimitReached(planAccess, 'monthly_interests')
-        ),
+        can_express_interest: readiness.ready && !isLimitReached(planAccess, 'monthly_interests'),
+        missing_fields: readiness.missing_fields,
+        requirements: readiness.requirements,
         certification_verified: Boolean(installer.certification_verified),
         public_profile: Boolean(installer.public_profile),
         requirement_code: isLimitReached(planAccess, 'monthly_interests')
           ? 'FREE_INTEREST_LIMIT'
-          : installer.is_admin || (installer.certification_verified && installer.public_profile)
-            ? null
-          : !installer.certification_verified
-            ? 'CERTIFICATION_REQUIRED'
-            : 'PUBLIC_PROFILE_REQUIRED',
+          : readiness.ready ? null : 'PROFILE_ESSENTIALS_REQUIRED',
         message: isLimitReached(planAccess, 'monthly_interests')
           ? `Você usou os ${planAccess.limits.monthly_interests} interesses deste mês. No Pro, os interesses são ilimitados.`
-          : installer.is_admin || (installer.certification_verified && installer.public_profile)
-            ? ''
-          : !installer.certification_verified
-            ? 'Você pode ver pedidos, mas só poderá enviar interesse após a validação do certificado.'
-            : 'Você pode ver pedidos, mas precisa publicar o perfil antes de enviar interesse.',
+          : readiness.message,
       },
       plan_access: planAccess,
       stats: {
@@ -899,12 +887,12 @@ exports.expressInterest = async (req, res) => {
       return res.status(403).json({ error: 'Acesso restrito a instaladores.' });
     }
 
-    if (!installer.is_admin && (!installer.certification_verified || !installer.public_profile)) {
+    const readiness = getInstallerReadiness(installer);
+    if (!readiness.ready) {
       return res.status(403).json({
-        error: !installer.certification_verified
-          ? 'Seu certificado precisa ser validado antes de enviar interesse.'
-          : 'Publique seu perfil antes de enviar interesse.',
-        code: !installer.certification_verified ? 'CERTIFICATION_REQUIRED' : 'PUBLIC_PROFILE_REQUIRED',
+        error: readiness.message,
+        code: 'PROFILE_ESSENTIALS_REQUIRED',
+        missing_fields: readiness.missing_fields,
       });
     }
 
@@ -1108,8 +1096,7 @@ exports.getPublicServiceRequestInterests = async (req, res) => {
         WHERE sri.request_id = $1
           AND sri.status IN ('interested', 'selected')
           AND u.deleted_at IS NULL
-          AND (COALESCE(u.certification_verified, FALSE) = TRUE OR COALESCE(u.is_admin, FALSE) = TRUE)
-          AND (COALESCE(u.public_profile, FALSE) = TRUE OR COALESCE(u.is_admin, FALSE) = TRUE)
+          AND COALESCE(u.account_type, 'installer') = 'installer'
         ORDER BY
           (sri.status = 'selected') DESC,
           COALESCE(reviews.average_rating, 0) DESC,
@@ -1174,10 +1161,7 @@ exports.selectServiceRequestInterest = async (req, res) => {
           AND sri.request_id = $2
           AND sri.status IN ('interested', 'selected')
           AND u.deleted_at IS NULL
-          AND (COALESCE(u.is_admin, FALSE) = TRUE OR (
-            COALESCE(u.certification_verified, FALSE) = TRUE
-            AND COALESCE(u.public_profile, FALSE) = TRUE
-          ))
+          AND COALESCE(u.account_type, 'installer') = 'installer'
         LIMIT 1
       `,
       [interestId, requestId]

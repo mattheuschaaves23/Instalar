@@ -703,10 +703,19 @@ exports.getInstallerProfile = async (req, res) => {
   try {
     const installerId = Number(req.params.id);
     const ownInstallerPreview = req.user?.account_type === 'installer' && Number(req.userId) === installerId;
+    const requestedOrder = Number(req.query.pedido);
+    const requestId = Number.isSafeInteger(requestedOrder) && requestedOrder > 0 && requestedOrder <= 2147483647
+      ? requestedOrder : null;
+    const requestToken = String(req.headers['x-client-request-token'] || '').trim().slice(0, 80);
+    const clientId = req.user?.account_type === 'client' ? req.userId : null;
 
-    if (!installerId) {
+    if (!Number.isSafeInteger(installerId) || installerId <= 0 || installerId > 2147483647) {
       return res.status(400).json({ error: 'Instalador inválido.' });
     }
+
+    // This endpoint can also return an account-specific preview or a
+    // non-public profile associated with the caller's order.
+    res.set('Cache-Control', 'private, no-store');
 
     const [installerResult, reviewsResult, scheduleResult, availabilityResult] = await Promise.all([
       pool.query(
@@ -773,15 +782,26 @@ exports.getInstallerProfile = async (req, res) => {
           ) schedule_stats ON schedule_stats.user_id = u.id
           WHERE u.id = $1
             AND COALESCE(u.account_type, 'installer') = 'installer'
+            AND u.deleted_at IS NULL
             AND (
               (
                 COALESCE(u.public_profile, false) = true
                 AND COALESCE(u.certification_verified, false) = true
               )
               OR $2::boolean = TRUE
+              OR (
+                EXISTS (
+                  SELECT 1
+                  FROM service_request_interests sri
+                  JOIN service_requests sr ON sr.id = sri.request_id
+                  WHERE sri.installer_id = u.id AND sr.id = $3
+                    AND sri.status IN ('interested', 'selected')
+                    AND (sr.client_access_token = NULLIF($4, '') OR sr.client_user_id = $5)
+                )
+              )
             )
         `,
-        [installerId, ownInstallerPreview]
+        [installerId, ownInstallerPreview, requestId, requestToken, clientId]
       ),
       pool.query(
         `

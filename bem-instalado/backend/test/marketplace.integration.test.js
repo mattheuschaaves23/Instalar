@@ -177,8 +177,8 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
     await pool.query(
       `UPDATE users SET city = 'Palhoça', state = 'SC', latitude = -27.6460, longitude = -48.6685,
         service_radius_km = 80, certificate_file = $1,
-        certification_verified = TRUE, public_profile = TRUE WHERE id = $2`,
-      ['https://example.test/segundo-certificado.pdf', secondInstallerId]
+        certification_verified = FALSE, public_profile = FALSE, is_admin = FALSE WHERE id = $2`,
+      [null, secondInstallerId]
     );
 
     const order = await requestJson(baseUrl, '/api/public/service-requests', {
@@ -267,6 +267,58 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
       method: 'POST', headers: secondInstallerHeaders, body: JSON.stringify({}),
     });
     assert.equal(secondInterest.response.status, 200, JSON.stringify(secondInterest.body));
+    const minimalProfile = await requestJson(baseUrl, '/api/users/profile', { headers: secondInstallerHeaders });
+    assert.equal(minimalProfile.body.order_readiness.ready, true);
+    assert.equal(minimalProfile.body.certification_verified, false);
+    assert.equal(minimalProfile.body.public_profile, false);
+    assert.equal(minimalProfile.body.is_admin, false);
+    assert.equal(minimalProfile.body.certificate_file, null);
+    const minimalEligibility = await requestJson(baseUrl, '/api/opportunities', { headers: secondInstallerHeaders });
+    assert.equal(minimalEligibility.body.eligibility.can_express_interest, true);
+
+    // Check every essential field on the server: no hidden certificate,
+    // portfolio or public-directory requirement can stand in for these.
+    for (const [field, value, missingField] of [
+      ['name', ' ', 'name'], ['phone', '123', 'phone'], ['city', '', 'city'],
+      ['state', 'XX', 'state'], ['email_verified_at', null, 'email_verified'],
+    ]) {
+      const original = minimalProfile.body[field];
+      await pool.query(`UPDATE users SET ${field} = $1 WHERE id = $2`, [value, secondInstallerId]);
+      const blocked = await requestJson(baseUrl, `/api/opportunities/${serviceRequest.id}/interest`, {
+        method: 'POST', headers: secondInstallerHeaders, body: '{}',
+      });
+      assert.equal(blocked.response.status, 403, JSON.stringify(blocked.body));
+      if (field === 'email_verified_at') {
+        assert.equal(blocked.body.code, 'EMAIL_VERIFICATION_REQUIRED');
+      } else {
+        assert.equal(blocked.body.code, 'PROFILE_ESSENTIALS_REQUIRED');
+        assert.ok(blocked.body.missing_fields.includes(missingField));
+      }
+      await pool.query(`UPDATE users SET ${field} = $1 WHERE id = $2`, [original, secondInstallerId]);
+    }
+
+    // The WhatsApp URL must not make an unpublished installer's profile public.
+    const privateProfile = `/api/public/installers/${secondInstallerId}`;
+    const linkedPrivateProfile = `${privateProfile}?pedido=${serviceRequest.id}`;
+    const accessHeaders = { 'X-Client-Request-Token': serviceRequest.client_access_token };
+    for (const [path, headers] of [
+      [privateProfile, {}],
+      [linkedPrivateProfile, {}],
+      [linkedPrivateProfile, authHeaders],
+      [linkedPrivateProfile, { 'X-Client-Request-Token': 'invalid-token' }],
+      [`${privateProfile}?pedido=${serviceRequest.id + 1}`, accessHeaders],
+    ]) {
+      const blockedProfile = await requestJson(baseUrl, path, { headers });
+      assert.equal(blockedProfile.response.status, 404, JSON.stringify(blockedProfile.body));
+    }
+    for (const headers of [clientHeaders, accessHeaders]) {
+      const allowedProfile = await requestJson(baseUrl, linkedPrivateProfile, { headers });
+      assert.equal(allowedProfile.response.status, 200, JSON.stringify(allowedProfile.body));
+      assert.equal(allowedProfile.body.installer.id, secondInstallerId);
+      assert.equal(allowedProfile.body.installer.phone, undefined);
+      assert.match(allowedProfile.response.headers.get('cache-control'), /no-store/);
+      assert.equal(allowedProfile.body.installer.certificate_verified, false);
+    }
 
     const interested = await requestJson(
       baseUrl,
@@ -297,6 +349,29 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
     assert.equal(selection.response.status, 200, JSON.stringify(selection.body));
     assert.equal(selection.body.selected_interest.selected, true);
     assert.ok(selection.body.selected_interest.whatsapp_url);
+
+    const minimalOrder = await requestJson(baseUrl, '/api/public/service-requests', {
+      method: 'POST', headers: clientHeaders,
+      body: JSON.stringify({
+        client_name: 'Cliente do perfil essencial', client_phone: '48988888888',
+        service: 'wallpaper', city: 'Palhoça', state: 'SC', privacy_consent: true,
+      }),
+    });
+    assert.equal(minimalOrder.response.status, 201, JSON.stringify(minimalOrder.body));
+    const minimalRequest = minimalOrder.body.service_request;
+    const minimalInterest = await requestJson(baseUrl, `/api/opportunities/${minimalRequest.id}/accept`, {
+      method: 'POST', headers: secondInstallerHeaders, body: '{}',
+    });
+    assert.equal(minimalInterest.response.status, 200, JSON.stringify(minimalInterest.body));
+    const minimalInterests = await requestJson(baseUrl, `/api/public/service-requests/${minimalRequest.id}/interests`, { headers: clientHeaders });
+    assert.equal(minimalInterests.response.status, 200, JSON.stringify(minimalInterests.body));
+    const selectable = minimalInterests.body.interests.find((row) => row.installer_id === secondInstallerId);
+    assert.ok(selectable);
+    const chooseMinimal = await requestJson(baseUrl, `/api/public/service-requests/${minimalRequest.id}/interests/${selectable.id}/select`, {
+      method: 'POST', headers: clientHeaders, body: '{}',
+    });
+    assert.equal(chooseMinimal.response.status, 200, JSON.stringify(chooseMinimal.body));
+    assert.equal(chooseMinimal.body.selected_interest.installer_id, secondInstallerId);
 
     const selectedOpportunities = await requestJson(baseUrl, '/api/opportunities?status=selected', {
       headers: authHeaders,
@@ -428,7 +503,7 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
     if (installerId) await pool.query('DELETE FROM users WHERE id = $1', [installerId]);
     if (secondInstallerId) await pool.query('DELETE FROM users WHERE id = $1', [secondInstallerId]);
     if (clientId) await pool.query('DELETE FROM users WHERE id = $1', [clientId]);
-    await pool.query('DELETE FROM service_requests WHERE client_name = $1', ['Cliente Teste']);
+    await pool.query('DELETE FROM service_requests WHERE client_name IN ($1, $2)', ['Cliente Teste', 'Cliente do perfil essencial']);
     await new Promise((resolve) => server.close(resolve));
     await pool.end();
   }

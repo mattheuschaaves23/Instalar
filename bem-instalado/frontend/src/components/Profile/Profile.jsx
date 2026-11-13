@@ -8,6 +8,7 @@ import PageIntro from '../Layout/PageIntro';
 import { installationDayOptions, formatInstallationDays } from '../../utils/installerDays';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import PlanUsage from '../Subscription/PlanUsage';
+import { getInstallerRequirements } from '../../utils/installerRequirements';
 
 const initialForm = {
   name: '',
@@ -53,7 +54,7 @@ const initialSlotForm = {
 };
 
 const imageHint = 'PNG, JPG ou WEBP (máx. 3MB). A imagem é salva no perfil.';
-const certificateHint = 'PDF, PNG, JPG ou WEBP (máx. 4MB). A validação é necessária para aparecer na busca e enviar interesse.';
+const certificateHint = 'Opcional. PDF, PNG, JPG ou WEBP (máx. 4MB). A análise libera o selo de verificado; não é necessária para aceitar pedidos.';
 
 function buildMonthKey(date = new Date()) {
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -150,6 +151,8 @@ export default function Profile() {
   }));
 
   const securityScore = useMemo(() => calculateSecurityScore(form), [form]);
+  const essentialRequirements = getInstallerRequirements(form);
+  const essentialsCompleted = essentialRequirements.filter(({ complete }) => complete).length;
 
   const loadAvailabilitySlots = useCallback(async (monthValue = availabilityMonth) => {
     setAvailabilityLoading(true);
@@ -431,9 +434,9 @@ export default function Profile() {
           : 'Dados públicos, portfólio, região atendida, horários e valores.'}
         eyebrow="Perfil"
         stats={activeProfileTab === 'security' ? [{
-          label: 'Perfil completo',
+          label: 'Informações complementares',
           value: `${securityScore}%`,
-          detail: 'Documento, garantia, contrato e dados do perfil.',
+          detail: 'Opcionais: não bloqueiam o aceite de pedidos.',
         }] : [{
           label: 'Empresa',
           value: form.business_name || form.name || 'Sem marca',
@@ -465,28 +468,51 @@ export default function Profile() {
 
       {activeProfileTab === 'profile' ? (
         <form className="lux-panel fade-up p-6" onSubmit={handleSubmit}>
+          <section aria-labelledby="profile-essentials-title" className="mb-6 rounded-xl border border-[var(--line)] bg-[var(--surface-soft)] p-4">
+            <h2 className="text-lg font-semibold" id="profile-essentials-title">Essencial para aceitar pedidos</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">Só estes 5 itens são necessários. Preencha e salve; o restante do perfil é opcional.</p>
+            <ul className="mt-3 flex flex-wrap gap-2" aria-label="Requisitos para aceitar pedidos">
+              {essentialRequirements.map(({ field, label, complete }) => (
+                <li className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm" key={field}>
+                  <span aria-hidden="true">{complete ? '✓' : '○'} </span>{label}: {complete ? 'preenchido' : 'pendente'}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-sm text-[var(--muted)]">{essentialsCompleted} de 5 itens preenchidos. Confirme seu e-mail pelo link recebido na caixa de entrada.</p>
+          </section>
           <div className="grid gap-5 md:grid-cols-2">
             <label className="block">
-              <span className="field-label">Nome do responsável</span>
+              <span className="field-label">Nome do responsável · essencial</span>
               <input className="field-input" name="name" onChange={handleChange} value={form.name || ''} />
             </label>
 
             <label className="block">
-              <span className="field-label">Nome da empresa</span>
-              <input
-                className="field-input"
-                name="business_name"
-                onChange={handleChange}
-                placeholder="Ex.: Studio Papel e Parede"
-                value={form.business_name || ''}
-              />
+              <span className="field-label">Telefone · essencial</span>
+              <input className="field-input" name="phone" onChange={handleChange} type="tel" autoComplete="tel" value={form.phone || ''} />
             </label>
 
             <label className="block">
-              <span className="field-label">Telefone</span>
-              <input className="field-input" name="phone" onChange={handleChange} value={form.phone || ''} />
+              <span className="field-label">Cidade · essencial</span>
+              <input className="field-input" autoComplete="address-level2" name="city" onChange={handleChange} value={form.city || ''} />
             </label>
 
+            <label className="block">
+              <span className="field-label">Estado (UF) · essencial</span>
+              <input className="field-input" autoComplete="address-level1" maxLength={2} name="state" onChange={handleChange} placeholder="Ex.: SC" value={form.state || ''} />
+            </label>
+            <div className="md:col-span-2">
+              <span className="field-label">E-mail da conta · essencial</span>
+              <p className="text-sm">{form.email || 'Carregando e-mail…'}</p>
+              <button className="gold-button mt-4" disabled={saving} type="submit">{saving ? 'Salvando...' : 'Salvar dados essenciais'}</button>
+            </div>
+            <div className="border-t border-[var(--line)] pt-5 md:col-span-2">
+              <h2 className="text-lg font-semibold">Informações opcionais</h2>
+              <p className="mt-1 text-sm text-[var(--muted)]">Não precisa preencher os campos abaixo para aceitar pedidos. Use-os para apresentar seu trabalho.</p>
+            </div>
+            <label className="block">
+              <span className="field-label">Nome da empresa</span>
+              <input className="field-input" name="business_name" onChange={handleChange} placeholder="Ex.: Studio Papel e Parede" value={form.business_name || ''} />
+            </label>
             <label className="block">
               <span className="field-label">Tipo de documento</span>
               <select className="field-select" name="document_type" onChange={handleChange} value={form.document_type || 'cpf'}>
@@ -582,7 +608,7 @@ export default function Profile() {
             </label>
 
             <label className="block md:col-span-2">
-              <span className="field-label">Certificado de instalador</span>
+              <span className="field-label">Certificado de instalador · opcional</span>
               <input
                 className="field-input"
                 onChange={(event) => handleCertificateUpload(event.target.files?.[0])}
@@ -638,16 +664,6 @@ export default function Profile() {
                   </button>
                 </div>
               ) : null}
-            </label>
-
-            <label className="block">
-              <span className="field-label">Cidade</span>
-              <input className="field-input" name="city" onChange={handleChange} value={form.city || ''} />
-            </label>
-
-            <label className="block">
-              <span className="field-label">Estado</span>
-              <input className="field-input" name="state" onChange={handleChange} value={form.state || ''} />
             </label>
 
             <label className="block md:col-span-2">
@@ -976,8 +992,8 @@ export default function Profile() {
                 type="checkbox"
               />
               {form.public_profile
-                ? 'Perfil aprovado e visível na busca pública'
-                : 'Perfil aguardando análise do administrador antes de aparecer na busca'}
+                ? 'Perfil aprovado e visível na busca pública (opcional)'
+                : 'A busca pública é liberada após análise. Isso não impede aceitar pedidos.'}
             </label>
 
             <label className="profile-toggle-row md:col-span-2">

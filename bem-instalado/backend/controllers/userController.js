@@ -22,6 +22,7 @@ const {
 } = require('../services/planAccess');
 const { sendMarketplaceEmail } = require('../services/email');
 const { sendPushToUser } = require('../services/push');
+const { getInstallerReadiness } = require('../utils/installerEligibility');
 
 const PDF_BRANDING_DEFAULTS = Object.freeze({
   brand_name: '',
@@ -614,6 +615,7 @@ exports.getProfile = async (req, res) => {
       // confirmação. A sessão continua válida depois do clique no link, então
       // o perfil recarregado precisa refletir a confirmação imediatamente.
       email_verified: Boolean(rows[0]?.email_verified_at),
+      order_readiness: getInstallerReadiness(rows[0]),
       installation_gallery: normalizeGallery(rows[0]?.installation_gallery),
       pdf_branding: normalizePdfBranding(rows[0]?.pdf_branding),
     };
@@ -799,6 +801,7 @@ exports.updateProfile = async (req, res) => {
           COALESCE(account_type, 'installer') AS account_type,
           name,
           email,
+          email_verified_at,
           phone,
           logo,
           installer_photo,
@@ -877,6 +880,8 @@ exports.updateProfile = async (req, res) => {
 
     let profile = {
       ...rows[0],
+      email_verified: Boolean(rows[0]?.email_verified_at),
+      order_readiness: getInstallerReadiness(rows[0]),
       installation_gallery: normalizeGallery(rows[0]?.installation_gallery),
     };
 
