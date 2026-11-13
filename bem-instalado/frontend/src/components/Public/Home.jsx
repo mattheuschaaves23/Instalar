@@ -731,6 +731,7 @@ export default function Home() {
   const [loadingProposal, setLoadingProposal] = useState(false);
   const [respondingProposal, setRespondingProposal] = useState(false);
   const [privacyConsent, setPrivacyConsent] = useState(false);
+  const [whatsAppContactConsent, setWhatsAppContactConsent] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(
     typeof Notification === 'undefined' ? 'unsupported' : Notification.permission
   );
@@ -1306,6 +1307,7 @@ export default function Home() {
   };
 
   const clearTrackedRequest = () => {
+    setWhatsAppContactConsent(false);
     clearPublishedClientRequest();
     setPublishedRequest(null);
     setRequestInterests([]);
@@ -1533,6 +1535,7 @@ export default function Home() {
         latitude: guidedLocationTarget?.latitude,
         longitude: guidedLocationTarget?.longitude,
         privacy_consent: true,
+        whatsapp_contact_consent: whatsAppContactConsent,
         turnstile_token: turnstileToken,
       });
 
@@ -2811,7 +2814,7 @@ export default function Home() {
               <span>
                 {publishedRequest
                   ? 'Quando alguém quiser atender, o perfil aparecerá logo abaixo para você comparar.'
-                  : 'Seu telefone e endereço completo ficam privados até você escolher quem chamar.'}
+                  : 'Você decide se aceita mensagens de instaladores pelo WhatsApp. Seu endereço completo fica reservado para quem você escolher.'}
               </span>
             </div>
 
@@ -2866,6 +2869,14 @@ export default function Home() {
                     type="email"
                     value={requestContact.email}
                   />
+                </label>
+                <label className="client-app-request-consent">
+                  <input
+                    checked={whatsAppContactConsent}
+                    onChange={(event) => setWhatsAppContactConsent(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <span>Autorizo o compartilhamento do meu número com instaladores interessados para receber mensagens sobre este pedido pelo WhatsApp.</span>
                 </label>
                 <label className="client-app-request-consent">
                   <input

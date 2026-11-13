@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import PageIntro from '../Layout/PageIntro';
@@ -7,6 +9,26 @@ import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import PlanUsage from '../Subscription/PlanUsage';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import MarketplaceProposal from './MarketplaceProposal';
+
+const NativeWhatsApp = registerPlugin('NativeWhatsApp');
+
+async function openWhatsApp(url, tab) {
+  if (tab && !tab.closed) {
+    tab.location.replace(url);
+    return;
+  }
+  if (Capacitor.getPlatform() === 'android' && Capacitor.isPluginAvailable('NativeWhatsApp')) {
+    await NativeWhatsApp.open({ url });
+    return;
+  }
+  if (Capacitor.isNativePlatform()) {
+    await Browser.open({ url });
+    return;
+  }
+  const opened = window.open(url, '_blank');
+  if (opened) opened.opener = null;
+  else toast('O interesse foi registrado. Toque em “Abrir WhatsApp” para continuar.');
+}
 
 const FILTERS = [
   { value: 'open', label: 'Novas' },
@@ -115,6 +137,9 @@ export default function Opportunities() {
   );
 
   const handleInterest = async (opportunity) => {
+    const whatsAppTab = opportunity.can_contact_on_interest && !Capacitor.isNativePlatform()
+      ? window.open('about:blank', '_blank') : null;
+    if (whatsAppTab) whatsAppTab.opener = null;
     setSendingInterestId(opportunity.id);
     const wasOpen = !opportunity.interested_by_me;
 
@@ -132,11 +157,21 @@ export default function Opportunities() {
           interested: wasOpen ? Number(current.interested || 0) + 1 : Number(current.interested || 0),
         }));
         notifyPanelBadgeCountsChanged();
-        await refreshSubscription();
+        void refreshSubscription();
       }
 
-      toast.success('Interesse enviado. Agora é só aguardar a escolha do cliente.');
+      if (interested?.interest_whatsapp_url) {
+        try {
+          await openWhatsApp(interested.interest_whatsapp_url, whatsAppTab);
+        } catch {
+          toast('Interesse registrado. Use “Abrir WhatsApp” para tentar novamente.');
+        }
+      } else {
+        whatsAppTab?.close();
+        toast.success('Interesse registrado. Aguarde a escolha do cliente.');
+      }
     } catch (error) {
+      whatsAppTab?.close();
       toast.error(error.response?.data?.error || 'Não foi possível enviar interesse.');
     } finally {
       setSendingInterestId(null);
@@ -239,7 +274,7 @@ export default function Opportunities() {
                     <div className="opportunity-meta">
                       <span><OpportunityIcon type="user" />{opportunity.client_name || 'Cliente da região'}</span>
                       <span><OpportunityIcon type="map" />{joinRegion(opportunity)}</span>
-                      <span><OpportunityIcon type="phone" />{opportunity.client_phone || opportunity.client_phone_masked || 'WhatsApp se o cliente escolher você'}</span>
+                      <span><OpportunityIcon type="phone" />{opportunity.client_phone || (opportunity.can_contact_on_interest ? 'WhatsApp autorizado' : 'WhatsApp após a escolha')}</span>
                       <span><OpportunityIcon type="clock" />{opportunity.urgency_label || 'Prazo a combinar'}</span>
                       <span>{opportunity.distance_label || 'Região priorizada'}</span>
                     </div>
@@ -291,6 +326,20 @@ export default function Opportunities() {
                     <button className="gold-button" disabled type="button">
                       Pedido finalizado
                     </button>
+                  ) : opportunity.interest_whatsapp_url ? (
+                    <a
+                      className="gold-button"
+                      href={opportunity.interest_whatsapp_url}
+                      onClick={(event) => {
+                        if (!Capacitor.isNativePlatform()) return;
+                        event.preventDefault();
+                        void openWhatsApp(opportunity.interest_whatsapp_url).catch(() => toast.error('Não foi possível abrir o WhatsApp.'));
+                      }}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      Abrir WhatsApp
+                    </a>
                   ) : opportunity.interested_by_me ? (
                     <button className="gold-button" disabled type="button">
                       Aguardando cliente
@@ -303,7 +352,7 @@ export default function Opportunities() {
                         onClick={() => handleInterest(opportunity)}
                         type="button"
                       >
-                        {sendingInterestId === opportunity.id ? 'Enviando...' : 'Quero atender este pedido'}
+                        {sendingInterestId === opportunity.id ? 'Registrando...' : opportunity.can_contact_on_interest ? 'Aceitar pedido e abrir WhatsApp' : 'Quero atender este pedido'}
                       </button>
                     ) : (
                       <Link

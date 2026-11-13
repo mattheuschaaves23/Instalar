@@ -234,7 +234,7 @@ function buildServiceRequestInterestMessage({
       actionUrl,
       ...(profileUrl ? [`Acompanhar meu pedido: ${trackingUrl}`] : []),
       '',
-      'Seu telefone só será liberado depois que você escolher o profissional.',
+      'Você controla quem pode entrar em contato e quem recebe o endereço completo da instalação.',
     ].join('\n'),
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.55;color:#1f1f1f">
@@ -249,7 +249,7 @@ function buildServiceRequestInterestMessage({
           </a>
         </p>
         ${profileUrl ? `<p><a href="${safeTrackingUrl}">Acompanhar meu pedido</a></p>` : ''}
-        <p style="font-size:13px;color:#666">Seu telefone só será liberado depois que você escolher o profissional.</p>
+        <p style="font-size:13px;color:#666">Você controla quem pode entrar em contato e quem recebe o endereço completo da instalação.</p>
       </div>
     `,
   };

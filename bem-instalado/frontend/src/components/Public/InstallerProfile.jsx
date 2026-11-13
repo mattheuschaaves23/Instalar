@@ -154,7 +154,7 @@ export default function InstallerProfile() {
     try {
       const accepted = await confirm({
         title: 'Escolher este instalador?',
-        message: `Ao escolher ${interest.display_name}, você libera seu WhatsApp e o endereço da instalação para esse profissional. A escolha é definitiva para este pedido.`,
+        message: `Ao escolher ${interest.display_name}, você libera os dados completos da instalação para esse profissional. A escolha é definitiva para este pedido.`,
         confirmText: 'Confirmar escolha',
       });
       if (!accepted) return;
@@ -269,9 +269,12 @@ export default function InstallerProfile() {
   const rating = Number(installer.average_rating || 0);
   const reviewCount = Number(installer.review_count || 0);
   const certified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
-  const profileActionPath = isOwnProfile ? '/profile' : requestPath;
+  const needsClientLogin = Boolean(linkedRequest && !linkedRequest.token && !user);
+  const profileActionPath = isOwnProfile ? '/profile'
+    : needsClientLogin ? getClientLoginPath(`${location.pathname}${location.search}`) : requestPath;
   const profileActionLabel = isOwnProfile ? 'Editar perfil'
-    : interest?.selected ? 'Ver pedido com instalador escolhido' : requestLabel;
+    : interest?.selected ? 'Ver pedido com instalador escolhido'
+      : needsClientLogin ? 'Entrar para escolher este instalador' : requestLabel;
   const chooseAction = canChoose && !isOwnProfile;
   const trustItems = [
     { icon: 'clock', label: 'Horários', value: installer.service_hours || 'A combinar', detail: hasAvailability ? 'Agenda atualizada' : 'Consulte a agenda' },
@@ -328,6 +331,7 @@ export default function InstallerProfile() {
                 {selecting ? 'Confirmando escolha…' : 'Escolher este instalador'}
               </button>
             ) : <Link className="ig-profile-primary-action" to={profileActionPath}><ProfileIcon name={isOwnProfile ? 'document' : 'message'} size={18} />{profileActionLabel}</Link>}
+            {needsClientLogin ? <Link className="ig-profile-back" to={trackingPath}>Acessar com o código do pedido</Link> : null}
           </div>
 
           <div className="ig-profile-bio-block">

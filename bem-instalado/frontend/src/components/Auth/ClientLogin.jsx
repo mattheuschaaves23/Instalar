@@ -115,7 +115,7 @@ const benefitItems = [
   {
     icon: 'chat',
     title: 'Contato protegido',
-    copy: 'Seu WhatsApp só é liberado para o instalador escolhido.',
+    copy: 'Você controla o contato pelo WhatsApp e quem recebe o endereço completo.',
   },
 ];
 

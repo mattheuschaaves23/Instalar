@@ -174,6 +174,32 @@ function buildInstallerMessage(installer, request) {
   ].join(' ');
 }
 
+function normalizeBrazilianWhatsApp(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  const local = /^[1-9]\d(?:[2-5]\d{7}|9\d{8})$/;
+  if (local.test(digits)) return `55${digits}`;
+  return digits.startsWith('55') && local.test(digits.slice(2)) ? digits : '';
+}
+
+function buildInterestWhatsAppLink(req, installer, request) {
+  if (!request.whatsapp_contact_consent_at || request.status !== 'open'
+    || (request.expires_at && new Date(request.expires_at) <= new Date())) return null;
+
+  const phone = normalizeBrazilianWhatsApp(request.client_phone);
+  const baseUrl = getPublicAppUrl(req);
+  if (!phone || !baseUrl) return null;
+
+  const installerName = installer.business_name || installer.name || 'instalador da InstalaPro';
+  const region = [installer.city, installer.state].filter(Boolean).join(' - ') || installer.service_region;
+  const profileUrl = `${baseUrl}${interestedProfilePath(request.id, installer.id)}`;
+  return generateWhatsAppLink(phone, [
+    `Olá! Sou ${installerName}${region ? `, de ${region}` : ''}, instalador da InstalaPro.`,
+    `Tenho interesse em atender seu pedido #${request.id} de ${request.service_label || 'instalação de papel de parede'}.`,
+    `Veja meu perfil: ${profileUrl}`,
+    'Se quiser seguir comigo, abra o perfil e toque em “Escolher este instalador”.',
+  ].join('\n\n'));
+}
+
 function buildClientMessage(installer, request) {
   const installerName = installer.display_name || installer.business_name || installer.name || 'instalador';
   const service = request.service_label || 'instalação de papel de parede';
@@ -219,6 +245,10 @@ function serializeOpportunity(row) {
     photo_names: row.photo_names || [],
     photo_urls: row.photo_urls || [],
     status: row.status,
+    can_contact_on_interest: Boolean(row.whatsapp_contact_consent_at && row.status === 'open'
+      && normalizeBrazilianWhatsApp(row.client_phone)),
+    interest_whatsapp_url: row.my_interest_status === 'interested' && !selectedByMe && row.status === 'open'
+      && row.whatsapp_contact_consent_at ? row.interest_whatsapp_url || null : null,
     interested_by_me: interestedByMe,
     selected_by_me: selectedByMe,
     not_selected: row.status === 'selected' && interestedByMe && !selectedByMe,
@@ -380,6 +410,7 @@ exports.createPublicServiceRequest = async (req, res) => {
     const photoUrls = normalizePhotoUrls(req.body.photo_urls);
     const accessToken = createAccessToken();
     const privacyConsent = req.body.privacy_consent === true;
+    const whatsappConsent = req.body.whatsapp_contact_consent === true;
     const clientUserId = req.user?.account_type === 'client' ? req.user.id : null;
 
     if (!clientName || clientName.length < 2) {
@@ -388,6 +419,10 @@ exports.createPublicServiceRequest = async (req, res) => {
 
     if (clientPhone.replace(/\D/g, '').length < 10) {
       return res.status(400).json({ error: 'Informe um WhatsApp válido para o instalador escolhido chamar você.' });
+    }
+
+    if (whatsappConsent && !normalizeBrazilianWhatsApp(clientPhone)) {
+      return res.status(400).json({ error: 'Informe um número brasileiro de WhatsApp com DDD para autorizar contato.' });
     }
 
     if (req.body.client_email && !clientEmail) {
@@ -459,12 +494,13 @@ exports.createPublicServiceRequest = async (req, res) => {
           privacy_consent_at,
           terms_version,
           latitude,
-          longitude
+          longitude,
+          whatsapp_contact_consent_at
         )
         VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8::TEXT[], $9, $10, $11, $12, $13, $14, $15,
           $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29::JSONB, $30::JSONB,
-          $31, $32, $33, $34, $35, $36
+          $31, $32, $33, $34, $35, $36, $37
         )
         RETURNING
           id,
@@ -529,6 +565,7 @@ exports.createPublicServiceRequest = async (req, res) => {
         CURRENT_TERMS_VERSION,
         latitude,
         longitude,
+        whatsappConsent ? new Date() : null,
       ]
     );
 
@@ -805,15 +842,14 @@ exports.getOpportunities = async (req, res) => {
       })
       .slice(0, limit)
       .map((row) => {
-      if (!row.selected_by_me) {
-        return serializeOpportunity(row);
-      }
-
-      return serializeOpportunity({
-        ...row,
-        whatsapp_url: generateWhatsAppLink(row.client_phone, buildInstallerMessage(installer, row)),
+        return serializeOpportunity({
+          ...row,
+          interest_whatsapp_url: row.my_interest_status === 'interested' ? buildInterestWhatsAppLink(req, installer, row) : null,
+          whatsapp_url: row.selected_by_me
+            ? generateWhatsAppLink(normalizeBrazilianWhatsApp(row.client_phone) || row.client_phone, buildInstallerMessage(installer, row))
+            : null,
+        });
       });
-    });
 
     return res.json({
       opportunities,
@@ -1011,6 +1047,7 @@ exports.expressInterest = async (req, res) => {
     return res.json({
       opportunity: serializeOpportunity({
         ...request,
+        interest_whatsapp_url: buildInterestWhatsAppLink(req, installer, request),
         interested_by_me: true,
         my_interest_status: 'interested',
         my_interest_at: new Date().toISOString(),
