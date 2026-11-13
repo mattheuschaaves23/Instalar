@@ -401,10 +401,14 @@ export default function Profile() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const essentialsOnly = event.nativeEvent.submitter?.value === 'essentials';
+    const payload = essentialsOnly
+      ? { name: form.name, phone: form.phone, city: form.city, state: form.state }
+      : form;
     setSaving(true);
 
     try {
-      const response = await api.put('/users/profile', form);
+      const response = await api.put('/users/profile', payload);
       setForm(normalizeProfilePayload(response.data));
       setUser((current) => ({ ...current, ...response.data }));
       await refreshSubscription();
@@ -503,7 +507,7 @@ export default function Profile() {
             <div className="md:col-span-2">
               <span className="field-label">E-mail da conta · essencial</span>
               <p className="text-sm">{form.email || 'Carregando e-mail…'}</p>
-              <button className="gold-button mt-4" disabled={saving} type="submit">{saving ? 'Salvando...' : 'Salvar dados essenciais'}</button>
+              <button className="gold-button mt-4" disabled={saving} name="profile_action" type="submit" value="essentials">{saving ? 'Salvando...' : 'Salvar dados essenciais'}</button>
             </div>
             <div className="border-t border-[var(--line)] pt-5 md:col-span-2">
               <h2 className="text-lg font-semibold">Informações opcionais</h2>
