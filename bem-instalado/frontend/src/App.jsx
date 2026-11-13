@@ -14,6 +14,10 @@ const INSTALLER_APP_PATHS = [
   '/instalador',
   '/auth/social/callback',
   '/auth/mobile/callback',
+  '/auth/confirmar-email',
+  '/installers',
+  '/termos',
+  '/privacidade',
   '/dashboard',
   '/opportunities',
   '/clients',
@@ -27,6 +31,7 @@ const INSTALLER_APP_PATHS = [
   '/excluir-conta',
   '/subscription',
   '/support',
+  '/admin',
 ];
 
 const ClientLogin = lazy(routeModules.ClientLogin);

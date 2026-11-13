@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import api from './api';
 
-let registrationStarted = false;
+let activeRegistration;
 
 function platformName() {
   const platform = Capacitor.getPlatform();
@@ -9,31 +9,48 @@ function platformName() {
 }
 
 export async function registerNativePushNotifications() {
-  if (registrationStarted || !Capacitor.isNativePlatform()) return;
+  if (activeRegistration || !Capacitor.isNativePlatform()
+    || !Capacitor.isPluginAvailable('PushNotifications')) return;
   const platform = platformName();
   if (!platform) return;
-  registrationStarted = true;
+  const registration = { handles: [] };
+  activeRegistration = registration;
+  const isActive = () => activeRegistration === registration;
+  const keepListener = async (listener) => {
+    const handle = await listener;
+    if (isActive()) registration.handles.push(handle);
+    else await handle.remove();
+  };
 
   try {
+    const { data } = await api.get('/notifications/devices/capabilities', { handleSessionError: true });
+    if (!isActive() || !data?.push_configured) return;
     const { PushNotifications } = await import('@capacitor/push-notifications');
+    if (!isActive()) return;
     let permission = await PushNotifications.checkPermissions();
+    if (!isActive()) return;
     if (permission.receive === 'prompt') {
       permission = await PushNotifications.requestPermissions();
     }
-    if (permission.receive !== 'granted') return;
+    if (!isActive() || permission.receive !== 'granted') return;
 
-    await PushNotifications.addListener('registration', async (token) => {
-      await api.post('/notifications/devices', { platform, token: token.value }).catch(() => null);
-    });
-    await PushNotifications.addListener('registrationError', (error) => {
-      console.warn('Registro de push indisponível:', error.error || error);
-    });
-    await PushNotifications.register();
-  } catch (error) {
-    console.warn('Push nativo indisponível:', error.message || error);
+    await keepListener(PushNotifications.addListener('registration', (token) => {
+      if (isActive() && token?.value) {
+        void api.post('/notifications/devices', { platform, token: token.value }, { handleSessionError: true }).catch(() => null);
+      }
+    }));
+    if (!isActive()) return;
+    await keepListener(PushNotifications.addListener('registrationError', () => {
+      if (isActive()) resetNativePushRegistration();
+    }));
+    if (isActive()) await PushNotifications.register();
+  } catch (_error) {
+    if (isActive()) resetNativePushRegistration();
   }
 }
 
 export function resetNativePushRegistration() {
-  registrationStarted = false;
+  const previous = activeRegistration;
+  activeRegistration = undefined;
+  previous?.handles.forEach((handle) => { void handle.remove().catch(() => null); });
 }

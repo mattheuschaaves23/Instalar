@@ -2,10 +2,10 @@
   "appId": "br.com.instalapro.instaladores",
   "appName": "InstalaPro Instaladores",
   "webDir": "build",
-  "backgroundColor": "#080706",
+  "backgroundColor": "#ffffff",
   "loggingBehavior": "none",
   "android": {
-    "backgroundColor": "#080706",
+    "backgroundColor": "#ffffff",
     "allowMixedContent": false,
     "captureInput": true,
     "minWebViewVersion": 111

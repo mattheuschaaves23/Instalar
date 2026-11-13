@@ -1,7 +1,24 @@
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
+
 const storageCache = new Map();
 const AUTH_TOKEN_KEY = 'token';
 const NATIVE_STORAGE_TIMEOUT_MS = 2500;
 let memoryAuthToken = '';
+let authSessionVersion = 0;
+let nativeWrites = Promise.resolve();
+
+function updateNativeToken(token) {
+  if (!Capacitor.isNativePlatform()) return Promise.resolve();
+  // Timeout the caller, not the write queue: a delayed save must never
+  // finish after a newer removal (or replace a newer token).
+  nativeWrites = nativeWrites.then(() => token
+    ? Preferences.set({ key: AUTH_TOKEN_KEY, value: token })
+    : Preferences.remove({ key: AUTH_TOKEN_KEY })
+  ).catch(() => null);
+  const pendingWrite = nativeWrites;
+  return resolveWithTimeout(() => pendingWrite, null);
+}
 
 function resolveWithTimeout(task, fallback, timeoutMs = NATIVE_STORAGE_TIMEOUT_MS) {
   return new Promise((resolve) => {
@@ -51,21 +68,6 @@ function getStorage(storageName) {
   }
 }
 
-async function getNativePreferences() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  return resolveWithTimeout(async () => {
-    const [{ Capacitor }, { Preferences }] = await Promise.all([
-      import('@capacitor/core'),
-      import('@capacitor/preferences'),
-    ]);
-
-    return Capacitor.isNativePlatform() ? Preferences : null;
-  }, null);
-}
-
 function createSafeStorage(storageName) {
   return {
     getItem(key) {
@@ -107,52 +109,36 @@ export function getAuthToken() {
   return memoryAuthToken || null;
 }
 
+export function getAuthSessionVersion() {
+  return authSessionVersion;
+}
+
 export async function hydrateAuthToken() {
   if (memoryAuthToken) return memoryAuthToken;
+  if (!Capacitor.isNativePlatform()) return null;
 
-  const preferences = await getNativePreferences();
-
-  if (!preferences) {
-    return null;
-  }
-
+  const version = authSessionVersion;
   const result = await resolveWithTimeout(
-    () => preferences.get({ key: AUTH_TOKEN_KEY }),
-    { value: null }
+    () => nativeWrites.then(() => Preferences.get({ key: AUTH_TOKEN_KEY })),
+    null
   );
-  const nativeToken = String(result?.value || '').trim();
-
-  if (!nativeToken) {
-    return null;
-  }
-
-  memoryAuthToken = nativeToken;
-  return nativeToken;
+  if (authSessionVersion !== version) return getAuthToken();
+  if (!result) throw new Error('Não foi possível ler a sessão salva no dispositivo.');
+  memoryAuthToken = String(result.value || '').trim();
+  return getAuthToken();
 }
 
 export async function setAuthToken(token, remember = true) {
-  const normalizedToken = String(token || '').trim();
-  memoryAuthToken = normalizedToken;
-  const preferences = await getNativePreferences();
-  let storedNatively = false;
-
-  if (preferences && remember) {
-    storedNatively = await resolveWithTimeout(
-      () => preferences.set({ key: AUTH_TOKEN_KEY, value: normalizedToken }).then(() => true),
-      false
-    );
-  }
-
-  return Boolean(normalizedToken && (storedNatively || memoryAuthToken));
+  const version = ++authSessionVersion;
+  memoryAuthToken = String(token || '').trim();
+  await updateNativeToken(remember ? memoryAuthToken : '');
+  return version === authSessionVersion && Boolean(memoryAuthToken);
 }
 
 export async function clearAuthToken() {
+  authSessionVersion += 1;
   memoryAuthToken = '';
   safeLocalStorage.removeItem(AUTH_TOKEN_KEY);
   safeSessionStorage.removeItem(AUTH_TOKEN_KEY);
-
-  const preferences = await getNativePreferences();
-  if (preferences) {
-    await resolveWithTimeout(() => preferences.remove({ key: AUTH_TOKEN_KEY }), null);
-  }
+  await updateNativeToken('');
 }

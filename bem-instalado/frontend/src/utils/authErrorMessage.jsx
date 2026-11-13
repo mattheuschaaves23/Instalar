@@ -1,4 +1,6 @@
 export function getAuthRequestErrorMessage(error, fallback = 'Não foi possível entrar.') {
+  if (error?.code === 'NATIVE_SESSION_ERROR') return error.message || fallback;
+
   if (error?.code === 'ECONNABORTED' || String(error?.message || '').toLowerCase().includes('timeout')) {
     return 'A conexão demorou mais que o esperado. Verifique sua internet e tente novamente.';
   }

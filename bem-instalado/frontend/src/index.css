@@ -23815,7 +23815,7 @@ html[data-installer-app='true'],
 html[data-installer-app='true'] body,
 html[data-installer-app='true'] #root {
   min-height: 100%;
-  background: #080706;
+  background: var(--site-bg);
 }
 
 html[data-installer-app='true'] body {
@@ -24287,9 +24287,6 @@ html[data-installer-app='true'] body {
   overflow-x: hidden;
   overflow-y: auto;
   touch-action: pan-y;
-  background:
-    radial-gradient(26rem 19rem at 100% 0%, rgba(var(--site-accent-rgb), 0.13), transparent 68%),
-    #080706 !important;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -24334,7 +24331,7 @@ html[data-installer-app='true'] body {
   display: inline-flex;
   align-items: center;
   gap: 0.38rem;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--muted);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -24343,12 +24340,8 @@ html[data-installer-app='true'] body {
   width: min(100%, 28rem);
   min-height: 0;
   margin-top: clamp(0.9rem, 4vh, 2.3rem);
-  padding: 0.2rem 0 1rem;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
+  padding: clamp(1rem, 5vw, 2rem);
+  border-radius: 1rem;
 }
 
 .installer-app-login-kicker {
@@ -24365,7 +24358,6 @@ html[data-installer-app='true'] body {
 }
 
 .installer-app-login-card .installer-login-card-head h2 {
-  font-family: 'Fraunces', Georgia, serif;
   font-size: clamp(2.25rem, 11vw, 3.15rem);
   font-weight: 580;
   line-height: 1;
@@ -24375,7 +24367,7 @@ html[data-installer-app='true'] body {
 .installer-app-login-card .installer-login-card-head p {
   margin-top: 0.65rem;
   max-width: 21rem;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--muted);
   font-size: 0.9rem;
 }
 
@@ -24397,7 +24389,6 @@ html[data-installer-app='true'] body {
   gap: 0.75rem;
   padding: 0 0.95rem;
   border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.035);
 }
 
 .installer-app-login-card .installer-login-input-wrap > svg {
@@ -24431,7 +24422,7 @@ html[data-installer-app='true'] body {
 }
 
 .installer-app-login-card .installer-login-divider p {
-  color: rgba(255, 255, 255, 0.46);
+  color: var(--muted);
   font-size: 0.75rem;
 }
 
@@ -24951,16 +24942,10 @@ html[data-site-theme='light'] .client-login-divider span {
   background: rgba(23, 19, 13, 0.14);
 }
 
-html[data-site-theme='light'] .installer-app-login-page {
-  background:
-    radial-gradient(26rem 19rem at 100% 0%, rgba(var(--site-accent-rgb), 0.11), transparent 68%),
-    #ffffff !important;
-}
-
-html[data-site-theme='light'] .installer-app-login-card .installer-login-card-head p,
-html[data-site-theme='light'] .installer-app-login-card .installer-login-divider p,
-html[data-site-theme='light'] .installer-app-login-top > a {
-  color: var(--muted);
+html[data-site-theme='light'] .installer-app-login-frame,
+html[data-site-theme='light'] .installer-app-login-frame .installer-login-right {
+  background: transparent;
+  box-shadow: none;
 }
 
 html[data-site-theme='light'] .installer-onboarding-page,
