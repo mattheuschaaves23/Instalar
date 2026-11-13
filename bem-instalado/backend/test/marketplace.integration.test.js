@@ -177,7 +177,7 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
     await pool.query(
       `UPDATE users SET city = 'Palhoça', state = 'SC', latitude = -27.6460, longitude = -48.6685,
         service_radius_km = 80, certificate_file = $1,
-        certification_verified = TRUE, public_profile = TRUE WHERE id = $2`,
+        certification_verified = FALSE, public_profile = FALSE, is_admin = TRUE WHERE id = $2`,
       ['https://example.test/segundo-certificado.pdf', secondInstallerId]
     );
 
@@ -267,6 +267,29 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
       method: 'POST', headers: secondInstallerHeaders, body: JSON.stringify({}),
     });
     assert.equal(secondInterest.response.status, 200, JSON.stringify(secondInterest.body));
+
+    // The WhatsApp URL can be opened in a fresh browser, but it must not
+    // make an unpublished administrator's profile public.
+    const privateProfile = `/api/public/installers/${secondInstallerId}`;
+    const linkedPrivateProfile = `${privateProfile}?pedido=${serviceRequest.id}`;
+    const accessHeaders = { 'X-Client-Request-Token': serviceRequest.client_access_token };
+    for (const [path, headers] of [
+      [privateProfile, {}],
+      [linkedPrivateProfile, {}],
+      [linkedPrivateProfile, authHeaders],
+      [linkedPrivateProfile, { 'X-Client-Request-Token': 'invalid-token' }],
+      [`${privateProfile}?pedido=${serviceRequest.id + 1}`, accessHeaders],
+    ]) {
+      const blockedProfile = await requestJson(baseUrl, path, { headers });
+      assert.equal(blockedProfile.response.status, 404, JSON.stringify(blockedProfile.body));
+    }
+    for (const headers of [clientHeaders, accessHeaders]) {
+      const allowedProfile = await requestJson(baseUrl, linkedPrivateProfile, { headers });
+      assert.equal(allowedProfile.response.status, 200, JSON.stringify(allowedProfile.body));
+      assert.equal(allowedProfile.body.installer.id, secondInstallerId);
+      assert.equal(allowedProfile.body.installer.phone, undefined);
+      assert.match(allowedProfile.response.headers.get('cache-control'), /no-store/);
+    }
 
     const interested = await requestJson(
       baseUrl,

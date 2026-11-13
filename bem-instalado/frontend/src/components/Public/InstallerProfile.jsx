@@ -100,18 +100,6 @@ export default function InstallerProfile() {
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
-  useEffect(() => {
-    let active = true;
-    setPayload(null);
-    setProfileError('');
-    api.get(`/public/installers/${id}`)
-      .then(({ data }) => { if (active) setPayload(data); })
-      .catch((error) => {
-        if (active) setProfileError(error.response?.data?.error || 'Não foi possível carregar o perfil do instalador.');
-      });
-    return () => { active = false; };
-  }, [id]);
-
   const linkedRequest = useMemo(() => {
     const tracking = readClientRequestTrackingHash(location.hash);
     const requestId = Number(new URLSearchParams(location.search).get('pedido'));
@@ -119,6 +107,23 @@ export default function InstallerProfile() {
     const saved = tracking?.id === requestId ? tracking : readPublishedClientRequest();
     return { id: requestId, token: saved?.id === requestId ? saved.client_access_token : '' };
   }, [location.search, location.hash]);
+
+  useEffect(() => {
+    let active = true;
+    setPayload(null);
+    setProfileError('');
+    const headers = linkedRequest?.token ? { 'X-Client-Request-Token': linkedRequest.token } : {};
+    const params = linkedRequest ? { pedido: linkedRequest.id } : {};
+    api.get(`/public/installers/${id}`, { headers, params })
+      .then(({ data }) => { if (active) setPayload(data); })
+      .catch((error) => {
+        if (active) setProfileError({
+          status: error.response?.status,
+          message: error.response?.data?.error || 'Não foi possível carregar o perfil do instalador.',
+        });
+      });
+    return () => { active = false; };
+  }, [id, linkedRequest, user?.id, user?.account_type]);
 
   useEffect(() => {
     let active = true;
@@ -145,6 +150,8 @@ export default function InstallerProfile() {
   const request = linkedContext?.request;
   const interest = linkedContext?.interest;
   const trackingPath = linkedRequest ? `/cliente/pedido${buildClientRequestTrackingHash(request || linkedRequest)}` : '/cliente';
+  const clientLoginPath = getClientLoginPath(`${location.pathname}${location.search}`);
+  const needsClientLogin = Boolean(linkedRequest && !linkedRequest.token && user?.account_type !== 'client');
   const canChoose = Boolean(interest && request?.status === 'open'
     && (!request.expires_at || Date.parse(request.expires_at) > Date.now()));
 
@@ -244,8 +251,13 @@ export default function InstallerProfile() {
   if (profileError) return (
     <main className="ig-installer-profile ig-profile-unavailable">
       <h1>Perfil indisponível</h1>
-      <p>{profileError}</p>
-      <Link className="ig-profile-primary-action" to={trackingPath}>
+      <p>{needsClientLogin && profileError.status === 404
+        ? 'Entre com a conta que fez o pedido ou acesse com o código do pedido para ver este perfil.'
+        : profileError.message}</p>
+      {needsClientLogin && profileError.status === 404 ? (
+        <Link className="ig-profile-primary-action" to={clientLoginPath}>Entrar para ver o perfil</Link>
+      ) : null}
+      <Link className={needsClientLogin && profileError.status === 404 ? 'ig-profile-back' : 'ig-profile-primary-action'} to={trackingPath}>
         {linkedRequest ? 'Voltar ao pedido' : 'Encontrar instaladores'}
       </Link>
     </main>
@@ -269,9 +281,8 @@ export default function InstallerProfile() {
   const rating = Number(installer.average_rating || 0);
   const reviewCount = Number(installer.review_count || 0);
   const certified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
-  const needsClientLogin = Boolean(linkedRequest && !linkedRequest.token && !user);
   const profileActionPath = isOwnProfile ? '/profile'
-    : needsClientLogin ? getClientLoginPath(`${location.pathname}${location.search}`) : requestPath;
+    : needsClientLogin ? clientLoginPath : requestPath;
   const profileActionLabel = isOwnProfile ? 'Editar perfil'
     : interest?.selected ? 'Ver pedido com instalador escolhido'
       : needsClientLogin ? 'Entrar para escolher este instalador' : requestLabel;
