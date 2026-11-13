@@ -33725,6 +33725,25 @@ html[data-site-theme] button.auth-google-button:focus-visible {
 }
 
 /* Shared website login geometry; keep the native installer app independent. */
+html[data-site-theme='dark'] :is(.installer-login-page, .client-login-page) {
+  background:
+    radial-gradient(52rem 36rem at 30% 12%, rgba(var(--site-accent-rgb), 0.12), transparent 62%),
+    var(--site-bg) !important;
+}
+
+:is(.installer-login-input-wrap, .client-login-input-wrap) > input {
+  background: transparent !important;
+}
+
+html[data-site-theme='light'] :is(.installer-login-input-wrap, .client-login-input-wrap) {
+  background: var(--site-panel);
+  box-shadow: none;
+}
+
+html[data-site-theme='light'] :is(.installer-login-input-wrap, .client-login-input-wrap):focus-within {
+  box-shadow: 0 0 0 3px var(--site-accent-soft);
+}
+
 .auth-web-login {
   padding: 1.25rem;
 }
