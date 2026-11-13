@@ -25,14 +25,14 @@ function sanitizeMessage(message) {
   };
 }
 
-async function queueEmailDelivery({ to, message, category = 'transactional', idempotencyKey }) {
+async function queueEmailDelivery({ to, message, category = 'transactional', idempotencyKey, transaction }) {
   const recipient = String(to || '').trim().toLowerCase();
   const safeMessage = sanitizeMessage(message);
   if (!recipient || !safeMessage.subject) return { sent: false, reason: 'invalid_email_payload' };
   if (!isEmailEnabled()) return { sent: false, reason: 'smtp_not_configured' };
 
   const key = String(idempotencyKey || deliveryKey({ to: recipient, category, message: safeMessage })).slice(0, 180);
-  const inserted = await pool.query(
+  const inserted = await (transaction || pool).query(
     `INSERT INTO outbound_deliveries (channel, recipient, payload, category, idempotency_key, max_attempts)
      VALUES ('email', $1, $2::jsonb, $3, $4, $5)
      ON CONFLICT (idempotency_key) DO UPDATE SET updated_at = NOW()
@@ -40,6 +40,7 @@ async function queueEmailDelivery({ to, message, category = 'transactional', ide
     [recipient, JSON.stringify(safeMessage), String(category || 'transactional').slice(0, 80), key, maxAttempts()]
   );
   const delivery = inserted.rows[0];
+  if (transaction) return { deliveryId: delivery.id, sent: delivery.status === 'sent' };
 
   // Try once while the originating request is still active. The queued record
   // remains available for the protected operations endpoint if SMTP is down.

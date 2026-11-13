@@ -373,3 +373,34 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
   .ig-profile-comment-field,
   .ig-profile-form .ig-profile-primary-action { grid-column: auto; }
 }
+.ig-profile-hero-actions .ig-profile-choose,
+.ig-profile-mobile-action .ig-profile-choose {
+  min-height: 52px;
+  padding-inline: 1.3rem;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ig-profile-mobile-action .ig-profile-choose {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .ig-profile-hero-actions .ig-profile-choose {
+    display: none;
+  }
+}
+
+.ig-profile-choose:disabled {
+  cursor: wait;
+  opacity: .75;
+}
+
+.ig-installer-profile.ig-profile-unavailable {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: .8rem;
+  padding: clamp(1rem, 5vw, 4rem);
+}

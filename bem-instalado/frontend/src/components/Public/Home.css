@@ -9,6 +9,25 @@
   padding: 1rem 0 calc(6rem + env(safe-area-inset-bottom, 0px));
 }
 
+html[data-site-theme='dark'] .client-app-page {
+  background: #101010 !important;
+}
+
+.client-app-notification-menu .client-app-notification-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  margin-top: .3rem;
+  color: var(--site-accent-deep);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
+
+html[data-site-theme='dark'] .client-app-notification-menu .client-app-notification-action {
+  color: #f4c968;
+}
+
 .client-app-shell {
   width: min(1180px, calc(100% - 1.2rem));
   margin: 0 auto;

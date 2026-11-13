@@ -30,6 +30,8 @@ test('proposta mostra detalhes e fotos sem revelar contato ou endereço completo
   assert.equal(serialized.client_email, null);
   assert.equal(serialized.zip_code, null);
   assert.equal(serialized.address_reference, null);
+  assert.equal(serialized.interest_whatsapp_url, null);
+  assert.equal(serialized.can_contact_on_interest, false);
 });
 
 test('contato e endereço completo são liberados somente ao instalador escolhido', () => {

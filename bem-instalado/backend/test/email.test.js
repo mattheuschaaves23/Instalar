@@ -25,8 +25,10 @@ test('monta aviso de interesse sem expor HTML informado pelo usuário', () => {
     appName: 'InstalaPro',
     clientName: '<Cliente>',
     installerName: 'Instalador & Filho',
+    installerRegion: 'Palhoça & região',
     serviceLabel: 'Papel "premium"',
     trackingUrl: 'https://instalapro.example/cliente/pedido#pedido=3&acesso=abc',
+    profileUrl: 'https://instalapro.example/installers/7?pedido=3#pedido=3&acesso=abc',
   });
 
   assert.match(message.subject, /Novo instalador interessado/);
@@ -34,5 +36,8 @@ test('monta aviso de interesse sem expor HTML informado pelo usuário', () => {
   assert.match(message.html, /Instalador &amp; Filho/);
   assert.match(message.html, /Papel &quot;premium&quot;/);
   assert.match(message.html, /pedido=3&amp;acesso=abc/);
+  assert.match(message.html, /installers\/7\?pedido=3#pedido=3&amp;acesso=abc/);
+  assert.match(message.html, /Palhoça &amp; região/);
+  assert.match(message.text, /Escolher este instalador/);
   assert.doesNotMatch(message.html, /undefined/);
 });

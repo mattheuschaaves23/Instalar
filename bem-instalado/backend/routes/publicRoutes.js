@@ -59,8 +59,8 @@ router.get('/installers/:id', optionalAuthMiddleware, publicSearchLimiter, contr
 router.post('/service-requests', optionalAuthMiddleware, serviceRequestLimiter, requireTurnstile, serviceRequestController.createPublicServiceRequest);
 router.get('/service-requests/mine', authMiddleware, publicSearchLimiter, serviceRequestController.getMyServiceRequests);
 router.post('/service-requests/:id/claim', authMiddleware, serviceRequestLimiter, serviceRequestController.claimServiceRequest);
-router.get('/service-requests/:id/interests', publicSearchLimiter, serviceRequestController.getPublicServiceRequestInterests);
-router.post('/service-requests/:id/interests/:interestId/select', serviceRequestLimiter, serviceRequestController.selectServiceRequestInterest);
+router.get('/service-requests/:id/interests', optionalAuthMiddleware, publicSearchLimiter, serviceRequestController.getPublicServiceRequestInterests);
+router.post('/service-requests/:id/interests/:interestId/select', optionalAuthMiddleware, serviceRequestLimiter, serviceRequestController.selectServiceRequestInterest);
 router.get('/service-requests/:id/proposal', optionalAuthMiddleware, publicSearchLimiter, marketplaceFlowController.getClientProposal);
 router.post('/service-requests/:id/proposal/respond', optionalAuthMiddleware, serviceRequestLimiter, marketplaceFlowController.respondToProposal);
 router.patch('/service-requests/:id/status', optionalAuthMiddleware, serviceRequestLimiter, serviceRequestController.updateClientServiceRequestStatus);
