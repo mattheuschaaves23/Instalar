@@ -73,7 +73,7 @@ export async function startSocialLogin(provider, options) {
   if (IS_INSTALLER_APP && Capacitor.isNativePlatform()) {
     await Browser.open({
       url,
-      toolbarColor: '#080706',
+      toolbarColor: document.querySelector('meta[name="theme-color"]')?.content || '#ffffff',
       presentationStyle: 'fullscreen',
     });
     return;
@@ -93,6 +93,6 @@ export async function registerClientRequest(payload) {
 }
 
 export async function getProfileRequest() {
-  const response = await api.get('/users/profile', { timeout: 12000 });
+  const response = await api.get('/users/profile', { timeout: 12000, handleSessionError: true });
   return response.data;
 }

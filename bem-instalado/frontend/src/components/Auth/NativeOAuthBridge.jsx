@@ -20,26 +20,25 @@ export default function NativeOAuthBridge() {
     const handleUrl = async ({ url } = {}) => {
       const route = getNativeOAuthRoute(url);
 
-      if (!route || lastHandledUrl.current === url) {
+      if (disposed || !route || lastHandledUrl.current === url) {
         return;
       }
 
-      lastHandledUrl.current = url;
-      await Browser.close().catch(() => null);
-
-      if (!disposed) {
+      if (!disposed && lastHandledUrl.current !== url) {
+        lastHandledUrl.current = url;
+        void Browser.close().catch(() => null);
         navigate(route, { replace: true });
       }
     };
 
     CapacitorApp.addListener('appUrlOpen', handleUrl).then((handle) => {
       if (disposed) {
-        void handle.remove();
+        void handle.remove().catch(() => null);
         return;
       }
 
       listenerHandle = handle;
-    });
+    }).catch(() => null);
 
     CapacitorApp.getLaunchUrl()
       .then((launch) => handleUrl(launch))
@@ -47,7 +46,7 @@ export default function NativeOAuthBridge() {
 
     return () => {
       disposed = true;
-      void listenerHandle?.remove();
+      void listenerHandle?.remove().catch(() => null);
     };
   }, [navigate]);
 

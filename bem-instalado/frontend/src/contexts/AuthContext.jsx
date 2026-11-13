@@ -1,29 +1,45 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { getProfileRequest, loginRequest, logoutRequest, registerClientRequest, registerRequest } from '../services/auth';
-import { clearAuthToken, hydrateAuthToken, setAuthToken } from '../utils/safeStorage';
+import { clearAuthToken, getAuthSessionVersion, getAuthToken, hydrateAuthToken, setAuthToken } from '../utils/safeStorage';
 import { registerNativePushNotifications, resetNativePushRegistration } from '../services/pushNotifications';
 import { clearCsrfToken, refreshCsrfToken } from '../services/csrf';
+import { isInvalidSession } from '../utils/authSession';
+import { isNativeStoreApp } from '../utils/nativePlatform';
 
 const AuthContext = createContext(null);
+
+function nativeSessionError(message) {
+  return Object.assign(new Error(message), { code: 'NATIVE_SESSION_ERROR' });
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState('');
+  const profileAttempt = useRef(0);
 
   const loadProfile = useCallback(async () => {
+    const attempt = ++profileAttempt.current;
+    const version = getAuthSessionVersion();
+    const isCurrent = () => attempt === profileAttempt.current && version === getAuthSessionVersion();
     setLoading(true);
     setAuthError('');
 
     try {
+      if (isNativeStoreApp()) {
+        if (!await hydrateAuthToken() || !isCurrent()) return null;
+      } else {
+        await refreshCsrfToken();
+        if (!isCurrent()) return null;
+      }
       const profile = await getProfileRequest();
+      if (!isCurrent()) return null;
       setUser(profile);
       return profile;
     } catch (error) {
-      const status = error.response?.status;
-      const code = error.response?.data?.code || '';
+      if (!isCurrent()) return null;
 
-      if (status === 401 && code.startsWith('AUTH_')) {
+      if (isInvalidSession(error)) {
         void clearAuthToken();
         setUser(null);
       } else {
@@ -35,82 +51,65 @@ export function AuthProvider({ children }) {
 
       return null;
     } finally {
-      setLoading(false);
+      if (attempt === profileAttempt.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    let active = true;
-
-    const restoreSession = async () => {
-      try {
-        await refreshCsrfToken();
-        await hydrateAuthToken();
-
-        if (!active) {
-          return;
-        }
-
-        await loadProfile();
-      } catch (_error) {
-        if (!active) {
-          return;
-        }
-
-        setUser(null);
-        setAuthError('Não foi possível abrir sua sessão. Verifique a conexão e tente novamente.');
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void restoreSession();
-
+    void loadProfile();
     return () => {
-      active = false;
+      profileAttempt.current += 1;
     };
   }, [loadProfile]);
 
+  const userId = user?.id;
   useEffect(() => {
-    if (user) {
+    if (userId) {
       void registerNativePushNotifications();
     }
-  }, [user]);
+    return resetNativePushRegistration;
+  }, [userId]);
 
-  const login = async (payload, { remember = true } = {}) => {
-    const result = await loginRequest({ ...payload, remember });
-    await setAuthToken(result.token, remember);
+  const acceptSession = async (result, remember) => {
+    if (!result.user || (isNativeStoreApp() && !String(result.token || '').trim())) {
+      throw nativeSessionError('Não foi possível iniciar a sessão neste aplicativo. Tente novamente.');
+    }
+    profileAttempt.current += 1;
+    const saved = setAuthToken(result.token, remember);
+    const version = getAuthSessionVersion();
+    await saved;
+    if (version !== getAuthSessionVersion() || (isNativeStoreApp() && !getAuthToken())) {
+      throw nativeSessionError('O acesso foi interrompido. Tente entrar novamente.');
+    }
     setUser(result.user);
     setAuthError('');
+    setLoading(false);
     return result;
+  };
+
+  const login = async (payload, { remember = true } = {}) => {
+    return acceptSession(await loginRequest({ ...payload, remember }), remember);
   };
 
   const register = async (payload) => {
-    const result = await registerRequest(payload);
-    await setAuthToken(result.token, true);
-    setUser(result.user);
-    setAuthError('');
-    return result;
+    return acceptSession(await registerRequest(payload), true);
   };
 
   const registerClient = async (payload) => {
-    const result = await registerClientRequest(payload);
-    await setAuthToken(result.token, true);
-    setUser(result.user);
-    setAuthError('');
-    return result;
+    return acceptSession(await registerClientRequest(payload), true);
   };
 
-  const logout = async () => {
-    await logoutRequest().catch(() => null);
-    await clearAuthToken();
-    clearCsrfToken();
+  const logout = useCallback(async () => {
+    profileAttempt.current += 1;
     resetNativePushRegistration();
+    if (!isNativeStoreApp()) await logoutRequest().catch(() => null);
+    const clearing = clearAuthToken();
+    clearCsrfToken();
     setUser(null);
     setAuthError('');
-  };
+    setLoading(false);
+    await clearing;
+  }, []);
 
   return (
     <AuthContext.Provider

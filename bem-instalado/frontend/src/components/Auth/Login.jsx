@@ -288,9 +288,11 @@ export default function Login() {
 
   return (
     <main className={`installer-login-page${IS_INSTALLER_APP ? ' installer-app-login-page' : ' auth-web-login'}`}>
-      <Link className="auth-login-back" to={IS_INSTALLER_APP ? '/instalador/boas-vindas' : '/'}>
-        <span aria-hidden="true">←</span> Voltar
-      </Link>
+      {!IS_INSTALLER_APP && (
+        <Link className="auth-login-back" to="/">
+          <span aria-hidden="true">←</span> Voltar
+        </Link>
+      )}
       <section className={`installer-login-frame${IS_INSTALLER_APP ? ' installer-app-login-frame' : ''}`}>
         {!IS_INSTALLER_APP ? (
           <div className="installer-login-left">
@@ -335,7 +337,7 @@ export default function Login() {
               <BrandWordmark className="installer-app-login-logo" size="md" />
               <Link to="/instalador/boas-vindas">
                 <span aria-hidden="true">←</span>
-                Apresentação
+                Voltar
               </Link>
             </div>
           ) : null}

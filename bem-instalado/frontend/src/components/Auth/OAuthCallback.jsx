@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { getProfileRequest } from '../../services/auth';
-import { clearAuthToken, setAuthToken } from '../../utils/safeStorage';
+import { clearAuthToken, getAuthSessionVersion, setAuthToken } from '../../utils/safeStorage';
+import { isInvalidSession } from '../../utils/authSession';
+import { isNativeStoreApp } from '../../utils/nativePlatform';
 import {
   getOAuthErrorMessage,
   PASSWORD_REVOKED_NOTICE,
@@ -52,22 +54,30 @@ export default function OAuthCallback() {
         return;
       }
 
+      if (isNativeStoreApp() && !token) {
+        setError('O login com o Google não retornou uma sessão. Volte e tente novamente.');
+        return;
+      }
+
+      let version = getAuthSessionVersion();
+      const isCurrent = () => isMounted && version === getAuthSessionVersion();
       try {
         if (token) {
-          await setAuthToken(token, true);
+          const saved = setAuthToken(token, true);
+          version = getAuthSessionVersion();
+          await saved;
         }
+        if (!isCurrent()) return;
         const profile = await getProfileRequest();
 
-        if (!isMounted) {
-          return;
-        }
+        if (!isCurrent()) return;
 
         if (
           IS_INSTALLER_APP
           && profile?.account_type !== 'installer'
           && !profile?.is_admin
         ) {
-          clearAuthToken();
+          void clearAuthToken();
           setError('Este aplicativo aceita somente contas de instalador.');
           return;
         }
@@ -78,12 +88,10 @@ export default function OAuthCallback() {
           toast(PASSWORD_REVOKED_NOTICE, { duration: 15000 });
         }
         navigate(resolveNextPath(next, profile), { replace: true });
-      } catch (_error) {
-        clearAuthToken();
-
-        if (isMounted) {
-          setError('Não foi possível concluir o login social.');
-        }
+      } catch (error) {
+        if (!isCurrent()) return;
+        if (isInvalidSession(error)) void clearAuthToken();
+        setError('Não foi possível concluir o login social.');
       }
     }
 

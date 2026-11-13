@@ -42,9 +42,9 @@ root.render(
                 style: {
                   borderRadius: '18px',
                   border: '1px solid var(--site-accent-line)',
-                  background: 'rgba(11, 10, 9, 0.94)',
-                  color: '#f6efdf',
-                  boxShadow: '0 18px 40px rgba(0, 0, 0, 0.3)',
+                  background: 'var(--surface-strong)',
+                  color: 'var(--text)',
+                  boxShadow: 'var(--shadow)',
                 },
               }}
               />
