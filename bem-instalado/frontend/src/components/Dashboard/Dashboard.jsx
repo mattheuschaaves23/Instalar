@@ -1299,13 +1299,14 @@ export default function Dashboard() {
               <article className="ref-panel-card ref-panel-ranking-card">
                 <div className="ref-panel-card-head is-inline">
                   <h3>Seu perfil</h3>
-                  <Link to="/profile">Completar</Link>
+                  <Link to="/profile">Ver dados essenciais</Link>
                 </div>
                 <div className="ref-panel-ranking-row">
                   <em>#{metrics.ranking_position || '--'}</em>
                   <span>Posição no ranking</span>
                   <strong>{metrics.profile_completeness || 0}%</strong>
                 </div>
+                <p className="ref-panel-empty-copy">Percentual de apresentação. Não é preciso chegar a 100% para aceitar pedidos.</p>
               </article>
             )}
 
@@ -1651,7 +1652,7 @@ export default function Dashboard() {
                 Avaliações recebidas: <strong>{metrics.review_count || 0}</strong>
               </p>
               <p>
-                Perfil completo: <strong>{metrics.profile_completeness || 0}%</strong>
+                Apresentação do perfil (opcional): <strong>{metrics.profile_completeness || 0}%</strong>
               </p>
             </div>
 

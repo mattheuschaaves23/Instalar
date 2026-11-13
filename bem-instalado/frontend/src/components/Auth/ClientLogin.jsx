@@ -104,8 +104,8 @@ function ClientLoginIcon({ name }) {
 const benefitItems = [
   {
     icon: 'shield',
-    title: 'Profissionais verificados',
-    copy: 'Todos os instaladores passam por uma análise completa.',
+    title: 'Conheça o profissional',
+    copy: 'Consulte o perfil, os trabalhos e o selo de quem teve o certificado verificado.',
   },
   {
     icon: 'star',

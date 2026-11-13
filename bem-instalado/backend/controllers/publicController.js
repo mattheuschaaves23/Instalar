@@ -790,8 +790,7 @@ exports.getInstallerProfile = async (req, res) => {
               )
               OR $2::boolean = TRUE
               OR (
-                COALESCE(u.is_admin, FALSE) = TRUE
-                AND EXISTS (
+                EXISTS (
                   SELECT 1
                   FROM service_request_interests sri
                   JOIN service_requests sr ON sr.id = sri.request_id

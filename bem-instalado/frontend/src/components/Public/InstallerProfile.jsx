@@ -323,7 +323,7 @@ export default function InstallerProfile() {
   const hasAvailability = Boolean(slots.length || installer.available_dates?.length);
   const rating = Number(installer.average_rating || 0);
   const reviewCount = Number(installer.review_count || 0);
-  const certified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
+  const certified = Boolean(installer.certificate_verified);
   const profileActionPath = isOwnProfile ? '/profile'
     : needsClientLogin ? clientLoginPath : requestPath;
   const profileActionLabel = isOwnProfile ? 'Editar perfil'
