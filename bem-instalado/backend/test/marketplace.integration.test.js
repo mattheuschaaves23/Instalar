@@ -85,6 +85,12 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
     const installerProfile = await requestJson(baseUrl, '/api/users/profile', { headers: authHeaders });
     assert.equal(installerProfile.response.status, 200, JSON.stringify(installerProfile.body));
     assert.ok(Array.isArray(installerProfile.body.installation_gallery));
+    assert.equal(installerProfile.response.headers.get('Cache-Control'), 'private, no-store');
+    const csrfResponse = await requestJson(baseUrl, '/api/auth/csrf');
+    assert.equal(csrfResponse.response.headers.get('Cache-Control'), 'private, no-store');
+    const invalidJson = await requestJson(baseUrl, '/api/auth/login', { method: 'POST', body: '{"email":' });
+    assert.equal(invalidJson.response.status, 400);
+    assert.deepEqual(invalidJson.body, { error: 'Requisição inválida.' });
 
     const support = await requestJson(baseUrl, '/api/support/me', { headers: authHeaders });
     assert.equal(support.response.status, 200, JSON.stringify(support.body));
@@ -465,6 +471,16 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
     });
     assert.equal(forgotPassword.response.status, 200, JSON.stringify(forgotPassword.body));
     assert.ok(forgotPassword.body.reset_token);
+    const repeatReset = await requestJson(baseUrl, '/api/auth/forgot-password', {
+      method: 'POST', body: JSON.stringify({ email, account_type: 'installer' }),
+    });
+    assert.equal(repeatReset.response.status, 200);
+    assert.equal(repeatReset.body.reset_token, undefined);
+    const unknownReset = await requestJson(baseUrl, '/api/auth/forgot-password', {
+      method: 'POST', body: JSON.stringify({ email: `desconhecido-${email}`, account_type: 'installer' }),
+    });
+    assert.deepEqual(repeatReset.body, unknownReset.body);
+    assert.equal(sentMail.filter((mail) => mail.to === email && /senha/i.test(mail.subject)).length, 1);
 
     const resetPassword = await requestJson(baseUrl, '/api/auth/reset-password', {
       method: 'POST',

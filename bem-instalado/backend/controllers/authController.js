@@ -1051,6 +1051,7 @@ exports.forgotPassword = async (req, res) => {
         FROM users
         WHERE LOWER(email) = LOWER($1)
           AND account_type = $2
+          AND deleted_at IS NULL
         LIMIT 1
       `,
       [normalizedEmail, requestedAccountType]
@@ -1083,6 +1084,19 @@ exports.forgotPassword = async (req, res) => {
     try {
       await db.query('BEGIN');
       await db.query('SELECT pg_advisory_xact_lock($1)', [Number(user.id)]);
+      // Keep the last reset link usable and limit email resend per account,
+      // not just per connection. The response remains generic in production.
+      const recentReset = await db.query(
+        `SELECT 1 FROM password_reset_tokens
+         WHERE user_id = $1 AND used_at IS NULL AND expires_at > NOW()
+           AND created_at > NOW() - INTERVAL '1 minute'
+         LIMIT 1`,
+        [user.id]
+      );
+      if (recentReset.rowCount) {
+        await db.query('COMMIT');
+        return res.json(genericResponse);
+      }
       await db.query(
         `
           UPDATE password_reset_tokens
@@ -1120,13 +1134,12 @@ exports.forgotPassword = async (req, res) => {
       to: user.email,
       resetUrl,
       expiresInMinutes: PASSWORD_RESET_EXPIRATION_MINUTES,
-    }).catch((error) => {
+    }).catch(() => {
       console.error('Falha ao enviar e-mail de recuperação de senha.');
-      console.error(error);
       return { sent: false, reason: 'send_failed' };
     });
 
-    const shouldExposeResetToken = process.env.NODE_ENV !== 'production';
+    const shouldExposeResetToken = process.env.NODE_ENV === 'test' && !process.env.VERCEL;
 
     if (shouldExposeResetToken) {
       return res.json({
@@ -1138,7 +1151,7 @@ exports.forgotPassword = async (req, res) => {
       });
     }
 
-    return res.json({ ...genericResponse, delivery });
+    return res.json(genericResponse);
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao iniciar recuperação de senha.' });
   }

@@ -22,7 +22,7 @@ const publicSearchLimiter = createRateLimiter({
 const reviewLimiter = createRateLimiter({
   windowMs: 10 * 60 * 1000,
   max: 5,
-  keyGenerator: (req) => `${req.ip || 'unknown'}:installer:${req.params.id || ''}`,
+  keyGenerator: (req) => `user:${req.userId || 'unknown'}`,
   message: 'Muitas avaliações em sequência. Aguarde alguns minutos para enviar outra.',
 });
 
@@ -49,21 +49,21 @@ router.get('/installers', publicSearchLimiter, controller.getInstallers);
 router.get('/sitemap.xml', controller.getSitemap);
 router.get('/installer-app-release', publicSearchLimiter, installerAppReleaseController.getInstallerAppRelease);
 router.get('/assets/:assetKey', publicSearchLimiter, assetController.getPublicAsset);
-router.post('/client-errors', optionalAuthMiddleware, clientErrorLimiter, monitoringController.reportClientError);
+router.post('/client-errors', clientErrorLimiter, optionalAuthMiddleware, monitoringController.reportClientError);
 router.post('/service-request-uploads', serviceRequestLimiter, publicUploadSingle, serviceRequestController.uploadPublicRequestPhoto);
 router.get('/recommended-stores', publicSearchLimiter, controller.getRecommendedStores);
 router.get('/dashboard-ads', publicSearchLimiter, controller.getDashboardAds);
 router.get('/location/reverse', publicSearchLimiter, controller.reverseLocation);
 router.get('/location/search', publicSearchLimiter, controller.searchLocation);
-router.get('/installers/:id', optionalAuthMiddleware, publicSearchLimiter, controller.getInstallerProfile);
-router.post('/service-requests', optionalAuthMiddleware, serviceRequestLimiter, requireTurnstile, serviceRequestController.createPublicServiceRequest);
+router.get('/installers/:id', publicSearchLimiter, optionalAuthMiddleware, controller.getInstallerProfile);
+router.post('/service-requests', serviceRequestLimiter, requireTurnstile, optionalAuthMiddleware, serviceRequestController.createPublicServiceRequest);
 router.get('/service-requests/mine', authMiddleware, publicSearchLimiter, serviceRequestController.getMyServiceRequests);
 router.post('/service-requests/:id/claim', authMiddleware, serviceRequestLimiter, serviceRequestController.claimServiceRequest);
-router.get('/service-requests/:id/interests', optionalAuthMiddleware, publicSearchLimiter, serviceRequestController.getPublicServiceRequestInterests);
-router.post('/service-requests/:id/interests/:interestId/select', optionalAuthMiddleware, serviceRequestLimiter, serviceRequestController.selectServiceRequestInterest);
-router.get('/service-requests/:id/proposal', optionalAuthMiddleware, publicSearchLimiter, marketplaceFlowController.getClientProposal);
-router.post('/service-requests/:id/proposal/respond', optionalAuthMiddleware, serviceRequestLimiter, marketplaceFlowController.respondToProposal);
-router.patch('/service-requests/:id/status', optionalAuthMiddleware, serviceRequestLimiter, serviceRequestController.updateClientServiceRequestStatus);
+router.get('/service-requests/:id/interests', publicSearchLimiter, optionalAuthMiddleware, serviceRequestController.getPublicServiceRequestInterests);
+router.post('/service-requests/:id/interests/:interestId/select', serviceRequestLimiter, optionalAuthMiddleware, serviceRequestController.selectServiceRequestInterest);
+router.get('/service-requests/:id/proposal', publicSearchLimiter, optionalAuthMiddleware, marketplaceFlowController.getClientProposal);
+router.post('/service-requests/:id/proposal/respond', serviceRequestLimiter, optionalAuthMiddleware, marketplaceFlowController.respondToProposal);
+router.patch('/service-requests/:id/status', serviceRequestLimiter, optionalAuthMiddleware, serviceRequestController.updateClientServiceRequestStatus);
 router.post('/installers/:id/reviews', authMiddleware, reviewLimiter, requireTurnstile, controller.createReview);
 
 module.exports = router;

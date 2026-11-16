@@ -10,8 +10,7 @@ function isTurnstileEnabled() {
 }
 
 function getClientIp(req) {
-  const forwarded = String(req.headers?.['x-forwarded-for'] || '').split(',')[0].trim();
-  return forwarded || req.ip || '';
+  return String(req.ip || req.socket?.remoteAddress || '').replace(/^::ffff:/, '');
 }
 
 async function requireTurnstile(req, res, next) {

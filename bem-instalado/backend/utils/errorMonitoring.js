@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const pool = require('../config/database');
 const { notifyOperationalAlert } = require('../services/operationalAlerts');
 const { captureException } = require('../services/sentry');
+const { redactDiagnostic, diagnosticRoute } = require('./monitoringPrivacy');
 
 function cleanText(value, maxLength = 1000) {
   return String(value || '').replace(/\s+/g, ' ').trim().slice(0, maxLength);
@@ -22,7 +23,9 @@ function safeMetadata(metadata) {
   Object.entries(metadata).slice(0, 20).forEach(([key, value]) => {
     if (blocked.test(key)) return;
     if (['string', 'number', 'boolean'].includes(typeof value)) {
-      result[cleanText(key, 60)] = typeof value === 'string' ? cleanText(value, 300) : value;
+      const name = cleanText(key, 60);
+      if (!name || ['__proto__', 'prototype', 'constructor'].includes(name)) return;
+      result[name] = typeof value === 'string' ? redactDiagnostic(value, 300) : value;
     }
   });
 
@@ -37,11 +40,16 @@ async function logApplicationError({
   req,
   statusCode = 500,
   metadata = {},
+  notifyExternally = true,
 }) {
+  const route = diagnosticRoute(req);
+  const safeMessage = redactDiagnostic(message) || 'Erro sem mensagem';
+  const safeStack = redactDiagnostic(stack, 8000);
+  const shouldNotify = notifyExternally && String(severity).toLowerCase() !== 'info';
   const sentryContext = {
     level: String(severity || 'error').toLowerCase(),
     method: cleanText(req?.method, 12),
-    route: cleanText(req?.originalUrl || req?.path, 180),
+    route,
     source: cleanText(source, 30) || 'backend',
     statusCode: Number(statusCode) || 500,
   };
@@ -58,33 +66,33 @@ async function logApplicationError({
       [
         cleanText(source, 30) || 'backend',
         cleanText(severity, 20) || 'error',
-        cleanText(message, 1200) || 'Erro sem mensagem',
-        cleanText(req?.originalUrl || req?.path, 240) || null,
+        safeMessage,
+        route || null,
         cleanText(req?.method, 12) || null,
         Number.isFinite(Number(statusCode)) ? Number(statusCode) : 500,
         Number.isFinite(Number(req?.userId)) ? Number(req.userId) : null,
-        hash(stack || message),
+        hash(safeStack || safeMessage),
         JSON.stringify(safeMetadata(metadata)),
       ]
     );
-    if (String(severity).toLowerCase() !== 'info') {
-      void captureException(Object.assign(new Error(cleanText(message, 1200) || 'Erro sem mensagem'), { stack: stack || undefined }), sentryContext);
+    if (shouldNotify) {
+      void captureException(Object.assign(new Error(safeMessage), { stack: safeStack || undefined }), sentryContext);
       void notifyOperationalAlert({
         severity: String(severity || 'error').toLowerCase(),
         source: cleanText(source, 30) || 'backend',
-        message: cleanText(message, 700),
+        message: safeMessage.slice(0, 700),
         metadata: {
-          route: cleanText(req?.originalUrl || req?.path, 160),
+          route,
           method: cleanText(req?.method, 12),
           status_code: Number(statusCode) || 500,
         },
       });
     }
   } catch (monitoringError) {
-    if (String(severity).toLowerCase() !== 'info') {
-      void captureException(Object.assign(new Error(cleanText(message, 1200) || 'Erro sem mensagem'), { stack: stack || undefined }), sentryContext);
+    if (shouldNotify) {
+      void captureException(Object.assign(new Error(safeMessage), { stack: safeStack || undefined }), sentryContext);
     }
-    console.error('Falha ao registrar erro da aplicação:', monitoringError.message);
+    console.error('Falha ao registrar erro da aplicação:', redactDiagnostic(monitoringError.message, 200));
   }
 }
 

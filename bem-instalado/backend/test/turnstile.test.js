@@ -54,7 +54,7 @@ test('Turnstile libera token confirmado pelo provedor', async () => {
   let nextCalled = false;
 
   await requireTurnstile(
-    { body: { turnstile_token: 'token-test' }, headers: { 'x-forwarded-for': '203.0.113.10' } },
+    { body: { turnstile_token: 'token-test' }, ip: '203.0.113.10', headers: { 'x-forwarded-for': '192.0.2.25' } },
     createResponse(),
     () => { nextCalled = true; }
   );

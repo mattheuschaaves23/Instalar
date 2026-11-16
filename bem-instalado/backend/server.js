@@ -26,6 +26,7 @@ const supportRoutes = require('./routes/supportRoutes');
 const opportunityRoutes = require('./routes/opportunityRoutes');
 const operationsRoutes = require('./routes/operationsRoutes');
 const { logApplicationError } = require('./utils/errorMonitoring');
+const { redactDiagnostic, diagnosticRoute } = require('./utils/monitoringPrivacy');
 const { requireCsrfForCookieSession } = require('./middleware/csrfMiddleware');
 const { hasOperationsAccess } = require('./middleware/operationsMiddleware');
 const { deliverySummary } = require('./services/outboundDelivery');
@@ -147,6 +148,11 @@ app.use(
   })
 );
 app.use(compression());
+app.use('/api', (_req, res, next) => {
+  // Only intentionally public endpoints opt into caching individually.
+  res.set('Cache-Control', 'private, no-store');
+  next();
+});
 app.use(
   cors({
     origin: validateCorsOrigin,
@@ -194,18 +200,19 @@ app.use('/api/opportunities', opportunityRoutes);
 app.use('/api/operations', operationsRoutes);
 
 app.use((error, req, res, _next) => {
-  const statusCode = Number(error.statusCode || error.status || 500);
+  const candidate = Number(error.statusCode || error.status || 500);
+  const statusCode = Number.isInteger(candidate) && candidate >= 400 && candidate <= 599 ? candidate : 500;
   if (statusCode >= 500) {
-    console.error(error);
+    console.error('Falha na API', { statusCode, route: diagnosticRoute(req), error: redactDiagnostic(error.message, 300) });
     void logApplicationError({ message: error.message, stack: error.stack, req, statusCode });
   }
-  res.status(statusCode).json({
-    error: statusCode === 403
-      ? 'Origem não permitida.'
-      : statusCode < 500
-        ? error.message || 'Requisição inválida.'
-        : 'Erro interno do servidor.',
-  });
+  const messages = {
+    400: 'Requisição inválida.',
+    403: 'Origem não permitida.',
+    413: 'O conteúdo enviado é grande demais.',
+    415: 'Formato da requisição não aceito.',
+  };
+  res.status(statusCode).json({ error: messages[statusCode] || (statusCode < 500 ? 'Requisição inválida.' : 'Erro interno do servidor.') });
 });
 
 app.use((_req, res) => {
