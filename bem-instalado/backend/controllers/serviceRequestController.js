@@ -9,6 +9,7 @@ const { normalizeSearchText } = require('../utils/textSearch');
 const forwardGeocode = require('../utils/forwardGeocode');
 const { validateUploadFile } = require('../utils/uploadValidation');
 const { expireOpenServiceRequests } = require('../utils/serviceRequestLifecycle');
+const { getOpportunityListing, normalizeListingOptions } = require('../services/opportunityListing');
 const { getInstallerReadiness, normalizeBrazilianWhatsApp } = require('../utils/installerEligibility');
 const {
   getInstallerPlanAccess,
@@ -202,7 +203,7 @@ function buildClientMessage(installer, request) {
 }
 
 function serializeOpportunity(row) {
-  const selectedByMe = Boolean(row.selected_by_me || row.my_interest_status === 'selected');
+  const selectedByMe = row.selected_by_me !== undefined ? Boolean(row.selected_by_me) : row.my_interest_status === 'selected';
   const interestedByMe = Boolean(row.interested_by_me || row.my_interest_status);
 
   return {
@@ -245,7 +246,7 @@ function serializeOpportunity(row) {
       && row.whatsapp_contact_consent_at ? row.interest_whatsapp_url || null : null,
     interested_by_me: interestedByMe,
     selected_by_me: selectedByMe,
-    not_selected: row.status === 'selected' && interestedByMe && !selectedByMe,
+    not_selected: Boolean((row.status === 'selected' || row.selected_installer_id) && interestedByMe && !selectedByMe),
     my_interest_status: row.my_interest_status || null,
     my_interest_at: row.my_interest_at || null,
     selected_at: row.selected_at || null,
@@ -260,6 +261,7 @@ function serializeOpportunity(row) {
     whatsapp_url: selectedByMe ? row.whatsapp_url || null : null,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    expires_at: row.expires_at,
   };
 }
 
@@ -720,132 +722,25 @@ exports.getOpportunities = async (req, res) => {
 
     const planAccess = req.planAccess || await getInstallerPlanAccess(req.userId);
 
-    if (!installer.is_admin && (!installer.city || !installer.state)) {
+    const tab = normalizeListingOptions(req.query).status;
+    if (!installer.is_admin && (!installer.city || !installer.state) && !['interested', 'selected'].includes(tab)) {
       return res.status(403).json({
         error: 'Informe cidade e estado no perfil para ver pedidos da sua região.',
         code: 'PROFILE_LOCATION_REQUIRED',
       });
     }
 
-    const rawStatus = normalizeText(req.query.status, 20);
-    const status = ['interested', 'selected', 'all'].includes(rawStatus) ? rawStatus : 'open';
-    const limit = Math.min(Math.max(Number(req.query.limit || 60), 1), 100);
-    const city = normalizeOptionalText(req.query.city, 120) || installer.city || '';
-    const state = normalizeState(req.query.state) || normalizeState(installer.state);
-    const normalizedInstallerCity = normalizeSearchText(installer.city);
-    const normalizedInstallerState = normalizeSearchText(installer.state);
-    const normalizedCity = normalizeSearchText(city);
-    const normalizedState = normalizeSearchText(state);
-    const hasInstallerCoordinates = [installer.latitude, installer.longitude].every(
-      (value) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
-    );
-    const serviceRadiusKm = Math.min(Math.max(Number(installer.service_radius_km) || 80, 10), 250);
-    const values = [
-      req.userId,
-      normalizedInstallerCity,
-      normalizedInstallerState,
-      normalizedCity,
-      normalizedState,
-      limit,
-      hasInstallerCoordinates,
-    ];
-    const filters = [];
-
-    if (status === 'selected') {
-      filters.push("sri.status = 'selected'");
-    } else if (status === 'interested') {
-      filters.push("sri.status = 'interested'");
-      filters.push("sr.status IN ('open', 'selected')");
-      filters.push("(sr.status = 'selected' OR sr.expires_at IS NULL OR sr.expires_at > NOW())");
-    } else {
-      filters.push("sr.status = 'open'");
-      filters.push('(sr.expires_at IS NULL OR sr.expires_at > NOW())');
-
-      if (status === 'open') {
-        filters.push('sri.id IS NULL');
-      }
-    }
-
-    filters.push(
-      "($4 = '' OR $7::boolean = TRUE OR TRANSLATE(LOWER(COALESCE(sr.city, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = $4)"
-    );
-
-    if (state) {
-      filters.push("TRANSLATE(LOWER(COALESCE(sr.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = $5");
-    }
-
-    const result = await pool.query(
-      `
-        SELECT
-          sr.*,
-          sri.id IS NOT NULL AS interested_by_me,
-          sri.status AS my_interest_status,
-          sri.created_at AS my_interest_at,
-          sr.selected_installer_id = $1 AS selected_by_me,
-          CASE
-            WHEN TRANSLATE(LOWER(COALESCE(sr.city, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = NULLIF($2, '')
-              AND TRANSLATE(LOWER(COALESCE(sr.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = NULLIF($3, '') THEN 100
-            WHEN TRANSLATE(LOWER(COALESCE(sr.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = NULLIF($3, '') THEN 82
-            WHEN NULLIF(sr.state, '') IS NULL OR NULLIF($3, '') IS NULL THEN 64
-            ELSE 38
-          END AS match_score,
-          CASE
-            WHEN TRANSLATE(LOWER(COALESCE(sr.city, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = NULLIF($2, '')
-              AND TRANSLATE(LOWER(COALESCE(sr.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = NULLIF($3, '') THEN 'Mesma cidade'
-            WHEN TRANSLATE(LOWER(COALESCE(sr.state, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') = NULLIF($3, '') THEN 'Mesmo estado'
-            ELSE 'Outra região'
-          END AS distance_label
-        FROM service_requests sr
-        LEFT JOIN service_request_interests sri
-          ON sri.request_id = sr.id
-          AND sri.installer_id = $1
-        WHERE ${filters.join(' AND ')}
-        ORDER BY
-          selected_by_me DESC,
-          interested_by_me DESC,
-          match_score DESC,
-          sr.created_at DESC
-        LIMIT $6
-      `,
-      values
-    );
-
-    const opportunities = result.rows
-      .map((row) => {
-        const distanceKm = haversineDistanceKm(
-          installer.latitude,
-          installer.longitude,
-          row.latitude,
-          row.longitude
-        );
-        return {
-          ...row,
-          distance_km: distanceKm,
-          distance_label: distanceKm === null ? row.distance_label : `${Math.max(1, Math.round(distanceKm))} km de distância`,
-        };
-      })
-      .filter((row) => {
-        if (!hasInstallerCoordinates || row.selected_by_me || row.interested_by_me) return true;
-        const sameCity = normalizeSearchText(row.city) === normalizedInstallerCity;
-        return sameCity || (row.distance_km !== null && row.distance_km <= serviceRadiusKm);
-      })
-      .sort((left, right) => {
-        if (left.selected_by_me !== right.selected_by_me) return left.selected_by_me ? -1 : 1;
-        if (left.interested_by_me !== right.interested_by_me) return left.interested_by_me ? -1 : 1;
-        if (left.distance_km === null) return 1;
-        if (right.distance_km === null) return -1;
-        return left.distance_km - right.distance_km;
-      })
-      .slice(0, limit)
-      .map((row) => {
-        return serializeOpportunity({
-          ...row,
-          interest_whatsapp_url: row.my_interest_status === 'interested' ? buildInterestWhatsAppLink(req, installer, row) : null,
-          whatsapp_url: row.selected_by_me
-            ? generateWhatsAppLink(normalizeBrazilianWhatsApp(row.client_phone) || row.client_phone, buildInstallerMessage(installer, row))
-            : null,
-        });
-      });
+    const listing = await getOpportunityListing(pool, installer, req.userId, req.query);
+    const opportunities = listing.opportunities.map((row) => serializeOpportunity({
+      ...row,
+      distance_label: row.distance_km === null
+        ? row.same_city ? 'Mesma cidade' : row.same_state ? 'Mesmo estado' : 'Outra região'
+        : Number(row.distance_km) < 1 ? 'A menos de 1 km' : `${Math.round(Number(row.distance_km))} km de distância`,
+      interest_whatsapp_url: row.my_interest_status === 'interested' ? buildInterestWhatsAppLink(req, installer, row) : null,
+      whatsapp_url: row.selected_by_me
+        ? generateWhatsAppLink(normalizeBrazilianWhatsApp(row.client_phone) || row.client_phone, buildInstallerMessage(installer, row))
+        : null,
+    }));
 
     const readiness = getInstallerReadiness(installer);
     return res.json({
@@ -864,12 +759,9 @@ exports.getOpportunities = async (req, res) => {
           : readiness.message,
       },
       plan_access: planAccess,
-      stats: {
-        open: opportunities.filter((item) => !item.interested_by_me && item.status === 'open').length,
-        interested: opportunities.filter((item) => item.my_interest_status === 'interested').length,
-        selected: opportunities.filter((item) => item.selected_by_me).length,
-        matched: opportunities.filter((item) => item.match_score >= 82).length,
-      },
+      stats: listing.stats,
+      regions: listing.regions,
+      pagination: { total: listing.total, limit: listing.limit, offset: listing.offset, has_more: listing.has_more },
     });
   } catch (error) {
     console.error('Falha ao carregar oportunidades:', error);

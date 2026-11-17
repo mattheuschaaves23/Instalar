@@ -21,7 +21,7 @@ function formatCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
 }
 
-export default function MarketplaceProposal({ requestId, requestStatus, onUpdated }) {
+export default function MarketplaceProposal({ requestId, requestStatus, onUpdated, triggerClassName }) {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [proposal, setProposal] = useState(null);
@@ -86,7 +86,7 @@ export default function MarketplaceProposal({ requestId, requestStatus, onUpdate
   if (!expanded) {
     return (
       <button
-        className={requestStatus === 'selected' ? 'gold-button' : 'ghost-button'}
+        className={triggerClassName || (requestStatus === 'selected' ? 'gold-button' : 'ghost-button')}
         disabled={loading}
         onClick={load}
         type="button"
@@ -96,11 +96,12 @@ export default function MarketplaceProposal({ requestId, requestStatus, onUpdate
     );
   }
 
-  const editable = !proposal || ['sent', 'change_requested', 'rejected', 'canceled'].includes(proposal.status);
+  const terminal = ['completed', 'canceled', 'expired'].includes(requestStatus);
+  const editable = !terminal && (!proposal || ['sent', 'change_requested', 'rejected', 'canceled'].includes(proposal.status));
   const accepted = proposal?.status === 'accepted';
 
   return (
-    <section className="mt-3 w-full rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.035)] p-4 text-left">
+    <section className="marketplace-proposal mt-3 w-full rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.035)] p-4 text-left">
       <div className="mb-3 flex items-center justify-between gap-3">
         <strong>{proposal ? 'Proposta do pedido' : 'Nova proposta'}</strong>
         <button className="text-xs text-[var(--muted)]" onClick={() => setExpanded(false)} type="button">Fechar</button>
@@ -108,14 +109,19 @@ export default function MarketplaceProposal({ requestId, requestStatus, onUpdate
 
       {proposal?.client_response_message ? <p className="mb-3 rounded-lg bg-[rgba(216,155,53,0.12)] p-3 text-sm">Resposta do cliente: {proposal.client_response_message}</p> : null}
 
-      {accepted ? (
+      {terminal ? (
+        <div className="space-y-2 text-sm">
+          <p>Este pedido está {requestStatus === 'completed' ? 'concluído' : requestStatus === 'canceled' ? 'cancelado' : 'expirado'}.</p>
+          {proposal ? <><p><strong>Valor da proposta:</strong> {formatCurrency(proposal.amount)}</p><p>{proposal.scope}</p></> : <p>Nenhuma proposta foi registrada.</p>}
+        </div>
+      ) : accepted ? (
         <div className="space-y-3 text-sm">
           <p><strong>Horário confirmado:</strong> {new Date(proposal.scheduled_start).toLocaleString('pt-BR')}</p>
           <p><strong>Valor:</strong> {formatCurrency(proposal.amount)}</p>
           <div className="flex flex-wrap gap-2">
-            <button className="gold-button" disabled={loading} onClick={() => updateProgress('in_progress')} type="button">Iniciar serviço</button>
-            <button className="ghost-button" disabled={loading} onClick={() => updateProgress('completed')} type="button">Concluir</button>
-            <button className="ghost-button" disabled={loading} onClick={() => updateProgress('canceled')} type="button">Cancelar</button>
+            {requestStatus === 'accepted' ? <button className="gold-button" disabled={loading} onClick={() => updateProgress('in_progress')} type="button">Iniciar serviço</button> : null}
+            {requestStatus === 'in_progress' ? <button className="gold-button" disabled={loading} onClick={() => updateProgress('completed')} type="button">Concluir</button> : null}
+            {['accepted', 'in_progress'].includes(requestStatus) ? <button className="ghost-button" disabled={loading} onClick={() => updateProgress('canceled')} type="button">Cancelar</button> : null}
           </div>
         </div>
       ) : editable ? (
