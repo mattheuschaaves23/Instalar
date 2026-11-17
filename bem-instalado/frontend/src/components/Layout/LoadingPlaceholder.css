@@ -1,0 +1,12 @@
+.loading-placeholder {
+  width: 100%;
+  min-width: 0;
+  padding: 1.5rem;
+  color: var(--text, #21343c);
+}
+
+.loading-placeholder--embedded { padding: 1rem 0; }
+.loading-placeholder-lines { display: grid; gap: .7rem; width: min(100%, 42rem); }
+.loading-placeholder-lines > span { display: block; height: .8rem; border-radius: .25rem; background: var(--site-panel-elevated, #e5e7eb); }
+.loading-placeholder-lines > span:first-child { width: 45%; height: 1.2rem; }
+.loading-placeholder-lines > span:last-child { width: 70%; }
