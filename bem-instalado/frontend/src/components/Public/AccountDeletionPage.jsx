@@ -28,7 +28,7 @@ export default function AccountDeletionPage() {
   return (
     <main className="legal-page">
       <header className="legal-page-header">
-        <Link aria-label="InstalaPro - início" className="legal-page-brand" to="/">
+        <Link aria-label="InstalarPro - início" className="legal-page-brand" to="/">
           <BrandWordmark className="legal-page-wordmark" size="sm" />
         </Link>
         <Link className="legal-page-back" to="/">Voltar ao início</Link>
@@ -38,7 +38,7 @@ export default function AccountDeletionPage() {
         <p className="legal-page-eyebrow">CONTROLE DOS SEUS DADOS</p>
         <h1>Excluir conta e dados</h1>
         <p className="legal-page-intro">
-          Você pode excluir definitivamente sua conta InstalaPro diretamente nas configurações.
+          Você pode excluir definitivamente sua conta InstalarPro diretamente nas configurações.
         </p>
         <p className="legal-page-version">Processo atualizado em 27 de julho de 2026</p>
 

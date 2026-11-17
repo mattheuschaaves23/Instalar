@@ -34,7 +34,7 @@ export default function MobileOAuthRedirect() {
         <BrandWordmark className="mobile-oauth-return-logo" size="md" />
         <span className="mobile-oauth-return-pulse" aria-hidden="true" />
         <h1>Voltando para o aplicativo</h1>
-        <p>Seu acesso foi confirmado. Abra o InstalaPro para continuar.</p>
+        <p>Seu acesso foi confirmado. Abra o InstalarPro para continuar.</p>
         {appUrl ? (
           <a className="mobile-oauth-return-button" href={appUrl}>
             Abrir o aplicativo

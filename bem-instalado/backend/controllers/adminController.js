@@ -730,7 +730,7 @@ exports.decideInstallerVerification = async (req, res) => {
 
     await sendMarketplaceEmail({
       to: installer.email,
-      subject: `${title} - InstalaPro`,
+      subject: `${title} - InstalarPro`,
       title,
       body: message,
       actionLabel: approved ? 'Ver meu perfil' : 'Corrigir meu cadastro',
@@ -794,8 +794,8 @@ exports.updateUserSubscription = async (req, res) => {
         targetUserId,
         'Assinatura atualizada pelo administrador',
         status === 'active'
-          ? 'Seu plano InstalaPro Pro foi ativado.'
-          : 'Seu plano voltou para o InstalaPro Grátis. Seus dados continuam salvos.',
+          ? 'Seu plano InstalarPro Pro foi ativado.'
+          : 'Seu plano voltou para o InstalarPro Grátis. Seus dados continuam salvos.',
         status === 'active' ? 'success' : 'warning',
       ]
     );

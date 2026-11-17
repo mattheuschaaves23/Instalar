@@ -69,7 +69,7 @@ function buildPlanAccess({
 
   return {
     plan: isPro ? 'pro' : 'free',
-    plan_label: isPro ? 'InstalaPro Pro' : 'InstalaPro Grátis',
+    plan_label: isPro ? 'InstalarPro Pro' : 'InstalarPro Grátis',
     is_pro: isPro,
     can_use_app: true,
     can_use_premium: isPro,

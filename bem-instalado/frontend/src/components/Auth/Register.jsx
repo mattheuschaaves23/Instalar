@@ -100,7 +100,7 @@ export default function Register() {
       asideCopy="Criar conta"
       asideTitle="Cadastro"
       description="Cadastre seus dados profissionais para acessar pedidos, agenda e orçamentos."
-      eyebrow="InstalaPro"
+      eyebrow="InstalarPro"
       highlights={highlights}
       title="Crie sua conta de instalador."
     >

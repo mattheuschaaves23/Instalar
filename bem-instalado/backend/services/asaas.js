@@ -379,7 +379,7 @@ async function createRecurringCheckout({
       items: [
         {
           externalReference: 'instalapro-monthly',
-          name: 'Plano mensal InstalaPro',
+          name: 'Plano mensal InstalarPro',
           description: 'Acesso mensal às ferramentas profissionais para instaladores.',
           quantity: 1,
           value: normalizedAmount,
@@ -431,7 +431,7 @@ async function createPixPayment({
       billingType: 'PIX',
       value: Number(Number(amount || 0).toFixed(2)),
       dueDate: formatDueDate(now),
-      description: 'Assinatura mensal InstalaPro',
+      description: 'Assinatura mensal InstalarPro',
       externalReference: String(externalId || '').slice(0, 64),
     },
   });

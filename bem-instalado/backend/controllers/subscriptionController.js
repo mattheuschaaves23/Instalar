@@ -691,7 +691,7 @@ exports.getSubscription = async (req, res) => {
         amount: SUBSCRIPTION_AMOUNT,
         currency: 'BRL',
         period: 'mês',
-        label: 'InstalaPro Pro',
+        label: 'InstalarPro Pro',
       },
       plan_benefits: getPlanBenefits(),
       plan_access: planAccess,
@@ -701,12 +701,12 @@ exports.getSubscription = async (req, res) => {
       features: planAccess.features,
       plans: {
         free: {
-          label: 'InstalaPro Grátis',
+          label: 'InstalarPro Grátis',
           price: 0,
           description: 'Use as ferramentas essenciais sem prazo para acabar.',
         },
         pro: {
-          label: 'InstalaPro Pro',
+          label: 'InstalarPro Pro',
           price: SUBSCRIPTION_AMOUNT,
           description: 'Recursos avançados e uso sem limites.',
         },
@@ -1013,7 +1013,7 @@ exports.cancelSubscription = async (req, res) => {
     await pool.query(
       `
         INSERT INTO notifications (user_id, title, message, type, read)
-        VALUES ($1, 'Plano alterado', 'Seu plano voltou para o InstalaPro Grátis. Nenhum dado foi apagado.', 'info', FALSE)
+        VALUES ($1, 'Plano alterado', 'Seu plano voltou para o InstalarPro Grátis. Nenhum dado foi apagado.', 'info', FALSE)
       `,
       [req.userId]
     );

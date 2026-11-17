@@ -88,7 +88,7 @@ export default function AppDownload() {
         </div>
 
         <div className="installer-app-download-copy">
-          <span className="installer-app-download-kicker"><i /> InstalaPro para instaladores</span>
+          <span className="installer-app-download-kicker"><i /> InstalarPro para instaladores</span>
           <h2 id="installer-app-download-title">Seu trabalho inteiro no iPhone e Android</h2>
           <p>Acesse oportunidades, agenda, clientes e orçamentos de onde estiver.</p>
           <div className="installer-app-download-meta">

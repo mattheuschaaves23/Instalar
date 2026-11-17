@@ -103,7 +103,7 @@ async function sendNativePush({ messaging, devices, title, body, data }) {
   if (!messaging || !devices.length) return { sent: 0, failed: 0, invalidIds: [] };
   const response = await messaging.sendEachForMulticast({
     tokens: devices.map((device) => device.token),
-    notification: { title: String(title || 'InstalaPro'), body: String(body || '') },
+    notification: { title: String(title || 'InstalarPro'), body: String(body || '') },
     data: Object.fromEntries(Object.entries(data).map(([key, value]) => [key, String(value)])),
     android: { priority: 'high', notification: { channelId: 'instalapro_alerts' } },
     apns: { payload: { aps: { sound: 'default' } } },
@@ -121,7 +121,7 @@ async function sendNativePush({ messaging, devices, title, body, data }) {
 async function sendWebPush({ webPush, devices, title, body, data }) {
   if (!webPush || !devices.length) return { sent: 0, failed: 0, invalidIds: [] };
   const payload = JSON.stringify({
-    title: String(title || 'InstalaPro'),
+    title: String(title || 'InstalarPro'),
     body: String(body || ''),
     data: Object.fromEntries(Object.entries(data).map(([key, value]) => [key, String(value)])),
   });

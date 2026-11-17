@@ -1,5 +1,5 @@
-const CACHE_NAME = 'instalapro-papelperto-v5';
-const APP_SHELL = ['/', '/cliente', '/cliente/entrar', '/manifest.webmanifest', '/brand/instalapro-logo.png', '/brand/instalapro-icon.png'];
+const CACHE_NAME = 'instalarpro-papelperto-v6';
+const APP_SHELL = ['/', '/cliente', '/cliente/entrar', '/manifest.webmanifest', '/brand/instalarpro-2026/wordmark-light.png', '/brand/instalarpro-2026/icon-192.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -51,11 +51,11 @@ self.addEventListener('push', (event) => {
     payload = { body: event.data?.text?.() || '' };
   }
 
-  const title = payload.title || 'InstalaPro';
+  const title = payload.title || 'InstalarPro';
   const options = {
     body: payload.body || 'Você tem uma atualização na sua conta.',
-    icon: '/brand/instalapro-icon.png',
-    badge: '/brand/instalapro-icon.png',
+    icon: '/brand/instalarpro-2026/icon-192.png',
+    badge: '/brand/instalarpro-2026/badge.png',
     data: { url: payload.data?.url || '/notifications' },
   };
   event.waitUntil(self.registration.showNotification(title, options));

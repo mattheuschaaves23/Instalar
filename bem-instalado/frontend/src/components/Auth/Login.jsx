@@ -294,11 +294,11 @@ export default function Login() {
       <section className={`installer-login-frame${IS_INSTALLER_APP ? ' installer-app-login-frame' : ''}`}>
         {!IS_INSTALLER_APP ? (
           <div className="installer-login-left">
-          <img alt="" className="installer-login-worker-photo" src="/auth/installer-login-worker-instalapro.jpg" />
+          <img alt="" className="installer-login-worker-photo" src="/auth/installer-login-worker-instalarpro-2026.jpg" />
           <div className="installer-login-left-overlay" />
 
           <div className="installer-login-brand">
-            <BrandWordmark className="installer-login-brand-logo" size="md" />
+            <BrandWordmark className="installer-login-brand-logo" size="md" surface="dark" />
           </div>
 
           <div className="installer-login-copy">

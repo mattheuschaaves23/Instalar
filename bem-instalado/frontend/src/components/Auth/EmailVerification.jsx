@@ -65,7 +65,7 @@ export default function EmailVerification() {
     <main className="oauth-callback-page">
       <section className="oauth-callback-card">
         <h1>{state.loading ? 'Confirmando seu e-mail...' : state.error ? 'Não foi possível confirmar' : 'E-mail confirmado'}</h1>
-        <p>{state.loading ? 'Aguarde um instante.' : state.error || 'Você já pode voltar e continuar sua jornada na InstalaPro.'}</p>
+        <p>{state.loading ? 'Aguarde um instante.' : state.error || 'Você já pode voltar e continuar sua jornada na InstalarPro.'}</p>
         {!state.loading ? <Link to="/instalador/entrar">Ir para o login</Link> : null}
       </section>
     </main>

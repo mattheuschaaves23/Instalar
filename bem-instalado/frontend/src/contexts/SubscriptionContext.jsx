@@ -4,7 +4,7 @@ import { useAuth } from './AuthContext';
 
 const FREE_ACCESS = {
   plan: 'free',
-  plan_label: 'InstalaPro Grátis',
+  plan_label: 'InstalarPro Grátis',
   is_pro: false,
   can_use_app: true,
   can_use_premium: false,

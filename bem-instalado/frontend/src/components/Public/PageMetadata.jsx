@@ -12,8 +12,8 @@ function setMeta(selector, attribute, value) {
 
 export default function PageMetadata({ title, description, noIndex = false, canonicalPath = '' }) {
   useEffect(() => {
-    const resolvedTitle = title || 'InstalaPro';
-    const resolvedDescription = description || 'InstalaPro conecta clientes, instaladores e lojas de papel de parede.';
+    const resolvedTitle = title || 'InstalarPro';
+    const resolvedDescription = description || 'InstalarPro conecta clientes, instaladores e lojas de papel de parede.';
     document.title = resolvedTitle;
     setMeta('meta[name="description"]', ['name', 'description'], resolvedDescription);
     setMeta('meta[property="og:title"]', ['property', 'og:title'], resolvedTitle);

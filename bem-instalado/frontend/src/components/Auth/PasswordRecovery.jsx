@@ -98,7 +98,7 @@ export default function PasswordRecovery() {
       asideCopy="Recuperar acesso"
       asideTitle="Senha"
       description={`Use seu e-mail de ${isClientRecovery ? 'cliente' : 'instalador'} para gerar um link seguro de redefinição.`}
-      eyebrow="InstalaPro"
+      eyebrow="InstalarPro"
       highlights={[
         { kicker: 'Seguro', title: 'Token temporário', copy: 'O link expira automaticamente.' },
         { kicker: 'Conta', title: isClientRecovery ? 'Conta de cliente' : 'Conta de instalador', copy: 'A recuperação valida o tipo correto de conta.' },

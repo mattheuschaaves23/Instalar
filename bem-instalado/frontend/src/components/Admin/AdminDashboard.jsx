@@ -888,7 +888,7 @@ export default function AdminDashboard() {
   return (
     <section className="admin-modern-shell">
       <PageIntro
-        description="Acompanhe pedidos, usuários, pagamentos e o funcionamento do InstalaPro em um só lugar."
+        description="Acompanhe pedidos, usuários, pagamentos e o funcionamento do InstalarPro em um só lugar."
         eyebrow="Administrador"
         stats={[
           {

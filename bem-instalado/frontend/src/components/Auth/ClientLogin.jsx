@@ -244,7 +244,7 @@ export default function ClientLogin() {
           <div className="client-login-left-overlay" />
 
           <div className="client-login-brand">
-            <BrandWordmark className="client-login-brand-logo" size="md" />
+            <BrandWordmark className="client-login-brand-logo" size="md" surface="dark" />
           </div>
 
           <div className="client-login-copy">

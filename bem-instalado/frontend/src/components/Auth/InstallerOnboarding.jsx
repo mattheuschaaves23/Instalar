@@ -7,7 +7,7 @@ const IS_INSTALLER_APP = process.env.REACT_APP_INSTALLER_APP === 'true';
 
 const slides = [
   {
-    eyebrow: 'BEM-VINDO AO INSTALAPRO',
+    eyebrow: 'BEM-VINDO AO INSTALARPRO',
     title: 'Seu próximo serviço começa aqui.',
     copy: 'Encontre pedidos próximos e responda às melhores oportunidades.',
     visual: 'worker',
@@ -149,7 +149,7 @@ export default function InstallerOnboarding() {
             <div className="installer-onboarding-visual">
               {slide.visual === 'worker' ? (
                 <>
-                  <img alt="Instalador trabalhando em um ambiente" src="/auth/installer-login-worker-instalapro.jpg" />
+                  <img alt="Instalador trabalhando em um ambiente" src="/auth/installer-login-worker-instalarpro-2026.jpg" />
                   <div className="installer-onboarding-worker-badge">
                     <span>✓</span>
                     <div>

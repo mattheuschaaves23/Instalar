@@ -19,7 +19,7 @@ initializeSentry();
 
 if (isInstallerApp) {
   document.documentElement.dataset.installerApp = 'true';
-  document.title = 'InstalaPro Instaladores';
+  document.title = 'InstalarPro Instaladores';
 }
 
 if (import.meta.env.PROD && !isInstallerApp && 'serviceWorker' in navigator) {

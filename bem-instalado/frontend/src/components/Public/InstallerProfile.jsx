@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { resolveProfileImage } from '../Profile/profileMedia';
 import DecoratingWallLoader from '../Layout/DecoratingWallLoader';
+import BrandWordmark from '../Layout/BrandWordmark';
 import './InstallerProfile.css';
 import { formatCurrency, formatLongDate, formatShortDate } from '../../utils/formatters';
 import { formatInstallationDays } from '../../utils/installerDays';
@@ -24,7 +25,7 @@ import {
 const emptyReviewForm = { reviewer_name: '', reviewer_region: '', rating: 5, comment: '' };
 
 const defaultMarketplace = {
-  title: 'Loja Oficial InstalaPro',
+  title: 'Loja Oficial InstalarPro',
   description: 'Materiais para deixar o seu ambiente ainda mais bonito.',
   url: 'https://www.beminstalado.com.br',
   cta_label: 'Conhecer a loja',
@@ -348,12 +349,12 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
     <ProfileContainer className={`ig-installer-profile${ownerMode ? ' ig-profile-owner-preview' : ''}`}>
       {!ownerMode ? <PageMetadata
         canonicalPath={`/installers/${installer.id}`}
-        description={`${installer.display_name || installer.name} é instalador(a) de papel de parede${installer.city ? ` em ${installer.city}` : ''}. Veja trabalhos, avaliações e disponibilidade na InstalaPro.`}
+        description={`${installer.display_name || installer.name} é instalador(a) de papel de parede${installer.city ? ` em ${installer.city}` : ''}. Veja trabalhos, avaliações e disponibilidade na InstalarPro.`}
         title={`${installer.display_name || installer.name} | Instalador de papel de parede`}
       /> : null}
 
       {!ownerMode ? <nav aria-label="Navegação do perfil" className="ig-profile-topbar">
-        <Link aria-label="Voltar à página inicial" className="ig-profile-brand" to="/">Instala<span>Pro</span></Link>
+        <Link aria-label="Voltar à página inicial" className="ig-profile-brand" to="/"><BrandWordmark size="sm" /></Link>
         <Link className="ig-profile-back" to={requestPath}><ProfileIcon name="arrow" size={17} />{requestId ? 'Meu pedido' : 'Encontrar instaladores'}</Link>
       </nav> : null}
 

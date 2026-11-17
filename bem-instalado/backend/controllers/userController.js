@@ -916,7 +916,7 @@ exports.updateProfile = async (req, res) => {
       );
       await Promise.all(admins.rows.map((admin) => sendMarketplaceEmail({
         to: admin.email,
-        subject: 'Novo certificado aguardando análise - InstalaPro',
+        subject: 'Novo certificado aguardando análise - InstalarPro',
         title: 'Novo certificado para análise',
         body: `${profile.business_name || profile.name || 'Um instalador'} enviou um certificado. Abra o painel administrativo para aprovar ou recusar.`,
         actionLabel: 'Abrir fila de verificação',
