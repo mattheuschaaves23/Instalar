@@ -78,3 +78,51 @@ test('Turnstile reconhece o alias traduzido da chave secreta', () => {
   if (previousAlias === undefined) delete process.env['CHAVE SECRETA DA CATRACA'];
   else process.env['CHAVE SECRETA DA CATRACA'] = previousAlias;
 });
+
+function withEnv(t, values) {
+  const previous = {};
+  for (const [key, value] of Object.entries(values)) {
+    previous[key] = process.env[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+}
+
+test('Turnstile sem chave em produção recusa o formulário com erro claro', async (t) => {
+  withEnv(t, {
+    NODE_ENV: 'production',
+    TURNSTILE_SECRET_KEY: undefined,
+    'CHAVE SECRETA DA CATRACA': undefined,
+  });
+  t.mock.method(console, 'error', () => {});
+  const response = createResponse();
+
+  await requireTurnstile(
+    { body: { turnstile_token: 'qualquer' }, headers: {} },
+    response,
+    () => assert.fail('sem chave em produção o formulário não pode passar')
+  );
+
+  assert.equal(response.statusCode, 503);
+  assert.equal(response.payload.code, 'TURNSTILE_NOT_CONFIGURED');
+  assert.match(response.payload.error, /verificação de segurança/i);
+});
+
+for (const nodeEnv of ['development', 'test', undefined]) {
+  test(`Turnstile sem chave continua liberado fora de produção (NODE_ENV=${nodeEnv ?? 'vazio'})`, async (t) => {
+    withEnv(t, {
+      NODE_ENV: nodeEnv,
+      TURNSTILE_SECRET_KEY: undefined,
+      'CHAVE SECRETA DA CATRACA': undefined,
+    });
+    let nextCalled = false;
+    await requireTurnstile({ body: {}, headers: {} }, createResponse(), () => { nextCalled = true; });
+    assert.equal(nextCalled, true);
+  });
+}
