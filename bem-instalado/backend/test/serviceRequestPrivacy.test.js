@@ -64,3 +64,12 @@ test('instalador interessado sabe quando outro profissional foi escolhido sem re
   assert.equal(serialized.address_reference, null);
   assert.equal(serialized.whatsapp_url, null);
 });
+
+test('status legado de interesse não libera dados quando o pedido pertence a outro instalador', () => {
+  const serialized = __test.serializeOpportunity({ ...opportunity, status: 'completed', selected_installer_id: 999, selected_by_me: false, my_interest_status: 'selected' });
+  assert.equal(serialized.selected_by_me, false);
+  assert.equal(serialized.not_selected, true);
+  assert.equal(serialized.client_phone, null);
+  assert.equal(serialized.client_email, null);
+  assert.equal(serialized.address_reference, null);
+});
