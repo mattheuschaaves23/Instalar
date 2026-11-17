@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
+import { resolveProfileImage } from '../Profile/profileMedia';
 import DecoratingWallLoader from '../Layout/DecoratingWallLoader';
 import './InstallerProfile.css';
 import { formatCurrency, formatLongDate, formatShortDate } from '../../utils/formatters';
@@ -88,13 +89,16 @@ function getClientLoginPath(nextPath) {
   return `/cliente/entrar?next=${encodeURIComponent(nextPath)}`;
 }
 
-export default function InstallerProfile() {
-  const { id } = useParams();
+export default function InstallerProfile({ ownerPreview = null } = {}) {
+  const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const confirm = useConfirm();
-  const [payload, setPayload] = useState(null);
+  const ownerMode = Boolean(ownerPreview && user && Number(user.id) === Number(ownerPreview.installer?.id));
+  const id = ownerMode ? String(ownerPreview.installer.id) : params.id;
+  const [fetchedPayload, setPayload] = useState(null);
+  const payload = ownerMode ? ownerPreview : fetchedPayload;
   const [profileError, setProfileError] = useState('');
   const [requestContext, setRequestContext] = useState(null);
   const [selecting, setSelecting] = useState(false);
@@ -125,6 +129,7 @@ export default function InstallerProfile() {
   }, [id, linkedRequest]);
 
   useEffect(() => {
+    if (ownerMode) return undefined;
     const controller = new AbortController();
     setPayload(null);
     setProfileError('');
@@ -137,7 +142,7 @@ export default function InstallerProfile() {
         });
       });
     return () => controller.abort();
-  }, [requestProfile, user?.id, user?.account_type]);
+  }, [ownerMode, requestProfile, user?.id, user?.account_type]);
 
   const profileLoaded = Boolean(payload);
   useEffect(() => {
@@ -149,7 +154,7 @@ export default function InstallerProfile() {
   useEffect(() => {
     let active = true;
     setRequestContext(null);
-    if (!linkedRequest || (!linkedRequest.token && user?.account_type !== 'client')) return undefined;
+    if (ownerMode || !linkedRequest || (!linkedRequest.token && user?.account_type !== 'client')) return undefined;
 
     const headers = linkedRequest.token ? { 'X-Client-Request-Token': linkedRequest.token } : {};
     api.get(`/public/service-requests/${linkedRequest.id}/interests`, { headers })
@@ -167,15 +172,15 @@ export default function InstallerProfile() {
       })
       .catch(() => {});
     return () => { active = false; };
-  }, [id, linkedRequest, location.search, navigate, user?.account_type, user?.id]);
+  }, [id, linkedRequest, location.search, navigate, ownerMode, user?.account_type, user?.id]);
 
-  const linkedContext = requestContext?.installerId === id && requestContext.request.id === linkedRequest?.id
+  const linkedContext = requestContext && requestContext.installerId === id && requestContext.request.id === linkedRequest?.id
     ? requestContext : null;
   const request = linkedContext?.request;
   const interest = linkedContext?.interest;
   const trackingPath = linkedRequest ? `/cliente/pedido${buildClientRequestTrackingHash(request || linkedRequest)}` : '/cliente';
   const clientLoginPath = getClientLoginPath(`${location.pathname}${location.search}`);
-  const needsClientLogin = Boolean(linkedRequest && !linkedRequest.token && user?.account_type !== 'client');
+  const needsClientLogin = Boolean(!ownerMode && linkedRequest && !linkedRequest.token && user?.account_type !== 'client');
   const canChoose = Boolean(interest && request?.status === 'open'
     && (!request.expires_at || Date.parse(request.expires_at) > Date.now()));
 
@@ -310,13 +315,14 @@ export default function InstallerProfile() {
 
   const { installer, reviews = [], marketplace: apiMarketplace } = payload;
   const marketplace = apiMarketplace || defaultMarketplace;
-  const gallery = Array.isArray(installer.installation_gallery) ? installer.installation_gallery.filter(Boolean) : [];
+  const gallery = Array.isArray(installer.installation_gallery)
+    ? installer.installation_gallery.filter(Boolean).map((photo) => resolveProfileImage(photo, api.defaults.baseURL)) : [];
   const slots = Object.entries(groupAvailabilitySlots(installer.availability_slots || [])).sort(([a], [b]) => a.localeCompare(b));
   const requestId = linkedRequest?.id;
   const requestPath = trackingPath;
   const requestLabel = requestId ? 'Voltar ao pedido' : 'Solicitar orçamento';
   const isOwnProfile = Boolean(user && Number(user.id) === Number(installer.id));
-  const profilePhoto = installer.installer_photo || installer.logo;
+  const profilePhoto = resolveProfileImage(installer.installer_photo || installer.logo, api.defaults.baseURL);
   const coverPhoto = gallery[0] || profilePhoto;
   const locationLabel = [installer.city, installer.state].filter(Boolean).join(' · ') || installer.service_region || 'Região a confirmar';
   const warrantyLabel = installer.safety?.provides_warranty ? `${installer.safety.warranty_days || 0} dias de garantia` : 'Garantia a combinar';
@@ -324,12 +330,13 @@ export default function InstallerProfile() {
   const rating = Number(installer.average_rating || 0);
   const reviewCount = Number(installer.review_count || 0);
   const certified = Boolean(installer.certificate_verified);
-  const profileActionPath = isOwnProfile ? '/profile'
+  const profileActionPath = isOwnProfile ? '/profile?editar=1'
     : needsClientLogin ? clientLoginPath : requestPath;
   const profileActionLabel = isOwnProfile ? 'Editar perfil'
     : interest?.selected ? 'Ver pedido com instalador escolhido'
       : needsClientLogin ? 'Entrar para escolher este instalador' : requestLabel;
   const chooseAction = canChoose && !isOwnProfile;
+  const ProfileContainer = ownerMode ? 'div' : 'main';
   const trustItems = [
     { icon: 'clock', label: 'Horários', value: installer.service_hours || 'A combinar', detail: hasAvailability ? 'Agenda atualizada' : 'Consulte a agenda' },
     { icon: 'briefcase', label: 'Projetos', value: `${gallery.length} no portfólio`, detail: gallery.length ? 'Trabalhos publicados' : 'Portfólio em montagem' },
@@ -338,17 +345,17 @@ export default function InstallerProfile() {
   ];
 
   return (
-    <main className="ig-installer-profile">
-      <PageMetadata
+    <ProfileContainer className={`ig-installer-profile${ownerMode ? ' ig-profile-owner-preview' : ''}`}>
+      {!ownerMode ? <PageMetadata
         canonicalPath={`/installers/${installer.id}`}
         description={`${installer.display_name || installer.name} é instalador(a) de papel de parede${installer.city ? ` em ${installer.city}` : ''}. Veja trabalhos, avaliações e disponibilidade na InstalaPro.`}
         title={`${installer.display_name || installer.name} | Instalador de papel de parede`}
-      />
+      /> : null}
 
-      <nav aria-label="Navegação do perfil" className="ig-profile-topbar">
+      {!ownerMode ? <nav aria-label="Navegação do perfil" className="ig-profile-topbar">
         <Link aria-label="Voltar à página inicial" className="ig-profile-brand" to="/">Instala<span>Pro</span></Link>
         <Link className="ig-profile-back" to={requestPath}><ProfileIcon name="arrow" size={17} />{requestId ? 'Meu pedido' : 'Encontrar instaladores'}</Link>
-      </nav>
+      </nav> : null}
 
       <section className="ig-profile-shell">
         <div className={`ig-profile-cover${coverPhoto ? ' has-image' : ''}`}>
@@ -472,21 +479,21 @@ export default function InstallerProfile() {
 
         <section aria-labelledby="perfil-aba-informacoes" className="ig-profile-info-grid ig-profile-tabpanel" hidden={activeSection !== 'informacoes'} id="informacoes" role="tabpanel" tabIndex={0}>
           <article className="ig-profile-panel ig-profile-about-panel"><div className="ig-panel-heading"><div><span><ProfileIcon name="briefcase" size={18} /></span><h2>Como atende</h2></div></div><p>{installer.installation_method || 'O ambiente é analisado antes da instalação para orientar o melhor material, preparo e acabamento.'}</p><div className="ig-info-tags"><span>{installer.safety?.accepts_service_contract ? 'Contrato disponível' : 'Combinações registradas'}</span><span>{warrantyLabel}</span><span>{formatInstallationDays(installer.installation_days)}</span></div></article>
-          <article className="ig-profile-panel ig-profile-details-panel"><div className="ig-panel-heading"><div><span><ProfileIcon name="document" size={18} /></span><h2>Dados do perfil</h2></div></div><dl><div><dt>Atende em</dt><dd>{installer.service_region || locationLabel}</dd></div><div><dt>Documento</dt><dd>{installer.safety?.document_masked || 'Cadastro profissional'}</dd></div></dl>{installer.certificate_file ? <a href={installer.certificate_file} rel="noreferrer" target="_blank">Ver certificado <ProfileIcon name="chevron" size={15} /></a> : null}</article>
+          <article className="ig-profile-panel ig-profile-details-panel"><div className="ig-panel-heading"><div><span><ProfileIcon name="document" size={18} /></span><h2>Dados do perfil</h2></div></div><dl><div><dt>Atende em</dt><dd>{installer.service_region || locationLabel}</dd></div><div><dt>Documento</dt><dd>{installer.safety?.document_masked || 'Cadastro profissional'}</dd></div></dl>{!ownerMode && installer.certificate_file ? <a href={installer.certificate_file} rel="noreferrer" target="_blank">Ver certificado <ProfileIcon name="chevron" size={15} /></a> : null}</article>
           <article className="ig-profile-panel ig-profile-prices-panel"><div className="ig-panel-heading"><div><span><ProfileIcon name="star" size={18} /></span><h2>Valores de referência</h2></div></div><div><span>Visita técnica</span><strong>{formatCurrency(installer.base_service_cost)}</strong></div><div><span>Deslocamento</span><strong>{formatCurrency(installer.travel_fee)}</strong></div><div><span>Instalação por rolo</span><strong>{formatCurrency(installer.default_price_per_roll)}</strong></div><small>O orçamento final considera as medidas e condições do ambiente.</small></article>
         </section>
 
         <aside className="ig-profile-store"><div><span>Parceiro recomendado</span><h2>{marketplace.title}</h2><p>{marketplace.description}</p><small>{(marketplace.highlights || []).slice(0, 2).join(' · ')}</small></div><a href={marketplace.url || 'https://www.beminstalado.com.br'} rel="noreferrer" target="_blank">{marketplace.cta_label || 'Conhecer a loja'} <ProfileIcon name="chevron" size={16} /></a></aside>
       </section>
 
-      <div className="ig-profile-mobile-action">
+      {!ownerMode ? <div className="ig-profile-mobile-action">
         {chooseAction ? (
           <button className="ig-profile-primary-action ig-profile-choose" disabled={selecting} onClick={chooseInstaller} type="button">
             <ProfileIcon name="check" size={20} />
             {selecting ? 'Confirmando escolha…' : 'Escolher este instalador'}
           </button>
         ) : <Link to={profileActionPath}><ProfileIcon name={isOwnProfile ? 'document' : 'message'} size={18} />{profileActionLabel}</Link>}
-      </div>
-    </main>
+      </div> : null}
+    </ProfileContainer>
   );
 }
