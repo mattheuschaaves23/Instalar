@@ -4,19 +4,16 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { getProfileRequest } from '../../services/auth';
 import { clearAuthToken, setAuthToken } from '../../utils/safeStorage';
-import { getOAuthErrorMessage } from '../../utils/oauthMessages';
+import {
+  getOAuthErrorMessage,
+  PASSWORD_REVOKED_NOTICE,
+  readOAuthCallbackParams,
+} from '../../utils/oauthMessages';
 
 const IS_INSTALLER_APP = process.env.REACT_APP_INSTALLER_APP === 'true';
 
 function readCallbackParams() {
-  const rawHash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
-  const params = new URLSearchParams(rawHash || window.location.search);
-
-  return {
-    token: params.get('token') || '',
-    next: params.get('next') || '/dashboard',
-    oauthError: params.get('oauth_error') || '',
-  };
+  return readOAuthCallbackParams(window.location.hash, window.location.search);
 }
 
 function sanitizeNextPath(value) {
@@ -48,7 +45,7 @@ export default function OAuthCallback() {
     let isMounted = true;
 
     async function finishLogin() {
-      const { token, next, oauthError } = readCallbackParams();
+      const { token, next, oauthError, passwordRevoked } = readCallbackParams();
 
       if (oauthError) {
         setError(getOAuthErrorMessage(oauthError));
@@ -77,6 +74,9 @@ export default function OAuthCallback() {
 
         setUser(profile);
         toast.success('Login realizado.');
+        if (passwordRevoked) {
+          toast(PASSWORD_REVOKED_NOTICE, { duration: 15000 });
+        }
         navigate(resolveNextPath(next, profile), { replace: true });
       } catch (_error) {
         clearAuthToken();
