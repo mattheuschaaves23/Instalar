@@ -1234,10 +1234,17 @@ exports.resetPassword = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(nextPassword, 10);
 
+    // O token chegou pelo e-mail da conta: quem o usou controla o e-mail. Marcar
+    // o e-mail como confirmado impede que o vínculo com o Google (que revoga a
+    // senha de conta nunca confirmada) apague a senha que o dono acabou de criar.
     await db.query(
       `
         UPDATE users
-        SET password = $1, auth_version = auth_version + 1, updated_at = NOW()
+        SET
+          password = $1,
+          auth_version = auth_version + 1,
+          email_verified_at = COALESCE(email_verified_at, NOW()),
+          updated_at = NOW()
         WHERE id = $2
       `,
       [passwordHash, resetTokenRow.user_id]
