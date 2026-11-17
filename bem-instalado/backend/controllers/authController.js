@@ -474,6 +474,32 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
   );
   let user = existingUserResult.rows[0];
   if (user) {
+    if (!user.email_verified_at) {
+      // A conta foi criada por senha e o e-mail nunca foi confirmado: quem
+      // definiu essa senha pode não ser o dono do e-mail. Ao vincular o Google
+      // (que comprova o e-mail), a senha antiga deixa de valer e as sessões
+      // abertas são revogadas. O dono pode criar senha nova por "Esqueci a senha".
+      const unusablePassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+      const revoked = await pool.query(
+        `
+          UPDATE users
+          SET password = $2, auth_version = auth_version + 1, updated_at = NOW()
+          WHERE id = $1 AND email_verified_at IS NULL
+        `,
+        [user.id, unusablePassword]
+      );
+      if (revoked.rowCount) {
+        await logAudit({
+          actorUserId: user.id,
+          action: 'auth.oauth_link_revoked_unverified_password',
+          entityType: 'user',
+          entityId: user.id,
+          metadata: { provider },
+          req,
+        });
+      }
+    }
+
     const updatedUser = await pool.query(
       `
         UPDATE users
