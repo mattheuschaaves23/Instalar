@@ -278,3 +278,46 @@ test('login Google sem revogação não manda aviso de senha desativada', async 
   assert.equal(hash.get('password_revoked'), null);
   assert.equal(sent.length, 0);
 });
+
+// Caminho residual, ainda aberto: o atacante cadastra por senha o e-mail da
+// vítima; o link "confirme seu e-mail" desse cadastro chega na caixa dela e
+// verify-email confirma a conta sem sessão. Depois disso o Google não revoga
+// nada e a senha do atacante segue valendo. Fechar isso muda o fluxo de
+// confirmação do app e da web (ver docs/revisao-2026-11-16.md, defeito 2):
+// fica como todo até a decisão. Quando a correção entrar, tire o todo.
+test('confirmação de e-mail sem sessão seguida de Google não deixa a senha do cadastro valendo', {
+  todo: 'decisão pendente: prender verify-email à sessão de quem se cadastrou',
+}, async (t) => {
+  withGoogleEnv(t);
+  mockGoogle(t);
+  const row = baseUser({ email_verified_at: null });
+  mockUsersTable(t, row);
+  const attackerSession = jwt.sign({ id: row.id, v: row.auth_version }, process.env.JWT_SECRET);
+  const verificationToken = 'link-de-confirmacao-do-cadastro-0123456789abcdef';
+  const verificationHash = require('node:crypto').createHash('sha256').update(verificationToken).digest('hex');
+  t.mock.method(pool, 'connect', async () => ({
+    async query(sql, params = []) {
+      const text = String(sql);
+      if (/^\s*(BEGIN|COMMIT|ROLLBACK)/.test(text)) return { rows: [], rowCount: 0 };
+      if (/FROM email_verification_tokens/.test(text)) {
+        return params[0] === verificationHash
+          ? { rows: [{ id: 1, user_id: row.id }], rowCount: 1 }
+          : { rows: [], rowCount: 0 };
+      }
+      if (/UPDATE email_verification_tokens/.test(text)) return { rows: [], rowCount: 1 };
+      if (/^\s*UPDATE users/.test(text)) return pool.query(sql, params);
+      throw new Error(`consulta inesperada na transação: ${text.slice(0, 80)}`);
+    },
+    release() {},
+  }));
+
+  // A vítima clica no link que chegou no e-mail dela, sem sessão nenhuma.
+  const verify = responseRecorder();
+  await authController.verifyEmail({ ...requestBase, body: { token: verificationToken } }, verify);
+  assert.equal(verify.statusCode, 200);
+
+  await signInWithGoogle();
+
+  assert.equal((await loginWithPassword(PRE_EXISTING_PASSWORD)).statusCode, 401, 'a senha de quem cadastrou não pode seguir valendo');
+  assert.equal(await sessionStatus(attackerSession), 401, 'a sessão de quem cadastrou não pode seguir valendo');
+});
