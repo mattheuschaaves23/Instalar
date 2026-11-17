@@ -5,11 +5,12 @@ const pool = require('../config/database');
 const { jwtSecret, jwtExpiresIn } = require('../config/auth');
 const { logAudit } = require('../utils/auditLog');
 const { normalizeEmail } = require('../utils/adminAccess');
+const emailService = require('../services/email');
 const {
   isEmailEnabled,
   sendEmailVerificationEmail,
   sendPasswordResetEmail,
-} = require('../services/email');
+} = emailService;
 const { clearCsrfCookie } = require('../middleware/csrfMiddleware');
 
 const REGISTER_PLAN_PRICE = Number(process.env.SUBSCRIPTION_PRICE || 49.9);
@@ -290,7 +291,7 @@ function sanitizeNextPath(value, role = 'installer') {
   return nextPath;
 }
 
-function redirectOAuthResult(req, res, { token, next, role, platform, error }) {
+function redirectOAuthResult(req, res, { token, next, role, platform, error, passwordRevoked = false }) {
   const frontendUrl = getFrontendBaseUrl(req);
   const targetPlatform = normalizeOAuthPlatform(platform);
   const isNativeMobile = isNativeMobilePlatform(targetPlatform);
@@ -299,6 +300,7 @@ function redirectOAuthResult(req, res, { token, next, role, platform, error }) {
     if (!isNativeMobile) {
       setSessionCookie(res, token);
       const query = new URLSearchParams({ next: sanitizeNextPath(next, role) });
+      if (passwordRevoked) query.set('password_revoked', '1');
       return res.redirect(`${frontendUrl}/auth/social/callback?${query.toString()}`);
     }
 
@@ -307,6 +309,7 @@ function redirectOAuthResult(req, res, { token, next, role, platform, error }) {
       next: sanitizeNextPath(next, role),
       platform: targetPlatform,
     });
+    if (passwordRevoked) hash.set('password_revoked', '1');
 
     const callbackPath = '/auth/mobile/callback';
     return res.redirect(`${frontendUrl}${callbackPath}#${hash.toString()}`);
@@ -473,6 +476,7 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
     [accountType, provider, providerSubject, normalizedEmail]
   );
   let user = existingUserResult.rows[0];
+  let passwordRevoked = false;
   if (user) {
     if (!user.email_verified_at) {
       // A conta foi criada por senha e o e-mail nunca foi confirmado: quem
@@ -489,6 +493,7 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
         [user.id, unusablePassword]
       );
       if (revoked.rowCount) {
+        passwordRevoked = true;
         await logAudit({
           actorUserId: user.id,
           action: 'auth.oauth_link_revoked_unverified_password',
@@ -559,7 +564,22 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
     req,
   });
 
-  return fetchSanitizedUserById(user.id);
+  if (passwordRevoked) {
+    // Sem este aviso a conta legítima que nunca confirmou o e-mail só
+    // descobriria a senha desativada pelo "Credenciais inválidas".
+    await emailService.sendPasswordRevokedNoticeEmail({
+      to: user.email,
+      provider,
+      recoveryUrl: buildPasswordRecoveryPageUrl(req, accountType),
+    }).catch(() => null);
+  }
+
+  return { user: await fetchSanitizedUserById(user.id), passwordRevoked };
+}
+
+function buildPasswordRecoveryPageUrl(req, accountType = 'installer') {
+  const route = accountType === 'client' ? '/cliente/recuperar-senha' : '/instalador/recuperar-senha';
+  return `${getFrontendBaseUrl(req)}${route}`;
 }
 
 function buildPasswordResetToken() {
@@ -939,13 +959,14 @@ exports.handleOAuthCallback = async (req, res) => {
 
     const oauthProfile = await exchangeGoogleCode(req, code);
 
-    const user = await findOrCreateOAuthUser(oauthProfile, provider, role, req);
+    const { user, passwordRevoked } = await findOrCreateOAuthUser(oauthProfile, provider, role, req);
 
     return redirectOAuthResult(req, res, {
       token: signToken(user),
       role,
       next,
       platform,
+      passwordRevoked,
     });
   } catch (error) {
     const redirectError = getOAuthRedirectErrorCode(error);

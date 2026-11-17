@@ -8,6 +8,7 @@ process.env.JWT_SECRET ||= 'oauth-account-linking-test-secret-with-32-characters
 const pool = require('../config/database');
 const authController = require('../controllers/authController');
 const auth = require('../middleware/authMiddleware');
+const emailService = require('../services/email');
 
 const GOOGLE_CLIENT_ID = 'google-client-id-test';
 const PRE_EXISTING_PASSWORD = 'SenhaDoCadastroAntigo123';
@@ -115,12 +116,14 @@ const requestBase = {
   get(name) { return name === 'host' ? 'instalar-sigma.vercel.app' : ''; },
 };
 
-async function signInWithGoogle() {
+// Percorre startOAuth e handleOAuthCallback e devolve a URL para onde o
+// backend mandou o navegador (web: query; android/ios: hash).
+async function googleCallbackRedirect(platform = 'android') {
   const start = responseRecorder();
   await authController.startOAuth({
     ...requestBase,
     params: { provider: 'google' },
-    query: { role: 'installer', next: '/dashboard', platform: 'android' },
+    query: { role: 'installer', next: '/dashboard', platform },
   }, start);
   const state = new URL(start.redirects.at(-1)).searchParams.get('state');
   assert.ok(state, 'startOAuth deveria gerar o state');
@@ -132,7 +135,11 @@ async function signInWithGoogle() {
     params: { provider: 'google' },
     query: { state, code: 'codigo-de-teste' },
   }, callback);
-  const redirect = new URL(callback.redirects.at(-1));
+  return new URL(callback.redirects.at(-1));
+}
+
+async function signInWithGoogle() {
+  const redirect = await googleCallbackRedirect('android');
   const hash = new URLSearchParams(redirect.hash.slice(1));
   assert.equal(hash.get('oauth_error'), null, `login Google falhou: ${hash.get('oauth_error')}`);
   return hash.get('token');
@@ -223,4 +230,51 @@ test('senha definida pelo "Esqueci a senha" continua valendo depois do login Goo
   const afterGoogle = await loginWithPassword(newPassword);
   assert.equal(afterGoogle.statusCode, 200, 'a senha que o dono do e-mail definiu continua valendo depois do Google');
   assert.equal(await sessionStatus(googleSession), 200);
+});
+
+// Aviso de senha revogada: sem ele, a conta legítima que nunca confirmou o
+// e-mail perde a senha e as sessões e só descobre pelo "Credenciais inválidas".
+function mockRevokedNoticeEmail(t) {
+  const sent = [];
+  t.mock.method(emailService, 'sendPasswordRevokedNoticeEmail', async (args) => {
+    sent.push(args);
+    return { sent: true };
+  });
+  return sent;
+}
+
+test('revogação da senha pelo Google avisa no retorno do app, da web e por e-mail', async (t) => {
+  withGoogleEnv(t);
+  mockGoogle(t);
+  const sent = mockRevokedNoticeEmail(t);
+
+  const appRow = baseUser({ email_verified_at: null });
+  mockUsersTable(t, appRow);
+  const appRedirect = await googleCallbackRedirect('android');
+  const appHash = new URLSearchParams(appRedirect.hash.slice(1));
+  assert.ok(appHash.get('token'), 'o login Google do app continua entregando o token');
+  assert.equal(appHash.get('password_revoked'), '1', 'o app precisa saber que a senha antiga foi desativada');
+
+  const webRow = baseUser({ email_verified_at: null });
+  mockUsersTable(t, webRow);
+  const webRedirect = await googleCallbackRedirect('web');
+  assert.equal(webRedirect.pathname, '/auth/social/callback');
+  assert.equal(webRedirect.searchParams.get('password_revoked'), '1', 'a web precisa saber que a senha antiga foi desativada');
+
+  assert.equal(sent.length, 2, 'cada revogação manda um e-mail de aviso');
+  assert.equal(sent[0].to, VICTIM_EMAIL);
+  assert.match(sent[0].recoveryUrl, /^https:\/\/instalar-sigma\.vercel\.app\/instalador\/recuperar-senha$/);
+});
+
+test('login Google sem revogação não manda aviso de senha desativada', async (t) => {
+  withGoogleEnv(t);
+  mockGoogle(t);
+  const sent = mockRevokedNoticeEmail(t);
+  mockUsersTable(t, baseUser({ email_verified_at: new Date('2026-10-01T12:00:00Z') }));
+
+  const redirect = await googleCallbackRedirect('android');
+  const hash = new URLSearchParams(redirect.hash.slice(1));
+  assert.ok(hash.get('token'));
+  assert.equal(hash.get('password_revoked'), null);
+  assert.equal(sent.length, 0);
 });

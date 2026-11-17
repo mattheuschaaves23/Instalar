@@ -110,6 +110,15 @@ async function sendEmailVerificationEmail({ to, verificationUrl, expiresInMinute
   });
 }
 
+async function sendPasswordRevokedNoticeEmail({ to, provider, recoveryUrl }) {
+  const appName = firstEnvValue('APP_NAME') || 'InstalaPro';
+  return queueTransactionalEmail({
+    to,
+    message: buildPasswordRevokedNoticeMessage({ appName, provider, recoveryUrl }),
+    category: 'password_revoked_oauth',
+  });
+}
+
 async function sendMarketplaceEmail({ to, subject, title, body, actionLabel, actionUrl }) {
   if (!isEmailEnabled() || !to) {
     return { sent: false, reason: 'smtp_not_configured' };
@@ -205,6 +214,32 @@ function buildEmailVerificationMessage({ appName = 'InstalaPro', verificationUrl
   };
 }
 
+function buildPasswordRevokedNoticeMessage({ appName = 'InstalaPro', provider = 'google', recoveryUrl }) {
+  const providerName = provider === 'google' ? 'Google' : 'login social';
+  const safeRecoveryUrl = escapeHtml(recoveryUrl);
+
+  return {
+    subject: `Sua senha antiga foi desativada - ${appName}`,
+    text: [
+      `Você entrou na sua conta pelo ${providerName}.`,
+      'Como o e-mail desta conta ainda não tinha sido confirmado, a senha cadastrada antes foi desativada e as sessões abertas foram encerradas, para proteger a conta.',
+      '',
+      `Você continua entrando pelo ${providerName}. Para voltar a entrar com senha, crie uma nova aqui: ${recoveryUrl}`,
+      '',
+      'Se não foi você quem entrou, crie uma senha nova pelo mesmo link e confira os dados da conta.',
+    ].join('\n'),
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.55;color:#1f1f1f">
+        <h2 style="margin:0 0 12px">Sua senha antiga foi desativada</h2>
+        <p>Você entrou na sua conta pelo ${escapeHtml(providerName)}. Como o e-mail desta conta ainda não tinha sido confirmado, a senha cadastrada antes foi desativada e as sessões abertas foram encerradas, para proteger a conta.</p>
+        <p>Você continua entrando pelo ${escapeHtml(providerName)}. Para voltar a entrar com senha, crie uma nova:</p>
+        <p><a href="${safeRecoveryUrl}" style="display:inline-block;padding:12px 18px;background:#d89b35;color:#111;text-decoration:none;border-radius:8px;font-weight:700">Criar nova senha</a></p>
+        <p>Se não foi você quem entrou, crie uma senha nova pelo mesmo link e confira os dados da conta.</p>
+      </div>
+    `,
+  };
+}
+
 function buildServiceRequestInterestMessage({
   appName = 'InstalaPro',
   clientName,
@@ -258,11 +293,13 @@ function buildServiceRequestInterestMessage({
 module.exports = {
   buildPasswordResetMessage,
   buildEmailVerificationMessage,
+  buildPasswordRevokedNoticeMessage,
   buildServiceRequestInterestMessage,
   isEmailEnabled,
   sendEmailMessage,
   sendEmailVerificationEmail,
   sendMarketplaceEmail,
   sendPasswordResetEmail,
+  sendPasswordRevokedNoticeEmail,
   sendServiceRequestInterestEmail,
 };
