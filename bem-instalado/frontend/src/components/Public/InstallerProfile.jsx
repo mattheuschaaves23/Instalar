@@ -435,7 +435,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
         </div>
 
         <section aria-labelledby="perfil-aba-projetos" className="ig-profile-panel ig-profile-projects ig-profile-tabpanel" hidden={activeSection !== 'projetos'} id="projetos" role="tabpanel" tabIndex={0}>
-            <div className="ig-panel-heading"><div><span><ProfileIcon name="image" size={18} /></span><h2>Projetos</h2></div>{gallery.length ? <Link to={sectionPath('informacoes')}>Ver detalhes <ProfileIcon name="chevron" size={15} /></Link> : null}</div>
+            <div className="ig-panel-heading"><div><span><ProfileIcon name="image" size={18} /></span><h2>Projetos</h2></div>{isOwnProfile ? <Link to="/profile?editar=1&secao=publicacoes">Gerenciar publicações <ProfileIcon name="chevron" size={15} /></Link> : gallery.length ? <Link to={sectionPath('informacoes')}>Ver detalhes <ProfileIcon name="chevron" size={15} /></Link> : null}</div>
             {gallery.length ? (
               <div className="ig-project-grid">
                 {gallery.map((photo, index) => <figure key={`${photo}-${index}`}><img alt={`Projeto ${index + 1} de ${installer.display_name}`} decoding="async" loading="lazy" src={photo} /></figure>)}

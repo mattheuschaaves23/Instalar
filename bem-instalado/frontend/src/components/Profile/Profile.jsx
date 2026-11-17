@@ -6,6 +6,7 @@ import InstallerProfile from '../Public/InstallerProfile';
 import DecoratingWallLoader from '../Layout/DecoratingWallLoader';
 import ProfileEditor from './ProfileEditor';
 import ProfileReadiness from './ProfileReadiness';
+import { getProfileEditSection } from './profileEditing';
 import { buildOwnerProfilePreview } from './profilePresentation';
 import './Profile.css';
 
@@ -52,18 +53,18 @@ export default function Profile() {
 
   const fallbackPreview = useMemo(() => buildOwnerProfilePreview(profile || {}), [profile]);
   const preview = Number(publicPreview?.installer?.id) === Number(profile?.id) ? publicPreview : fallbackPreview;
-  const openEditor = useCallback(() => navigate('/profile?editar=1'), [navigate]);
+  const openRequiredData = useCallback(() => navigate('/profile?editar=1&secao=dados'), [navigate]);
   const restoreEditor = useCallback(() => navigate('/profile?editar=1'), [navigate]);
   const closeEditor = useCallback(() => setEditorMounted(false), []);
   const showProfile = useCallback(() => { closeEditor(); navigate('/profile', { replace: true }); }, [closeEditor, navigate]);
   if (error) return <section className="page-shell profile-owner-page profile-load-error" role="alert"><h1>Seu perfil não carregou</h1><p>{error}</p><button className="gold-button" onClick={() => setAttempt((value) => value + 1)} type="button">Tentar novamente</button></section>;
   if (!profile) return <DecoratingWallLoader embedded phrase="Abrindo seu perfil profissional." />;
   return <>
-    {editing || editorMounted ? <ProfileEditor active={editing} initialProfile={profile} onBack={closeEditor} onResume={restoreEditor} onCancel={showProfile} onSaved={(savedProfile, finish) => { setProfile(savedProfile); setPublicPreview(null); if (finish) showProfile(); }} /> : null}
+    {editing || editorMounted ? <ProfileEditor active={editing} initialProfile={profile} initialSection={getProfileEditSection(params.get('secao'))} onBack={closeEditor} onResume={restoreEditor} onCancel={showProfile} onSaved={(savedProfile) => { setProfile(savedProfile); setPublicPreview(null); showProfile(); }} /> : null}
     {!editing ? (
     <div className="page-shell profile-owner-page">
       <header className="profile-owner-heading"><div><h2>Meu perfil</h2><p>Veja sua apresentação como o cliente vê. Para mudar os dados, toque em Editar perfil.</p></div></header>
-      <ProfileReadiness profile={profile} onEdit={openEditor} />
+      <ProfileReadiness profile={profile} onEdit={openRequiredData} />
       {!profile.public_profile ? <p className="profile-visibility-note">Esta é sua prévia. Seu perfil ainda não está na busca pública; isso não impede aceitar pedidos quando os dados essenciais estão completos.</p> : null}
       {previewUnavailable ? <p className="profile-visibility-note" role="status">Não foi possível atualizar avaliações ou agenda. <button className="profile-inline-button" onClick={() => setPreviewAttempt((value) => value + 1)} type="button">Tentar novamente</button></p> : null}
       <InstallerProfile ownerPreview={preview} />

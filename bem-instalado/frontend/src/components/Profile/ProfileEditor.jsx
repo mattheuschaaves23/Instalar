@@ -10,7 +10,8 @@ import PlanUsage from '../Subscription/PlanUsage';
 import { safeLocalStorage } from '../../utils/safeStorage';
 import ProfileReadiness from './ProfileReadiness';
 import ProfileEditTutorial from './ProfileEditTutorial';
-import { buildProfileStepPayload, clearProfileDraft, PROFILE_EDIT_STEPS, profileTutorialKey, readProfileDraft, rememberProfileDraft } from './profileEditing';
+import { ProfileIdentityPreview, ProfilePublications, ProfileSocialIcon } from './ProfileSocialMedia';
+import { buildProfileStepPayload, clearProfileDraft, moveProfilePhotoToCover, PROFILE_EDIT_ORDER, PROFILE_EDIT_SECTIONS, profileTutorialKey, readProfileDraft, rememberProfileDraft } from './profileEditing';
 import { resolveProfileImage } from './profileMedia';
 
 const initialForm = {
@@ -120,7 +121,7 @@ function normalizeProfilePayload(payload) {
   };
 }
 
-export default function ProfileEditor({ active, initialProfile, onSaved, onCancel, onBack, onResume }) {
+export default function ProfileEditor({ active, initialProfile, initialSection, onSaved, onCancel, onBack, onResume }) {
   const confirm = useConfirm();
   const navigate = useNavigate();
   const { setUser, user } = useAuth();
@@ -128,7 +129,7 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
   const [restoredDraft] = useState(() => readProfileDraft(initialProfile.id));
   const [form, setForm] = useState(() => normalizeProfilePayload({ ...initialProfile, ...restoredDraft?.changes }));
   const [savedProfile, setSavedProfile] = useState(() => normalizeProfilePayload(initialProfile));
-  const [editStep, setEditStep] = useState(restoredDraft?.step ?? 0);
+  const [editStep, setEditStep] = useState(restoredDraft?.step ?? initialSection);
   const [tutorialOpen, setTutorialOpen] = useState(() => !restoredDraft && !safeLocalStorage.getItem(profileTutorialKey(initialProfile.id)));
   const stepTitle = useRef(null);
   const [saving, setSaving] = useState(false);
@@ -145,13 +146,13 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
   const dirty = useMemo(() => JSON.stringify(buildProfileStepPayload(form, editStep)) !== JSON.stringify(buildProfileStepPayload(savedProfile, editStep)), [editStep, form, savedProfile]);
   const busy = saving || uploading > 0 || slotSaving;
   const emailVerified = Boolean(user?.email_verified || savedProfile.email_verified || savedProfile.email_verified_at);
+  const section = PROFILE_EDIT_SECTIONS[editStep];
   const closeTutorial = () => {
     safeLocalStorage.setItem(profileTutorialKey(initialProfile.id), 'seen');
     setTutorialOpen(false);
-    setEditStep(0);
   };
   const canDiscard = useCallback(async () => !dirty || confirm({
-    title: 'Descartar alterações não salvas?', message: 'As alterações desta etapa ainda não foram salvas. O que você já salvou será mantido.',
+    title: 'Descartar alterações não salvas?', message: 'As alterações desta seção ainda não foram salvas. O que você já salvou será mantido.',
     confirmText: 'Descartar alterações', cancelText: 'Continuar editando', tone: 'danger',
   }), [confirm, dirty]);
   const discardDraft = useCallback(() => clearProfileDraft(initialProfile.id), [initialProfile.id]);
@@ -320,10 +321,16 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
       ...current,
       installation_gallery: [...(current.installation_gallery || []), ...uploadedItems].slice(0, galleryLimit),
     }));
-    toast.success(`${uploadedItems.length} foto(s) adicionada(s) ao portfólio.`);
+    toast.success(uploadedItems.length === 1 ? 'Foto adicionada. Salve para publicar.' : `${uploadedItems.length} fotos adicionadas. Salve para publicar.`);
+    if (fileList.length > remainingSlots) toast(`Seu plano tem espaço para ${remainingSlots} foto(s) desta seleção.`);
   };
 
-  const removeGalleryItem = (index) => {
+  const removeGalleryItem = async (index) => {
+    if (!(await confirm({
+      title: 'Remover publicação?',
+      message: 'A foto sai do seu portfólio depois de salvar. Se ela estiver na capa, a próxima foto passa a ser exibida no lugar.',
+      confirmText: 'Remover publicação', cancelText: 'Manter foto', tone: 'danger',
+    }))) return;
     setForm((current) => ({
       ...current,
       installation_gallery: (current.installation_gallery || []).filter((_, position) => position !== index),
@@ -448,8 +455,7 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (busy) return;
-    const finish = event.nativeEvent.submitter?.value !== 'next';
+    if (busy || !emailVerified || !dirty) return;
     const payload = buildProfileStepPayload(form, editStep);
     setSaving(true);
 
@@ -462,8 +468,7 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
       setUser((current) => ({ ...current, ...response.data }));
       await refreshSubscription();
       toast.success('Alterações salvas.');
-      onSaved(response.data, finish || editStep === 2);
-      if (!finish && editStep < 2) setEditStep((step) => step + 1);
+      onSaved(response.data);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível atualizar o perfil.');
     } finally {
@@ -475,18 +480,22 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
     <section className="page-shell profile-editor-page" hidden={!active}>
       <div inert={tutorialOpen ? true : undefined}>
       <header className="profile-editor-heading">
-        <div><button className="profile-inline-button" disabled={busy} onClick={cancelEditing} type="button">← Voltar ao meu perfil</button><h1>Editar perfil</h1><p>Uma etapa de cada vez. Salve para conferir o resultado no seu perfil.</p></div>
-        <button className="ghost-button" disabled={busy} onClick={async () => { if (await canDiscard()) { setForm(savedProfile); setEditStep(0); setTutorialOpen(true); } }} type="button">Ver tutorial</button>
+        <div><button className="profile-inline-button profile-editor-back" disabled={busy} onClick={cancelEditing} type="button"><ProfileSocialIcon name="arrow" size={17} /> Meu perfil</button><h1>Editar perfil</h1><p>Personalize sua apresentação e mostre seus melhores trabalhos.</p></div>
+        <button className="ghost-button" disabled={busy} onClick={() => setTutorialOpen(true)} type="button">Ver tutorial</button>
       </header>
-      <ProfileReadiness profile={savedProfile} />
-      <nav aria-label="Etapas de edição" className="profile-edit-steps">
-        {PROFILE_EDIT_STEPS.map((step, index) => <button aria-current={editStep === index ? 'step' : undefined} className={editStep === index ? 'is-current' : ''} disabled={busy} key={step.title} onClick={() => changeStep(index)} type="button"><span>{index + 1}</span>{step.title}</button>)}
+      <div className="profile-editor-layout">
+      <nav aria-label="Seções de edição" className="profile-edit-sections">
+        {PROFILE_EDIT_ORDER.map((index) => {
+          const item = PROFILE_EDIT_SECTIONS[index];
+          return <button aria-current={editStep === index ? 'true' : undefined} className={editStep === index ? 'is-current' : ''} disabled={busy} key={item.id} onClick={() => changeStep(index)} type="button"><ProfileSocialIcon name={item.icon} />{item.title}</button>;
+        })}
       </nav>
       <form className="profile-editor-form" onSubmit={handleSubmit}>
-        <header className="profile-edit-section-heading"><div><p>Etapa {editStep + 1} de 3{editStep > 0 ? ' · Opcional' : ''}</p><h2 ref={stepTitle} tabIndex={-1}>{PROFILE_EDIT_STEPS[editStep].title}</h2><p>{PROFILE_EDIT_STEPS[editStep].description}</p></div><span role="status">{busy ? 'Aguarde…' : dirty ? 'Alterações não salvas' : 'Dados salvos'}</span></header>
-        {!emailVerified ? <p className="profile-editor-email-note">Antes de salvar, confirme seu e-mail pelo link recebido. Use “Reenviar link” no aviso acima, caso precise.</p> : null}
+        <header className="profile-edit-section-heading"><div><h2 ref={stepTitle} tabIndex={-1}>{section.title}</h2><p>{section.description}</p></div><span role="status">{saving ? 'Salvando…' : busy ? 'Aguarde…' : dirty ? 'Alterações não salvas' : 'Dados salvos'}</span></header>
+        {!emailVerified ? <div className="profile-editor-email-note">Confirme seu e-mail antes de salvar.{editStep !== 0 ? <button className="profile-inline-button" disabled={busy} onClick={() => changeStep(0)} type="button">Ver dados para pedidos</button> : null}</div> : null}
         <fieldset className="profile-editor-fields" disabled={editStep !== 0 || busy} hidden={editStep !== 0}>
-          <legend className="sr-only">Dados essenciais</legend>
+          <legend className="sr-only">Dados para pedidos</legend>
+            <div className="profile-editor-full"><ProfileReadiness profile={savedProfile} /></div>
             <label className="block">
               <span className="field-label">Nome do responsável · essencial</span>
               <input className="field-input" name="name" onChange={handleChange} value={form.name || ''} />
@@ -513,15 +522,26 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
             </div>
         </fieldset>
         <fieldset className="profile-editor-fields" disabled={editStep !== 1 || busy} hidden={editStep !== 1}>
-          <legend className="sr-only">Apresentação opcional</legend>
+          <legend className="sr-only">Apresentação do perfil</legend>
+            <ProfileIdentityPreview
+              apiBaseUrl={api.defaults.baseURL}
+              disabled={!emailVerified || busy}
+              form={form}
+              onChangePhoto={(file) => handleImageUpload('installer_photo', file)}
+              onOpenPublications={() => changeStep(3)}
+            />
             <label className="block">
-              <span className="field-label">Nome da empresa</span>
+              <span className="field-label">Nome da empresa ou marca</span>
               <input className="field-input" name="business_name" onChange={handleChange} placeholder="Ex.: Studio Papel e Parede" value={form.business_name || ''} />
+              <span className="field-hint">Se ficar em branco, mostramos seu nome.</span>
             </label>
             <label className="block"><span className="field-label">Anos de experiência</span><input className="field-input" min="0" name="years_experience" onChange={handleChange} type="number" value={form.years_experience || 0} /></label>
-            <label className="block md:col-span-2"><span className="field-label">Apresentação pública</span><textarea className="field-textarea" name="bio" onChange={handleChange} placeholder="Conte sua experiência, estilo de atendimento e diferenciais." rows="4" value={form.bio || ''} /></label>
+            <label className="block profile-editor-full"><span className="field-label">Bio</span><textarea className="field-textarea" name="bio" onChange={handleChange} placeholder="Ex.: Instalo papéis de parede em casas e lojas na Grande Florianópolis." rows="4" value={form.bio || ''} /><span className="field-hint">Esta apresentação aparece no seu perfil público.</span></label>
 
-            <label className="block md:col-span-2">
+            <details className="profile-social-more profile-editor-full">
+              <summary>Logo e certificado <span>Opcionais</span></summary>
+              <div className="profile-social-more-fields">
+            <label className="block">
               <span className="field-label">Logo para perfil e PDF</span>
               <input
                 className="field-input"
@@ -540,66 +560,8 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
               ) : null}
             </label>
 
-            <label className="block md:col-span-2">
-              <span className="field-label">Foto do instalador</span>
-              <input
-                className="field-input"
-                onChange={(event) => handleImageUpload('installer_photo', event.target.files?.[0])}
-                disabled={!emailVerified}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp"
-              />
-              <p className="mt-2 text-xs text-[var(--muted)]">Essa foto aparece no perfil público para reforçar a confiança.</p>
-              {form.installer_photo ? (
-                <img
-                  alt="Foto do instalador"
-                  className="mt-3 h-24 w-24 rounded-full border border-[var(--line)] object-cover"
-                  src={resolveProfileImage(form.installer_photo, api.defaults.baseURL)}
-                />
-              ) : null}
-            </label>
-
-            <label className="block md:col-span-2">
-              <span className="field-label">
-                Portfólio de instalações (até {planAccess.limits?.portfolio_photos ?? 10} fotos)
-              </span>
-              <input
-                className="field-input"
-                onChange={(event) => handleGalleryUpload(event.target.files)}
-                disabled={!emailVerified}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp"
-                multiple
-              />
-              <p className="mt-2 text-xs text-[var(--muted)]">
-                Mostre ambientes já instalados para aumentar a confiança do cliente.
-              </p>
-              <PlanUsage className="mt-3" compact usageKey="portfolio_photos" />
-              <div className="profile-gallery-grid mt-3">
-                {(form.installation_gallery || []).map((photo, index) => (
-                  <article
-                    className="profile-gallery-item"
-                    key={`${index}-${photo.slice(0, 24)}`}
-                  >
-                    <img
-                      alt={`Portfólio ${index + 1}`}
-                      className="h-28 w-full rounded-[12px] object-cover"
-                      src={resolveProfileImage(photo, api.defaults.baseURL)}
-                    />
-                    <button
-                      className="ghost-button mt-2 w-full !min-h-0 !px-3 !py-2 text-xs"
-                      onClick={() => removeGalleryItem(index)}
-                      type="button"
-                    >
-                      Remover foto
-                    </button>
-                  </article>
-                ))}
-              </div>
-            </label>
-
-            <label className="block md:col-span-2">
-              <span className="field-label">Certificado de instalador · opcional</span>
+            <div>
+              <label className="block"><span className="field-label">Certificado de instalador</span>
               <input
                 className="field-input"
                 onChange={(event) => handleCertificateUpload(event.target.files?.[0])}
@@ -607,7 +569,7 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
                 type="file"
                 accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp"
               />
-              <p className="mt-2 text-xs text-[var(--muted)]">{certificateHint}</p>
+              <span className="field-hint">{certificateHint}</span></label>
 
               {form.certificate_file ? (
                 <div className="mt-3 rounded-[18px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-4">
@@ -656,8 +618,22 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
                   </button>
                 </div>
               ) : null}
-            </label>
-
+            </div>
+              </div>
+            </details>
+        </fieldset>
+        <fieldset className="profile-editor-fields" disabled={editStep !== 3 || busy} hidden={editStep !== 3}>
+          <legend className="sr-only">Publicações do perfil</legend>
+          <ProfilePublications
+            apiBaseUrl={api.defaults.baseURL}
+            canEdit={emailVerified && !busy}
+            limit={planAccess.limits?.portfolio_photos ?? 10}
+            onCover={(index) => setForm((current) => ({ ...current, installation_gallery: moveProfilePhotoToCover(current.installation_gallery, index) }))}
+            onRemove={removeGalleryItem}
+            onUpload={handleGalleryUpload}
+            photos={form.installation_gallery}
+            uploading={uploading > 0}
+          />
         </fieldset>
         <fieldset className="profile-editor-fields" disabled={editStep !== 2 || busy} hidden={editStep !== 2}>
           <legend className="sr-only">Atendimento e informações complementares opcionais</legend>
@@ -730,7 +706,7 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
             </div>
 
             <div className="profile-availability-shell md:col-span-2 rounded-[22px] border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-5">
-              <p className="field-hint">Os horários são salvos ao adicionar ou remover. As demais informações usam o botão Salvar no final desta etapa.</p>
+              <p className="field-hint">Os horários são salvos ao adicionar ou remover. Para os outros dados, use Salvar alterações.</p>
               <PlanUsage className="mb-4" compact usageKey="availability_slots" />
               <div className="flex flex-wrap items-end gap-3">
                 <label className="block">
@@ -989,10 +965,14 @@ export default function ProfileEditor({ active, initialProfile, onSaved, onCance
             </label>
             <div className="md:col-span-2"><Link className="profile-inline-button" to="/instalador/recuperar-senha">Redefinir minha senha</Link></div>
         </fieldset>
-        <footer className="profile-editor-footer"><button className="ghost-button" disabled={busy} onClick={cancelEditing} type="button">Cancelar</button><div>{editStep > 0 ? <button className="ghost-button" disabled={busy} onClick={() => changeStep(editStep - 1)} type="button">Etapa anterior</button> : null}<button className="ghost-button" disabled={busy || !emailVerified} name="editor_action" type="submit" value="finish">Salvar e ver perfil</button>{editStep < 2 ? <button className="gold-button" disabled={busy || !emailVerified} name="editor_action" type="submit" value="next">{saving ? 'Salvando…' : 'Salvar e continuar'}</button> : null}</div></footer>
+        <footer className="profile-editor-footer">
+          <button className="ghost-button" disabled={busy} onClick={cancelEditing} type="button">Cancelar</button>
+          <button className="gold-button" disabled={busy || !emailVerified || !dirty} type="submit">{saving ? 'Salvando…' : 'Salvar alterações'}</button>
+        </footer>
       </form>
       </div>
-      {tutorialOpen ? <ProfileEditTutorial onClose={closeTutorial} onStepChange={setEditStep} /> : null}
+      </div>
+      {tutorialOpen ? <ProfileEditTutorial onClose={closeTutorial} /> : null}
     </section>
   );
 }
