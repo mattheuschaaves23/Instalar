@@ -23,13 +23,6 @@ const motionOptions = [
   { value: 'reduced', label: 'Reduzidas', detail: 'Menos movimento' },
 ];
 
-const shortcutItems = [
-  { to: '/profile', title: 'Perfil público', detail: 'Dados, fotos, documentos e segurança.', icon: 'user' },
-  { to: '/subscription', title: 'Assinatura', detail: 'Plano, status e acesso ao painel.', icon: 'card' },
-  { to: '/notifications', title: 'Notificações', detail: 'Avisos recentes da conta.', icon: 'bell' },
-  { to: '/support', title: 'Suporte', detail: 'Atendimento e ideias para o produto.', icon: 'help' },
-];
-
 function SettingsIcon({ type }) {
   const sharedProps = {
     width: 20,
@@ -48,10 +41,6 @@ function SettingsIcon({ type }) {
     motion: <><path d="M4 16c4-8 8 8 12 0" /><path d="M16 8h4v4" /><path d="M20 8c-3.5 7-7-7-11 0" /></>,
     reset: <><path d="M20 12a8 8 0 1 1-2.4-5.7" /><path d="M20 4v5h-5" /></>,
     check: <path d="M5 12.5 10 17l9-10" />,
-    user: <><circle cx="12" cy="8" r="3.2" /><path d="M5.5 19c1.6-3 4.2-4.5 6.5-4.5s4.9 1.5 6.5 4.5" /></>,
-    card: <><rect x="4" y="6.5" width="16" height="11" rx="2" /><path d="M4 10h16" /></>,
-    bell: <><path d="M18 10.8a6 6 0 0 0-12 0c0 5-2 5.7-2 5.7h16s-2-.7-2-5.7" /><path d="M10 20a2.4 2.4 0 0 0 4 0" /></>,
-    help: <><circle cx="12" cy="12" r="8.5" /><path d="M9.8 9.4a2.4 2.4 0 1 1 3.6 2.1c-.9.5-1.4 1.1-1.4 2.2" /><path d="M12 17.2h.01" /></>,
     download: <><path d="M12 4v10" /><path d="m8.5 10.5 3.5 3.5 3.5-3.5" /><path d="M5 19h14" /></>,
     trash: <><path d="M4.5 7h15" /><path d="M9 7V4.8h6V7" /><path d="m7 7 .7 12h8.6L17 7" /><path d="M10 10.5v5M14 10.5v5" /></>,
   };
@@ -196,7 +185,7 @@ export default function Settings() {
       <PageIntro
         eyebrow="Conta"
         title="Configurações"
-        description={`Ajustes do painel de ${firstName}: aparência, movimento e atalhos da conta.`}
+        description={`Ajustes do painel de ${firstName}: aparência, movimento e privacidade.`}
         actions={(
           <button className="ghost-button" onClick={handleReset} type="button">
             <SettingsIcon type="reset" />
@@ -236,28 +225,6 @@ export default function Settings() {
             options={motionOptions}
             value={preferences.motion}
           />
-        </article>
-
-        <article className="settings-panel settings-panel--shortcuts">
-          <div className="settings-section-head">
-            <span><SettingsIcon type="check" /></span>
-            <div>
-              <p>Conta</p>
-              <h2>Atalhos úteis</h2>
-            </div>
-          </div>
-
-          <div className="settings-shortcuts">
-            {shortcutItems.map((item) => (
-              <Link key={item.to} to={item.to}>
-                <span><SettingsIcon type={item.icon} /></span>
-                <div>
-                  <strong>{item.title}</strong>
-                  <small>{item.detail}</small>
-                </div>
-              </Link>
-            ))}
-          </div>
         </article>
 
         <article className="settings-panel settings-panel--status">
