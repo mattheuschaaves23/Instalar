@@ -35,6 +35,16 @@ async (page) => {
   });
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.goto(`${origin}/settings`);
+  const settings = page.locator('.settings-page');
+  await settings.getByRole('heading', { name: 'Organização visual' }).waitFor();
+  if (await settings.getByRole('heading', { name: 'Atalhos úteis' }).count()) throw new Error('Removed shortcuts card is still visible');
+  const fillsSettingsWidth = await settings.locator('.settings-layout').evaluate((layout) => (
+    [...layout.children].every((panel) => Math.abs(panel.getBoundingClientRect().width - layout.clientWidth) <= 1)
+  ));
+  if (!fillsSettingsWidth) throw new Error('The removed shortcuts card left an unused column');
+  for (const to of ['/profile', '/subscription', '/notifications', '/support']) {
+    await page.locator(`.ref-panel-sidebar a[href="${to}"]`).waitFor({ state: 'visible' });
+  }
   const theme = page.getByRole('group', { name: 'Fundo', exact: true });
   await theme.getByRole('button', { name: 'Preto', exact: false }).click();
   await page.waitForFunction(() => document.documentElement.dataset.siteTheme === 'dark');

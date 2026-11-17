@@ -20897,7 +20897,7 @@ body,
 
 .settings-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 0.9fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   align-items: stretch;
 }
@@ -21583,10 +21583,6 @@ body,
 }
 
 @media (max-width: 1100px) {
-  .settings-layout {
-    grid-template-columns: 1fr;
-  }
-
   .settings-panel--accent {
     grid-row: auto;
   }
