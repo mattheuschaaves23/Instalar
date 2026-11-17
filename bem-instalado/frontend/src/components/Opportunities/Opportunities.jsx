@@ -137,8 +137,9 @@ export default function Opportunities() {
   const detailTitle = useRef(null);
   const lastCard = useRef(null);
   const tabRefs = useRef([]);
+  const filterKey = JSON.stringify({ ...filters, offset: 0 });
   const loadKey = JSON.stringify([filters, refresh]);
-  const result = resultState.key === loadKey ? resultState : { ...resultState, loading: true, items: filters.offset ? resultState.items : [] };
+  const result = resultState.key === loadKey ? resultState : { ...resultState, loading: true, items: resultState.filterKey === filterKey ? resultState.items : [] };
   const tab = TABS.find((item) => item.value === filters.status);
   const selected = selectedId === null ? null : result.items.find((item) => item.id === selectedId) || result.items[0] || null;
   const filterCount = Number(Boolean(filters.place)) + Number(filters.photos);
@@ -152,11 +153,11 @@ export default function Opportunities() {
   useEffect(() => {
     const controller = new AbortController();
     const [city, state] = filters.region.split('|');
-    setResult((current) => ({ ...current, loading: true, error: null, items: filters.offset ? current.items : [] }));
+    setResult((current) => ({ ...current, loading: true, error: null, items: current.filterKey === filterKey ? current.items : [] }));
     api.get('/opportunities', { signal: controller.signal, params: { status: filters.status, q: filters.q, city, state, place: filters.place, photos: filters.photos ? 'true' : '', sort: filters.sort, offset: filters.offset, limit: 12 } })
       .then(({ data }) => {
         if (controller.signal.aborted) return;
-        setResult((current) => ({ key: loadKey, items: filters.offset ? mergeOpportunityPage(current.items, data.opportunities || []) : data.opportunities || [], stats: data.stats || {}, regions: data.regions || [], total: data.pagination?.total ?? data.opportunities?.length ?? 0, hasMore: Boolean(data.pagination?.has_more), eligibility: data.eligibility || {}, loading: false, error: null }));
+        setResult((current) => ({ key: loadKey, filterKey, items: filters.offset ? mergeOpportunityPage(current.items, data.opportunities || []) : data.opportunities || [], stats: data.stats || {}, regions: data.regions || [], total: data.pagination?.total ?? data.opportunities?.length ?? 0, hasMore: Boolean(data.pagination?.has_more), eligibility: data.eligibility || {}, loading: false, error: null }));
       })
       .catch((error) => {
         if (controller.signal.aborted) return;
@@ -164,7 +165,7 @@ export default function Opportunities() {
         setResult((current) => ({ ...current, key: loadKey, loading: false, error: { code, message: error.response?.data?.error || 'Não foi possível carregar os pedidos. Tente novamente.' } }));
       });
     return () => controller.abort();
-  }, [filters, refresh, loadKey]);
+  }, [filters, refresh, loadKey, filterKey]);
   useEffect(() => {
     if (detailOpen) detailTitle.current?.focus();
     else lastCard.current?.focus();

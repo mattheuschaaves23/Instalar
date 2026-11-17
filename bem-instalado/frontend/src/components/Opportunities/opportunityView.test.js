@@ -7,6 +7,8 @@ describe('organização das oportunidades', () => {
     expect(getOpportunityState({ status: 'open', interested_by_me: true }).key).toBe('waiting');
     expect(getOpportunityState({ status: 'selected', selected_by_me: true }).key).toBe('selected');
     expect(getOpportunityState({ status: 'accepted', selected_by_me: true }).label).toBe('Agendado');
+    expect(getOpportunityState({ status: 'scheduled', selected_by_me: true }).label).toBe('Agendado');
+    expect(getOpportunityState({ status: 'proposal_sent', selected_by_me: true }).label).toBe('Proposta enviada');
     expect(getOpportunityState({ status: 'in_progress', selected_by_me: true }).label).toBe('Em andamento');
     expect(getOpportunityState({ status: 'completed', selected_by_me: true }).key).toBe('completed');
     expect(getOpportunityState({ status: 'selected', not_selected: true }).key).toBe('not-selected');

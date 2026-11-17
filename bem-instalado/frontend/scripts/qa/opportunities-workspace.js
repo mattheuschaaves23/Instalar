@@ -7,6 +7,8 @@ async (page) => {
   let delayNextOpen = false;
   let interestPosts = 0;
   let proposalPosts = 0;
+  let progressPosts = 0;
+  let eligibility = { can_express_interest: true };
   page.on('pageerror', (error) => errors.push(error.message));
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => {
@@ -26,6 +28,7 @@ async (page) => {
   records.push({ ...basic, id: 203, rooms: ['Outro profissional'], status: 'selected', interested_by_me: true, my_interest_status: 'interested', not_selected: true, can_contact_on_interest: false });
   records.push({ ...basic, id: 301, status: 'selected', rooms: ['Cliente escolheu você'], selected_by_me: true, interested_by_me: true, my_interest_status: 'selected', client_name: 'Cliente QA fictício', client_phone: '48999990000', address_reference: 'Endereço fictício autorizado', whatsapp_url: 'https://wa.me/5548999990000?text=Teste', can_contact_on_interest: false });
   records.push({ ...basic, id: 302, status: 'completed', rooms: ['Serviço concluído'], selected_by_me: true, interested_by_me: true, my_interest_status: 'selected', can_contact_on_interest: false });
+  records.push({ ...basic, id: 303, status: 'scheduled', rooms: ['Serviço agendado'], selected_by_me: true, interested_by_me: true, my_interest_status: 'selected', can_contact_on_interest: false });
   const tabFor = (item) => item.selected_by_me ? 'selected' : item.interested_by_me ? 'interested' : 'open';
   const fold = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const installer = { id: 42, name: 'Instalador QA', business_name: 'Perfil de teste', account_type: 'installer', email: 'qa@example.test', email_verified: true, email_verified_at: '2026-11-01', city: 'Palhoça', state: 'SC', phone: '48999990000', installation_gallery: [] };
@@ -45,7 +48,7 @@ async (page) => {
       const offset = Number(url.searchParams.get('offset') || 0);
       const limit = Number(url.searchParams.get('limit') || 20);
       const regions = [...new Map(regional.map((item) => [item.city + item.state, { city: item.city, state: item.state }])).values()];
-      return route.fulfill({ json: { opportunities: items.slice(offset, offset + limit), stats, regions, eligibility: { can_express_interest: true }, pagination: { total, limit, offset, has_more: offset + limit < total } } });
+      return route.fulfill({ json: { opportunities: items.slice(offset, offset + limit), stats, regions, eligibility, pagination: { total, limit, offset, has_more: offset + limit < total } } });
     }
     if (/\/opportunities\/\d+\/interest$/.test(path)) {
       interestPosts++;
@@ -55,8 +58,13 @@ async (page) => {
     }
     if (/\/opportunities\/\d+\/proposal$/.test(path)) {
       if (route.request().method() === 'POST') { proposalPosts++; return route.fulfill({ json: { proposal: { status: 'sent', ...route.request().postDataJSON() } } }); }
-      const complete = path.includes('/302/');
+      const complete = path.includes('/302/') || path.includes('/303/');
       return route.fulfill({ json: { proposal: complete ? { amount: 400, scope: 'Serviço fictício concluído', status: 'accepted', scheduled_start: '2026-11-18T12:00:00Z', scheduled_end: '2026-11-18T14:00:00Z' } : null } });
+    }
+    if (/\/opportunities\/\d+\/service-status$/.test(path)) {
+      progressPosts++;
+      records.find((row) => row.id === Number(path.split('/')[3])).status = route.request().postDataJSON().status;
+      return route.fulfill({ json: { ok: true } });
     }
     const fixture = { '/api/users/profile': installer, '/api/auth/csrf': { csrf_token: 'qa-only' }, '/api/subscriptions': { plan: 'pro', plan_access: { is_pro: true, features: {}, limits: {}, usage: {} } }, '/api/notifications': [], '/api/schedules': [], '/api/users/reviews/summary': { review_count: 0 } };
     return route.fulfill({ json: fixture[path] || {} });
@@ -66,6 +74,12 @@ async (page) => {
   const cards = () => page.locator('.opp-list').getByRole('button');
   const assert = (condition, message) => { if (!condition) throw new Error(message); };
   const noOverflow = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+  const contrast = (locator) => locator.evaluate((element) => {
+    const css = getComputedStyle(element);
+    const luminance = (color) => color.match(/[\d.]+/g).slice(0, 3).map((value) => { const c = Number(value) / 255; return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; }).reduce((total, c, index) => total + c * [.2126, .7152, .0722][index], 0);
+    const colors = [luminance(css.color), luminance(css.backgroundColor)].sort((a, b) => b - a);
+    return (colors[0] + .05) / (colors[1] + .05);
+  });
 
   await page.setViewportSize({ width: 1536, height: 1024 });
   await page.goto(origin + '/opportunities', { waitUntil: 'domcontentloaded' });
@@ -75,6 +89,11 @@ async (page) => {
   const blue = await page.getByRole('button', { name: 'Tenho interesse', exact: true }).evaluate((button) => getComputedStyle(button).backgroundColor);
   assert(blue === 'rgb(33, 124, 141)', 'Wrong light accent: ' + blue);
   assert(await page.getByRole('button', { name: 'Tenho interesse', exact: true }).evaluate((button) => getComputedStyle(button).color) === 'rgb(255, 255, 255)', 'Primary action text has low contrast');
+  const primary = page.getByRole('button', { name: 'Tenho interesse', exact: true });
+  assert(await contrast(primary) >= 4.5, 'Light primary contrast');
+  await primary.hover();
+  assert(await contrast(primary) >= 4.5, 'Light hover contrast');
+  await page.mouse.move(0, 0);
   assert((await tab('Meus interesses').textContent()).includes('3'), 'Missing independent interest count');
   await page.screenshot({ path: 'output/qa/opportunities-new-desktop.png', animations: 'disabled' });
   await page.getByRole('button', { name: 'Carregar mais', exact: true }).click();
@@ -122,6 +141,12 @@ async (page) => {
   await page.getByText('Este pedido está concluído.').waitFor();
   assert(await page.getByRole('button', { name: /^(Iniciar serviço|Concluir|Cancelar)$/ }).count() === 0, 'Completed service allowed mutation');
   await page.screenshot({ path: 'output/qa/opportunities-selected.png', animations: 'disabled' });
+  await cards().filter({ hasText: 'Serviço agendado' }).click();
+  await page.getByRole('button', { name: 'Ver proposta e serviço' }).click();
+  await page.getByRole('button', { name: 'Iniciar serviço', exact: true }).click();
+  await page.getByRole('button', { name: 'Concluir', exact: true }).click();
+  await page.getByText('Este pedido está concluído.').waitFor();
+  assert(progressPosts === 2, 'Scheduled -> in progress -> completed workflow failed');
 
   await tab('Novas').click();
   await waitLoaded();
@@ -148,6 +173,11 @@ async (page) => {
   assert(await cards().count() === 4 && await tab('Meus interesses').getAttribute('aria-selected') === 'true', 'Stale request overwrote active tab');
 
   await page.evaluate(() => { document.documentElement.dataset.siteTheme = 'dark'; });
+  const reopen = page.getByRole('link', { name: 'Reabrir WhatsApp' });
+  assert(await contrast(reopen) >= 4.5, 'Dark primary contrast');
+  await reopen.hover();
+  assert(await contrast(reopen) >= 4.5, 'Dark hover contrast');
+  await page.mouse.move(0, 0);
   await page.screenshot({ path: 'output/qa/opportunities-dark-desktop.png', animations: 'disabled' });
   await page.setViewportSize({ width: 390, height: 844 });
   assert(await noOverflow(), 'Mobile overflow');
@@ -164,6 +194,26 @@ async (page) => {
   await cards().first().click();
   assert(await noOverflow(), '320px detail overflow');
   await page.getByRole('button', { name: 'Voltar aos pedidos' }).click();
+  await page.setViewportSize({ width: 1536, height: 1024 });
+  await page.evaluate(() => { document.body.style.zoom = '2'; });
+  assert(await noOverflow(), '200% zoom overflow');
+  await page.evaluate(() => { document.body.style.zoom = ''; });
+  eligibility = { can_express_interest: false, requirement_code: 'PROFILE_ESSENTIALS_REQUIRED', message: 'Complete os dados essenciais para enviar novos interesses.' };
+  await tab('Novas').click();
+  await waitLoaded();
+  assert(await page.getByRole('button', { name: 'Tenho interesse', exact: true }).count() === 0, 'Missing profile allowed new interest');
+  assert(await page.getByRole('link', { name: 'Revisar meu perfil', exact: true }).getAttribute('href') === '/profile', 'Profile recovery action missing');
+  await tab('Meus interesses').click();
+  await waitLoaded();
+  assert(await page.getByRole('link', { name: 'Reabrir WhatsApp' }).isVisible(), 'Readiness blocked existing contact');
+  records.length = 0;
+  await tab('Novas').click();
+  await page.getByRole('heading', { name: 'Nenhuma nova oportunidade por enquanto.' }).waitFor();
+  await tab('Novas').focus();
+  await page.keyboard.press('ArrowRight');
+  await page.getByRole('heading', { name: 'Você ainda não demonstrou interesse em um pedido.' }).waitFor();
+  await page.keyboard.press('End');
+  await page.getByRole('heading', { name: 'Nenhum cliente escolheu você por enquanto.' }).waitFor();
   assert(!errors.length, 'Browser errors: ' + errors.join('; '));
-  return { result: 'PASS', interestPosts, proposalPosts, listRequests: requests.length, scenarios: ['3 tabs and counts', 'pagination', 'search and filters', 'expired and non-selected privacy', 'proposal form', 'closed service', 'manual WhatsApp', 'retry', 'stale request cancellation', 'desktop/mobile light/dark', '320px'] };
+  return { result: 'PASS', interestPosts, proposalPosts, progressPosts, listRequests: requests.length, scenarios: ['3 tabs and counts', 'pagination', 'search and filters', 'expired and non-selected privacy', 'proposal form', 'scheduled/progress/completed service', 'manual WhatsApp', 'retry', 'stale request cancellation', 'desktop/mobile light/dark', '320px'] };
 }

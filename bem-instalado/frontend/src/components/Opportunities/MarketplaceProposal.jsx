@@ -119,9 +119,9 @@ export default function MarketplaceProposal({ requestId, requestStatus, onUpdate
           <p><strong>Horário confirmado:</strong> {new Date(proposal.scheduled_start).toLocaleString('pt-BR')}</p>
           <p><strong>Valor:</strong> {formatCurrency(proposal.amount)}</p>
           <div className="flex flex-wrap gap-2">
-            {requestStatus === 'accepted' ? <button className="gold-button" disabled={loading} onClick={() => updateProgress('in_progress')} type="button">Iniciar serviço</button> : null}
+            {['accepted', 'scheduled'].includes(requestStatus) ? <button className="gold-button" disabled={loading} onClick={() => updateProgress('in_progress')} type="button">Iniciar serviço</button> : null}
             {requestStatus === 'in_progress' ? <button className="gold-button" disabled={loading} onClick={() => updateProgress('completed')} type="button">Concluir</button> : null}
-            {['accepted', 'in_progress'].includes(requestStatus) ? <button className="ghost-button" disabled={loading} onClick={() => updateProgress('canceled')} type="button">Cancelar</button> : null}
+            {['accepted', 'scheduled', 'in_progress'].includes(requestStatus) ? <button className="ghost-button" disabled={loading} onClick={() => updateProgress('canceled')} type="button">Cancelar</button> : null}
           </div>
         </div>
       ) : editable ? (

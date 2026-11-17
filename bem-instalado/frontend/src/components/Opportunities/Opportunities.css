@@ -6,6 +6,7 @@
   --opp-muted: #66757d;
   --opp-line: #e0e8eb;
   --opp-blue: #217c8d;
+  --opp-accent-text: #217c8d;
   --opp-blue-hover: #186576;
   --opp-blue-soft: #eaf7fa;
   --opp-blue-line: #86c3ce;
@@ -24,7 +25,8 @@ html[data-site-theme='dark'] .opp-workspace {
   --opp-muted: #adbcc7;
   --opp-line: #33414a;
   --opp-blue: #287f97;
-  --opp-blue-hover: #3292ab;
+  --opp-blue-hover: #226d83;
+  --opp-accent-text: #86d5e8;
   --opp-blue-soft: #142e38;
   --opp-blue-line: #4c9bb0;
   --opp-focus: #83d6ed;
@@ -46,7 +48,7 @@ html[data-site-theme] .opp-workspace .opp-icon-button { min-width: 40px; min-hei
 html[data-site-theme] .opp-workspace .opp-text-button { padding-inline: 4px; border: 0; background: none; color: var(--opp-blue); }
 .opp-tabs { display: flex; gap: 26px; margin-block-end: 20px; border-block-end: 1px solid var(--opp-line); }
 .opp-tabs [role='tab'] { display: inline-flex; align-items: center; gap: 9px; min-height: 48px; padding: 10px 2px 14px; margin-block-end: -1px; border: 0; border-block-end: 3px solid transparent; border-radius: 0; background: none; color: var(--opp-muted); font-weight: 600; font-size: 14px; cursor: pointer; }
-.opp-tabs [aria-selected='true'] { border-block-end-color: var(--opp-blue); color: var(--opp-blue); }
+.opp-tabs [aria-selected='true'] { border-block-end-color: var(--opp-blue); color: var(--opp-accent-text); }
 .opp-tabs [role='tab'] span { min-width: 22px; padding: 1px 6px; border-radius: 5px; background: var(--opp-soft); color: inherit; font-size: 12px; text-align: center; }
 .opp-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, .55fr) auto; gap: 12px; margin-block-end: 24px; }
 .opp-search, .opp-region { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 46px; padding-inline: 13px; border: 1px solid var(--opp-line); border-radius: 9px; background: var(--opp-surface); color: var(--opp-muted); }
@@ -113,7 +115,7 @@ html[data-site-theme] .opp-workspace .opp-photo-count { position: absolute; inse
 .opp-photo-options .opp-no-photo span { display: none; }
 .opp-client { display: flex; align-items: center; gap: 10px; padding-block: 10px; }
 .opp-client > div { min-width: 0; }
-.opp-client-avatar { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex: 0 0 38px; border-radius: 50%; background: var(--opp-blue-soft); color: var(--opp-blue); font-size: 12px; font-weight: 700; }
+.opp-client-avatar { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex: 0 0 38px; border-radius: 50%; background: var(--opp-blue-soft); color: var(--opp-accent-text); font-size: 12px; font-weight: 700; }
 .opp-client strong { color: var(--opp-ink); font-size: 14px; }
 .opp-client p { margin: 3px 0 0; color: var(--opp-muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .opp-fact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 22px; padding-block: 12px; margin: 0; border-block: 1px solid var(--opp-line); }

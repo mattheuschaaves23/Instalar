@@ -33,7 +33,7 @@ export function getOpportunityState(item) {
   };
   if (closed[item.status]) return { key: item.status, label: closed[item.status][0], hint: closed[item.status][1] };
   if (item.selected_by_me) {
-    const label = { accepted: 'Agendado', in_progress: 'Em andamento' }[item.status] || 'Cliente escolheu você';
+    const label = { accepted: 'Agendado', scheduled: 'Agendado', proposal_sent: 'Proposta enviada', in_progress: 'Em andamento' }[item.status] || 'Cliente escolheu você';
     return { key: 'selected', label, hint: 'Combine os detalhes com o cliente e acompanhe a proposta e o serviço.' };
   }
   if (item.interested_by_me) return { key: 'waiting', label: 'Aguardando cliente', hint: 'Seu interesse foi registrado. A contratação depende da escolha do cliente.' };
