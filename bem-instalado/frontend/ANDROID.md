@@ -14,6 +14,15 @@ cliente, páginas públicas ou o painel administrativo.
 
 ## Gerar o projeto web do aplicativo
 
+O build do aplicativo exige `REACT_APP_TURNSTILE_SITE_KEY` (chave pública do
+widget Turnstile, a mesma da Vercel). Sem ela o build para com erro, porque o
+servidor de produção recusa cadastro e recuperação de senha sem o token. No
+GitHub Actions ela vem da variável de repositório de mesmo nome; na máquina
+local, defina no terminal ou em `.env.android.local` (ignorado pelo git). O
+widget também precisa aceitar o hostname `localhost` no painel da Cloudflare,
+porque o aplicativo roda em `https://localhost` (Android) e
+`capacitor://localhost` (iOS).
+
 ```bash
 npm ci
 npm run build:android:web
