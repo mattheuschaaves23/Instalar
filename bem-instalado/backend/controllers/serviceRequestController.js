@@ -164,13 +164,13 @@ function joinRegion(item) {
 }
 
 function buildInstallerMessage(installer, request) {
-  const installerName = installer.business_name || installer.name || 'um instalador da InstalaPro';
+  const installerName = installer.business_name || installer.name || 'um instalador da InstalarPro';
   const service = request.service_label || 'instalação de papel de parede';
   const region = joinRegion(request);
 
   return [
     `Olá, ${request.client_name}. Sou ${installerName}.`,
-    `Você me escolheu na InstalaPro para falar sobre ${service}${region ? ` em ${region}` : ''}.`,
+    `Você me escolheu na InstalarPro para falar sobre ${service}${region ? ` em ${region}` : ''}.`,
     'Posso combinar os detalhes pelo WhatsApp?',
   ].join(' ');
 }
@@ -183,11 +183,11 @@ function buildInterestWhatsAppLink(req, installer, request) {
   const baseUrl = getPublicAppUrl(req);
   if (!phone || !baseUrl) return null;
 
-  const installerName = installer.business_name || installer.name || 'instalador da InstalaPro';
+  const installerName = installer.business_name || installer.name || 'instalador da InstalarPro';
   const region = [installer.city, installer.state].filter(Boolean).join(' - ') || installer.service_region;
   const profileUrl = `${baseUrl}${interestedProfilePath(request.id, installer.id)}`;
   return generateWhatsAppLink(phone, [
-    `Olá! Sou ${installerName}${region ? `, de ${region}` : ''}, instalador da InstalaPro.`,
+    `Olá! Sou ${installerName}${region ? `, de ${region}` : ''}, instalador da InstalarPro.`,
     `Tenho interesse em atender seu pedido #${request.id} de ${request.service_label || 'instalação de papel de parede'}.`,
     `Veja meu perfil: ${profileUrl}`,
     'Se quiser seguir comigo, abra o perfil e toque em “Escolher este instalador”.',
@@ -198,7 +198,7 @@ function buildClientMessage(installer, request) {
   const installerName = installer.display_name || installer.business_name || installer.name || 'instalador';
   const service = request.service_label || 'instalação de papel de parede';
 
-  return `Olá, ${installerName}. Escolhi você na InstalaPro para conversar sobre meu pedido de ${service}.`;
+  return `Olá, ${installerName}. Escolhi você na InstalarPro para conversar sobre meu pedido de ${service}.`;
 }
 
 function serializeOpportunity(row) {
@@ -1258,7 +1258,7 @@ exports.selectServiceRequestInterest = async (req, res) => {
     await sendPushToUser({
       userId: interest.installer_id,
       title: 'Você foi escolhido',
-      body: 'O cliente escolheu você. Envie uma proposta pela InstalaPro.',
+      body: 'O cliente escolheu você. Envie uma proposta pela InstalarPro.',
       data: { route: '/opportunities', requestId },
     }).catch(() => null);
 

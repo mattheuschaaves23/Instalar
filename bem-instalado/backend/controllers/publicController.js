@@ -25,9 +25,9 @@ const MARKETPLACE_CONTACT_EMAIL = process.env.MARKETPLACE_CONTACT_EMAIL || 'inst
 
 function buildMarketplacePayload() {
   return {
-    title: 'Loja Oficial InstalaPro',
+    title: 'Loja Oficial InstalarPro',
     description:
-      'A loja oficial InstalaPro Home Decor reúne papéis de parede para vários estilos, com operação em Florianópolis e atendimento para todo o Brasil.',
+      'A loja oficial InstalarPro Home Decor reúne papéis de parede para vários estilos, com operação em Florianópolis e atendimento para todo o Brasil.',
     url: MARKETPLACE_URL,
     cta_label: MARKETPLACE_CTA_LABEL,
     whatsapp_url: MARKETPLACE_WHATSAPP_URL,

@@ -1991,8 +1991,8 @@ export default function Home() {
         <header className="client-app-topbar fade-up">
           <div className="client-app-brand">
             {isRequestComposer ? (
-              <Link aria-label="InstalaPro — página inicial" className="request-brand-wordmark" to="/">
-                Instala<span>Pro</span>
+              <Link aria-label="InstalarPro — página inicial" className="request-brand-wordmark" to="/">
+                <BrandWordmark size="sm" />
               </Link>
             ) : <BrandWordmark className="client-app-brand-wordmark" size="sm" />}
           </div>

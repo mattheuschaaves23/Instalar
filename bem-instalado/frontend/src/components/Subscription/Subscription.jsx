@@ -252,7 +252,7 @@ export default function Subscription() {
         <div className="subscription-v3-hero-copy">
           <div className="subscription-v3-kicker">
             <i aria-hidden="true" />
-            Planos InstalaPro
+            Planos InstalarPro
           </div>
           <h1>
             Comece grátis.

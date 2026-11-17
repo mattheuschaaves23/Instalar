@@ -89,6 +89,7 @@
 
 .lp6-brand img {
   width: 100%;
+  height: auto;
   display: block;
 }
 
@@ -1007,6 +1008,7 @@
 
 .lp6-footer > img {
   width: 8.5rem;
+  height: auto;
   grid-column: 1;
 }
 
@@ -1185,7 +1187,7 @@ html[data-site-theme='light'] .lp6-header.is-scrolled .lp6-nav a {
 }
 
 html[data-site-theme='light'] .lp6-header.is-scrolled .lp6-brand img {
-  filter: brightness(0.42) sepia(0.55) saturate(1.2);
+  filter: none;
 }
 
 html[data-site-theme='light'] .lp6-header.is-scrolled .site-theme-toggle {

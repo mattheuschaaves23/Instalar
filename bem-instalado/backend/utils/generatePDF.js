@@ -119,7 +119,7 @@ function resolveBranding(branding, user, isPro) {
   const accent = cleanBrandingText(source.accent_color, 7).toUpperCase();
 
   return {
-    brandName: cleanBrandingText(source.brand_name, 80) || cleanBrandingText(user?.business_name, 80) || 'InstalaPro',
+    brandName: cleanBrandingText(source.brand_name, 80) || cleanBrandingText(user?.business_name, 80) || 'InstalarPro',
     documentTitle: cleanBrandingText(source.document_title, 100) || 'Proposta comercial de instalação',
     introText: cleanBrandingText(source.intro_text, 320),
     closingText: cleanBrandingText(source.closing_text, 320),
@@ -580,10 +580,10 @@ function drawFooter(doc, pageNumber, pageCount, budgetId, user, isPro, branding)
   doc.moveTo(MARGIN, footerY - 8).lineTo(doc.page.width - MARGIN, footerY - 8).lineWidth(1).stroke(COLORS.line);
   doc.restore();
 
-  const leftText = `${isPro ? branding.brandName : 'InstalaPro'} • Orçamento #${budgetId}`;
+  const leftText = `${isPro ? branding.brandName : 'InstalarPro'} • Orçamento #${budgetId}`;
   const centerText = isPro
     ? (branding.showContact && toText(user?.phone) ? `Contato: ${toText(user.phone)}` : 'Documento profissional')
-    : 'Criado gratuitamente com InstalaPro';
+    : 'Criado gratuitamente com InstalarPro';
   const rightText = `Página ${pageNumber} de ${pageCount}`;
 
   // Footer is positioned outside the flowing content area. Never let text()

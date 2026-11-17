@@ -3,12 +3,13 @@ import { Link } from 'react-router';
 import api from '../../services/api';
 import './ClientLanding.css';
 import PageMetadata from './PageMetadata';
+import BrandImage from '../Layout/BrandImage';
 
 const REQUEST_PATH = '/cliente';
 const CLIENT_LOGIN_PATH = '/cliente/entrar';
 const INSTALLER_LOGIN_PATH = '/instalador/entrar';
 const STORE_CONTACT_URL =
-  'https://api.whatsapp.com/send?phone=5548999816000&text=Ol%C3%A1%2C%20quero%20anunciar%20minha%20loja%20na%20InstalaPro.';
+  'https://api.whatsapp.com/send?phone=5548999816000&text=Ol%C3%A1%2C%20quero%20anunciar%20minha%20loja%20na%20InstalarPro.';
 
 const fallbackStores = [
   {
@@ -21,7 +22,7 @@ const fallbackStores = [
   },
   {
     id: 'showcase-two',
-    name: 'Vitrine InstalaPro',
+    name: 'Vitrine InstalarPro',
     description: 'Sua marca em destaque no momento em que o projeto começa.',
     image_url: '',
     cta_label: 'Quero participar',
@@ -32,7 +33,7 @@ const fallbackStores = [
     name: 'Lojas recomendadas',
     description: 'Papel de parede, curadoria e atendimento especializado.',
     image_url: '',
-    cta_label: 'Falar com a InstalaPro',
+    cta_label: 'Falar com a InstalarPro',
     link_url: STORE_CONTACT_URL,
   },
 ];
@@ -49,8 +50,8 @@ function Header() {
 
   return (
     <header className={`lp6-header${scrolled ? ' is-scrolled' : ''}`}>
-      <Link aria-label="InstalaPro — página inicial" className="lp6-brand" to="/">
-        <img alt="InstalaPro" src="/brand/instalapro-logo-transparent.png" />
+      <Link aria-label="InstalarPro — página inicial" className="lp6-brand" to="/">
+        <BrandImage fetchPriority="high" surface={scrolled ? 'auto' : 'dark'} variant="wordmark" />
       </Link>
 
       <nav aria-label="Navegação principal" className="lp6-nav">
@@ -90,7 +91,7 @@ function Hero() {
           <span>na <em>sua região</em></span>
         </h1>
         <p className="lp6-hero-summary">
-          A InstalaPro conecta clientes, lojas e instaladores. Solicite atendimento
+          A InstalarPro conecta clientes, lojas e instaladores. Solicite atendimento
           gratuitamente e encontre profissionais da sua região com mais praticidade
           e segurança.
         </p>
@@ -135,7 +136,7 @@ function StoreCard({ duplicate, store }) {
           <div className="lp6-store-monogram" aria-hidden="true">
             <span>{store.name?.slice(0, 1) || 'I'}</span>
           </div>
-          <small>Seleção InstalaPro</small>
+          <small>Seleção InstalarPro</small>
         </div>
         <div className="lp6-store-copy">
           <div>
@@ -313,14 +314,14 @@ function Process() {
       </div>
 
       <footer className="lp6-footer" data-reveal="rise">
-        <img alt="InstalaPro" src="/brand/instalapro-logo-transparent.png" />
+        <BrandImage variant="wordmark" />
         <p>Conecta quem precisa com quem sabe instalar.</p>
         <nav aria-label="Links institucionais">
           <Link to="/privacidade">Privacidade</Link>
           <Link to="/termos">Termos</Link>
           <a href="mailto:instalaproo@gmail.com">Contato</a>
         </nav>
-        <span>© {new Date().getFullYear()} InstalaPro</span>
+        <span>© {new Date().getFullYear()} InstalarPro</span>
       </footer>
     </section>
   );
@@ -402,7 +403,7 @@ export default function ClientLanding() {
       <PageMetadata
         canonicalPath="/"
         description="Encontre instaladores de papel de parede verificados, envie seu pedido e acompanhe proposta e agendamento em um só lugar."
-        title="InstalaPro | Encontre instaladores de papel de parede"
+        title="InstalarPro | Encontre instaladores de papel de parede"
       />
       <a className="lp6-skip-link" href="#conteudo">Pular para o conteúdo</a>
       <Header />

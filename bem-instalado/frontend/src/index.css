@@ -702,7 +702,8 @@ textarea {
   width: 100%;
   height: auto;
   display: block;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.22));
+  object-fit: contain;
+  filter: none;
 }
 
 .brand-wordmark-fallback {
@@ -24697,10 +24698,6 @@ html[data-site-theme='light'][data-installer-app='true'] #root {
 
 html[data-site-theme='light'] body {
   background: #ffffff !important;
-}
-
-html[data-site-theme='light'] .brand-wordmark-image {
-  filter: brightness(0.35) contrast(1.2);
 }
 
 html[data-site-theme='light'] .dashboard-reference-layout {

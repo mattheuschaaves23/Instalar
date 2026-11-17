@@ -4,7 +4,7 @@ export function getAuthRequestErrorMessage(error, fallback = 'Não foi possível
   }
 
   if (!error?.response) {
-    return 'Não foi possível conectar ao InstalaPro. Confira a internet do aparelho e tente novamente.';
+    return 'Não foi possível conectar ao InstalarPro. Confira a internet do aparelho e tente novamente.';
   }
 
   if (error.response.status === 429) {

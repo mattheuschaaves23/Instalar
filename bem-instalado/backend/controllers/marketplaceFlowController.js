@@ -205,7 +205,7 @@ exports.sendProposal = async (req, res) => {
 
     await emailSafely({
       to: request.client_account_email || request.client_email,
-      subject: 'Nova proposta para seu pedido - InstalaPro',
+      subject: 'Nova proposta para seu pedido - InstalarPro',
       title: 'Nova proposta recebida',
       body: `Você recebeu uma proposta de ${formatMoney(proposal.amount)}. Confira os detalhes e aceite ou peça ajustes.`,
       actionLabel: 'Ver proposta',
@@ -371,7 +371,7 @@ exports.respondToProposal = async (req, res) => {
     db = null;
     await emailSafely({
       to: installerResult.rows[0]?.email,
-      subject: `${title} - InstalaPro`,
+      subject: `${title} - InstalarPro`,
       title,
       body: notification,
       actionLabel: 'Abrir oportunidade',
@@ -447,7 +447,7 @@ exports.updateServiceProgress = async (req, res) => {
     db = null;
     await emailSafely({
       to: request.client_account_email || request.client_email,
-      subject: `${title} - InstalaPro`,
+      subject: `${title} - InstalarPro`,
       title,
       body: `O instalador atualizou o pedido #${requestId}.`,
       actionLabel: 'Ver pedido',
