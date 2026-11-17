@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildOwnerProfilePreview } from './profilePresentation';
-import { buildProfileStepPayload, clearProfileDraft, profileTutorialKey, readProfileDraft, rememberProfileDraft } from './profileEditing';
+import { buildProfileStepPayload, clearProfileDraft, getProfileEditSection, moveProfilePhotoToCover, profileTutorialKey, readProfileDraft, rememberProfileDraft } from './profileEditing';
 import { resolveProfileImage } from './profileMedia';
 
 describe('dados apresentados ao próprio instalador', () => {
@@ -42,6 +42,7 @@ describe('salvamento de uma etapa', () => {
     const payload = buildProfileStepPayload(form, 1);
     expect(payload.bio).toBe('Papel de parede');
     expect(payload).not.toHaveProperty('phone');
+    expect(payload).not.toHaveProperty('installation_gallery');
     expect(payload).not.toHaveProperty('certification_verified');
     expect(payload).not.toHaveProperty('public_profile');
     expect(payload).not.toHaveProperty('is_admin');
@@ -54,6 +55,22 @@ describe('salvamento de uma etapa', () => {
   });
   it('não envia nada para uma etapa desconhecida', () => {
     expect(buildProfileStepPayload(form, -1)).toEqual({});
+  });
+  it('abre a apresentação por padrão e permite atalhos para publicações e requisitos', () => {
+    expect(getProfileEditSection(null)).toBe(1);
+    expect(getProfileEditSection('outro')).toBe(1);
+    expect(getProfileEditSection('publicacoes')).toBe(3);
+    expect(getProfileEditSection('dados')).toBe(0);
+  });
+  it('salva publicações sem sobrescrever fotos do perfil, bio ou dados privados', () => {
+    expect(buildProfileStepPayload({ ...form, installation_gallery: ['foto-a'] }, 3)).toEqual({ installation_gallery: ['foto-a'] });
+  });
+  it('define a capa sem duplicar ou perder fotos nem alterar a lista original', () => {
+    const gallery = ['a', 'b', 'c', 'd'];
+    expect(moveProfilePhotoToCover(gallery, 2)).toEqual(['c', 'a', 'b', 'd']);
+    expect(moveProfilePhotoToCover(gallery, 0)).toBe(gallery);
+    expect(moveProfilePhotoToCover(gallery, 5)).toBe(gallery);
+    expect(gallery).toEqual(['a', 'b', 'c', 'd']);
   });
   it('lembra o tutorial separadamente para cada instalador', () => {
     expect(profileTutorialKey(7)).not.toBe(profileTutorialKey(8));

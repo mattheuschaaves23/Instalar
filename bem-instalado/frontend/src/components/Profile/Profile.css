@@ -46,29 +46,64 @@ html[data-site-theme='dark'] .profile-owner-page .ig-profile-owner-preview .ig-p
 .profile-owner-page .ig-profile-owner-preview .ig-profile-cover { min-height: 10rem; }
 .profile-inline-button { border: 0; padding: .25rem 0; background: transparent; color: var(--profile-accent); font-size: .86rem; font-weight: 650; text-decoration: underline; text-underline-offset: .2em; cursor: pointer; }
 .profile-editor-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
-.profile-editor-heading .profile-inline-button { margin-bottom: .65rem; }
+.profile-editor-heading .profile-editor-back { display: inline-flex; align-items: center; gap: .5rem; margin-bottom: .65rem; min-height: 2.75rem; text-decoration: none; }
+.profile-editor-heading .profile-editor-back:hover { text-decoration: underline; }
 .profile-editor-heading > .ghost-button { flex-shrink: 0; }
-.profile-edit-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; margin: 1.25rem 0; }
-.profile-edit-steps button { display: flex; align-items: center; gap: .7rem; min-width: 0; padding: .9rem; border: 1px solid var(--profile-line); border-radius: .8rem; color: var(--profile-muted); background: var(--profile-surface); text-align: left; font-weight: 650; font-size: .9rem; cursor: pointer; }
-.profile-edit-steps button > span { display: grid; place-items: center; width: 1.8rem; height: 1.8rem; flex-shrink: 0; border: 1px solid var(--profile-line); border-radius: 50%; font-size: .8rem; }
-.profile-edit-steps button.is-current { color: var(--profile-accent); border-color: var(--profile-accent); background: var(--profile-accent-soft); }
-.profile-edit-steps button.is-current > span { color: var(--profile-accent); border-color: currentColor; }
+.profile-editor-layout { display: grid; grid-template-columns: minmax(10.5rem, 13rem) minmax(0, 1fr); align-items: start; gap: 1.25rem; }
+.profile-edit-sections { display: grid; gap: .25rem; padding: .4rem; border: 1px solid var(--profile-line); border-radius: .85rem; background: var(--profile-surface); }
+.profile-edit-sections button { display: flex; align-items: center; gap: .65rem; min-width: 0; min-height: 2.75rem; padding: .65rem .7rem; border: 1px solid transparent; border-radius: .6rem; color: var(--profile-ink); background: transparent; text-align: left; font-weight: 650; font-size: .87rem; cursor: pointer; }
+.profile-edit-sections svg { flex: 0 0 auto; }
+.profile-edit-sections button:hover { background: var(--profile-soft); }
+.profile-edit-sections button.is-current { color: var(--profile-accent); border-color: var(--profile-line); background: var(--profile-accent-soft); }
 .profile-editor-form { min-width: 0; overflow: clip; border: 1px solid var(--profile-line); border-radius: 1rem; background: var(--profile-surface); }
 .profile-edit-section-heading { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding: 1.5rem; border-bottom: 1px solid var(--profile-line); }
-.profile-edit-section-heading h2 { margin: .3rem 0; color: var(--profile-ink); font-size: 1.5rem; font-weight: 750; }
-.profile-edit-section-heading p { margin: 0; color: var(--profile-muted); font-size: .87rem; line-height: 1.6; }
+.profile-edit-section-heading h2 { margin: 0 0 .3rem; color: var(--profile-ink); font-size: 1.4rem; font-weight: 750; text-wrap: balance; }
+.profile-edit-section-heading p { margin: 0; color: var(--profile-muted); font-size: .87rem; line-height: 1.6; text-wrap: pretty; }
 .profile-edit-section-heading [role='status'] { flex-shrink: 0; padding-top: .3rem; color: var(--profile-muted); font-size: .76rem; }
 .profile-editor-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem; min-width: 0; margin: 0; padding: 1.5rem; border: 0; }
 .profile-editor-fields[hidden] { display: none !important; }
 .profile-editor-fields > * { min-width: 0; }
+.profile-editor-full, .profile-social-identity, .profile-publications { grid-column: 1 / -1; }
 .profile-editor-fields .field-label { color: var(--profile-ink); }
+.profile-editor-fields .field-hint { display: block; margin-top: .35rem; color: var(--profile-muted); font-size: .8rem; line-height: 1.55; }
 .profile-editor-fields :is(input, select, textarea) { max-width: 100%; }
-.profile-editor-email-note { margin: 1rem 1.5rem 0; padding: .8rem; border: 1px solid var(--profile-line); border-radius: .5rem; color: var(--profile-ink); background: var(--profile-accent-soft); font-size: .86rem; line-height: 1.6; }
-.profile-editor-footer { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.1rem 1.5rem; border-top: 1px solid var(--profile-line); background: var(--profile-soft); }
-.profile-editor-footer > div { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: flex-end; }
+.profile-editor-email-note { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .65rem; margin: 1rem 1.5rem 0; padding: .8rem; border: 1px solid var(--profile-line); border-radius: .5rem; color: var(--profile-ink); background: var(--profile-accent-soft); font-size: .86rem; line-height: 1.6; }
+.profile-editor-footer { display: flex; justify-content: flex-end; align-items: center; gap: .65rem; padding: 1.1rem 1.5rem; border-top: 1px solid var(--profile-line); background: var(--profile-soft); }
+.profile-editor-footer button:disabled, .profile-social-identity button:disabled, .profile-publications button:disabled { opacity: .55; cursor: not-allowed; }
 .profile-editor-page :is(button, a, input, textarea, select):focus-visible,
+.profile-editor-page summary:focus-visible,
 .profile-owner-page :is(button, a):focus-visible { outline: 3px solid var(--profile-accent); outline-offset: 3px; }
 .profile-edit-section-heading h2:focus { outline: none; }
+.profile-social-identity { border: 1px solid var(--profile-line); border-radius: .85rem; background: var(--profile-surface); }
+.profile-social-cover { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 4 / 1; min-height: 7rem; max-height: 12rem; overflow: hidden; border-radius: .8rem .8rem 0 0; background: var(--profile-soft); color: var(--profile-muted); }
+.profile-social-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.profile-social-cover .profile-social-cover-action { position: absolute; top: .7rem; right: .7rem; display: inline-flex; align-items: center; gap: .45rem; color: var(--profile-ink); background: var(--profile-surface); border-color: var(--profile-line); }
+.profile-social-identity-info { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .9rem; padding: .7rem 1rem .9rem; }
+.profile-social-avatar { position: relative; display: grid; place-items: center; width: clamp(3.9rem, 8vw, 5.5rem); aspect-ratio: 1; margin-top: -2rem; overflow: hidden; border: 4px solid var(--profile-surface); border-radius: 50%; background: var(--profile-accent-soft); color: var(--profile-accent); font-size: 1.3rem; font-weight: 750; }
+.profile-social-avatar > img { width: 100%; height: 100%; object-fit: cover; }
+.profile-social-identity-copy { display: grid; min-width: 0; gap: .15rem; }
+.profile-social-identity-copy strong { overflow-wrap: anywhere; font-weight: 750; }
+.profile-social-identity-copy span { color: var(--profile-muted); font-size: .76rem; }
+.profile-social-identity-info button, .profile-publications-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; }
+.profile-social-more { border: 1px solid var(--profile-line); border-radius: .65rem; background: var(--profile-surface); }
+.profile-social-more summary { min-height: 2.75rem; padding: .8rem 1rem; color: var(--profile-ink); font-size: .9rem; font-weight: 650; cursor: pointer; }
+.profile-social-more summary span { margin-left: .5rem; color: var(--profile-muted); font-size: .76rem; font-weight: 500; }
+.profile-social-more-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding: 1rem; border-top: 1px solid var(--profile-line); }
+.profile-publications { display: grid; gap: 1rem; }
+.profile-publications-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .6rem; }
+.profile-publications-toolbar strong { font-size: .93rem; font-variant-numeric: tabular-nums; }
+.profile-publications-toolbar p, .profile-publications-empty p { margin: .2rem 0 0; color: var(--profile-muted); font-size: .84rem; text-wrap: pretty; }
+.profile-publications-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr)); gap: .75rem; list-style: none; margin: 0; padding: 0; }
+.profile-publication { min-width: 0; overflow: hidden; border: 1px solid var(--profile-line); border-radius: .65rem; }
+.profile-publication-photo { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--profile-soft); }
+.profile-publication-photo img { width: 100%; height: 100%; object-fit: cover; }
+.profile-publication-photo span { position: absolute; top: .5rem; left: .5rem; padding: .3rem .5rem; border: 1px solid var(--profile-line); border-radius: .35rem; color: var(--profile-ink); background: var(--profile-surface); font-size: .72rem; font-weight: 650; }
+.profile-publication-actions { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: space-between; gap: 0 .35rem; padding: .15rem .5rem; }
+.profile-publication-actions button { min-height: 2.75rem; background: transparent; color: var(--profile-accent); font-size: .77rem; font-weight: 650; cursor: pointer; }
+.profile-publication-actions button:last-child { color: var(--profile-muted); }
+.profile-publication-actions button:hover { text-decoration: underline; }
+.profile-publications-empty { display: grid; justify-items: center; gap: .35rem; padding: clamp(1.2rem, 4vw, 2.2rem); border: 1px dashed var(--profile-line); border-radius: .65rem; background: var(--profile-soft); text-align: center; }
+.profile-publications-empty > svg { color: var(--profile-accent); margin-bottom: .35rem; }
 .profile-load-error { padding: 2rem; }
 .profile-tutorial-backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 1rem; background: rgba(0, 0, 0, .65); overflow-y: auto; }
 .profile-tutorial { width: min(100%, 34rem); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 1.6rem; border: 1px solid var(--profile-line); border-radius: 1.15rem; background: var(--profile-surface); color: var(--profile-ink); box-shadow: 0 16px 50px rgba(0, 0, 0, .25); }
@@ -87,14 +122,19 @@ html[data-site-theme='dark'] .profile-owner-page .ig-profile-owner-preview .ig-p
 @media (max-width: 760px) {
   .profile-readiness { padding: 1rem; }
   .profile-readiness-heading { align-items: start; flex-direction: column; gap: .6rem; }
-  .profile-editor-heading { align-items: start; flex-direction: column; }
-  .profile-edit-steps { gap: .4rem; }
-  .profile-edit-steps button { flex-direction: column; align-items: start; gap: .5rem; padding: .7rem .5rem; font-size: .76rem; }
+  .profile-editor-heading { position: relative; }
+  .profile-editor-heading > .ghost-button { position: absolute; inset: 0 0 auto auto; width: auto; min-height: 2.75rem; }
+  .profile-editor-layout { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+  .profile-edit-sections { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profile-edit-sections button { padding: .55rem; font-size: .8rem; }
   .profile-edit-section-heading { padding: 1.15rem; flex-direction: column; gap: .5rem; }
   .profile-editor-fields { grid-template-columns: minmax(0, 1fr); padding: 1.15rem; }
-  .profile-editor-footer { align-items: stretch; flex-direction: column-reverse; padding: 1rem; }
-  .profile-editor-footer > div { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .profile-editor-footer { padding: .85rem 1rem; flex-wrap: wrap; }
   .profile-editor-footer button { justify-content: center; }
+  .profile-social-identity-info { grid-template-columns: auto minmax(0, 1fr); }
+  .profile-social-identity-info > button { grid-column: 2; justify-self: start; }
+  .profile-social-more-fields { grid-template-columns: minmax(0, 1fr); }
+  .profile-publications-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-tutorial { padding: 1.2rem; }
   .profile-tutorial footer { align-items: stretch; flex-direction: column-reverse; }
   .profile-tutorial footer > div { display: flex; justify-content: stretch; }
