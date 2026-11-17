@@ -568,6 +568,16 @@ function buildPasswordResetToken() {
   return { token, tokenHash };
 }
 
+// O token de redefinição só volta na resposta em teste automatizado declarado
+// de forma explícita. NODE_ENV=test sozinho não basta (um servidor de homologação
+// configurado assim viraria tomada de conta), e nunca dentro da Vercel ou do Render.
+function shouldExposeResetTokenForTests() {
+  return process.env.NODE_ENV === 'test'
+    && process.env.EXPOSE_PASSWORD_RESET_TOKEN_FOR_TESTS === 'true'
+    && !process.env.VERCEL
+    && !process.env.RENDER;
+}
+
 function buildPasswordResetUrl(req, token, accountType = 'installer') {
   const frontendUrl = getFrontendBaseUrl(req);
   const query = new URLSearchParams({ token });
@@ -1165,9 +1175,7 @@ exports.forgotPassword = async (req, res) => {
       return { sent: false, reason: 'send_failed' };
     });
 
-    const shouldExposeResetToken = process.env.NODE_ENV === 'test' && !process.env.VERCEL;
-
-    if (shouldExposeResetToken) {
+    if (shouldExposeResetTokenForTests()) {
       return res.json({
         ...genericResponse,
         delivery,
