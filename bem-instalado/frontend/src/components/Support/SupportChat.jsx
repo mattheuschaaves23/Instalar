@@ -88,7 +88,10 @@ export default function SupportChat() {
   const isAdmin = Boolean(user?.is_admin);
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [loadingIdeas, setLoadingIdeas] = useState(false);
+  const [loadingIdeas, setLoadingIdeas] = useState(true);
+  const [conversationError, setConversationError] = useState('');
+  const [ideasError, setIdeasError] = useState('');
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [sending, setSending] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
   const [sendingIdea, setSendingIdea] = useState(false);
@@ -114,7 +117,7 @@ export default function SupportChat() {
     () => ideas.filter((item) => ['new', 'reviewing'].includes(item.status)).length,
     [ideas]
   );
-  const canSend = Boolean(selectedConversationId);
+  const canSend = Boolean(selectedConversationId) && !loading && !loadingMessages && !conversationError;
 
   async function fetchAdminIdeas(params = {}) {
     const response = await api.get('/support/admin/ideas', {
@@ -134,48 +137,56 @@ export default function SupportChat() {
 
   useEffect(() => {
     let isMounted = true;
-    async function loadInitialData() {
+    const controller = new AbortController();
+    async function loadConversation() {
       setLoading(true);
+      setConversationError('');
       try {
         if (isAdmin) {
-          const [conversationResponse, ideasList] = await Promise.all([
-            api.get('/support/admin/conversations', { params: { limit: 120 } }),
-            api
-              .get('/support/admin/ideas', { params: { limit: 180, status: 'all', q: '' } })
-              .then((response) => sortIdeas(response.data?.ideas || [])),
-          ]);
+          const conversationResponse = await api.get('/support/admin/conversations', { params: { limit: 120 }, signal: controller.signal });
           const conversationList = sortConversations(conversationResponse.data?.conversations || []);
           if (!isMounted) return;
           setConversations(conversationList);
-          setIdeas(ideasList);
           setSelectedConversationId((current) => {
             if (current && conversationList.some((item) => item.id === current)) return current;
             return conversationList[0]?.id || null;
           });
         } else {
-          const [conversationResponse, ideasList] = await Promise.all([
-            api.get('/support/me'),
-            fetchInstallerIdeas(),
-          ]);
+          const conversationResponse = await api.get('/support/me', { signal: controller.signal });
           const currentConversation = conversationResponse.data?.conversation || null;
           if (!isMounted) return;
           setConversation(currentConversation);
           setMessages(conversationResponse.data?.messages || []);
           setSelectedConversationId(currentConversation?.id || null);
-          setIdeas(ideasList);
           // Read receipts must not keep the conversation hidden while the
           // secondary request waits for the API.
           void api.post('/support/me/read').catch(() => null);
         }
       } catch (error) {
-        toast.error(error.response?.data?.error || 'Não foi possível carregar o suporte.');
+        if (isMounted) setConversationError(error.response?.data?.error || 'Não foi possível carregar a conversa.');
       } finally {
         if (isMounted) setLoading(false);
       }
     }
-    loadInitialData();
-    return () => { isMounted = false; };
-  }, [isAdmin]);
+    void loadConversation();
+    return () => { isMounted = false; controller.abort(); };
+  }, [isAdmin, user?.id, loadAttempt]);
+
+  // Suggestions are secondary: a slow or failing request must never delay
+  // the conversation, composer or page navigation.
+  useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+    setLoadingIdeas(true);
+    setIdeasError('');
+    const endpoint = isAdmin ? '/support/admin/ideas' : '/support/ideas/me';
+    const params = isAdmin ? { limit: 180, status: 'all', q: '' } : { limit: 120 };
+    api.get(endpoint, { params, signal: controller.signal })
+      .then(({ data }) => { if (isMounted) setIdeas(sortIdeas(data?.ideas || [])); })
+      .catch((error) => { if (isMounted) setIdeasError(error.response?.data?.error || 'Não foi possível carregar as sugestões.'); })
+      .finally(() => { if (isMounted) setLoadingIdeas(false); });
+    return () => { isMounted = false; controller.abort(); };
+  }, [isAdmin, user?.id]);
 
   useEffect(() => {
     if (!isAdmin || !selectedConversationId) {
@@ -194,13 +205,15 @@ export default function SupportChat() {
         setConversation(nextConversation);
         setMessages(response.data?.messages || []);
         setConversations((current) => upsertConversation(current, nextConversation));
-      })
-      .then(() => api.post(`/support/admin/conversations/${selectedConversationId}/read`))
-      .then((response) => {
-        const nextConversation = response?.data?.conversation || null;
-        if (!isMounted || !nextConversation) return;
-        setConversations((current) => upsertConversation(current, nextConversation));
-        setConversation((current) => (current?.id === nextConversation.id ? nextConversation : current));
+        // A read receipt is secondary and cannot block the message composer.
+        void api.post(`/support/admin/conversations/${selectedConversationId}/read`)
+          .then(({ data }) => {
+            const updatedConversation = data?.conversation;
+            if (!isMounted || !updatedConversation) return;
+            setConversations((current) => upsertConversation(current, updatedConversation));
+            setConversation((current) => current?.id === updatedConversation.id ? updatedConversation : current);
+          })
+          .catch(() => null);
       })
       .catch((error) => {
         if (isMounted) toast.error(error.response?.data?.error || 'Não foi possível carregar as mensagens.');
@@ -251,6 +264,7 @@ export default function SupportChat() {
 
           const nextConversations = sortConversations(responses[0].data?.conversations || []);
           setConversations(nextConversations);
+          setConversationError('');
 
           if (selectedConversationId && responses[1]) {
             const nextConversation = responses[1].data?.conversation || null;
@@ -277,6 +291,7 @@ export default function SupportChat() {
         setConversation(nextConversation);
         setSelectedConversationId(nextConversation?.id || null);
         setMessages(nextMessages);
+        setConversationError('');
         api.post('/support/me/read').catch(() => null);
 
         if (responses[1]) setIdeas(sortIdeas(responses[1].data?.ideas || []));
@@ -384,10 +399,12 @@ export default function SupportChat() {
 
   const handleRefreshIdeas = async () => {
     setLoadingIdeas(true);
+    setIdeasError('');
     try {
       const nextIdeas = isAdmin ? await fetchAdminIdeas() : await fetchInstallerIdeas();
       setIdeas(nextIdeas);
     } catch (error) {
+      setIdeasError(error.response?.data?.error || 'Não foi possível atualizar as ideias.');
       toast.error(error.response?.data?.error || 'Não foi possível atualizar as ideias.');
     } finally {
       setLoadingIdeas(false);
@@ -408,15 +425,6 @@ export default function SupportChat() {
     }
   };
 
-  if (loading) {
-    return (
-      <DecoratingWallLoader
-        embedded
-        phrase="Abrindo seu canal de atendimento."
-      />
-    );
-  }
-
   return (
     <section className="page-shell space-y-7">
       <PageIntro
@@ -430,19 +438,21 @@ export default function SupportChat() {
         stats={
           isAdmin
             ? [
-                { label: 'Conversas abertas', value: `${openConversations}`, detail: `${conversations.length} no total.` },
-                { label: 'Ideias pendentes', value: `${pendingIdeas}`, detail: `${ideas.length} ideias enviadas.` },
+                { label: 'Conversas abertas', value: loading || conversationError ? '—' : `${openConversations}`, detail: `${conversations.length} no total.` },
+                { label: 'Ideias pendentes', value: loadingIdeas || ideasError ? '—' : `${pendingIdeas}`, detail: `${ideas.length} ideias enviadas.` },
               ]
             : [
-                { label: 'Mensagens', value: `${messages.length}`, detail: 'Histórico do seu atendimento.' },
-                { label: 'Ideias enviadas', value: `${ideas.length}`, detail: `${pendingIdeas} em análise.` },
+                { label: 'Mensagens', value: loading || conversationError ? '—' : `${messages.length}`, detail: 'Histórico do seu atendimento.' },
+                { label: 'Ideias enviadas', value: loadingIdeas || ideasError ? '—' : `${ideas.length}`, detail: `${pendingIdeas} em análise.` },
               ]
         }
       />
 
+      {conversationError ? <div className="lux-panel p-4" role="alert"><p>{conversationError}</p><button className="ghost-button mt-3" onClick={() => setLoadAttempt((attempt) => attempt + 1)} type="button">Tentar carregar conversa novamente</button></div> : null}
+
       {isAdmin ? (
         <div className="support-shell">
-          <aside className="lux-panel support-list-panel fade-up p-4 sm:p-5">
+          <aside className="lux-panel support-list-panel p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
               <p className="eyebrow">Conversas</p>
               <span className="status-pill" data-tone={unreadTotal > 0 ? 'pending' : 'success'}>
@@ -451,7 +461,7 @@ export default function SupportChat() {
             </div>
 
             <div className="support-conversation-list mt-4">
-              {conversations.length === 0 ? <div className="empty-state !p-6">Sem conversas no momento.</div> : null}
+              {loading ? <DecoratingWallLoader embedded phrase="Carregando conversas" /> : !conversationError && conversations.length === 0 ? <div className="empty-state !p-6">Sem conversas no momento.</div> : null}
               {conversations.map((item) => (
                 <button
                   className={`support-conversation-item ${selectedConversationId === item.id ? 'support-conversation-item-active' : ''}`}
@@ -483,7 +493,7 @@ export default function SupportChat() {
           </aside>
 
           <div className="support-admin-stack">
-            <article className="lux-panel support-chat-panel fade-up p-4 sm:p-6" style={{ animationDelay: '0.04s' }}>
+            <article className="lux-panel support-chat-panel p-4 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--line)] pb-4">
                 <div>
                   <p className="eyebrow">Conversa selecionada</p>
@@ -503,7 +513,7 @@ export default function SupportChat() {
 
               <div className="support-message-list mt-4">
                 {loadingMessages ? <div className="empty-state !p-6">Carregando mensagens...</div> : null}
-                {!loadingMessages && messages.length === 0 ? <div className="empty-state !p-6">Ainda não há mensagens.</div> : null}
+                {!loading && !loadingMessages && !conversationError && messages.length === 0 ? <div className="empty-state !p-6">Ainda não há mensagens.</div> : null}
                 {!loadingMessages
                   ? messages.map((message) => (
                       <article className={`support-message ${message.is_from_admin ? 'support-message-admin' : 'support-message-installer'}`} key={message.id}>
@@ -532,7 +542,7 @@ export default function SupportChat() {
               </form>
             </article>
 
-            <article className="lux-panel support-ideas-panel fade-up p-4 sm:p-6" style={{ animationDelay: '0.08s' }}>
+            <article className="lux-panel support-ideas-panel p-4 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--line)] pb-4">
                 <div>
                   <p className="eyebrow">Ideias de melhoria</p>
@@ -577,7 +587,7 @@ export default function SupportChat() {
               </div>
 
               <div className="support-idea-list mt-4">
-                {ideas.length === 0 ? <div className="empty-state !p-6">Sem ideias para os filtros atuais.</div> : null}
+                {loadingIdeas ? <DecoratingWallLoader embedded phrase="Carregando sugestões" /> : ideasError ? <p role="alert">{ideasError} Use Atualizar para tentar novamente.</p> : ideas.length === 0 ? <div className="empty-state !p-6">Sem ideias para os filtros atuais.</div> : null}
                 {ideas.map((idea) => (
                   <article className="support-idea-card" key={idea.id}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -643,7 +653,7 @@ export default function SupportChat() {
         </div>
       ) : (
         <div className="support-installer-shell">
-          <article className="lux-panel support-chat-panel fade-up p-4 sm:p-6">
+          <article className="lux-panel support-chat-panel p-4 sm:p-6">
             <div className="border-b border-[var(--line)] pb-4">
               <p className="eyebrow">Canal exclusivo do instalador</p>
               <h2 className="mt-2 text-2xl font-semibold text-[var(--text)]">Dúvidas e suporte direto com o administrador</h2>
@@ -653,7 +663,7 @@ export default function SupportChat() {
             </div>
 
             <div className="support-message-list mt-4">
-              {messages.length === 0 ? (
+              {loading ? <DecoratingWallLoader embedded phrase="Carregando mensagens" /> : conversationError ? null : messages.length === 0 ? (
                 <div className="empty-state !p-6">Ainda não há mensagens. Escreva sua dúvida para começar.</div>
               ) : (
                 messages.map((message) => (
@@ -683,7 +693,7 @@ export default function SupportChat() {
             </form>
           </article>
 
-          <aside className="lux-panel support-ideas-panel fade-up p-4 sm:p-6" style={{ animationDelay: '0.06s' }}>
+          <aside className="lux-panel support-ideas-panel p-4 sm:p-6">
             <div className="flex items-start justify-between gap-3 border-b border-[var(--line)] pb-4">
               <div>
                 <p className="eyebrow">Ideias para melhorar o site</p>
@@ -740,7 +750,7 @@ export default function SupportChat() {
             </form>
 
             <div className="support-idea-list mt-5">
-              {ideas.length === 0 ? <div className="empty-state !p-6">Nenhuma ideia enviada ainda.</div> : null}
+              {loadingIdeas ? <DecoratingWallLoader embedded phrase="Carregando sugestões" /> : ideasError ? <p role="alert">{ideasError} Use Atualizar para tentar novamente.</p> : ideas.length === 0 ? <div className="empty-state !p-6">Nenhuma ideia enviada ainda.</div> : null}
               {ideas.map((idea) => (
                 <article className="support-idea-card" key={idea.id}>
                   <div className="flex flex-wrap items-start justify-between gap-3">

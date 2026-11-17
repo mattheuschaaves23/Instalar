@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import {
-  getLoadingStepDelay,
-  LOADING_PROGRESS_MAX,
-} from './DecoratingWallLoader';
+import { renderToStaticMarkup } from 'react-dom/server';
+import DecoratingWallLoader from './DecoratingWallLoader';
 
-describe('animação de carregamento da parede', () => {
-  it('avança rapidamente no começo e desacelera perto do fim', () => {
-    expect(getLoadingStepDelay(1)).toBe(55);
-    expect(getLoadingStepDelay(79)).toBe(55);
-    expect(getLoadingStepDelay(80)).toBe(120);
-    expect(getLoadingStepDelay(94)).toBe(120);
-    expect(getLoadingStepDelay(95)).toBe(250);
+describe('espera discreta pelo conteúdo', () => {
+  it('renderiza imediatamente sem animação, porcentagem inventada ou tela cheia', () => {
+    const markup = renderToStaticMarkup(<DecoratingWallLoader />);
+    expect(markup).toContain('role="status"');
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).toContain('loading-placeholder-lines');
+    expect(markup).not.toMatch(/wall-loader|<svg|<main|%|transformação/i);
   });
 
-  it('encerra a sequência visual em 100%', () => {
-    expect(LOADING_PROGRESS_MAX).toBe(100);
+  it('preserva a mensagem acessível e o modo embutido das páginas', () => {
+    const markup = renderToStaticMarkup(<DecoratingWallLoader embedded phrase="Carregando mensagens" />);
+    expect(markup).toContain('aria-label="Carregando mensagens"');
+    expect(markup).toContain('loading-placeholder--embedded');
   });
 });
