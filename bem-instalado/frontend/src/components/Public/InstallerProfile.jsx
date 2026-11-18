@@ -8,6 +8,7 @@ import { resolveProfileImage } from '../Profile/profileMedia';
 import DecoratingWallLoader from '../Layout/DecoratingWallLoader';
 import BrandWordmark from '../Layout/BrandWordmark';
 import './InstallerProfile.css';
+import { normalizeProfileAppearance, profileAppearanceStyle } from '../../../../shared/profileAppearance.mjs';
 import { formatCurrency, formatLongDate, formatShortDate } from '../../utils/formatters';
 import { formatInstallationDays } from '../../utils/installerDays';
 import PageMetadata from './PageMetadata';
@@ -325,6 +326,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
   const isOwnProfile = Boolean(user && Number(user.id) === Number(installer.id));
   const profilePhoto = resolveProfileImage(installer.installer_photo || installer.logo, api.defaults.baseURL);
   const coverPhoto = gallery[0] || profilePhoto;
+  const appearance = normalizeProfileAppearance(installer.profile_appearance);
   const locationLabel = [installer.city, installer.state].filter(Boolean).join(' · ') || installer.service_region || 'Região a confirmar';
   const warrantyLabel = installer.safety?.provides_warranty ? `${installer.safety.warranty_days || 0} dias de garantia` : 'Garantia a combinar';
   const hasAvailability = Boolean(slots.length || installer.available_dates?.length);
@@ -346,7 +348,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
   ];
 
   return (
-    <ProfileContainer className={`ig-installer-profile${ownerMode ? ' ig-profile-owner-preview' : ''}`}>
+    <ProfileContainer className={`ig-installer-profile${ownerMode ? ' ig-profile-owner-preview' : ''}`} data-cover-height={appearance.cover_height} data-gallery-format={appearance.gallery_format} style={profileAppearanceStyle(appearance)}>
       {!ownerMode ? <PageMetadata
         canonicalPath={`/installers/${installer.id}`}
         description={`${installer.display_name || installer.name} é instalador(a) de papel de parede${installer.city ? ` em ${installer.city}` : ''}. Veja trabalhos, avaliações e disponibilidade na InstalarPro.`}

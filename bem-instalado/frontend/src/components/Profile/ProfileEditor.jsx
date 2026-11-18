@@ -13,6 +13,8 @@ import ProfileEditTutorial from './ProfileEditTutorial';
 import { ProfileIdentityPreview, ProfilePublications, ProfileSocialIcon } from './ProfileSocialMedia';
 import { buildProfileStepPayload, clearProfileDraft, moveProfilePhotoToCover, PROFILE_EDIT_ORDER, PROFILE_EDIT_SECTIONS, profileTutorialKey, readProfileDraft, rememberProfileDraft } from './profileEditing';
 import { resolveProfileImage } from './profileMedia';
+import ProfileAppearanceEditor from './ProfileAppearanceEditor';
+import { normalizeProfileAppearance } from '../../../../shared/profileAppearance.mjs';
 
 const initialForm = {
   name: '',
@@ -118,6 +120,7 @@ function normalizeProfilePayload(payload) {
     ...initialForm,
     ...safePayload,
     installation_gallery: gallery,
+    profile_appearance: normalizeProfileAppearance(safePayload.profile_appearance),
   };
 }
 
@@ -523,6 +526,7 @@ export default function ProfileEditor({ active, initialProfile, initialSection, 
         </fieldset>
         <fieldset className="profile-editor-fields" disabled={editStep !== 1 || busy} hidden={editStep !== 1}>
           <legend className="sr-only">Apresentação do perfil</legend>
+          <div className="profile-style-studio">
             <ProfileIdentityPreview
               apiBaseUrl={api.defaults.baseURL}
               disabled={!emailVerified || busy}
@@ -530,6 +534,8 @@ export default function ProfileEditor({ active, initialProfile, initialSection, 
               onChangePhoto={(file) => handleImageUpload('installer_photo', file)}
               onOpenPublications={() => changeStep(3)}
             />
+            <ProfileAppearanceEditor disabled={!emailVerified || busy} onChange={(profile_appearance) => setForm((current) => ({ ...current, profile_appearance }))} value={form.profile_appearance} />
+          </div>
             <label className="block">
               <span className="field-label">Nome da empresa ou marca</span>
               <input className="field-input" name="business_name" onChange={handleChange} placeholder="Ex.: Studio Papel e Parede" value={form.business_name || ''} />
@@ -537,6 +543,7 @@ export default function ProfileEditor({ active, initialProfile, initialSection, 
             </label>
             <label className="block"><span className="field-label">Anos de experiência</span><input className="field-input" min="0" name="years_experience" onChange={handleChange} type="number" value={form.years_experience || 0} /></label>
             <label className="block profile-editor-full"><span className="field-label">Bio</span><textarea className="field-textarea" name="bio" onChange={handleChange} placeholder="Ex.: Instalo papéis de parede em casas e lojas na Grande Florianópolis." rows="4" value={form.bio || ''} /><span className="field-hint">Esta apresentação aparece no seu perfil público.</span></label>
+
 
             <details className="profile-social-more profile-editor-full">
               <summary>Logo e certificado <span>Opcionais</span></summary>

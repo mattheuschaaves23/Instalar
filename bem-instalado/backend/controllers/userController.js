@@ -550,6 +550,7 @@ async function getTopInstallers(limit = 5) {
 
 exports.getProfile = async (req, res) => {
   try {
+    const { normalizeProfileAppearance } = await import('../../shared/profileAppearance.mjs');
     const { rows } = await pool.query(
       `
         SELECT
@@ -562,6 +563,7 @@ exports.getProfile = async (req, res) => {
           logo,
           installer_photo,
           COALESCE(pdf_branding, '{}'::jsonb) AS pdf_branding,
+          COALESCE(profile_appearance, '{}'::jsonb) AS profile_appearance,
           COALESCE(installation_gallery, '[]'::jsonb) AS installation_gallery,
           certificate_file,
           certificate_name,
@@ -618,6 +620,7 @@ exports.getProfile = async (req, res) => {
       order_readiness: getInstallerReadiness(rows[0]),
       installation_gallery: normalizeGallery(rows[0]?.installation_gallery),
       pdf_branding: normalizePdfBranding(rows[0]?.pdf_branding),
+      profile_appearance: normalizeProfileAppearance(rows[0]?.profile_appearance),
     };
     return res.json(profile);
   } catch (_error) {
@@ -669,6 +672,11 @@ exports.updatePdfBranding = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
+    const { isValidProfileAppearance, normalizeProfileAppearance } = await import('../../shared/profileAppearance.mjs');
+    const appearance = req.body.profile_appearance;
+    if (appearance !== undefined && !isValidProfileAppearance(appearance)) {
+      return res.status(400).json({ error: 'Personalização inválida. Escolha as opções disponíveis no editor do perfil.' });
+    }
     const {
       name,
       phone,
@@ -794,6 +802,7 @@ exports.updateProfile = async (req, res) => {
           latitude = COALESCE($32, latitude),
           longitude = COALESCE($33, longitude),
           service_radius_km = COALESCE($34, service_radius_km),
+          profile_appearance = COALESCE($36::jsonb, profile_appearance),
           updated_at = NOW()
         WHERE id = $35
         RETURNING
@@ -806,6 +815,7 @@ exports.updateProfile = async (req, res) => {
           logo,
           installer_photo,
           COALESCE(installation_gallery, '[]'::jsonb) AS installation_gallery,
+          COALESCE(profile_appearance, '{}'::jsonb) AS profile_appearance,
           certificate_file,
           certificate_name,
           certification_verified,
@@ -875,6 +885,7 @@ exports.updateProfile = async (req, res) => {
         locationCoordinates?.longitude ?? null,
         normalizedRadius,
         req.userId,
+        appearance === undefined ? null : JSON.stringify(normalizeProfileAppearance(appearance)),
       ]
     );
 
@@ -883,6 +894,7 @@ exports.updateProfile = async (req, res) => {
       email_verified: Boolean(rows[0]?.email_verified_at),
       order_readiness: getInstallerReadiness(rows[0]),
       installation_gallery: normalizeGallery(rows[0]?.installation_gallery),
+      profile_appearance: normalizeProfileAppearance(rows[0]?.profile_appearance),
     };
 
     if (certificateChanged) {

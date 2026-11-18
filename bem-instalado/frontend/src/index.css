@@ -33459,3 +33459,30 @@ html[data-site-theme] .dashboard-reference-layout.aqua-panel-theme .pdf-branding
 ) {
   color: color-mix(in srgb, var(--pdf-accent) 65%, #171512) !important;
 }
+
+/* Destructive actions must not inherit the old black-on-black panel style. */
+html[data-site-theme] .dashboard-reference-layout .danger-button {
+  min-height: 44px;
+  border: 1px solid #f3b4c2 !important;
+  background: #fff1f2 !important;
+  color: #9f1239 !important;
+  box-shadow: none !important;
+}
+html[data-site-theme] .dashboard-reference-layout .danger-button:hover:not(:disabled) {
+  background: #ffe4e8 !important;
+  border-color: #c24162 !important;
+}
+html[data-site-theme='dark'] .dashboard-reference-layout .danger-button {
+  border-color: #854552 !important;
+  background: #351c24 !important;
+  color: #ffc2cf !important;
+}
+html[data-site-theme='dark'] .dashboard-reference-layout .danger-button:hover:not(:disabled) {
+  background: #4a2530 !important;
+  border-color: #d18498 !important;
+}
+html[data-site-theme] .dashboard-reference-layout .danger-button:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+html[data-site-theme] .dashboard-reference-layout .danger-button:disabled { opacity: .6; cursor: not-allowed; }

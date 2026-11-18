@@ -40,10 +40,8 @@ html[data-site-theme='dark'] :is(.profile-owner-page, .profile-editor-page) {
 .profile-readiness-note { margin: 0; color: var(--profile-muted); font-size: .78rem; line-height: 1.6; }
 .profile-owner-page .ig-profile-owner-preview { min-height: 0; padding: 0; background: none; }
 .profile-owner-page .ig-profile-owner-preview .ig-profile-shell { width: 100%; }
-.profile-owner-page .ig-profile-owner-preview .ig-profile-hero-actions .ig-profile-primary-action { display: inline-flex; background: #146a79; color: #ffffff !important; }
+.profile-owner-page .ig-profile-owner-preview .ig-profile-hero-actions .ig-profile-primary-action { display: inline-flex; background: var(--profile-brand, #175cd3); color: #ffffff !important; }
 .profile-owner-page .ig-profile-owner-preview .ig-profile-cover > span { color: #ffffff !important; }
-html[data-site-theme='dark'] .profile-owner-page .ig-profile-owner-preview .ig-profile-hero-actions .ig-profile-primary-action { background: #e4b34d; color: #17130b !important; }
-.profile-owner-page .ig-profile-owner-preview .ig-profile-cover { min-height: 10rem; }
 .profile-inline-button { border: 0; padding: .25rem 0; background: transparent; color: var(--profile-accent); font-size: .86rem; font-weight: 650; text-decoration: underline; text-underline-offset: .2em; cursor: pointer; }
 .profile-editor-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
 .profile-editor-heading .profile-editor-back { display: inline-flex; align-items: center; gap: .5rem; margin-bottom: .65rem; min-height: 2.75rem; text-decoration: none; }
@@ -75,11 +73,13 @@ html[data-site-theme='dark'] .profile-owner-page .ig-profile-owner-preview .ig-p
 .profile-owner-page :is(button, a):focus-visible { outline: 3px solid var(--profile-accent); outline-offset: 3px; }
 .profile-edit-section-heading h2:focus { outline: none; }
 .profile-social-identity { border: 1px solid var(--profile-line); border-radius: .85rem; background: var(--profile-surface); }
-.profile-social-cover { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 4 / 1; min-height: 7rem; max-height: 12rem; overflow: hidden; border-radius: .8rem .8rem 0 0; background: var(--profile-soft); color: var(--profile-muted); }
-.profile-social-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.profile-social-cover { position: relative; display: grid; place-items: center; width: 100%; height: 14rem; overflow: hidden; border-radius: .8rem .8rem 0 0; background: var(--profile-soft); color: var(--profile-muted); }
+.profile-social-identity[data-cover-height='compact'] .profile-social-cover { height: 10rem; }
+.profile-social-identity[data-cover-height='immersive'] .profile-social-cover { height: 20rem; }
+.profile-social-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center var(--profile-cover-position, 50%); }
 .profile-social-cover .profile-social-cover-action { position: absolute; top: .7rem; right: .7rem; display: inline-flex; align-items: center; gap: .45rem; color: var(--profile-ink); background: var(--profile-surface); border-color: var(--profile-line); }
 .profile-social-identity-info { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .9rem; padding: .7rem 1rem .9rem; }
-.profile-social-avatar { position: relative; display: grid; place-items: center; width: clamp(3.9rem, 8vw, 5.5rem); aspect-ratio: 1; margin-top: -2rem; overflow: hidden; border: 4px solid var(--profile-surface); border-radius: 50%; background: var(--profile-accent-soft); color: var(--profile-accent); font-size: 1.3rem; font-weight: 750; }
+.profile-social-avatar { position: relative; display: grid; place-items: center; width: clamp(3.9rem, 8vw, 5.5rem); aspect-ratio: 1; margin-top: -2rem; overflow: hidden; border: 4px solid var(--profile-surface); border-radius: 50%; background: var(--profile-brand, #175cd3); color: #fff; font-size: 1.3rem; font-weight: 750; }
 .profile-social-avatar > img { width: 100%; height: 100%; object-fit: cover; }
 .profile-social-identity-copy { display: grid; min-width: 0; gap: .15rem; }
 .profile-social-identity-copy strong { overflow-wrap: anywhere; font-weight: 750; }
@@ -104,6 +104,28 @@ html[data-site-theme='dark'] .profile-owner-page .ig-profile-owner-preview .ig-p
 .profile-publication-actions button:hover { text-decoration: underline; }
 .profile-publications-empty { display: grid; justify-items: center; gap: .35rem; padding: clamp(1.2rem, 4vw, 2.2rem); border: 1px dashed var(--profile-line); border-radius: .65rem; background: var(--profile-soft); text-align: center; }
 .profile-publications-empty > svg { color: var(--profile-accent); margin-bottom: .35rem; }
+.profile-appearance-editor { min-width: 0; padding-top: 1.25rem; border-top: 1px solid var(--profile-line); }
+.profile-style-studio { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 1fr); align-items: start; gap: 1.5rem; }
+.profile-style-studio > :is(.profile-social-identity, .profile-appearance-editor) { grid-column: auto; }
+.profile-style-studio > .profile-appearance-editor { padding-top: 0; border-top: 0; }
+.profile-appearance-heading { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: .6rem 1rem; }
+.profile-appearance-heading h3 { margin: 0; color: var(--profile-ink); font-size: 1.1rem; font-weight: 750; text-wrap: balance; }
+.profile-appearance-heading p { max-width: 65ch; margin: .35rem 0; color: var(--profile-muted); font-size: .84rem; line-height: 1.6; text-wrap: pretty; }
+.profile-color-options { display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; margin: 1.1rem 0; border: 0; }
+.profile-color-options legend { margin-bottom: .65rem; color: var(--profile-ink); font-size: .86rem; font-weight: 650; }
+.profile-color-options label { display: flex; align-items: center; gap: .45rem; min-height: 44px; padding: .5rem .7rem; border: 1px solid var(--profile-line); border-radius: .6rem; background: var(--profile-surface); color: var(--profile-ink); font-size: .85rem; cursor: pointer; }
+.profile-color-options label:has(input:checked) { border-color: var(--profile-accent); outline: 1px solid var(--profile-accent); background: var(--profile-accent-soft); }
+.profile-color-options input { width: 1rem; height: 1rem; accent-color: var(--profile-accent); }
+.profile-color-options label > span { width: .85rem; height: .85rem; border-radius: 50%; }
+.profile-appearance-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.profile-appearance-controls label { min-width: 0; }
+.profile-appearance-controls input[type='range'] { width: 100%; min-height: 44px; accent-color: var(--profile-accent); cursor: pointer; }
+.profile-cover-range-labels { display: flex; justify-content: space-between; gap: 1rem; color: var(--profile-muted); font-size: .75rem; }
+.profile-appearance-gallery-preview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; padding: 0 .75rem .75rem; }
+.profile-appearance-gallery-preview:empty { display: none; }
+.profile-appearance-gallery-preview img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: .4rem; }
+.profile-social-identity[data-gallery-format='square'] .profile-appearance-gallery-preview img { aspect-ratio: 1; }
+.profile-social-identity[data-gallery-format='portrait'] .profile-appearance-gallery-preview img { aspect-ratio: 3 / 4; }
 .profile-load-error { padding: 2rem; }
 .profile-tutorial-backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 1rem; background: rgba(0, 0, 0, .65); overflow-y: auto; }
 .profile-tutorial { width: min(100%, 34rem); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 1.6rem; border: 1px solid var(--profile-line); border-radius: 1.15rem; background: var(--profile-surface); color: var(--profile-ink); box-shadow: 0 16px 50px rgba(0, 0, 0, .25); }
@@ -119,7 +141,10 @@ html[data-site-theme='dark'] .profile-owner-page .ig-profile-owner-preview .ig-p
 .profile-tutorial footer > div { display: flex; flex-wrap: wrap; gap: .6rem; }
 .profile-tutorial button:focus-visible { outline: 3px solid var(--profile-accent); outline-offset: 3px; }
 
+@media (max-width: 1200px) { .profile-style-studio { grid-template-columns: minmax(0, 1fr); } }
+
 @media (max-width: 760px) {
+  .profile-appearance-controls { grid-template-columns: minmax(0, 1fr); }
   .profile-readiness { padding: 1rem; }
   .profile-readiness-heading { align-items: start; flex-direction: column; gap: .6rem; }
   .profile-editor-heading { position: relative; }

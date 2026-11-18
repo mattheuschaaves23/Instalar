@@ -701,6 +701,7 @@ exports.searchLocation = async (req, res) => {
 
 exports.getInstallerProfile = async (req, res) => {
   try {
+    const { normalizeProfileAppearance } = await import('../../shared/profileAppearance.mjs');
     const installerId = Number(req.params.id);
     const ownInstallerPreview = req.user?.account_type === 'installer' && Number(req.userId) === installerId;
     const requestedOrder = Number(req.query.pedido);
@@ -727,6 +728,7 @@ exports.getInstallerProfile = async (req, res) => {
             u.logo,
             u.installer_photo,
             COALESCE(u.installation_gallery, '[]'::jsonb) AS installation_gallery,
+            COALESCE(u.profile_appearance, '{}'::jsonb) AS profile_appearance,
             u.certificate_file,
             u.certificate_name,
             u.certification_verified,
@@ -873,6 +875,7 @@ exports.getInstallerProfile = async (req, res) => {
 
         return {
           ...publicInstaller,
+          profile_appearance: normalizeProfileAppearance(installer.profile_appearance),
           average_rating: Number(installer.average_rating || 0),
           installation_gallery: installationGallery,
           featured_installer: Boolean(installer.featured_installer),

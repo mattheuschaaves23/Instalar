@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 const steps = [
-  { title: 'Deixe o perfil com a sua cara', text: 'Em Perfil, escolha sua foto e escreva uma bio curta para apresentar seu trabalho. Em Publicações, adicione fotos das instalações e escolha qual vira capa.' },
+  { title: 'Deixe o perfil com a sua cara', text: 'Em Perfil, personalize a cor, a altura e o enquadramento da capa e o formato das publicações. A prévia mostra o resultado antes de salvar. Escolha sua foto e escreva uma bio; em Publicações, adicione trabalhos e escolha a foto da capa.' },
   { title: 'Confira os dados para pedidos', text: 'Nome, telefone, cidade, estado e e-mail confirmado são os únicos dados obrigatórios para aceitar pedidos. Foto, publicações e certificado são opcionais.' },
   { title: 'Organize seu atendimento', text: 'Na seção Atendimento, ajuste sua região, horários e valores. Edite as seções na ordem que quiser e use Salvar alterações ao terminar cada uma.' },
 ];
