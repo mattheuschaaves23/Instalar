@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import AuthShell from '../Layout/AuthShell';
 import PasswordField from './PasswordField';
 import Turnstile, { isTurnstileEnabled } from '../Security/Turnstile';
+import { isNativeStoreApp } from '../../utils/nativePlatform';
 
 const highlights = [
   {
@@ -166,7 +167,9 @@ export default function Register() {
           <p className="field-label">Plano do instalador</p>
           <p className="mt-1 text-lg font-semibold text-[var(--gold-strong)]">Grátis, sem prazo para acabar</p>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Comece sem cobrança. Quando precisar de mais volume, assine o Pro por R$ {PLAN_PRICE.toFixed(2)}/mês.
+            {isNativeStoreApp()
+              ? 'Comece sem cobrança.'
+              : `Comece sem cobrança. Quando precisar de mais volume, assine o Pro por R$ ${PLAN_PRICE.toFixed(2)}/mês.`}
           </p>
           <div className="mt-3 grid gap-2">
             {planBenefits.map((benefit) => (
