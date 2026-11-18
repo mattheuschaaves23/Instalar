@@ -14,7 +14,7 @@ export function getProfileEditSection(section) {
 
 const STEP_FIELDS = [
   ['name', 'phone', 'city', 'state'],
-  ['business_name', 'logo', 'installer_photo', 'certificate_file', 'certificate_name', 'bio', 'years_experience'],
+  ['business_name', 'logo', 'installer_photo', 'certificate_file', 'certificate_name', 'bio', 'years_experience', 'profile_appearance'],
   ['service_region', 'service_radius_km', 'installation_method', 'service_hours', 'installation_days',
     'default_price_per_roll', 'default_removal_price', 'base_service_cost', 'travel_fee', 'monthly_goal',
     'document_type', 'document_id', 'emergency_contact', 'emergency_phone', 'safety_notes',

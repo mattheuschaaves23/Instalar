@@ -5,10 +5,12 @@
   --ig-ink: #1f3037;
   --ig-muted: #6d8188;
   --ig-line: #deeaec;
-  --ig-accent: #168a9a;
-  --ig-accent-deep: #0b7180;
-  --ig-accent-soft: #e8f7f8;
-  --ig-violet: #7160e9;
+  --ig-accent: var(--profile-brand, #175cd3);
+  --ig-accent-deep: var(--profile-brand, #175cd3);
+  --ig-accent-soft: var(--profile-brand-soft, #edf4ff);
+  --ig-violet: var(--profile-brand, #175cd3);
+  --profile-cover-height: clamp(16rem, 28vw, 26rem);
+  --profile-mobile-cover-height: 14rem;
   --ig-success: #14b86a;
   --ig-star: #f6b523;
   min-height: 100vh;
@@ -28,10 +30,10 @@ html[data-site-theme='dark'] .ig-installer-profile {
   --ig-ink: #fbfbfb;
   --ig-muted: #b8b8b8;
   --ig-line: #333333;
-  --ig-accent: #d6a53d;
-  --ig-accent-deep: #efc969;
-  --ig-accent-soft: #261f12;
-  --ig-violet: #d6a53d;
+  --ig-accent: var(--profile-brand-light, #a4c8ff);
+  --ig-accent-deep: var(--profile-brand-light, #a4c8ff);
+  --ig-accent-soft: #202830;
+  --ig-violet: var(--profile-brand-light, #a4c8ff);
   --ig-success: #4fca84;
   --ig-star: #efc969;
   background:
@@ -75,11 +77,13 @@ html[data-site-theme='dark'] .ig-installer-profile {
 .ig-profile-back:hover { color: var(--ig-accent-deep); }
 
 .ig-profile-shell { padding-bottom: 1.5rem; }
+.ig-installer-profile[data-cover-height='compact'] { --profile-cover-height: clamp(12rem, 20vw, 18rem); --profile-mobile-cover-height: 11rem; }
+.ig-installer-profile[data-cover-height='immersive'] { --profile-cover-height: clamp(22rem, 36vw, 34rem); --profile-mobile-cover-height: 19rem; }
 
 .ig-profile-cover {
   position: relative;
   isolation: isolate;
-  min-height: clamp(12rem, 22vw, 18rem);
+  min-height: var(--profile-cover-height);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, .7);
   border-radius: 1.7rem 1.7rem 0 0;
@@ -97,11 +101,11 @@ html[data-site-theme='dark'] .ig-installer-profile {
   bottom: -15rem;
   border-radius: 50%;
   background: rgba(255, 255, 255, .12);
-  content: '';
+  content: none;
 }
 
 .ig-profile-cover.has-image { background: #2b363a; }
-.ig-profile-cover img { position: absolute; inset: 0; z-index: -3; width: 100%; height: 100%; object-fit: cover; }
+.ig-profile-cover img { position: absolute; inset: 0; z-index: -3; width: 100%; height: 100%; object-fit: cover; object-position: center var(--profile-cover-position, 50%); }
 .ig-profile-cover-overlay { position: absolute; z-index: -2; inset: 0; background: linear-gradient(90deg, rgba(10, 17, 19, .46), rgba(10, 17, 19, .03) 62%, rgba(10, 17, 19, .26)); }
 .ig-profile-cover > span { position: absolute; top: 1rem; left: 1rem; display: inline-flex; align-items: center; gap: .35rem; padding: .42rem .63rem; border: 1px solid rgba(255, 255, 255, .38); border-radius: 999px; background: rgba(12, 22, 24, .3); color: #fff; font-size: .62rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; backdrop-filter: blur(8px); }
 
@@ -113,16 +117,15 @@ html[data-site-theme='dark'] .ig-installer-profile {
   column-gap: 1.35rem;
   row-gap: .65rem;
   min-height: 13.2rem;
-  margin: -3.7rem 1.65rem 0;
+  margin: 0;
   padding: 1.35rem 1.5rem 1.25rem;
   border: 1px solid var(--ig-line);
-  border-radius: 1.35rem;
-  background: color-mix(in srgb, var(--ig-surface) 96%, transparent);
-  box-shadow: 0 1.5rem 3.3rem rgba(24, 52, 58, .12);
-  backdrop-filter: blur(14px);
+  border-radius: 0 0 1.35rem 1.35rem;
+  background: var(--ig-surface);
+  box-shadow: 0 .5rem 1.5rem rgba(24, 52, 58, .06);
 }
 
-.ig-profile-avatar-wrap { position: relative; grid-row: span 3; width: 8.2rem; height: 8.2rem; align-self: start; padding: .24rem; border: 4px solid var(--ig-surface); border-radius: 50%; background: linear-gradient(135deg, var(--ig-accent), var(--ig-violet)); box-shadow: 0 .75rem 1.7rem rgba(22, 73, 82, .16); }
+.ig-profile-avatar-wrap { position: relative; grid-row: span 3; width: 8.2rem; height: 8.2rem; margin-top: -3.8rem; align-self: start; padding: .24rem; border: 4px solid var(--ig-surface); border-radius: 50%; background: var(--ig-accent); box-shadow: 0 .75rem 1.7rem rgba(22, 73, 82, .16); }
 .ig-profile-avatar { width: 100%; height: 100%; display: grid; place-items: center; overflow: hidden; border-radius: inherit; background: var(--ig-surface-soft); color: var(--ig-accent-deep); font-size: 2.3rem; font-weight: 900; }
 .ig-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ig-profile-avatar-wrap > i { position: absolute; right: .35rem; bottom: .42rem; width: 1.2rem; height: 1.2rem; border: 3px solid var(--ig-surface); border-radius: 50%; background: #aebcc0; }
@@ -153,7 +156,7 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
 
 .ig-profile-bio-block { grid-column: 2 / 4; margin-top: .35rem; }
 .ig-profile-bio-block strong { color: var(--ig-accent-deep); font-size: .72rem; font-weight: 850; }
-.ig-profile-bio-block p { max-width: 52rem; margin: .3rem 0 0; color: var(--ig-ink); font-size: .8rem; line-height: 1.5; }
+.ig-profile-bio-block p { max-width: 75ch; margin: .3rem 0 0; color: var(--ig-ink); font-size: .85rem; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
 .ig-profile-stats { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 1.25rem; margin-top: .12rem; }
 .ig-profile-stats a { display: inline-flex; align-items: baseline; gap: .28rem; color: var(--ig-ink); font-size: .72rem; text-decoration: none; }
 .ig-profile-stats strong { font-size: .93rem; font-weight: 900; }
@@ -187,8 +190,10 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
 .ig-panel-heading > a { display: inline-flex; align-items: center; gap: .1rem; color: var(--ig-violet); font-size: .7rem; font-weight: 850; text-decoration: none; white-space: nowrap; }
 
 .ig-profile-projects { overflow: hidden; }
-.ig-project-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; padding: .8rem; }
-.ig-project-grid figure { aspect-ratio: .76; margin: 0; overflow: hidden; border-radius: .75rem; background: var(--ig-surface-soft); }
+.ig-project-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; padding: .8rem; }
+.ig-project-grid figure { aspect-ratio: 3 / 2; margin: 0; overflow: hidden; border-radius: .75rem; background: var(--ig-surface-soft); }
+.ig-installer-profile[data-gallery-format='square'] .ig-project-grid figure { aspect-ratio: 1; }
+.ig-installer-profile[data-gallery-format='portrait'] .ig-project-grid figure { aspect-ratio: 3 / 4; }
 .ig-project-grid img { width: 100%; height: 100%; object-fit: cover; transition: transform 220ms ease; }
 .ig-project-grid figure:hover img { transform: scale(1.045); }
 .ig-project-empty { min-height: 13.25rem; display: grid; place-content: center; justify-items: center; gap: .35rem; padding: 1.3rem; color: var(--ig-muted); text-align: center; }
@@ -291,10 +296,10 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
   .ig-profile-topbar { min-height: 3.65rem; padding: 0 .1rem; }
   .ig-profile-brand { font-size: 1.15rem; }
   .ig-profile-back { font-size: .66rem; }
-  .ig-profile-cover { min-height: 10.5rem; border-radius: 1.1rem 1.1rem 0 0; }
+  .ig-profile-cover { min-height: var(--profile-mobile-cover-height); border-radius: 1.1rem 1.1rem 0 0; }
   .ig-profile-cover > span { top: .72rem; left: .72rem; font-size: .53rem; }
-  .ig-profile-hero-card { grid-template-columns: 5.5rem minmax(0, 1fr); column-gap: .8rem; row-gap: .5rem; min-height: 0; margin: -2.4rem .25rem 0; padding: .95rem .85rem 1rem; border-radius: 1rem; }
-  .ig-profile-avatar-wrap { grid-row: span 2; width: 5.2rem; height: 5.2rem; border-width: 3px; }
+  .ig-profile-hero-card { grid-template-columns: 5.5rem minmax(0, 1fr); column-gap: .8rem; row-gap: .5rem; min-height: 0; margin: 0; padding: .95rem .85rem 1rem; border-radius: 0 0 1rem 1rem; }
+  .ig-profile-avatar-wrap { grid-row: span 2; width: 5.2rem; height: 5.2rem; margin-top: -2.5rem; border-width: 3px; }
   .ig-profile-avatar-wrap > i { width: 1rem; height: 1rem; right: .15rem; bottom: .18rem; border-width: 2px; }
   .ig-profile-name-row h1 { font-size: 1.25rem; }
   .ig-profile-verified { width: 1.06rem; height: 1.06rem; }
@@ -393,4 +398,12 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
   justify-items: start;
   gap: .8rem;
   padding: clamp(1rem, 5vw, 4rem);
+}
+
+/* The chosen accent survives the surrounding dashboard's theme overrides. */
+html[data-site-theme] .ig-installer-profile .ig-profile-primary-action,
+html[data-site-theme] .ig-installer-profile .ig-profile-mobile-action :is(a, button),
+html[data-site-theme] .ig-installer-profile .ig-profile-verified {
+  background: var(--profile-brand, #175cd3);
+  color: #fff !important;
 }

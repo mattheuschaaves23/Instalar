@@ -1,3 +1,5 @@
+import { normalizeProfileAppearance } from '../../../../shared/profileAppearance.mjs';
+
 // Explicit projection: never pass the private account object to the public view.
 export function buildOwnerProfilePreview(profile = {}, { summary = {}, reviews = [], slots = [] } = {}) {
   const fields = ['id', 'name', 'business_name', 'city', 'state', 'logo', 'installer_photo', 'bio',
@@ -7,6 +9,7 @@ export function buildOwnerProfilePreview(profile = {}, { summary = {}, reviews =
   return {
     installer: {
       ...installer,
+      profile_appearance: normalizeProfileAppearance(profile.profile_appearance),
       display_name: String(profile.business_name || '').trim() || profile.name || 'Seu perfil profissional',
       installation_gallery: Array.isArray(profile.installation_gallery) ? profile.installation_gallery.filter(Boolean) : [],
       installation_days: Array.isArray(profile.installation_days) ? profile.installation_days : [],

@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { resolveProfileImage } from './profileMedia';
+import { normalizeProfileAppearance, profileAppearanceStyle } from '../../../../shared/profileAppearance.mjs';
 
 const imageTypes = 'image/png,image/jpeg,image/jpg,image/webp';
 const paths = {
@@ -42,8 +43,9 @@ export function ProfileIdentityPreview({ form, apiBaseUrl, disabled, onChangePho
   const initials = name.split(/\s+/).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
   const photo = resolveProfileImage(form.installer_photo || form.logo, apiBaseUrl);
   const cover = resolveProfileImage(form.installation_gallery[0], apiBaseUrl) || photo;
+  const appearance = normalizeProfileAppearance(form.profile_appearance);
   return (
-    <div className="profile-social-identity">
+    <div className="profile-social-identity" data-cover-height={appearance.cover_height} data-gallery-format={appearance.gallery_format} style={profileAppearanceStyle(appearance)}>
       <div className="profile-social-cover">
         {cover ? <img alt="" src={cover} /> : <ProfileSocialIcon name="photos" size={36} />}
         <button className="ghost-button profile-social-cover-action" disabled={disabled} onClick={onOpenPublications} type="button">
@@ -61,6 +63,9 @@ export function ProfileIdentityPreview({ form, apiBaseUrl, disabled, onChangePho
         <ImagePicker inputLabel="Enviar foto do perfil" disabled={disabled} onSelect={onChangePhoto}>
           <ProfileSocialIcon name="camera" size={18} /> {form.installer_photo ? 'Trocar foto' : 'Adicionar foto'}
         </ImagePicker>
+      </div>
+      <div aria-label="Prévia do formato das publicações" className="profile-appearance-gallery-preview">
+        {form.installation_gallery.slice(0, 3).map((image, index) => <img alt={`Prévia ilustrativa da publicação ${index + 1}`} key={`${index}-${image}`} src={resolveProfileImage(image, apiBaseUrl)} />)}
       </div>
     </div>
   );
