@@ -3,6 +3,7 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
+const { APP_TIME_ZONE } = require('./appTimeZone');
 
 const COLORS = {
   bg: '#0F0D09',
@@ -49,6 +50,7 @@ function formatDate(value) {
   }
 
   return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: APP_TIME_ZONE,
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -731,3 +733,4 @@ module.exports = async function generateBudgetPDF({ budget, client, environments
     stream.on('finish', () => resolve(filePath));
   });
 };
+module.exports.formatDate = formatDate;

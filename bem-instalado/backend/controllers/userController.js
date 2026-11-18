@@ -23,6 +23,7 @@ const {
 const { sendMarketplaceEmail } = require('../services/email');
 const { sendPushToUser } = require('../services/push');
 const { getInstallerReadiness } = require('../utils/installerEligibility');
+const { SQL_LOCAL_TODAY, localDateKey, sqlLocal } = require('../utils/appTimeZone');
 
 const PDF_BRANDING_DEFAULTS = Object.freeze({
   brand_name: '',
@@ -408,7 +409,7 @@ function normalizeMonthKey(value) {
 }
 
 function getMonthRange(monthKey) {
-  const baseMonth = normalizeMonthKey(monthKey) || dateKey(new Date()).slice(0, 7);
+  const baseMonth = normalizeMonthKey(monthKey) || localDateKey(new Date()).slice(0, 7);
   const [year, month] = baseMonth.split('-').map(Number);
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 1);
@@ -1047,7 +1048,7 @@ exports.createAvailabilitySlot = async (req, res) => {
     const slotDate = normalizeDateInput(req.body.slot_date);
     const startTime = normalizeTimeInput(req.body.start_time);
     const endTime = normalizeTimeInput(req.body.end_time);
-    const today = dateKey(new Date());
+    const today = localDateKey(new Date());
 
     if (!slotDate || !startTime || !endTime) {
       return res.status(400).json({ error: 'Data e horários válidos são obrigatórios.' });
@@ -1081,9 +1082,9 @@ exports.createAvailabilitySlot = async (req, res) => {
           FROM schedules
           WHERE user_id = $1
             AND status <> 'canceled'
-            AND DATE(date) = $2::date
-            AND date::time >= $3::time
-            AND date::time < $4::time
+            AND ${sqlLocal('date')}::date = $2::date
+            AND ${sqlLocal('date')}::time >= $3::time
+            AND ${sqlLocal('date')}::time < $4::time
           LIMIT 1
         `,
         [req.userId, slotDate, startTime, endTime]
@@ -1219,18 +1220,18 @@ exports.getDashboard = async (req, res) => {
           `
             SELECT
               COUNT(*) FILTER (
-                WHERE date >= DATE_TRUNC('week', CURRENT_DATE)
-                  AND date < DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days'
+                WHERE ${sqlLocal('date')} >= DATE_TRUNC('week', ${SQL_LOCAL_TODAY})
+                  AND ${sqlLocal('date')} < DATE_TRUNC('week', ${SQL_LOCAL_TODAY}) + INTERVAL '7 days'
               )::int AS week_installations,
               COUNT(*) FILTER (
                 WHERE status = 'completed'
-                  AND date >= DATE_TRUNC('week', CURRENT_DATE)
-                  AND date < DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days'
+                  AND ${sqlLocal('date')} >= DATE_TRUNC('week', ${SQL_LOCAL_TODAY})
+                  AND ${sqlLocal('date')} < DATE_TRUNC('week', ${SQL_LOCAL_TODAY}) + INTERVAL '7 days'
               )::int AS completed_this_week,
               ARRAY_REMOVE(
                 ARRAY_AGG(date ORDER BY date ASC) FILTER (
-                  WHERE date >= CURRENT_DATE
-                    AND date < CURRENT_DATE + INTERVAL '35 days'
+                  WHERE ${sqlLocal('date')}::date >= ${SQL_LOCAL_TODAY}
+                    AND ${sqlLocal('date')}::date < ${SQL_LOCAL_TODAY} + 35
                     AND status <> 'canceled'
                 ),
                 NULL
