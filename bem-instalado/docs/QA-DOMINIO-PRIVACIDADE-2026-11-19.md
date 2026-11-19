@@ -14,6 +14,7 @@ O proprietário informou o CNPJ **55.445.091/0001-60** para identificar o respon
 - Tratamento também no React: uma navegação interna por `Link` não necessariamente consulta o servidor, então os documentos corrigem o host legado após navegação SPA.
 - Canonical e imagens sociais do HTML inicial atualizados; título/canonical próprios para privacidade, termos e exclusão.
 - Links dos materiais de publicação nas lojas atualizados. Isso não altera formulários já cadastrados nas contas das lojas nem gera APK.
+- Logo dos documentos fixada na variante para fundo escuro, evitando logo escura ilegível quando o tema global é claro.
 - Política atualizada para `2026-11-19`, com controlador/CNPJ/canal, dados e finalidades, compartilhamento do pedido, consentimento separado e envio manual no WhatsApp, GPS/CEP e fornecedores, cookies/armazenamento, notificações, conservação, exclusão e direitos.
 - Versões centralizadas no arquivo compartilhado `legalDocuments.json`. O texto e a versão dos Termos de Uso de agosto foram preservados; novos pedidos registram `2026-11-19` como versão do conjunto legal aceito. Consentimentos antigos não foram regravados.
 - Sem alteração de chaves, DNS, autenticação, Turnstile, origens de API do app, pagamentos ou esquema de banco.
@@ -25,7 +26,8 @@ Jornadas: abrir documento antigo; entrar nele por navegação interna; ler polí
 - Checkpoint RED `8c3e729`: 9 testes de documentos falharam pelos campos, metadados e redirecionamentos ausentes; teste do backend reproduziu a versão antiga `2026-08-06`.
 - Checkpoint GREEN `5b8e396`: os mesmos 11 testes de documentos e os testes de validação do backend passaram.
 - Checkpoint `314f23f`: especificação do utilitário SPA adicionada antes da implementação; RED de compilação por módulo ainda ausente. `753c234`: utilitário e integração implementados, 13 testes de rotas mais os 11 de documentos aprovados.
-- Frontend completo: **182 testes aprovados** em 33 arquivos.
+- Logo: RED `1c8a4b5` reproduziu os três documentos usando imagem para fundo claro sobre fundo escuro; GREEN `aa9cf8c` confirmou a variante correta.
+- Frontend completo: **185 testes aprovados** em 33 arquivos.
 - Backend completo: **135 aprovados, zero ignorados**, usando PostgreSQL local isolado, serviços financeiros/SMTP simulados e chave de teste, nunca dados de produção.
 - Cobertura de `LegalPage.jsx`, `AccountDeletionPage.jsx` e `canonicalLegalUrl.jsx`: **100% linhas/funções, 96,15% instruções, 95,83% ramos**. A navegação real do host legado precisa de verificação no deployment porque a condição `has` da Vercel não é reproduzida pelo Vite local.
 - Build Vite, verificador PapelPerto, checagem sintática do controller e `git diff --check` aprovados.
@@ -36,6 +38,15 @@ Jornadas: abrir documento antigo; entrar nele por navegação interna; ler polí
 Leitura e links entre documentos conferidos em preview local sem conta real. Política verificada em 375, 768 e 1440 px, temas claro/escuro e zoom CSS de 200%, sem transbordamento horizontal. Navegação por Tab alcançou os sete links; títulos e versões corretos ao alternar documentos. Axe A/AA não indicou violações nos estados inspecionados. Isso não substitui avaliação manual com leitor de tela.
 
 Não havia baseline visual versionado: comparação automática de regressão visual inconclusiva. Core Web Vitals de campo não medidos. As capturas usam dados públicos da empresa, não dados de clientes.
+
+## Aceite no domínio oficial
+
+Deployment `dpl_BYNmLMkDwjw2rKH4P85tcxu1c3j5`, commit `882bbe1`: READY em Production; [CI aprovada](https://github.com/mattheuschaaves23/Instalar/actions/runs/44596904927).
+
+- GET dos três documentos no host antigo: HTTP 308 para a mesma rota no domínio oficial. A consulta `?origem=teste` foi preservada.
+- Navegação real: página inicial no host antigo → clique interno em Privacidade → `https://instalarpro.com.br/privacidade`, com razão social, CNPJ, versão 2026-11-19 e canonical corretos.
+- Health dos dois hosts: HTTP 200. Retorno web do aplicativo `/auth/mobile/callback`: HTTP 200, sem redirecionamento de domínio.
+- Nenhum pedido real, sessão autenticada ou formulário de exclusão foi alterado. O ajuste final da variante da logo passa por novo deployment da mesma branch.
 
 ## Referências e limite jurídico
 
