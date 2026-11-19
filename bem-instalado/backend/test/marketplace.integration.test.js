@@ -22,7 +22,7 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'integration-test-secret-with-at-least-32-characters';
   process.env.ALLOW_MANUAL_SUBSCRIPTION_CONFIRMATION = 'true';
   process.env.FRONTEND_URL = 'http://127.0.0.1:3000';
-  process.env.DB_POOL_MAX = '1';
+  process.env.DB_POOL_MAX = '4';
   process.env.SMTP_HOST = 'smtp.example.test';
   process.env.SMTP_USER = 'qa@example.test';
   process.env.SMTP_PASSWORD = 'local-test-only';
@@ -39,6 +39,9 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
   const pool = require('../config/database');
   const { app, ensureRuntimeSchema } = require('../server');
   await ensureRuntimeSchema();
+  // Isolated TEST_DATABASE_URL only: repeated local runs must not consume the
+  // previous fixture's quota. The real limiter remains enabled during requests.
+  await pool.query("DELETE FROM api_rate_limits WHERE scope LIKE 'POST:/api/public:/service-requests%'");
 
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const email = `fluxo-${suffix}@example.test`;
@@ -379,6 +382,46 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
     assert.equal(chooseMinimal.response.status, 200, JSON.stringify(chooseMinimal.body));
     assert.equal(chooseMinimal.body.selected_interest.installer_id, secondInstallerId);
 
+    await t.test('cliques simultâneos não duplicam interesses nem permitem dois escolhidos', async () => {
+      const created = await requestJson(baseUrl, '/api/public/service-requests', {
+        method: 'POST', headers: clientHeaders,
+        body: JSON.stringify({ client_name: 'Cliente concorrência QA', client_phone: '48988888888',
+          service: 'wallpaper', city: 'Palhoça', state: 'SC', privacy_consent: true }),
+      });
+      assert.equal(created.response.status, 201, JSON.stringify(created.body));
+      const raceRequest = created.body.service_request;
+      const interestedPath = `/api/opportunities/${raceRequest.id}/interest`;
+      const simultaneous = await Promise.all([authHeaders, authHeaders, secondInstallerHeaders].map((headers) =>
+        requestJson(baseUrl, interestedPath, { method: 'POST', headers, body: '{}' })));
+      for (const result of simultaneous) assert.equal(result.response.status, 200, JSON.stringify(result.body));
+      const interestRows = await pool.query('SELECT * FROM service_request_interests WHERE request_id = $1', [raceRequest.id]);
+      assert.equal(interestRows.rowCount, 2);
+      const selectionPath = (id) => `/api/public/service-requests/${raceRequest.id}/interests/${id}/select`;
+      const unauthorized = await requestJson(baseUrl, selectionPath(interestRows.rows[0].id), {
+        method: 'POST', headers: { 'X-Client-Request-Token': 'wrong-test-token' }, body: '{}',
+      });
+      assert.equal(unauthorized.response.status, 404);
+      const choices = await Promise.all(interestRows.rows.map((row) => requestJson(baseUrl, selectionPath(row.id), {
+        method: 'POST', headers: clientHeaders, body: '{}',
+      })));
+      assert.deepEqual(choices.map(({ response }) => response.status).sort(), [200, 409]);
+      const winner = choices.find(({ response }) => response.status === 200).body.selected_interest;
+      const loser = choices.find(({ response }) => response.status === 409);
+      assert.equal(loser.body.code, 'INSTALLER_ALREADY_SELECTED');
+      const selectedRows = await pool.query("SELECT * FROM service_request_interests WHERE request_id = $1 AND status = 'selected'", [raceRequest.id]);
+      assert.equal(selectedRows.rowCount, 1);
+      assert.equal(selectedRows.rows[0].installer_id, winner.installer_id);
+      const notices = await pool.query("SELECT COUNT(*)::int AS count FROM notifications WHERE title = 'Você foi escolhido' AND message LIKE $1", [`%pedido #${raceRequest.id}.%`]);
+      assert.equal(notices.rows[0].count, 1);
+      // Retrying after a lost response remains safe even when the original
+      // opportunity deadline has elapsed. An open expired request stays blocked.
+      await pool.query("UPDATE service_requests SET expires_at = NOW() - INTERVAL '1 day' WHERE id = $1", [raceRequest.id]);
+      const retry = await requestJson(baseUrl, selectionPath(winner.id), { method: 'POST', headers: clientHeaders, body: '{}' });
+      assert.equal(retry.response.status, 200, JSON.stringify(retry.body));
+      const afterRetry = await pool.query("SELECT COUNT(*)::int AS count FROM notifications WHERE title = 'Você foi escolhido' AND message LIKE $1", [`%pedido #${raceRequest.id}.%`]);
+      assert.equal(afterRetry.rows[0].count, 1);
+    });
+
     const selectedOpportunities = await requestJson(baseUrl, '/api/opportunities?status=selected', {
       headers: authHeaders,
     });
@@ -519,7 +562,7 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
     if (installerId) await pool.query('DELETE FROM users WHERE id = $1', [installerId]);
     if (secondInstallerId) await pool.query('DELETE FROM users WHERE id = $1', [secondInstallerId]);
     if (clientId) await pool.query('DELETE FROM users WHERE id = $1', [clientId]);
-    await pool.query('DELETE FROM service_requests WHERE client_name IN ($1, $2)', ['Cliente Teste', 'Cliente do perfil essencial']);
+    await pool.query('DELETE FROM service_requests WHERE client_name IN ($1, $2, $3)', ['Cliente Teste', 'Cliente do perfil essencial', 'Cliente concorrência QA']);
     await new Promise((resolve) => server.close(resolve));
     await pool.end();
   }

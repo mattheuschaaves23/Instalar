@@ -70,4 +70,22 @@ describe('confirmação da localização no formulário real', () => {
     expect(input.value).toBe('Rua nova');
     expect(screen.queryByText('Revise seu pedido')).toBeNull();
   });
+  it('conserva GPS e número depois de confirmar, voltar e editar o endereço', async () => {
+    let locate;
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: {
+      watchPosition: vi.fn((success) => { locate = success; return 9; }), clearWatch: vi.fn(),
+    } });
+    api.get.mockImplementation(async (url) => ({ data: url.includes('/location/reverse') ? { ...street, source: 'gps' } : {} }));
+    await openLocation();
+    fireEvent.click(screen.getByRole('button', { name: 'Minha localização' }));
+    await act(async () => locate({ coords: { latitude: street.latitude, longitude: street.longitude, accuracy: 20 } }));
+    fireEvent.change(await screen.findByRole('textbox', { name: /Número/ }), { target: { value: '120' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Continuar/ }));
+    expect(await screen.findByText('Revise seu pedido')).toBeTruthy();
+    expect(screen.getByText('Rua Turquesa, 120')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
+    expect(screen.getByTitle('Mapa da localização aproximada pelo GPS').src).toContain('marker=-27.645%2C-48.668');
+    fireEvent.click(screen.getByRole('button', { name: 'Editar endereço' }));
+    expect(screen.getByRole('textbox', { name: /Número/ }).value).toBe('120');
+  });
 });

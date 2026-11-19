@@ -1,8 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { EMPTY_MANUAL_ADDRESS, isPostalQuery, postalDigits, buildManualLocation, manualAddressFromLocation, manualAddressFromQuery, validateManualAddress } from './requestAddress';
+import { EMPTY_MANUAL_ADDRESS, addressSearchKey, isPostalQuery, postalDigits, buildManualLocation, manualAddressFromLocation, manualAddressFromQuery, validateManualAddress } from './requestAddress';
 
 describe('endereço de instalação', () => {
   const address = { ...EMPTY_MANUAL_ADDRESS, street: 'Rua Turquesa', city: 'Palhoça', state: 'SC' };
+  it('separa o cache por cidade e estado e conserva texto livre para preenchimento manual', () => {
+    expect(addressSearchKey(' Rua Turquesa ')).toBe('rua turquesa||');
+    expect(addressSearchKey('Rua Turquesa', { city: 'Palhoça', state: 'SC' })).toBe('rua turquesa|Palhoça|SC');
+    expect(manualAddressFromQuery('Estrada sem cadastro', { city: 'Palhoça', state: 'SC' }))
+      .toMatchObject({ street: 'Estrada sem cadastro', city: 'Palhoça', state: 'SC' });
+  });
   it('reconhece CEP inteiro, com máscara ou prefixo', () => {
     expect(isPostalQuery('88137620')).toBe(true);
     expect(isPostalQuery('CEP: 88137-620')).toBe(true);

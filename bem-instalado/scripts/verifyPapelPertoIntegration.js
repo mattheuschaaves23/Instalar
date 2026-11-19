@@ -53,7 +53,7 @@ assert.doesNotMatch(home, /className="client-app-request-receipt/, 'O resumo do 
 assert.doesNotMatch(home, /className="client-app-finder-intro/, 'A introdução dos resultados não deve duplicar informações já confirmadas.');
 assert.match(home, /placeholder="CEP, rua, bairro ou cidade"/, 'A localização deve oferecer busca rápida por CEP.');
 assert.match(home, /<RequestManualAddress/, 'Um endereço ausente no mapa deve poder ser preenchido manualmente.');
-assert.match(home, /buildManualLocation\(manualAddress\)/, 'O endereço manual deve ser validado antes de avançar.');
+assert.match(home, /buildManualLocation\(manualAddress,\s*guidedLocationTarget\)/, 'O endereço manual deve ser validado antes de avançar, preservando o ponto confirmado.');
 assert.match(home, /className="request-locate-button"/, 'A localização deve continuar oferecendo o GPS.');
 assert.match(requestGeolocation, /geolocation\.watchPosition/, 'O GPS deve aguardar a melhor leitura disponível.');
 assert.match(requestGeolocation, /maximumAge: 0/, 'O GPS não deve reutilizar uma localização antiga.');
