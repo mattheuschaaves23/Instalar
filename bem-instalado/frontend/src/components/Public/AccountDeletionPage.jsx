@@ -34,7 +34,7 @@ export default function AccountDeletionPage() {
         description="Saiba como excluir sua conta e solicitar a remoção dos seus dados no InstalarPro." />
       <header className="legal-page-header">
         <Link aria-label="InstalarPro - início" className="legal-page-brand" to="/">
-          <BrandWordmark className="legal-page-wordmark" size="sm" />
+          <BrandWordmark className="legal-page-wordmark" size="sm" surface="dark" />
         </Link>
         <Link className="legal-page-back" to="/">Voltar ao início</Link>
       </header>

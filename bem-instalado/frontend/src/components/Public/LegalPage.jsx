@@ -46,7 +46,7 @@ export default function LegalPage({ type }) {
         description={intro} canonicalPath={isPrivacy ? '/privacidade' : '/termos'} />
       <header className="legal-page-header">
         <Link aria-label="InstalarPro - início" className="legal-page-brand" to="/">
-          <BrandWordmark className="legal-page-wordmark" size="sm" />
+          <BrandWordmark className="legal-page-wordmark" size="sm" surface="dark" />
         </Link>
         <Link className="legal-page-back" to="/">Voltar ao início</Link>
       </header>
