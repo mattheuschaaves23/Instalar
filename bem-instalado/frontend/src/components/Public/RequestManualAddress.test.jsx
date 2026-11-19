@@ -2,6 +2,7 @@ import { it, expect } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import RequestManualAddress from './RequestManualAddress';
 import { EMPTY_MANUAL_ADDRESS } from '../../utils/requestAddress';
+import { readFileSync } from 'node:fs';
 
 it('oferece campos acessíveis, todos os estados e consulta opcional de CEP', () => {
   const markup = renderToStaticMarkup(<RequestManualAddress address={EMPTY_MANUAL_ADDRESS} />);
@@ -30,4 +31,10 @@ it('mostra a rua encontrada pelo GPS e aviso pequeno de precisão, mantendo camp
   expect(markup).toContain('O número deve ser informado por você.');
   const imprecise = renderToStaticMarkup(<RequestManualAddress address={address} gps gpsAccuracy={800} />);
   expect(imprecise).toContain('GPS com baixa precisão');
+});
+
+it('distingue o link de atribuição do mapa sem depender só de cor', () => {
+  const css = readFileSync(new URL('./RequestComposer.css', import.meta.url), 'utf8');
+  const rule = css.match(/\.request-gps-credit a\s*\{([^}]+)\}/)[1];
+  expect(rule).toMatch(/text-decoration(?:-line)?:\s*underline/);
 });
