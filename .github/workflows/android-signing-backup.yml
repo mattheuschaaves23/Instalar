@@ -1,0 +1,110 @@
+name: Backup criptografado da assinatura Android
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-signing-backup
+  cancel-in-progress: false
+
+jobs:
+  owner-backup:
+    if: github.repository == 'mattheuschaaves23/Instalar' && github.actor == 'mattheuschaaves23' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Preparar criptografia verificada
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            'https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz' \
+            --output "$RUNNER_TEMP/age.tar.gz"
+          printf '%s  %s\n' 'cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10' "$RUNNER_TEMP/age.tar.gz" | sha256sum --check -
+          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP" age/age
+
+      - name: Conferir a chave existente e criptografar o backup
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const { spawnSync } = require('node:child_process');
+          const { X509Certificate } = require('node:crypto');
+
+          // Public encryption recipient; the recovery identity stays on the owner's PC.
+          const recipient = 'age1q8t0nzeqks20kqr0347fxfpaqmx7hr5x3yanuedvwd5dw8gfrqxqkh0c5e';
+          const expectedCertificate = '4b4f5622fb3675d18e62227172d19c12fd4ee119e7060e8ffb6e1b2327dec0d3';
+          const names = ['ANDROID_KEYSTORE_BASE64', 'ANDROID_KEYSTORE_PASSWORD', 'ANDROID_KEY_ALIAS', 'ANDROID_KEY_PASSWORD'];
+          if (names.some((name) => !process.env[name])) throw new Error('Falta um segredo de assinatura; nenhuma chave sera substituida.');
+          const root = process.env.RUNNER_TEMP;
+          if (!root || !path.isAbsolute(root)) throw new Error('Diretorio temporario indisponivel.');
+          const privateDir = fs.mkdtempSync(path.join(root, 'android-signing-owner-'));
+          const keystorePath = path.join(privateDir, 'existing-signing.jks');
+          try {
+            const keystore = Buffer.from(process.env.ANDROID_KEYSTORE_BASE64, 'base64');
+            if (!keystore.length) throw new Error('Keystore existente vazio.');
+            fs.writeFileSync(keystorePath, keystore, { mode: 0o600, flag: 'wx' });
+            const keytoolEnvironment = {
+              PATH: process.env.PATH,
+              JAVA_HOME: process.env.JAVA_HOME,
+              ANDROID_KEYSTORE_PASSWORD: process.env.ANDROID_KEYSTORE_PASSWORD,
+              ANDROID_KEY_PASSWORD: process.env.ANDROID_KEY_PASSWORD,
+            };
+            const keytoolArgs = ['-keystore', keystorePath, '-alias', process.env.ANDROID_KEY_ALIAS,
+              '-storepass:env', 'ANDROID_KEYSTORE_PASSWORD'];
+            const exported = spawnSync('keytool', ['-exportcert', '-rfc', ...keytoolArgs], {
+              encoding: 'utf8', env: keytoolEnvironment, timeout: 30000,
+            });
+            if (exported.status !== 0) throw new Error('Nao foi possivel ler o certificado da chave existente.');
+            const certificate = new X509Certificate(exported.stdout);
+            if (certificate.fingerprint256.replaceAll(':', '').toLowerCase() !== expectedCertificate) {
+              throw new Error('O certificado nao corresponde ao APK 1.0.35; backup interrompido.');
+            }
+            // Generating an in-memory CSR proves private-key access without changing the keystore.
+            const proof = spawnSync('keytool', ['-certreq', ...keytoolArgs, '-keypass:env', 'ANDROID_KEY_PASSWORD'], {
+              encoding: 'utf8', env: keytoolEnvironment, timeout: 30000,
+            });
+            if (proof.status !== 0) throw new Error('Nao foi possivel validar o acesso a chave privada existente.');
+            const payload = JSON.stringify({
+              format: 'instalarpro-signing-backup/v1',
+              owner: 'mattheuschaaves23',
+              applicationId: 'br.com.instalapro.instaladores',
+              referenceVersion: '1.0.35',
+              certificateSha256: expectedCertificate,
+              createdAt: new Date().toISOString(),
+              keystoreBase64: process.env.ANDROID_KEYSTORE_BASE64,
+              keystorePassword: process.env.ANDROID_KEYSTORE_PASSWORD,
+              keyAlias: process.env.ANDROID_KEY_ALIAS,
+              keyPassword: process.env.ANDROID_KEY_PASSWORD,
+            });
+            const output = path.join(root, 'instalarpro-assinatura.json.age');
+            const encrypted = spawnSync(path.join(root, 'age', 'age'), ['--recipient', recipient, '--output', output], {
+              input: payload, env: { PATH: process.env.PATH }, timeout: 30000,
+            });
+            if (encrypted.status !== 0 || !fs.statSync(output).size) throw new Error('Falha ao criptografar o backup.');
+            console.log('Certificado e chave existentes validados. Backup criptografado gerado; nenhum segredo foi publicado.');
+          } finally {
+            if (fs.existsSync(keystorePath)) fs.unlinkSync(keystorePath);
+            fs.rmdirSync(privateDir);
+          }
+          NODE
+
+      - name: Salvar somente o arquivo criptografado por um dia
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: InstalarPro-assinatura-backup-criptografado
+          path: ${{ runner.temp }}/instalarpro-assinatura.json.age
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
