@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import BrandWordmark from '../Layout/BrandWordmark';
 import PageMetadata from './PageMetadata';
+import { useCanonicalLegalUrl } from '../../utils/canonicalLegalUrl';
 
 const deletionSections = [
   [
@@ -26,6 +27,7 @@ const deletionSections = [
 ];
 
 export default function AccountDeletionPage() {
+  useCanonicalLegalUrl('/excluir-conta');
   return (
     <main className="legal-page">
       <PageMetadata title="Excluir conta e dados | InstalarPro" canonicalPath="/excluir-conta"

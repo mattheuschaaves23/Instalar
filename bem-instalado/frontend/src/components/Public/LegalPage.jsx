@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import BrandWordmark from '../Layout/BrandWordmark';
 import PageMetadata from './PageMetadata';
 import legalDocuments from '../../../../shared/legalDocuments.json';
+import { useCanonicalLegalUrl } from '../../utils/canonicalLegalUrl';
 
 const privacySections = [
   ['1. A quem esta política se aplica', 'Esta política abrange clientes, instaladores e visitantes do site instalarpro.com.br e os recursos da plataforma utilizados pelo aplicativo InstalarPro. Links antigos dos documentos legais são direcionados ao domínio atual. Serviços externos, como WhatsApp, Google e lojas parceiras, também têm suas próprias políticas.'],
@@ -31,6 +32,7 @@ const termsSections = [
 
 export default function LegalPage({ type }) {
   const isPrivacy = type === 'privacy';
+  useCanonicalLegalUrl(isPrivacy ? '/privacidade' : '/termos');
   const sections = isPrivacy ? privacySections : termsSections;
   const title = isPrivacy ? 'Política de Privacidade e LGPD' : 'Termos de Uso';
   const intro = isPrivacy

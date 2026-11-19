@@ -15,7 +15,7 @@ declaração.
 | Categoria | Dado | Finalidade principal | Vinculado ao usuário |
 | --- | --- | --- | --- |
 | Informações pessoais | Nome, e-mail e telefone | Conta, autenticação, suporte e contato profissional | Sim |
-| Localização | Cidade, região atendida e localização informada | Mostrar oportunidades compatíveis | Sim |
+| Localização | Cidade, endereço informado e coordenadas do GPS quando autorizadas | Localizar a instalação e mostrar oportunidades compatíveis | Sim |
 | Fotos e vídeos | Foto de perfil, portfólio e documentos enviados | Perfil profissional e verificação | Sim |
 | Arquivos e documentos | Certificados e documentos profissionais | Verificação do instalador | Sim |
 | Atividade no app | Interesses, agenda, clientes e orçamentos | Funcionalidades do aplicativo | Sim |
@@ -32,7 +32,7 @@ regras da plataforma.
 Declarar, conforme o uso atual:
 
 - Informações de contato: nome, e-mail, número de telefone.
-- Localização: localização aproximada e região informada.
+- Localização: região e endereço informados; localização precisa ou aproximada conforme a leitura de GPS autorizada pelo usuário.
 - Conteúdo do usuário: fotos, arquivos, conteúdo de suporte e dados profissionais.
 - Compras: situação e histórico de assinatura ligados à conta.
 - Identificadores: identificador interno da conta.
