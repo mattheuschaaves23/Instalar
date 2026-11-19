@@ -378,10 +378,12 @@ html[data-site-theme] .client-request-redesign .client-app-request-actions .clie
   gap: 12px;
   border-color: #d6a633 !important;
   background: #dfb246 !important;
+  color: #181613 !important;
   font-weight: 650;
 }
 
 .client-request-redesign .client-app-search-submit :is(svg, .request-image-icon) { width: 20px; height: 20px; }
+html[data-site-theme='dark'] .client-request-redesign .client-app-search-submit .request-image-icon { filter: none; }
 html[data-site-theme] .client-request-redesign .client-app-request-actions .client-app-search-submit:hover { background: #d5a535 !important; }
 .client-request-redesign :is(button, a):focus-visible { outline: 3px solid var(--request-accent); outline-offset: 4px; }
 
