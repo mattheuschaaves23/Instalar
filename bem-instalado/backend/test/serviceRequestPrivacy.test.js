@@ -73,3 +73,11 @@ test('status legado de interesse não libera dados quando o pedido pertence a ou
   assert.equal(serialized.client_email, null);
   assert.equal(serialized.address_reference, null);
 });
+
+test('pedido vencido não oferece abertura de WhatsApp nem novo contato', () => {
+  const serialized = __test.serializeOpportunity({ ...opportunity, expires_at: '2020-01-01T00:00:00Z',
+    whatsapp_contact_consent_at: new Date(), interested_by_me: true, my_interest_status: 'interested',
+    interest_whatsapp_url: 'https://wa.me/5548999999999' });
+  assert.equal(serialized.can_contact_on_interest, false);
+  assert.equal(serialized.interest_whatsapp_url, null);
+});

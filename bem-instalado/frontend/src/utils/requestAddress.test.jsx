@@ -33,4 +33,20 @@ describe('endereço de instalação', () => {
       .toMatchObject({ street: 'Rua Flores', number: '120', city: 'Curitiba', state: 'PR' });
     expect(manualAddressFromQuery('88137620')).toMatchObject({ zipCode: '88137620', street: '' });
   });
+  const point = { source: 'gps', street: 'Rua Turquesa', city: 'Palhoça', state: 'SC', latitude: -27.645, longitude: -48.668 };
+  it('mantém o ponto do GPS ao confirmar apenas número e complemento', () => {
+    expect(buildManualLocation({ ...address, number: '120', complement: 'Bloco A' }, point))
+      .toMatchObject({ latitude: point.latitude, longitude: point.longitude, source: 'gps', addressReference: 'Rua Turquesa, 120, Bloco A' });
+  });
+  it.each([
+    { street: 'Outra rua' }, { city: 'Outra cidade' }, { state: 'PR' },
+  ])('não reutiliza o GPS de um endereço alterado: %j', (change) => {
+    expect(buildManualLocation({ ...address, ...change }, point)).toMatchObject({ latitude: null, longitude: null, source: 'manual' });
+  });
+  it.each([
+    { latitude: null }, { longitude: '' }, { latitude: 91 }, { longitude: 181 },
+    { latitude: true }, { longitude: [] }, { source: 'manual' }, { street: '' },
+  ])('descarta pontos ausentes, inválidos ou sem vínculo com a rua: %j', (change) => {
+    expect(buildManualLocation(address, { ...point, ...change })).toMatchObject({ latitude: null, longitude: null, source: 'manual' });
+  });
 });
