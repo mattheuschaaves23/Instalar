@@ -32,6 +32,12 @@ test('validação de localização antes de gravar um pedido', async (t) => {
     assert.equal(res.body.service_request.latitude, null);
     assert.equal(res.body.service_request.longitude, null);
   });
+  await t.test('novos pedidos registram a versão atual do conjunto de documentos aceitos', async () => {
+    const res = response();
+    await createPublicServiceRequest({ body: valid }, res);
+    assert.equal(res.statusCode, 201);
+    assert.equal(query.mock.calls.at(-1).arguments[1][33], '2026-11-19');
+  });
   await t.test('preserva o par de coordenadas informado e aceita UF minúscula', async () => {
     const res = response();
     await createPublicServiceRequest({ body: { ...valid, state: 'sc', latitude: '-27.645', longitude: '-48.668' } }, res);
