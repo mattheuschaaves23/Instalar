@@ -27,7 +27,9 @@ Nao trocar esses segredos nem gerar outra chave para esta verificacao. O GitHub 
 
 O workflow manual `Backup criptografado da assinatura Android` so executa nesta conta, com o titular como ator e a branch main. Ele verifica o certificado e o acesso a chave privada existente antes de gerar um backup `age` criptografado para o destinatario publico fixado no workflow. Nao cria chave de assinatura, APK, AAB, tag nem release e nao substitui os segredos existentes.
 
-A identidade privada de recuperacao fica no computador do titular, fora do Git e de pastas sincronizadas, na pasta `%LOCALAPPDATA%/InstalarPro/Assinatura-Backup-2026-11-19`. A pasta e restrita por ACL ao usuario Windows e ao sistema. O GitHub recebe somente um artefato criptografado, com retencao de um dia.
+Execucao 44584227329 concluida com sucesso em 19/11/2026: https://github.com/mattheuschaaves23/Instalar/actions/runs/44584227329. O arquivo criptografado foi baixado, aberto no computador do titular e o keystore recuperado foi validado novamente contra o certificado do APK 1.0.35. A chave e as senhas originais foram preservadas.
+
+A identidade privada de recuperacao fica no computador do titular, fora do Git e de pastas sincronizadas, na pasta `%LOCALAPPDATA%/InstalarPro/Assinatura-Backup-2026-11-19`. Os arquivos privados tem ACL individual restrita ao usuario Windows e ao sistema; ferramentas locais podem listar os nomes da pasta sem receber acesso ao conteudo desses arquivos. O GitHub recebe somente um artefato criptografado, com retencao de um dia.
 
 Guardar uma segunda copia privada do backup e da identidade de recuperacao em midia segura, separada deste computador. Nao enviar a identidade privada, senhas ou keystore por WhatsApp, e-mail, commits ou artefatos publicos. O desenvolvedor pode receber este documento e o certificado publico; isso nao inclui a chave privada.
 
