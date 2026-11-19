@@ -38,3 +38,9 @@ it('distingue o link de atribuição do mapa sem depender só de cor', () => {
   const rule = css.match(/\.request-gps-credit a\s*\{([^}]+)\}/)[1];
   expect(rule).toMatch(/text-decoration(?:-line)?:\s*underline/);
 });
+
+it('o botão de continuar mantém texto escuro legível sobre o fundo claro nos dois temas', () => {
+  const css = readFileSync(new URL('./RequestComposer.css', import.meta.url), 'utf8');
+  const rule = css.match(/html\[data-site-theme\] \.client-request-redesign \.client-app-request-actions \.client-app-search-submit\s*\{([^}]+)\}/)[1];
+  expect(rule).toMatch(/color:\s*#181613\s*!important/);
+});
