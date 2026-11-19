@@ -372,7 +372,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
             <div className="ig-profile-avatar">
               {profilePhoto ? <img alt={`Foto de ${installer.display_name}`} src={profilePhoto} /> : <span>{getInitials(installer.display_name)}</span>}
             </div>
-            <i aria-label={hasAvailability ? 'Agenda aberta' : 'Agenda a consultar'} className={hasAvailability ? 'is-available' : ''} />
+            <i role="img" aria-label={hasAvailability ? 'Agenda aberta' : 'Agenda a consultar'} className={hasAvailability ? 'is-available' : ''} />
           </div>
 
           <div className="ig-profile-hero-copy">
