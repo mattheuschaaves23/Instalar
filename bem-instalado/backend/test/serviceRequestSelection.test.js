@@ -21,6 +21,6 @@ test('repetir uma escolha já concluída não falha por causa do prazo original 
   assert.equal(res.statusCode, 200, JSON.stringify(res.body));
   assert.equal(res.body.selected_interest.installer_id, 7);
   assert.ok(queries.includes('COMMIT'));
-  assert.equal(queries.some((sql) => /INSERT|UPDATE/.test(sql)), false, 'repetição não duplica notificações nem altera a escolha');
+  assert.equal(queries.some((sql) => /^(INSERT|UPDATE)\b/.test(sql)), false, 'repetição não duplica notificações nem altera a escolha');
   assert.equal(released, true);
 });

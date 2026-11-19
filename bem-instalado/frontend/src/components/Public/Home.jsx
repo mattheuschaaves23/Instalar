@@ -24,7 +24,7 @@ import { RequestDetails, RequestReview } from './RequestStages';
 import RequestLocationMap from './RequestLocationMap';
 import ApprovedRequestIcon from './RequestIcon';
 import RequestManualAddress from './RequestManualAddress';
-import { EMPTY_MANUAL_ADDRESS, addressSearchKey, isPostalQuery, manualAddressFromLocation, manualAddressFromQuery, buildManualLocation, postalDigits } from '../../utils/requestAddress';
+import { EMPTY_MANUAL_ADDRESS, addressSearchKey, isPostalQuery, manualAddressFromLocation, manualAddressFromQuery, buildManualLocation, postalDigits, validateManualAddress } from '../../utils/requestAddress';
 import { getPreciseBrowserPosition, describeGpsAddress, manualAddressFromGps } from '../../utils/requestGeolocation';
 
 const AUTO_LOCATION_SESSION_KEY = 'papelperto_client_location_checked';
@@ -1038,9 +1038,12 @@ export default function Home() {
     setRequestContact((current) => ({ ...current, [field]: value }));
   };
 
-  const selectLocationOption = (location, { accuracy = null } = {}) => {
+  const selectLocationOption = (location, { accuracy = null, confirmed = false } = {}) => {
     const state = String(location.state || '').toUpperCase();
     const gps = location.source === 'gps';
+    const address = gps && !confirmed ? manualAddressFromGps(location) : manualAddressFromLocation(location);
+    address.state = state;
+    const complete = !validateManualAddress(address);
     const displayName = location.displayName ||
         [location.addressReference, location.neighborhood, location.city, state]
           .filter(Boolean)
@@ -1048,11 +1051,11 @@ export default function Home() {
 
     setServiceRequest((current) => ({
       ...current,
-      city: location.city || current.city,
-      state: state || current.state,
+      city: location.city || '',
+      state,
       neighborhood: location.neighborhood || '',
       zipCode: location.zipCode || '',
-      addressReference: gps ? location.street || '' : location.addressReference || displayName,
+      addressReference: location.addressReference || location.street || '',
     }));
     setLocationQuery(displayName);
     setConfirmedLocationQuery(displayName);
@@ -1062,18 +1065,19 @@ export default function Home() {
       longitude: location.longitude == null ? null : Number(location.longitude),
       label: location.label || displayName,
       city: location.city || '',
+      street: location.street || '',
       state,
       neighborhood: location.neighborhood || '',
       source: location.source || 'search',
     });
     setLocationOptions([]);
     setLocationSuggestionsOpen(false);
-    setLocationLoadError('');
+    setLocationLoadError(complete ? '' : 'Encontramos a região. Informe a rua ou uma referência do local para continuar.');
     setActiveLocationOption(-1);
     setLocationRegionHint({ city: location.city || '', state });
-    setManualAddress(gps
-      ? manualAddressFromGps(location)
-      : manualAddressFromLocation(location));
+    setManualAddress(address);
+    if (!complete) setManualLocation(true);
+    return complete;
   };
 
   const loadRequestInterests = useCallback(async (request = publishedRequest) => {
@@ -1833,9 +1837,9 @@ export default function Home() {
   const handleGuidedLocationContinue = async () => {
     if (manualLocation) {
       try {
-        const address = buildManualLocation(manualAddress);
+        const address = buildManualLocation(manualAddress, guidedLocationTarget);
         cancelLocationOperation();
-        selectLocationOption(address);
+        selectLocationOption(address, { accuracy: guidedLocationAccuracy, confirmed: true });
         setManualLocation(false);
         setRequestStep((current) => Math.min(current + 1, LAST_REQUEST_STEP));
       } catch (error) {
@@ -1848,6 +1852,8 @@ export default function Home() {
       confirmedLocationQuery &&
       serviceRequest.city.trim() && serviceRequest.state.trim()
     ) {
+      const error = validateManualAddress(manualAddress);
+      if (error) { setManualLocation(true); setLocationLoadError(error); return; }
       setRequestStep((current) => Math.min(current + 1, LAST_REQUEST_STEP));
       return;
     }
@@ -1876,8 +1882,7 @@ export default function Home() {
       if (controller.signal.aborted) return;
       const options = response.data?.suggestions || [];
       if (options.length === 1) {
-        selectLocationOption(options[0]);
-        setRequestStep((current) => Math.min(current + 1, LAST_REQUEST_STEP));
+        if (selectLocationOption(options[0])) setRequestStep((current) => Math.min(current + 1, LAST_REQUEST_STEP));
       } else {
         setLocationOptions(options);
         setLocationSuggestionsOpen(options.length > 0);

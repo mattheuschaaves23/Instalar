@@ -11,6 +11,7 @@ const { validateUploadFile } = require('../utils/uploadValidation');
 const { expireOpenServiceRequests } = require('../utils/serviceRequestLifecycle');
 const { getOpportunityListing, normalizeListingOptions } = require('../services/opportunityListing');
 const { getInstallerReadiness, normalizeBrazilianWhatsApp } = require('../utils/installerEligibility');
+const { BRAZIL_STATES } = require('../utils/postalAddress');
 const {
   getInstallerPlanAccess,
   isLimitReached,
@@ -40,6 +41,7 @@ function normalizeOptionalEmail(value) {
 
 function normalizeCoordinate(value, min, max) {
   if (value === null || value === undefined || value === '') return null;
+  if (!['number', 'string'].includes(typeof value) || !String(value).trim()) return null;
   const number = Number(value);
   return Number.isFinite(number) && number >= min && number <= max ? number : null;
 }
@@ -205,6 +207,7 @@ function buildClientMessage(installer, request) {
 function serializeOpportunity(row) {
   const selectedByMe = row.selected_by_me !== undefined ? Boolean(row.selected_by_me) : row.my_interest_status === 'selected';
   const interestedByMe = Boolean(row.interested_by_me || row.my_interest_status);
+  const openForInterest = row.status === 'open' && (!row.expires_at || new Date(row.expires_at) > new Date());
 
   return {
     id: row.id,
@@ -240,9 +243,9 @@ function serializeOpportunity(row) {
     photo_names: row.photo_names || [],
     photo_urls: row.photo_urls || [],
     status: row.status,
-    can_contact_on_interest: Boolean(row.whatsapp_contact_consent_at && row.status === 'open'
+    can_contact_on_interest: Boolean(row.whatsapp_contact_consent_at && openForInterest
       && normalizeBrazilianWhatsApp(row.client_phone)),
-    interest_whatsapp_url: row.my_interest_status === 'interested' && !selectedByMe && row.status === 'open'
+    interest_whatsapp_url: row.my_interest_status === 'interested' && !selectedByMe && openForInterest
       && row.whatsapp_contact_consent_at ? row.interest_whatsapp_url || null : null,
     interested_by_me: interestedByMe,
     selected_by_me: selectedByMe,
@@ -400,9 +403,9 @@ exports.createPublicServiceRequest = async (req, res) => {
     const service = normalizeText(req.body.service, 60);
     const serviceLabel = normalizeOptionalText(req.body.service_label, 120);
     const city = normalizeOptionalText(req.body.city, 120);
-    const state = normalizeState(req.body.state);
-    let latitude = normalizeCoordinate(req.body.latitude, -90, 90);
-    let longitude = normalizeCoordinate(req.body.longitude, -180, 180);
+    const state = normalizeText(req.body.state, 120).toUpperCase();
+    const latitude = normalizeCoordinate(req.body.latitude, -90, 90);
+    const longitude = normalizeCoordinate(req.body.longitude, -180, 180);
     const rooms = normalizeRooms(req.body.rooms || req.body.room);
     const photoNames = normalizePhotoNames(req.body.photo_names);
     const photoUrls = normalizePhotoUrls(req.body.photo_urls);
@@ -431,8 +434,12 @@ exports.createPublicServiceRequest = async (req, res) => {
       return res.status(400).json({ error: 'Escolha o tipo de serviço antes de publicar.' });
     }
 
-    if (!city && !state) {
-      return res.status(400).json({ error: 'Informe cidade ou estado para direcionar a oportunidade.' });
+    if (!city || city.length < 2 || !BRAZIL_STATES.has(state)) {
+      return res.status(400).json({ error: 'Informe a cidade e selecione um estado válido para direcionar o pedido.', code: 'INVALID_REQUEST_REGION' });
+    }
+    const hasCoordinate = (value) => value !== null && value !== undefined && value !== '';
+    if ((hasCoordinate(req.body.latitude) || hasCoordinate(req.body.longitude)) && (latitude === null || longitude === null)) {
+      return res.status(400).json({ error: 'Não foi possível confirmar o ponto no mapa. Selecione o endereço novamente ou informe-o manualmente.', code: 'INVALID_REQUEST_COORDINATES' });
     }
 
     if (!privacyConsent) {
@@ -442,17 +449,8 @@ exports.createPublicServiceRequest = async (req, res) => {
       });
     }
 
-    if ((latitude === null || longitude === null) && city) {
-      try {
-        const locations = await forwardGeocode(`${city}, ${state || ''}, Brasil`, 1);
-        if (locations[0]) {
-          latitude = locations[0].latitude;
-          longitude = locations[0].longitude;
-        }
-      } catch (_error) {
-        // O pedido continua publicavel usando cidade e estado como alternativa.
-      }
-    }
+    // Manual/CEP addresses remain publishable without a map. Do not substitute
+    // a city centre for the installation point or wait for another map lookup.
 
     const result = await pool.query(
       `
@@ -1039,7 +1037,7 @@ exports.selectServiceRequestInterest = async (req, res) => {
       return res.status(404).json({ error: 'Solicitação não encontrada.' });
     }
 
-    if (!['open', 'selected'].includes(request.status) || (request.expires_at && new Date(request.expires_at) <= new Date())) {
+    if (!['open', 'selected'].includes(request.status) || (request.status === 'open' && request.expires_at && new Date(request.expires_at) <= new Date())) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Este pedido já foi encerrado e não aceita seleção.' });
     }

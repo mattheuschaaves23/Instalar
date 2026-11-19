@@ -38,7 +38,7 @@ export function validateManualAddress(address) {
   return '';
 }
 
-export function buildManualLocation(address) {
+export function buildManualLocation(address, point = null) {
   const error = validateManualAddress(address);
   if (error) throw new Error(error);
   const street = address.street.trim();
@@ -47,7 +47,17 @@ export function buildManualLocation(address) {
   const reference = [street, String(address.number || '').trim(), String(address.complement || '').trim()].filter(Boolean).join(', ');
   const digits = postalDigits(address.zipCode);
   const zipCode = digits ? `${digits.slice(0, 5)}-${digits.slice(5)}` : '';
-  return { latitude: null, longitude: null, source: 'manual', precision: 'manual',
+  // Number/complement edits do not move a verified point. A changed street or
+  // city must never inherit coordinates from the previous installation.
+  const sameText = (left, right) => String(left || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('pt-BR')
+    === String(right || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('pt-BR');
+  const validCoordinate = (value, limit) => ['number', 'string'].includes(typeof value)
+    && String(value).trim() !== '' && Number.isFinite(Number(value)) && Math.abs(Number(value)) <= limit;
+  const keepPoint = point && ['gps', 'search', 'photon'].includes(point.source)
+    && point.street && sameText(street, point.street) && sameText(city, point.city) && address.state === point.state
+    && validCoordinate(point.latitude, 90) && validCoordinate(point.longitude, 180);
+  return { latitude: keepPoint ? Number(point.latitude) : null, longitude: keepPoint ? Number(point.longitude) : null,
+    source: keepPoint ? point.source : 'manual', precision: keepPoint ? 'street' : 'manual',
     street, houseNumber: String(address.number || '').trim(), complement: String(address.complement || '').trim(), addressReference: reference, label: reference,
     city, state: address.state, neighborhood, zipCode,
     displayName: [reference, neighborhood, city, address.state, zipCode].filter(Boolean).join(', ') };
