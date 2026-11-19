@@ -44,6 +44,12 @@ describe('documentos legais atuais', () => {
     expect(document.title).toContain('Excluir conta');
     expect(document.head.querySelector('link[rel="canonical"]').href).toBe(`${window.location.origin}/excluir-conta`);
   });
+  it.each(['privacy', 'terms', 'deletion'])('a logo é legível no fundo escuro fixo, mesmo com tema global claro: %s', (type) => {
+    document.documentElement.dataset.siteTheme = 'light';
+    if (type === 'deletion') render(<MemoryRouter><AccountDeletionPage /></MemoryRouter>);
+    else open(type);
+    expect(screen.getByRole('img', { name: 'Logo InstalarPro' }).getAttribute('data-brand-surface')).toBe('dark');
+  });
 });
 
 describe('domínio público dos documentos', () => {
