@@ -16,4 +16,4 @@ Disallow: /cliente/pedido
 Disallow: /instalador/
 Disallow: /auth/
 
-Sitemap: https://instalar-sigma.vercel.app/sitemap.xml
+Sitemap: https://instalarpro.com.br/sitemap.xml
