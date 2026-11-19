@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import BrandWordmark from '../Layout/BrandWordmark';
+import PageMetadata from './PageMetadata';
 
 const deletionSections = [
   [
@@ -27,6 +28,8 @@ const deletionSections = [
 export default function AccountDeletionPage() {
   return (
     <main className="legal-page">
+      <PageMetadata title="Excluir conta e dados | InstalarPro" canonicalPath="/excluir-conta"
+        description="Saiba como excluir sua conta e solicitar a remoção dos seus dados no InstalarPro." />
       <header className="legal-page-header">
         <Link aria-label="InstalarPro - início" className="legal-page-brand" to="/">
           <BrandWordmark className="legal-page-wordmark" size="sm" />

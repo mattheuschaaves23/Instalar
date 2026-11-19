@@ -5,10 +5,10 @@ Este diretório reúne os textos, declarações e imagens para publicar o aplica
 
 ## Links públicos
 
-- Site: https://instalar-sigma.vercel.app
-- Suporte: https://instalar-sigma.vercel.app/instalador/entrar
-- Política de Privacidade: https://instalar-sigma.vercel.app/privacidade
-- Exclusão de conta: https://instalar-sigma.vercel.app/excluir-conta
+- Site: https://instalarpro.com.br
+- Suporte: https://instalarpro.com.br/instalador/entrar
+- Política de Privacidade: https://instalarpro.com.br/privacidade
+- Exclusão de conta: https://instalarpro.com.br/excluir-conta
 - E-mail: instalaproo@gmail.com
 
 ## Imagens prontas

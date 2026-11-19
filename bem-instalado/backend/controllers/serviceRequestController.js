@@ -18,7 +18,7 @@ const {
   upgradeRequired,
 } = require('../services/planAccess');
 
-const CURRENT_TERMS_VERSION = '2026-08-06';
+const { consentVersion: CURRENT_TERMS_VERSION } = require('../../shared/legalDocuments.json');
 
 function normalizeText(value, maxLength = 160) {
   return String(value || '').trim().slice(0, maxLength);

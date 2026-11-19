@@ -6,8 +6,8 @@
 - Subtítulo: `Seu trabalho mais organizado`
 - Categoria primária sugerida: `Negócios`
 - Categoria secundária sugerida: `Produtividade`
-- Política de Privacidade: `https://instalar-sigma.vercel.app/privacidade`
-- URL de suporte: `https://instalar-sigma.vercel.app`
+- Política de Privacidade: `https://instalarpro.com.br/privacidade`
+- URL de suporte: `https://instalarpro.com.br`
 - Copyright: `2026 InstalaPro`
 
 ## Texto promocional
@@ -56,7 +56,7 @@ com Google não é exibido, portanto o app não depende de login social de terce
 
 A exclusão definitiva está em `Configurações > Exclusão da conta`. A assinatura
 recorrente vinculada é cancelada antes da remoção. A página pública do processo é:
-`https://instalar-sigma.vercel.app/excluir-conta`.
+`https://instalarpro.com.br/excluir-conta`.
 
 Criar uma conta exclusiva para análise, aprovada e com acesso liberado por pelo
 menos 30 dias. Informar usuário e senha somente no App Store Connect.

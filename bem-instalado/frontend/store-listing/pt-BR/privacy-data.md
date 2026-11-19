@@ -8,7 +8,7 @@ declaração.
 
 - Os dados são criptografados em trânsito: `Sim` (HTTPS).
 - O usuário pode solicitar exclusão: `Sim`.
-- URL de exclusão: `https://instalar-sigma.vercel.app/excluir-conta`.
+- URL de exclusão: `https://instalarpro.com.br/excluir-conta`.
 - Conta obrigatória: `Sim`, conta profissional de instalador.
 - Anúncios: `Não`.
 

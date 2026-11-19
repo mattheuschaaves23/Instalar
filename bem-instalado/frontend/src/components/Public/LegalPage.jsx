@@ -1,16 +1,21 @@
 import { Link } from 'react-router';
 import BrandWordmark from '../Layout/BrandWordmark';
-
-const UPDATED_AT = '24 de agosto de 2026';
+import PageMetadata from './PageMetadata';
+import legalDocuments from '../../../../shared/legalDocuments.json';
 
 const privacySections = [
-  ['1. Quais dados usamos', 'Coletamos os dados informados no cadastro e no pedido, como nome, telefone, e-mail, cidade, endereço aproximado ou completo, fotos do ambiente e preferências do serviço. Para instaladores, também tratamos dados profissionais, documentos de verificação, certificado e portfólio.'],
-  ['2. Por que usamos esses dados', 'Usamos os dados para criar e acompanhar pedidos, indicar profissionais da região, permitir contato conforme sua autorização, verificar perfis, prevenir fraude, prestar suporte e manter a segurança da plataforma.'],
-  ['3. Compartilhamento', 'Serviço, medidas, fotos e região aproximada são exibidos a instaladores elegíveis para que decidam se desejam atender. Se você autorizar ao publicar o pedido, instaladores que registrarem interesse poderão usar o número informado para conversar pelo WhatsApp. O e-mail, endereço completo e referência são liberados ao instalador escolhido pelo cliente. Também podemos usar provedores de hospedagem, banco de dados, e-mail e armazenamento, limitados à operação do serviço.'],
-  ['4. Localização', 'A localização do navegador é usada somente com sua permissão. Como o GPS pode variar, mostramos o endereço encontrado para você revisar e corrigir antes de publicar. A busca por cidade também pode ser preenchida manualmente.'],
-  ['5. Armazenamento e segurança', 'Pedidos, contas e registros de segurança são mantidos em banco de dados protegido. Identificadores de acompanhamento ficam no navegador para você retomar o pedido. Fotos e certificados usam armazenamento próprio de arquivos, com limites de formato e tamanho.'],
-  ['6. Prazo e exclusão', 'Mantemos os dados pelo período necessário para prestar o serviço, cumprir obrigações legais e tratar disputas. A conta pode ser excluída diretamente nas configurações. Assinaturas recorrentes são canceladas antes da exclusão e registros financeiros obrigatórios podem ser conservados pelo prazo legal.'],
-  ['7. Seus direitos pela LGPD', 'Você pode confirmar o tratamento, acessar e corrigir dados, pedir anonimização ou exclusão de dados desnecessários e revogar consentimentos. Para exercer esses direitos, use o suporte da plataforma ou o canal informado na sua conta.'],
+  ['1. A quem esta política se aplica', 'Esta política abrange clientes, instaladores e visitantes do site instalarpro.com.br e os recursos da plataforma utilizados pelo aplicativo InstalarPro. Links antigos dos documentos legais são direcionados ao domínio atual. Serviços externos, como WhatsApp, Google e lojas parceiras, também têm suas próprias políticas.'],
+  ['2. Dados que você informa', 'Tratamos nome, telefone, e-mail, cidade, estado e os dados necessários ao cadastro e ao pedido: rua ou referência, número e complemento quando informados, CEP, bairro, medidas, prazo, observações e fotos do ambiente. Para instaladores, há dados profissionais, perfil, portfólio, agenda, orçamentos, documentos e certificados enviados. O certificado é opcional para demonstrar interesse; os dados essenciais são nome, telefone, cidade, estado e e-mail confirmado. Não envie dados sensíveis, documentos de terceiros ou fotos com pessoas identificáveis sem necessidade e autorização adequada.'],
+  ['3. Conta, suporte e assinatura', 'Quando você escolhe entrar com Google, recebemos os dados de identificação autorizados pelo provedor, como nome e e-mail; não recebemos sua senha do Google. Também tratamos mensagens de suporte, avaliações e dados dos serviços acompanhados. Na contratação de assinatura, dados cadastrais e de cobrança, inclusive CPF/CNPJ quando necessário, são encaminhados à Asaas. O pagamento ocorre no ambiente do provedor; não solicitamos a senha da sua conta bancária. Instaladores que cadastram clientes e orçamentos devem usar apenas dados necessários e possuir uma base legal para esse cadastro.'],
+  ['4. Finalidades e bases legais', 'Usamos os dados necessários para criar contas, organizar pedidos, aproximar profissionais da região, apresentar propostas, agendar, prestar suporte e executar a relação contratual ou os procedimentos solicitados antes da contratação. Obrigações legais podem exigir registros específicos. Segurança, prevenção de fraude e defesa de direitos podem fundamentar tratamentos necessários, observados os direitos dos titulares e a legislação aplicável. Recursos opcionais, como localização do dispositivo, contato prévio por WhatsApp e notificações, dependem das escolhas e permissões informadas a você; quando a base legal for consentimento, ele pode ser revogado.'],
+  ['5. Quem vê seu pedido e seu contato', 'Instaladores elegíveis podem ver serviço, medidas, prazo, observações, fotos e região do pedido, como bairro, cidade e estado. Evite incluir telefone, e-mail, documentos ou endereço completo nas fotos e observações, pois esses campos ficam visíveis aos profissionais elegíveis. O e-mail e o endereço completo ou referência são liberados ao instalador escolhido pelo cliente. Equipes autorizadas de operação e suporte podem acessar os dados necessários às suas funções.'],
+  ['6. WhatsApp: autorização e envio manual', 'Ao publicar, você pode autorizar separadamente que instaladores interessados tenham acesso ao número informado para entrar em contato sobre o pedido. Sem essa autorização, o contato fica reservado ao profissional escolhido. Ao tocar em “Tenho interesse”, o instalador pode abrir o próprio WhatsApp com uma mensagem preenchida, suas informações e o link do perfil. A plataforma não envia a mensagem automaticamente: o instalador decide se a envia. Conversas realizadas no WhatsApp estão sujeitas às regras desse serviço e às ações dos participantes. Para revogar o contato prévio, solicite pelo canal de privacidade; a revogação não apaga mensagens nem informações já recebidas legitimamente por terceiros.'],
+  ['7. Localização e mapas', '“Minha localização” pede permissão do navegador ou dispositivo. As coordenadas obtidas são enviadas à plataforma e ao serviço Photon, baseado em dados OpenStreetMap, para procurar a rua. A busca digitada pode consultar Photon, ViaCEP e BrasilAPI; o mapa incorporado é fornecido pelo OpenStreetMap. Esses serviços recebem os dados necessários à consulta e, em conexões diretas do seu navegador, dados técnicos da conexão. GPS e mapas podem ser imprecisos: confira e corrija o endereço antes de publicar. Você pode recusar a localização e informar o endereço manualmente, sem depender do mapa. A plataforma não precisa acompanhar sua localização continuamente em segundo plano para esse fluxo.'],
+  ['8. Perfil e conteúdo profissional', 'Dados e conteúdos definidos para apresentação profissional, como nome de exibição, cidade, descrição, fotos, portfólio, avaliações e disponibilidade, podem ser vistos pelos clientes conforme as regras de publicação do perfil. Um cliente vinculado a um pedido também pode consultar o perfil do instalador que demonstrou interesse, mesmo quando ele não aparece na busca pública. Não publique no portfólio informações de clientes, imagens de imóveis ou documentos sem a autorização ou outra base legal necessária.'],
+  ['9. Cookies, armazenamento local e notificações', 'Usamos cookies e recursos de armazenamento do navegador ou aplicativo para sessão, segurança, preferências de aparência e retomada de pedidos. O link ou código de acompanhamento permite acessar o pedido: não o divulgue publicamente. Bloquear ou apagar esse armazenamento pode encerrar sua sessão ou impedir a retomada local, sem apagar os dados mantidos na plataforma. Se você ativar notificações, tratamos os identificadores necessários do dispositivo ou da assinatura de notificação; você pode retirar a permissão nas configurações do navegador ou sistema.'],
+  ['10. Fornecedores e dados técnicos', 'A operação utiliza Vercel para hospedagem e arquivos, Neon/PostgreSQL para banco de dados e provedores de e-mail para comunicações da conta e do serviço. Conforme a configuração e o recurso usado, Google, Asaas, Cloudflare Turnstile, Sentry, Better Stack e Firebase podem atuar em autenticação, cobrança, prevenção de abuso, diagnóstico, disponibilidade e notificações. Podem ser tratados IP, informações do navegador/dispositivo, horários, identificadores de conta e registros de falhas. Há medidas para reduzir dados pessoais em diagnósticos; evite incluir segredos ou documentos em relatos de erro. Alguns fornecedores podem processar dados fora do Brasil; essas operações estão sujeitas às regras de transferência internacional da LGPD e aos contratos aplicáveis. Você pode pedir informações sobre o compartilhamento pelo canal de privacidade.'],
+  ['11. Conservação, exclusão e segurança', 'Conservamos dados enquanto necessários ao serviço, às finalidades informadas, ao cumprimento de obrigações legais ou à defesa de direitos. O vencimento de um pedido não significa sua exclusão imediata. A conta pode ser excluída nas Configurações; pessoas sem acesso podem solicitar pelo e-mail de privacidade, mediante confirmação proporcional de identidade. Antes da exclusão, assinaturas recorrentes precisam ser canceladas; uma falha nessa etapa pode impedir a conclusão até a regularização. Registros que precisem ser conservados por lei ou disputa podem permanecer pelo período necessário, inclusive nos provedores. Usamos controles de acesso, HTTPS e validações de segurança, mas nenhum serviço oferece garantia absoluta contra incidentes.'],
+  ['12. Seus direitos e alterações desta política', 'Você pode solicitar confirmação e acesso, correção, informação sobre compartilhamento, anonimização, bloqueio ou eliminação de dados desnecessários ou irregulares, portabilidade nos termos da regulamentação e eliminação dos dados tratados com consentimento, ressalvadas as hipóteses legais de conservação. Pode revogar consentimento, conhecer as consequências de não fornecê-lo e apresentar oposição nas hipóteses legais. As solicitações são gratuitas e respondidas nos prazos aplicáveis; podemos pedir confirmação de identidade para proteger seus dados. Se não conseguir resolver com a plataforma, você pode procurar a Autoridade Nacional de Proteção de Dados (ANPD) e os órgãos competentes. Mudanças relevantes serão informadas pelos canais disponíveis, especialmente quando afetarem tratamentos sujeitos a consentimento. A versão atual fica indicada nesta página.'],
 ];
 
 const termsSections = [
@@ -31,9 +36,12 @@ export default function LegalPage({ type }) {
   const intro = isPrivacy
     ? 'Esta política explica, de forma direta, como o InstalarPro trata dados de clientes e instaladores.'
     : 'Estas regras definem o uso do InstalarPro por clientes, instaladores e administradores.';
+  const documentVersion = isPrivacy ? legalDocuments.privacy : legalDocuments.terms;
 
   return (
     <main className="legal-page">
+      <PageMetadata title={`${isPrivacy ? 'Política de Privacidade' : 'Termos de Uso'} | InstalarPro`}
+        description={intro} canonicalPath={isPrivacy ? '/privacidade' : '/termos'} />
       <header className="legal-page-header">
         <Link aria-label="InstalarPro - início" className="legal-page-brand" to="/">
           <BrandWordmark className="legal-page-wordmark" size="sm" />
@@ -45,7 +53,12 @@ export default function LegalPage({ type }) {
         <p className="legal-page-eyebrow">TRANSPARÊNCIA E SEGURANÇA</p>
         <h1>{title}</h1>
         <p className="legal-page-intro">{intro}</p>
-        <p className="legal-page-version">Versão 2026-08-24 · atualizada em {UPDATED_AT}</p>
+        <p className="legal-page-version">Versão {documentVersion.version} · atualizada em {documentVersion.updatedAt}</p>
+        {isPrivacy ? <>
+          <p><strong>Responsável pelo tratamento:</strong> {legalDocuments.controller.name} · CNPJ {legalDocuments.controller.cnpj}.</p>
+          <p>Site oficial: <a href={legalDocuments.publicOrigin}>instalarpro.com.br</a>.</p>
+          <p className="legal-page-note">Nesta atualização: identificação da empresa, domínio oficial, endereço por GPS/CEP, envio manual pelo WhatsApp, fornecedores e formas de exercer seus direitos.</p>
+        </> : null}
 
         <div className="legal-page-sections">
           {sections.map(([sectionTitle, body]) => (
@@ -60,7 +73,7 @@ export default function LegalPage({ type }) {
           <strong>Precisa falar sobre seus dados?</strong>
           <p>
             Instaladores podem usar a área de suporte. Clientes e pessoas sem acesso podem escrever para{' '}
-            <a href="mailto:instalaproo@gmail.com">instalaproo@gmail.com</a>.
+            <a href={`mailto:${legalDocuments.controller.email}`}>{legalDocuments.controller.email}</a>.
           </p>
         </aside>
 

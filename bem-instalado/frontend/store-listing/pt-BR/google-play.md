@@ -6,8 +6,8 @@
 - Descrição curta: `Pedidos, agenda, clientes e orçamentos para instaladores profissionais.`
 - Categoria sugerida: `Negócios`
 - E-mail de suporte: `instalaproo@gmail.com`
-- Política de Privacidade: `https://instalar-sigma.vercel.app/privacidade`
-- Exclusão de conta: `https://instalar-sigma.vercel.app/excluir-conta`
+- Política de Privacidade: `https://instalarpro.com.br/privacidade`
+- Exclusão de conta: `https://instalarpro.com.br/excluir-conta`
 - Contém anúncios: `Não`
 - Público-alvo: `18 anos ou mais`
 

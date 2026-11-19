@@ -1,0 +1,11 @@
+{
+  "publicOrigin": "https://instalarpro.com.br",
+  "consentVersion": "2026-11-19",
+  "privacy": { "version": "2026-11-19", "updatedAt": "19 de novembro de 2026" },
+  "terms": { "version": "2026-08-24", "updatedAt": "24 de agosto de 2026" },
+  "controller": {
+    "name": "BEM INSTALADO HOME DECOR LTDA",
+    "cnpj": "55.445.091/0001-60",
+    "email": "instalaproo@gmail.com"
+  }
+}

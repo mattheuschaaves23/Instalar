@@ -31,6 +31,26 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/privacidade",
+      "has": [{ "type": "host", "value": "instalar-sigma.vercel.app" }],
+      "destination": "https://instalarpro.com.br/privacidade",
+      "permanent": true
+    },
+    {
+      "source": "/termos",
+      "has": [{ "type": "host", "value": "instalar-sigma.vercel.app" }],
+      "destination": "https://instalarpro.com.br/termos",
+      "permanent": true
+    },
+    {
+      "source": "/excluir-conta",
+      "has": [{ "type": "host", "value": "instalar-sigma.vercel.app" }],
+      "destination": "https://instalarpro.com.br/excluir-conta",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/sitemap.xml",
