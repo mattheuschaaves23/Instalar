@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -6,6 +6,7 @@ import { formatCurrency } from '../../utils/formatters';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import PlanUsage from '../Subscription/PlanUsage';
 import ClientForm from '../Clients/ClientForm';
+import BudgetClientChoice from './BudgetClientChoice';
 import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import { installmentInfo, installmentAmountLabel, installmentConditionsLabel, paymentOptionsLabel } from '../../../../shared/installmentTerms.mjs';
 
@@ -135,6 +136,25 @@ function createEnvironment(name = '') {
   };
 }
 
+function requestEnvironments(draft) {
+  const rooms = draft?.direct_quote_details?.environments;
+  if (!Array.isArray(rooms) || !rooms.length) return [createEnvironment(draft?.rooms?.[0])];
+  return rooms.map((room) => ({
+    ...createEnvironment(room.name),
+    height: room.height ?? '',
+    width: room.width ?? '',
+    rolls_manual: room.rolls ?? '',
+    removal_included: room.removal === 'yes',
+  }));
+}
+
+function requestAddressLabel(draft) {
+  const { street, house_number: number } = draft.direct_quote_details || {};
+  const line = [street, number && `Nº ${number}`].filter(Boolean).join(', ');
+  return [line, draft.neighborhood, draft.city, draft.state, draft.zip_code && `CEP ${draft.zip_code}`, draft.address_reference]
+    .filter(Boolean).join(' • ');
+}
+
 function createStepState(isDone, isActive) {
   if (isActive) {
     return 'active';
@@ -178,11 +198,16 @@ function BudgetDraftLoader({ draftId }) {
 }
 
 function DraftRequestDetails({ draft }) {
-  const measurements = [draft.wall_size, draft.roll_count].filter(Boolean).join(' · ');
+  const measurements = draft.direct_quote_details?.environments?.map((room) => {
+    const values = [room.width && `${room.width} m de largura`, room.height && `${room.height} m de altura`,
+      room.rolls && `${room.rolls} rolo(s)`, room.removal === 'yes' && 'remoção solicitada'].filter(Boolean);
+    return values.length ? `${room.name}: ${values.join(', ')}` : null;
+  }).filter(Boolean).join(' · ') || [draft.wall_size, draft.roll_count].filter(Boolean).join(' · ');
   return (
     <section aria-label="Dados do pedido original" className="budget-modern-calculation-block grid gap-2 break-words p-4">
       <strong>Pedido #{draft.id} · {draft.service_label || 'Instalação de papel de parede'}</strong>
-      <p>{draft.place_label || 'Local'}: {[draft.address_reference, draft.neighborhood, draft.city, draft.state, draft.zip_code].filter(Boolean).join(' · ') || 'A confirmar com o cliente'}</p>
+      <p>{draft.place_label || 'Local'}: {requestAddressLabel(draft) || 'A confirmar com o cliente'}</p>
+      {draft.client_email ? <p>E-mail informado: {draft.client_email}</p> : null}
       <p>Ambientes: {draft.rooms?.join(', ') || 'Não informados'}</p>
       <p>Medidas e rolos: {draft.measurement_detail || measurements || 'Não informados'}</p>
       {draft.material_label ? <p>Material: {draft.material_label}</p> : null}
@@ -197,7 +222,12 @@ function BudgetEditor({ draft = null, draftId = null }) {
   const { isPro, refreshSubscription } = useSubscription();
   const [clients, setClients] = useState([]);
   const [clientId, setClientId] = useState('');
-  const [showClientForm, setShowClientForm] = useState(false);
+  const [clientFormMode, setClientFormMode] = useState(null);
+  const newClientTrigger = useRef(null);
+  const closeClientForm = () => {
+    setClientFormMode(null);
+    newClientTrigger.current?.focus({ preventScroll: true });
+  };
   const [activeStep, setActiveStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [pricingMode, setPricingMode] = useState('roll');
@@ -211,7 +241,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
   const [interestFreeInstallments, setInterestFreeInstallments] = useState(3);
   const [installmentInterestRate, setInstallmentInterestRate] = useState(0);
   const [upfrontPaymentTerms, setUpfrontPaymentTerms] = useState(createUpfrontPaymentTerms);
-  const [environments, setEnvironments] = useState(() => [createEnvironment(draft?.rooms?.[0])]);
+  const [environments, setEnvironments] = useState(() => requestEnvironments(draft));
 
   useEffect(() => {
     if (draft) return;
@@ -361,7 +391,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
     ? { name: draft.client_name, phone: draft.client_phone, email: draft.client_email }
     : clients.find((client) => Number(client.id) === Number(clientId));
   const selectedClientAddress = (draft
-    ? [draft.address_reference, draft.neighborhood, draft.city, draft.state, draft.zip_code].filter(Boolean).join(' • ')
+    ? requestAddressLabel(draft)
     : [
     [
       selectedClient?.street,
@@ -584,7 +614,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
 
           <div className="budget-modern-topbar-copy">
             <h1>{draft ? 'Completar orçamento' : 'Novo orçamento'}</h1>
-            <p>{draft ? 'Rascunho criado automaticamente quando o cliente escolheu você.' : 'Cliente, cálculo, resumo e envio — uma etapa por vez.'}</p>
+            <p>{draft ? (draft.is_direct ? 'Rascunho criado com os dados enviados pelo cliente pelo seu link.' : 'Rascunho criado automaticamente quando o cliente escolheu você.') : 'Cliente, cálculo, resumo e envio — uma etapa por vez.'}</p>
           </div>
 
           <span className="budget-modern-progress">Etapa {activeStep} de 4</span>
@@ -1010,7 +1040,9 @@ function BudgetEditor({ draft = null, draftId = null }) {
                   </button>
                   <button
                     className="budget-modern-client-choice-button"
-                    onClick={() => setShowClientForm(true)}
+                    aria-haspopup="dialog"
+                    onClick={() => setClientFormMode('choice')}
+                    ref={newClientTrigger}
                     type="button"
                   >
                     Novo cliente
@@ -1293,11 +1325,12 @@ function BudgetEditor({ draft = null, draftId = null }) {
           ) : null}
         </div>
       </form>
-      {showClientForm ? (
+      {clientFormMode === 'choice' ? <BudgetClientChoice onClose={closeClientForm} onSelect={setClientFormMode} /> : null}
+      {clientFormMode === 'quick' || clientFormMode === 'full' ? (
         <ClientForm
-          onClose={() => setShowClientForm(false)}
+          onClose={closeClientForm}
           onSaved={handleClientCreated}
-          quickCreate
+          quickCreate={clientFormMode === 'quick'}
         />
       ) : null}
     </section>

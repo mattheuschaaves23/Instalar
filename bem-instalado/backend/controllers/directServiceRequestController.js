@@ -7,6 +7,7 @@ const {
 const { BRAZIL_STATES } = require('../utils/postalAddress');
 const { consentVersion } = require('../../shared/legalDocuments.json');
 const linkContract = require('../../shared/installerClientLink.json');
+const { normalizeDirectQuoteDetails } = require('../utils/directQuoteDetails');
 
 const text = (value) => typeof value === 'string' ? value.trim() : '';
 const validId = (value) => Number.isInteger(value) && value > 0 && value <= 2147483647;
@@ -40,10 +41,13 @@ exports.create = async (req, res) => {
   const linkToken = readInstallerLinkToken(req);
 
   if (!validId(installerId) || req.userId === installerId) return res.status(400).json({ error: 'Escolha outro instalador para enviar o pedido.' });
-  if (name.length < 2 || name.length > 120 || !phone) return res.status(400).json({ error: 'Informe um nome e um WhatsApp brasileiro válido, com DDD.' });
+  const nameLimit = input.quote_details === undefined ? 120 : 100;
+  if (name.length < 2 || name.length > nameLimit || !phone) return res.status(400).json({ error: `Informe um nome de até ${nameLimit} caracteres e um WhatsApp brasileiro válido, com DDD.` });
   if (city.length < 2 || city.length > 120 || !BRAZIL_STATES.has(state)) return res.status(400).json({ error: 'Informe a cidade e selecione o estado da instalação.' });
   if (!details || details.length > 800) return res.status(400).json({ error: 'Descreva o que você precisa em até 800 caracteres.' });
   if (input.privacy_consent !== true) return res.status(400).json({ error: 'Confirme o envio dos seus dados apenas para este instalador.' });
+  const { value: quote, error: quoteError } = normalizeDirectQuoteDetails(input.quote_details);
+  if (quoteError) return res.status(400).json({ error: quoteError });
 
   let db;
   try {
@@ -58,10 +62,16 @@ exports.create = async (req, res) => {
     const { rows: [request] } = await db.query(
       `INSERT INTO service_requests (
          direct_installer_id, client_user_id, client_name, client_phone, city, state, details,
-         service, service_label, status, client_access_token, privacy_consent_at, terms_version
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'wallpaper', 'Instalação de papel de parede', 'direct_pending', $8, NOW(), $9)
+         service, service_label, status, client_access_token, privacy_consent_at, terms_version,
+         client_email, neighborhood, zip_code, address_reference, place_type, place_label,
+         material_status, material_label, rooms, direct_quote_details
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'wallpaper', 'Instalação de papel de parede', 'direct_pending', $8, NOW(), $9,
+         $10, $11, $12, $13, $14, $15, $16, $17, $18, $19::jsonb)
        RETURNING id, client_access_token, expires_at`,
-      [installerId, clientId, name, phone, city, state, details, crypto.randomBytes(24).toString('hex'), consentVersion],
+      [installerId, clientId, name, phone, city, state, details, crypto.randomBytes(24).toString('hex'), consentVersion,
+        quote?.clientEmail, quote?.neighborhood, quote?.zipCode, quote?.reference, quote?.placeType, quote?.placeLabel,
+        quote?.materialType, quote?.materialLabel, quote?.privateDetails.environments.map(({ name: room }) => room) || [],
+        quote ? JSON.stringify(quote.privateDetails) : null],
     );
     await db.query(
       `INSERT INTO notifications (user_id, title, message, type, read, action_path)

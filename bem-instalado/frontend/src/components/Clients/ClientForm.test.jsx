@@ -11,6 +11,13 @@ vi.mock('../../contexts/SubscriptionContext', () => ({
   useSubscription: () => ({ isPro: true, refreshSubscription: async () => null }),
 }));
 
+HTMLDialogElement.prototype.showModal ??= function showModal() { this.setAttribute('open', ''); };
+HTMLDialogElement.prototype.close ??= function close(value = '') {
+  this.returnValue = value;
+  this.removeAttribute('open');
+  this.dispatchEvent(new Event('close', { bubbles: true }));
+};
+
 beforeEach(() => {
   api.get.mockReset().mockImplementation(async (path) => {
     if (path === '/clients') return { data: [] };
@@ -31,6 +38,7 @@ afterEach(cleanup);
 it('começa o cálculo sem pedir CPF, telefone ou endereço para um novo orçamento manual', async () => {
   render(<MemoryRouter><BudgetForm /></MemoryRouter>);
   fireEvent.click(screen.getByRole('button', { name: 'Novo cliente' }));
+  fireEvent.click(screen.getByRole('button', { name: /Cadastrar cliente depois/ }));
   expect(screen.queryAllByLabelText(/CPF|Telefone|CEP/)).toHaveLength(0);
   fireEvent.change(screen.getByRole('textbox', { name: /nome do cliente/i }), { target: { value: '  Cliente avulso  ' } });
   fireEvent.click(screen.getByRole('button', { name: 'Salvar e continuar' }));

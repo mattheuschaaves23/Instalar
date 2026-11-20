@@ -184,7 +184,8 @@ async function findDraftRequest(db, budgetId, installerId, lock = false) {
   const { rows } = await db.query(
     `SELECT sr.id, sr.status, sr.client_name, sr.client_phone, sr.client_email, sr.city, sr.state,
             sr.neighborhood, sr.zip_code, sr.address_reference, sr.service_label, sr.place_label,
-            sr.rooms, sr.measurement_detail, sr.wall_size, sr.roll_count, sr.material_label, sr.details
+            sr.rooms, sr.measurement_detail, sr.wall_size, sr.roll_count, sr.material_label, sr.details,
+            sr.direct_quote_details, (sr.direct_installer_id IS NOT NULL) AS is_direct
        FROM service_requests sr
        JOIN budgets b ON b.source_service_request_id = sr.id
       WHERE b.id = $1 AND b.user_id = $2 AND b.status = 'draft'
@@ -199,9 +200,14 @@ async function attachDraftClient(db, installerId, request, planAccess) {
   const name = request.client_name.trim().slice(0, 100);
   const reference = request.address_reference || null;
   const email = request.client_email || null;
+  const street = request.direct_quote_details?.street || null;
+  const number = request.direct_quote_details?.house_number || null;
+  const address = street
+    ? buildServiceLocation({ ...request, street, house_number: number }).fullAddress
+    : reference;
   const values = [
     installerId, name, request.client_phone, email, request.city, request.state,
-    request.neighborhood, request.zip_code, reference,
+    request.neighborhood, request.zip_code, reference, street, number, address,
   ];
   // Match contact AND location, without replacing any saved client data.
   const existing = await db.query(
@@ -214,8 +220,9 @@ async function attachDraftClient(db, installerId, request, planAccess) {
         AND COALESCE(neighborhood, '') = COALESCE($7, '')
         AND COALESCE(zip_code, '') = COALESCE($8, '')
         AND COALESCE(address_reference, '') = COALESCE($9, '')
-        AND NULLIF(street, '') IS NULL AND NULLIF(house_number, '') IS NULL
-        AND COALESCE(address, '') = COALESCE($9, '')
+        AND COALESCE(street, '') = COALESCE($10, '')
+        AND COALESCE(house_number, '') = COALESCE($11, '')
+        AND COALESCE(address, '') = COALESCE($12, '')
       ORDER BY id LIMIT 1 FOR KEY SHARE`,
     values
   );
@@ -224,9 +231,9 @@ async function attachDraftClient(db, installerId, request, planAccess) {
 
   const created = await db.query(
     `INSERT INTO clients (
-       user_id, name, phone, email, city, state, neighborhood, zip_code, address_reference, address
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9) RETURNING id`,
-    values
+       user_id, name, phone, email, city, state, neighborhood, zip_code, address_reference, street, house_number, address, whatsapp
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
+    [...values, request.is_direct ? request.client_phone : null]
   );
   return created.rows[0].id;
 }

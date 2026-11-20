@@ -1,0 +1,28 @@
+.client-form-modal.budget-client-mode {
+  inset: 0;
+  width: min(31rem, calc(100% - 2rem));
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+}
+.budget-client-mode:not([open]) { display: none; }
+.budget-client-mode::backdrop { background: rgb(11 19 26 / 66%); }
+html:has(.budget-client-mode[open]) { overflow: hidden; }
+.budget-client-mode-options { display: grid; gap: .75rem; padding: 1rem; }
+.budget-client-mode-option {
+  display: grid;
+  gap: .3rem;
+  padding: .85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: .6rem;
+  background: transparent;
+  color: var(--text);
+  text-align: start;
+}
+.budget-client-mode-option:hover, .budget-client-mode-option:focus-visible { border-color: var(--site-accent); }
+.budget-client-mode-option:focus-visible { outline: 2px solid var(--site-accent); outline-offset: 2px; }
+.budget-client-mode-option span { color: var(--muted); font-size: .875rem; line-height: 1.4; }

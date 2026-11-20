@@ -1,0 +1,17 @@
+{
+  "maxEnvironments": 8,
+  "maxDimension": 100,
+  "maxRolls": 1000,
+  "places": {
+    "residential": "Casa ou apartamento",
+    "commercial": "Empresa ou loja",
+    "other": "Outro local"
+  },
+  "materials": {
+    "vinyl": "Papel vinílico",
+    "textured": "Personalizado",
+    "adhesive": "Adesivo",
+    "unknown": "Ainda não sei"
+  },
+  "removalOptions": ["yes", "no", "unknown"]
+}

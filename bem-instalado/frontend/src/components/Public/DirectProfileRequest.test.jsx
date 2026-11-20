@@ -7,6 +7,7 @@ import InstallerProfile from './InstallerProfile';
 import Profile from '../Profile/Profile';
 import Opportunities from '../Opportunities/Opportunities';
 import Notifications from '../Notifications/Notifications';
+import BudgetForm from '../Budgets/BudgetForm';
 
 const state = vi.hoisted(() => ({ user: null }));
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: state.user }) }));
@@ -38,7 +39,8 @@ const openOwner = () => render(<MemoryRouter initialEntries={['/profile#link-par
 
 // The browser e2e checks native modal behavior; jsdom needs only the open/close lifecycle.
 HTMLDialogElement.prototype.showModal ??= function showModal() { this.setAttribute('open', ''); };
-HTMLDialogElement.prototype.close ??= function close() {
+HTMLDialogElement.prototype.close ??= function close(value = '') {
+  this.returnValue = value;
   this.removeAttribute('open');
   this.dispatchEvent(new Event('close', { bubbles: true }));
 };
@@ -50,6 +52,7 @@ beforeEach(() => {
     if (url === '/users/profile') return { data: owner };
     if (url === '/users/client-link') return { data: { status: 'ready', url: shareUrl } };
     if (url === '/public/installers/42') return { data: { installer } };
+    if (url === '/clients') return { data: [] };
     if (url === '/opportunities') return { data: { opportunities: [opportunity], eligibility: { can_express_interest: false }, stats: { open: 1 } } };
     throw new Error('Unexpected GET');
   });
@@ -157,7 +160,10 @@ it('visitante envia só para o instalador do perfil e recebe o link privado de a
   expect(send.disabled).toBe(true);
   const entries = [
     ['Seu nome', 'Cliente visitante'], ['WhatsApp com DDD', '(48) 99999-0001'],
+    ['E-mail (opcional)', 'cliente@example.test'], ['Bairro', 'Centro'], ['Rua ou avenida', 'Rua de teste'], ['Número', '101'],
     ['Cidade da instalação', 'Curitiba'], ['Estado', 'PR'], ['O que você precisa?', 'Papel de parede na sala'],
+    ['Tipo de local', 'residential'], ['Tipo de papel', 'textured'], ['Nome do ambiente', 'Sala'],
+    ['Largura (m, opcional)', '3.5'], ['Altura (m, opcional)', '2.4'], ['Precisa remover papel antigo?', 'yes'],
   ];
   for (const [field, value] of entries) fireEvent.change(screen.getByLabelText(field), { target: { value } });
   fireEvent.click(screen.getByRole('button', { name: 'Confirmar verificação QA' }));
@@ -169,7 +175,61 @@ it('visitante envia só para o instalador do perfil e recebe o link privado de a
   expect(api.post).toHaveBeenCalledWith('/public/installers/42/direct-requests', {
     client_name: 'Cliente visitante', client_phone: '(48) 99999-0001', city: 'Curitiba', state: 'PR',
     details: 'Papel de parede na sala', privacy_consent: true, turnstile_token: 'qa-challenge',
+    quote_details: {
+      client_email: 'cliente@example.test', zip_code: '', street: 'Rua de teste', house_number: '101',
+      neighborhood: 'Centro', address_reference: '', place_type: 'residential', material_type: 'textured',
+      environments: [{ name: 'Sala', width: 3.5, height: 2.4, rolls: null, removal: 'yes' }],
+    },
   }, { headers: { 'X-Installer-Link-Token': inviteToken } });
+});
+
+it('busca o CEP no serviço existente e mantém o número informado pelo cliente', async () => {
+  const originalGet = api.get.getMockImplementation();
+  api.get.mockImplementation(async (url, config) => url === '/public/location/search'
+    ? { data: { zipCode: '80010-000', city: 'Curitiba', state: 'PR', street: 'Rua de teste', neighborhood: 'Centro' } }
+    : originalGet(url, config));
+  openProfile(sharePath);
+  fireEvent.click(await screen.findByRole('button', { name: 'Pedir orçamento a este instalador' }));
+  fireEvent.change(screen.getByLabelText('CEP (opcional)'), { target: { value: '80010-000' } });
+  fireEvent.change(screen.getByLabelText('Número'), { target: { value: '101' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Buscar pelo CEP' }));
+  await screen.findByText('Confira o endereço e preencha os campos que faltam.');
+  expect(screen.getByLabelText('Cidade da instalação').value).toBe('Curitiba');
+  expect(screen.getByLabelText('Rua ou avenida').value).toBe('Rua de teste');
+  expect(screen.getByLabelText('Número').value).toBe('101');
+});
+
+it.each([
+  ['Cadastrar cliente agora', 'Cadastrar cliente', 'Nome completo'],
+  ['Cadastrar cliente depois', 'Adicionar cliente ao orçamento', 'Nome do cliente'],
+])('oferece %s antes de abrir o formulário de cliente', async (option, dialogName, label) => {
+  render(<MemoryRouter><BudgetForm /></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button', { name: 'Novo cliente' }));
+  const choice = screen.getByRole('dialog', { name: 'Como você quer cadastrar o cliente?' });
+  fireEvent.click(within(choice).getByRole('button', { name: new RegExp(option) }));
+  const form = await screen.findByRole('dialog', { name: dialogName });
+  expect(within(form).getByLabelText(new RegExp(label))).toBeTruthy();
+  expect(screen.queryByRole('dialog', { name: 'Como você quer cadastrar o cliente?' })).toBeNull();
+});
+
+it('abre o cálculo com os ambientes e medidas do pedido, sem definir o preço', async () => {
+  api.get.mockResolvedValueOnce({ data: { request: {
+    id: 32, is_direct: true, client_name: 'Cliente de teste', client_email: 'cliente@example.test',
+    client_phone: '5548999990001', city: 'Curitiba', state: 'PR', neighborhood: 'Centro', rooms: ['Sala', 'Quarto'],
+    direct_quote_details: { street: 'Rua de teste', house_number: '101', environments: [
+      { name: 'Sala', width: 3.5, height: 2.4, rolls: 2, removal: 'yes' },
+      { name: 'Quarto', width: null, height: null, rolls: null, removal: 'unknown' },
+    ] },
+  } } });
+  render(<MemoryRouter initialEntries={['/budgets/18/complete']}><Routes>
+    <Route path="/budgets/:draftId/complete" element={<BudgetForm />} />
+  </Routes></MemoryRouter>);
+  expect((await screen.findAllByText(/Rua de teste, Nº 101/)).length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByRole('button', { name: 'Continuar para o cálculo' }));
+  expect(screen.getAllByLabelText('Ambiente', { exact: true }).map(({ value }) => value)).toEqual(['Sala', 'Quarto']);
+  expect(screen.getAllByLabelText('Largura (m)', { exact: true }).map(({ value }) => value)).toEqual(['3.5', '']);
+  expect(screen.getAllByLabelText('Altura (m)', { exact: true }).map(({ value }) => value)).toEqual(['2.4', '']);
+  expect(screen.getAllByLabelText('Rolos (opcional)', { exact: true }).map(({ value }) => value)).toEqual(['2', '']);
 });
 
 it('aceita o pedido direto no painel e abre o rascunho sem abrir WhatsApp', async () => {

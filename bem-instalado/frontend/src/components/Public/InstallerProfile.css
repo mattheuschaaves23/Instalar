@@ -454,7 +454,12 @@ html:has(.ig-direct-request[open]) { overflow: hidden; }
 .ig-direct-close { display: inline-grid; place-items: center; min-width: 44px; min-height: 44px; padding: .5rem; }
 .ig-direct-request :focus-visible { outline: 2px solid var(--ig-accent); outline-offset: 2px; }
 .ig-direct-request form, .ig-direct-fields { display: grid; gap: .85rem; }
-.ig-direct-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ig-direct-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; margin: 0; padding: .85rem; border: 1px solid var(--ig-line); border-radius: .7rem; }
+.ig-direct-fields > legend { padding-inline: .35rem; color: var(--ig-ink); font-size: .95rem; font-weight: 750; }
+.ig-direct-room { background: var(--ig-surface-soft); }
+.ig-direct-room > button { align-self: end; }
+.ig-direct-lookup { align-self: end; }
+.ig-direct-add-room { justify-self: start; }
 .ig-direct-fields label { display: grid; gap: .3rem; font-weight: 750; font-size: .85rem; }
 .ig-direct-fields :is(input, select, textarea) {
   width: 100%;

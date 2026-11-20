@@ -115,8 +115,13 @@ test('link Pro funciona com perfil oculto, limita o pedido a um instalador e res
       client_name: 'Cliente visitante QA', client_phone: '48999990001', city: 'Palhoça', state: 'SC',
       details: 'Instalação na sala', privacy_consent: true, turnstile_token: 'checked-by-qa',
     };
+    const quoteDetails = {
+      client_email: 'cliente@example.test', zip_code: '80010-000', neighborhood: 'Centro', street: 'Rua de teste',
+      house_number: '101', address_reference: 'Bloco B', place_type: 'residential', material_type: 'textured',
+      environments: [{ name: 'Sala', height: 2.4, width: 3.5, rolls: 2, removal: 'yes' }, { name: 'Quarto', removal: 'unknown' }],
+    };
     const send = (id, body = payload) => api(`/public/installers/${id}/direct-requests`, { method: 'POST', body, invite: id === installer ? invite : undefined });
-    const created = await send(installer, { ...payload, city: 'Curitiba', state: 'PR' });
+    const created = await send(installer, { ...payload, city: 'Curitiba', state: 'PR', quote_details: quoteDetails });
     assert.equal(created.status, 201, JSON.stringify(created.body));
     requestId = created.body.service_request.id;
     const token = created.body.service_request.client_access_token;
@@ -134,6 +139,9 @@ test('link Pro funciona com perfil oculto, limita o pedido a um instalador e res
     assert.equal(item?.is_direct, true);
     assert.equal(item.status, 'open');
     assert.equal(item.client_phone, null);
+    assert.equal(item.client_email, null);
+    assert.equal(item.address_reference, null);
+    assert.equal(item.direct_quote_details, undefined);
     assert.equal(item.can_contact_on_interest, false);
     const otherList = await api('/opportunities', { user: other });
     assert.equal(otherList.status, 200);
@@ -197,7 +205,31 @@ test('link Pro funciona com perfil oculto, limita o pedido a um instalador e res
     const draftAsOwner = await api(`/budgets/${draftId}/draft`, { user: installer });
     assert.equal(draftAsOwner.status, 200);
     assert.equal(draftAsOwner.body.request.client_phone, '5548999990001');
+    assert.equal(draftAsOwner.body.request.client_email, 'cliente@example.test');
+    assert.equal(draftAsOwner.body.request.material_label, 'Personalizado');
+    assert.deepEqual(draftAsOwner.body.request.rooms, ['Sala', 'Quarto']);
+    assert.deepEqual(draftAsOwner.body.request.direct_quote_details, {
+      street: 'Rua de teste', house_number: '101',
+      environments: [
+        { name: 'Sala', height: 2.4, width: 3.5, rolls: 2, removal: 'yes' },
+        { name: 'Quarto', height: null, width: null, rolls: null, removal: 'unknown' },
+      ],
+    });
     assert.equal((await api(`/budgets/${draftId}/draft`, { user: other })).status, 404);
+    const savedDraft = await api(`/budgets/${draftId}/draft`, {
+      user: installer, method: 'PUT',
+      body: { price_per_roll: 150, environments: [{ name: 'Sala', height: 2.4, width: 3.5, rolls_manual: 2 }] },
+    });
+    assert.equal(savedDraft.status, 200, JSON.stringify(savedDraft.body));
+    const savedClient = await pool.query(
+      'SELECT name, phone, whatsapp, email, street, house_number, neighborhood, zip_code, address_reference FROM clients WHERE id = $1',
+      [savedDraft.body.client_id],
+    );
+    assert.deepEqual(savedClient.rows[0], {
+      name: 'Cliente visitante QA', phone: '5548999990001', whatsapp: '5548999990001',
+      email: 'cliente@example.test', street: 'Rua de teste', house_number: '101', neighborhood: 'Centro',
+      zip_code: '80010000', address_reference: 'Bloco B',
+    });
 
     assert.equal((await api(visibilityPath, { ...publish, user: hidden })).status, 200);
     await pool.query("UPDATE users SET certificate_file = 'qa-certificate.pdf', certification_verified = TRUE WHERE id = $1", [installer]);
