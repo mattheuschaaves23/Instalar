@@ -76,7 +76,7 @@ test('PDF do orcamento mostra a data de Sao Paulo (instalacao as 22:00)', () => 
 });
 
 test('migration converte so as colunas de horario digitado e le o valor atual como Sao Paulo', () => {
-  const sql = fs.readFileSync(path.join(__dirname, '..', 'db', 'migrations', '021_wall_clock_timestamptz.sql'), 'utf8');
+  const sql = fs.readFileSync(path.join(__dirname, '..', 'db', 'migrations', '025_wall_clock_timestamptz.sql'), 'utf8');
   for (const pair of ['ALTER TABLE schedules', 'ALTER TABLE budgets', 'ALTER TABLE service_proposals', 'ALTER TABLE service_bookings']) {
     assert.ok(sql.includes(pair), pair);
   }
