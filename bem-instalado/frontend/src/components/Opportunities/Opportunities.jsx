@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import toast from 'react-hot-toast';
@@ -126,6 +126,9 @@ export function OpportunityDetail({ item, eligibility, sending, onInterest, onCl
 
 export default function Opportunities() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const rawId = params.get('pedido');
+  const linkedId = /^[1-9]\d{0,9}$/.test(rawId || '') && Number(rawId) <= 2147483647 ? rawId : null;
   const { refreshSubscription } = useSubscription();
   const [filters, setFilters] = useState(initialFilters);
   const [search, setSearch] = useState('');
@@ -140,11 +143,13 @@ export default function Opportunities() {
   const detailTitle = useRef(null);
   const lastCard = useRef(null);
   const tabRefs = useRef([]);
-  const filterKey = JSON.stringify({ ...filters, offset: 0 });
-  const loadKey = JSON.stringify([filters, refresh]);
+  const filterKey = JSON.stringify({ ...filters, linkedId, offset: 0 });
+  const loadKey = JSON.stringify([filters, linkedId, refresh]);
   const result = resultState.key === loadKey ? resultState : { ...resultState, loading: true, items: resultState.filterKey === filterKey ? resultState.items : [] };
   const tab = TABS.find((item) => item.value === filters.status);
-  const selected = selectedId === null ? null : result.items.find((item) => item.id === selectedId) || result.items[0] || null;
+  const selected = linkedId ? result.items.find((item) => String(item.id) === linkedId) || null
+    : selectedId === null ? null : result.items.find((item) => item.id === selectedId) || result.items[0] || null;
+  const showDetail = detailOpen || Boolean(linkedId);
   const filterCount = Number(Boolean(filters.place)) + Number(filters.photos);
   const hasSearch = Boolean(filters.q || filters.region || filterCount);
 
@@ -157,10 +162,12 @@ export default function Opportunities() {
     const controller = new AbortController();
     const [city, state] = filters.region.split('|');
     setResult((current) => ({ ...current, loading: true, error: null, items: current.filterKey === filterKey ? current.items : [] }));
-    api.get('/opportunities', { signal: controller.signal, params: { status: filters.status, q: filters.q, city, state, place: filters.place, photos: filters.photos ? 'true' : '', sort: filters.sort, offset: filters.offset, limit: 12 } })
+    api.get('/opportunities', { signal: controller.signal, params: linkedId
+      ? { status: 'all', request_id: linkedId, limit: 1 }
+      : { status: filters.status, q: filters.q, city, state, place: filters.place, photos: filters.photos ? 'true' : '', sort: filters.sort, offset: filters.offset, limit: 12 } })
       .then(({ data }) => {
         if (controller.signal.aborted) return;
-        setResult((current) => ({ key: loadKey, filterKey, items: filters.offset ? mergeOpportunityPage(current.items, data.opportunities || []) : data.opportunities || [], stats: data.stats || {}, regions: data.regions || [], total: data.pagination?.total ?? data.opportunities?.length ?? 0, hasMore: Boolean(data.pagination?.has_more), eligibility: data.eligibility || {}, loading: false, error: null }));
+        setResult((current) => ({ key: loadKey, filterKey, items: !linkedId && filters.offset ? mergeOpportunityPage(current.items, data.opportunities || []) : data.opportunities || [], stats: data.stats || {}, regions: data.regions || [], total: data.pagination?.total ?? data.opportunities?.length ?? 0, hasMore: Boolean(data.pagination?.has_more), eligibility: data.eligibility || {}, loading: false, error: null }));
       })
       .catch((error) => {
         if (controller.signal.aborted) return;
@@ -168,11 +175,11 @@ export default function Opportunities() {
         setResult((current) => ({ ...current, key: loadKey, loading: false, error: { code, message: error.response?.data?.error || 'Não foi possível carregar os pedidos. Tente novamente.' } }));
       });
     return () => controller.abort();
-  }, [filters, refresh, loadKey, filterKey]);
+  }, [filters, linkedId, refresh, loadKey, filterKey]);
   useEffect(() => {
-    if (detailOpen) detailTitle.current?.focus();
+    if (showDetail) detailTitle.current?.focus();
     else lastCard.current?.focus();
-  }, [detailOpen, selected?.id]);
+  }, [showDetail, selected?.id]);
 
   const changeFilter = (change) => {
     setFilters((current) => ({ ...current, ...change, offset: 0 }));
@@ -221,15 +228,15 @@ export default function Opportunities() {
   };
 
   return (
-    <div className="opp-workspace" data-detail-open={detailOpen && Boolean(selected)}>
+    <div className="opp-workspace" data-detail-open={showDetail && Boolean(selected)}>
       <header className="opp-heading">
-        <div><h1>Oportunidades</h1><p>Encontre seu próximo serviço na sua região.</p></div>
+        <div><h1>Oportunidades</h1><p>{linkedId ? `Pedido #${linkedId} aberto pela notificação.` : 'Encontre seu próximo serviço na sua região.'}</p></div>
         <div className="opp-heading-actions">
-          <Link className="opp-secondary" to="/profile#link-para-clientes">Link para clientes</Link>
+          <Link className="opp-secondary" to={linkedId ? '/opportunities' : '/profile#link-para-clientes'}>{linkedId ? 'Ver todos os pedidos' : 'Link para clientes'}</Link>
           <button className="opp-secondary" disabled={result.loading} onClick={reload} type="button"><OpportunityIcon name="refresh" />Atualizar</button>
         </div>
       </header>
-      <div className="opp-tabs" role="tablist" aria-label="Situação das oportunidades">{TABS.map((item, index) => <button key={item.value} ref={(node) => { tabRefs.current[index] = node; }} role="tab" id={'opp-tab-' + item.value} aria-selected={filters.status === item.value} aria-controls="opp-results" tabIndex={filters.status === item.value ? 0 : -1} type="button" onClick={() => changeTab(item.value)} onKeyDown={(event) => {
+      {linkedId ? null : <><div className="opp-tabs" role="tablist" aria-label="Situação das oportunidades">{TABS.map((item, index) => <button key={item.value} ref={(node) => { tabRefs.current[index] = node; }} role="tab" id={'opp-tab-' + item.value} aria-selected={filters.status === item.value} aria-controls="opp-results" tabIndex={filters.status === item.value ? 0 : -1} type="button" onClick={() => changeTab(item.value)} onKeyDown={(event) => {
         const next = event.key === 'ArrowRight' ? (index + 1) % TABS.length : event.key === 'ArrowLeft' ? (index + TABS.length - 1) % TABS.length : event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1 : null;
         if (next === null) return;
         event.preventDefault(); changeTab(TABS[next].value); tabRefs.current[next]?.focus();
@@ -242,15 +249,17 @@ export default function Opportunities() {
       {showFilters ? <div className="opp-more-filters" id="opp-more-filters"><label>Local da instalação<select value={filters.place} onChange={(event) => changeFilter({ place: event.target.value })}><option value="">Todos os locais</option><option value="residential">Casa ou apartamento</option><option value="commercial">Empresa ou loja</option><option value="other">Outro local</option></select></label><label className="opp-checkbox"><input type="checkbox" checked={filters.photos} onChange={(event) => changeFilter({ photos: event.target.checked })} />Somente pedidos com fotos</label>{hasSearch ? <button type="button" className="opp-text-button" onClick={clearFilters}>Limpar filtros</button> : null}</div> : null}
       <PlanUsage compact className="opp-plan-usage" usageKey="monthly_interests" />
       {result.eligibility.message ? <div className="opp-readiness"><p>{result.eligibility.message}</p><Link to={result.eligibility.requirement_code === 'FREE_INTEREST_LIMIT' ? '/subscription' : '/profile'}>{result.eligibility.requirement_code === 'FREE_INTEREST_LIMIT' ? 'Conhecer o Pro' : 'Revisar perfil'}</Link></div> : null}
-      <section role="tabpanel" id="opp-results" aria-labelledby={'opp-tab-' + filters.status} className="opp-results" aria-busy={result.loading}>
+      </>}
+      <section role={linkedId ? undefined : 'tabpanel'} id="opp-results" aria-label={linkedId ? 'Pedido da notificação' : undefined} aria-labelledby={linkedId ? undefined : 'opp-tab-' + filters.status} className="opp-results" aria-busy={result.loading}>
         <div className="opp-browser-list">
-          <div className="opp-list-heading"><h2>{tab.heading}{!result.loading ? <span> ({result.total})</span> : null}</h2><select aria-label="Ordenar pedidos" value={filters.sort} onChange={(event) => changeFilter({ sort: event.target.value })}><option value="newest">Mais recentes</option><option value="nearest">Mais próximos</option><option value="oldest">Mais antigos</option></select></div>
+          <div className="opp-list-heading"><h2>{linkedId ? 'Pedido da notificação' : tab.heading}{!result.loading && !linkedId ? <span> ({result.total})</span> : null}</h2>{!linkedId ? <select aria-label="Ordenar pedidos" value={filters.sort} onChange={(event) => changeFilter({ sort: event.target.value })}><option value="newest">Mais recentes</option><option value="nearest">Mais próximos</option><option value="oldest">Mais antigos</option></select> : null}</div>
           {result.error ? <div className="opp-empty" role="alert"><OpportunityIcon name="briefcase" size={32} /><h3>{['PROFILE_LOCATION_REQUIRED', 'PROFILE_ESSENTIALS_REQUIRED', 'EMAIL_VERIFICATION_REQUIRED'].includes(result.error.code) ? 'Revise os dados essenciais do perfil' : 'Não foi possível abrir os pedidos'}</h3><p>{result.error.message}</p>{['PROFILE_LOCATION_REQUIRED', 'PROFILE_ESSENTIALS_REQUIRED', 'EMAIL_VERIFICATION_REQUIRED'].includes(result.error.code) ? <Link className="opp-primary" to="/profile">Revisar meu perfil</Link> : <button className="opp-secondary" onClick={reload} type="button">Tentar novamente</button>}</div>
             : result.loading && !result.items.length ? <div className="opp-list-loading" role="status"><OpportunityIcon name="refresh" /><span>Buscando pedidos...</span></div>
+              : linkedId && !selected ? <div className="opp-empty" role="status"><h3>Este pedido não está mais disponível.</h3><p>Ele pode ter sido encerrado ou não estar disponível para a sua conta.</p><Link className="opp-secondary" to="/opportunities">Voltar para oportunidades</Link></div>
               : !result.items.length ? <div className="opp-empty"><OpportunityIcon name="briefcase" size={32} /><h3>{hasSearch ? 'Nenhum pedido com esses filtros.' : tab.empty}</h3><p>{hasSearch ? 'Tente outro bairro, cidade ou serviço, ou limpe os filtros.' : tab.hint}</p>{hasSearch ? <button type="button" className="opp-secondary" onClick={clearFilters}>Limpar filtros</button> : filters.status !== 'open' ? <button type="button" className="opp-secondary" onClick={() => changeTab('open')}>Ver novas oportunidades</button> : null}</div>
                 : <><div className="opp-list">{result.items.map((item) => <OpportunityCard key={item.id} item={item} selected={selected?.id === item.id} onSelect={(event) => { lastCard.current = event.currentTarget; setSelectedId(item.id); setDetailOpen(true); }} />)}</div><div className="opp-pagination"><p aria-live="polite">Mostrando {result.items.length} de {result.total} {result.total === 1 ? 'pedido' : 'pedidos'}</p>{result.hasMore ? <button className="opp-secondary" type="button" disabled={result.loading} onClick={() => setFilters((current) => ({ ...current, offset: result.items.length }))}>{result.loading ? 'Carregando...' : 'Carregar mais'}</button> : null}</div></>}
         </div>
-        {!result.error && selected ? <OpportunityDetail key={selected.id} item={selected} eligibility={result.eligibility} sending={sendingId === selected.id} onInterest={handleInterest} onClose={() => { setSelectedId(null); setDetailOpen(false); }} onUpdated={reload} titleRef={detailTitle} /> : <div className="opp-detail-placeholder"><OpportunityIcon name="briefcase" size={32} /><p>Selecione um pedido para ver os detalhes.</p></div>}
+        {!result.error && selected ? <OpportunityDetail key={selected.id} item={selected} eligibility={result.eligibility} sending={sendingId === selected.id} onInterest={handleInterest} onClose={() => { if (linkedId) navigate('/opportunities'); else { setSelectedId(null); setDetailOpen(false); } }} onUpdated={reload} titleRef={detailTitle} /> : <div className="opp-detail-placeholder"><OpportunityIcon name="briefcase" size={32} /><p>Selecione um pedido para ver os detalhes.</p></div>}
       </section>
     </div>
   );

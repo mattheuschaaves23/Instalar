@@ -4,6 +4,8 @@ const fold = (expression) => `TRANSLATE(LOWER(COALESCE(${expression}, '')), 'รกร
 const text = (value, length = 120) => String(value || '').trim().slice(0, length);
 const integer = (value, fallback, min, max) => Number.isFinite(Number(value)) && value !== '' && value !== undefined
   ? Math.min(max, Math.max(min, Math.trunc(Number(value)))) : fallback;
+const parseOpportunityId = (value) => typeof value === 'string' && /^[1-9]\d{0,9}$/.test(value) && Number(value) <= 2147483647
+  ? Number(value) : null;
 
 function normalizeListingOptions(query = {}) {
   return {
@@ -27,7 +29,7 @@ async function getOpportunityListing(db, installer, userId, query) {
     userId, normalizeSearchText(installer.city), normalizeSearchText(installer.state),
     hasCoordinates ? Number(installer.latitude) : null, hasCoordinates ? Number(installer.longitude) : null,
     integer(installer.service_radius_km, 80, 10, 250), options.status, options.limit, options.offset,
-    options.search, options.city, options.state, options.place, options.photos, options.sort,
+    options.search, options.city, options.state, options.place, options.photos, options.sort, parseOpportunityId(query?.request_id),
   ];
 
   // Count before filtering/pagination. Historical relationships belong to the
@@ -63,6 +65,7 @@ async function getOpportunityListing(db, installer, userId, query) {
     ), filtered AS (
       SELECT * FROM visible
       WHERE ($7 = 'all' OR workspace_tab = $7)
+        AND ($16::integer IS NULL OR id = $16)
         AND ($10 = '' OR STRPOS(${fold("CONCAT_WS(' ', service_label, neighborhood, city, state, array_to_string(rooms, ' '))")}, $10) > 0)
         AND ($11 = '' OR ${fold('city')} = $11)
         AND ($12 = '' OR ${fold('state')} = $12)
@@ -93,4 +96,4 @@ async function getOpportunityListing(db, installer, userId, query) {
   return { ...data, limit: options.limit, offset: options.offset, has_more: options.offset + data.opportunities.length < data.total };
 }
 
-module.exports = { getOpportunityListing, normalizeListingOptions };
+module.exports = { getOpportunityListing, normalizeListingOptions, parseOpportunityId };

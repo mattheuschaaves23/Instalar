@@ -82,6 +82,12 @@ test('pedido de visitante fica com um único instalador e o aceite não duplica 
     const otherList = await api('/opportunities', { user: other });
     assert.equal(otherList.status, 200);
     assert.ok(!otherList.body.opportunities.some((row) => row.id === requestId));
+    const ownFromNotice = await api(`/opportunities?status=all&request_id=${requestId}`, { user: installer });
+    assert.deepEqual(ownFromNotice.body.opportunities.map((row) => row.id), [requestId]);
+    const otherFromNotice = await api(`/opportunities?status=all&request_id=${requestId}`, { user: other });
+    assert.deepEqual(otherFromNotice.body.opportunities, []);
+    const missingFromNotice = await api('/opportunities?status=all&request_id=2147483647', { user: installer });
+    assert.deepEqual(missingFromNotice.body.opportunities, []);
     // Same-city direct orders are also private, not just orders outside the search radius.
     const sameCity = await send(installer);
     assert.equal(sameCity.status, 201);

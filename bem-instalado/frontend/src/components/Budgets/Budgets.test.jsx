@@ -30,6 +30,15 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('lista de orçamentos', () => {
+  it('abre com o orçamento indicado no link do aviso', async () => {
+    api.get.mockResolvedValueOnce({ data: [...records, { ...records[1], id: 10410, client_name: 'Outro orçamento' }] });
+    render(<MemoryRouter initialEntries={['/budgets?orcamento=1041']}><Budgets /></MemoryRouter>);
+    await screen.findByRole('table');
+    expect(screen.getByRole('searchbox').value).toBe('#1041');
+    expect(table().getByText('Rafael Costa')).toBeTruthy();
+    expect(table().queryByText('Pedro Lima')).toBeNull();
+    expect(table().queryByText('Outro orçamento')).toBeNull();
+  });
   it('preserva dados e ações reais e não mostra R$ 0,00 no rascunho', async () => {
     await open();
     expect(api.get).toHaveBeenCalledWith('/budgets', { params: { include_drafts: true } });

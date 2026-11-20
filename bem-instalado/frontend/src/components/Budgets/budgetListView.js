@@ -41,10 +41,11 @@ function newestFirst(a, b) {
   return (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0) || Number(b.id) - Number(a.id);
 }
 
-export function getVisibleBudgets(budgets, { status, query, sort }) {
+export function getVisibleBudgets(budgets, { status, query, sort, exactId = null }) {
   const terms = searchable(query).trim().split(/\s+/).filter(Boolean);
   return budgets.filter((budget) => {
     if (status !== 'all' && budget.status !== status) return false;
+    if (exactId !== null) return String(budget.id) === exactId;
     const text = searchable(`${budget.client_name ?? ''} #${budget.id}`);
     return terms.every((term) => text.includes(term));
   }).sort((a, b) => {

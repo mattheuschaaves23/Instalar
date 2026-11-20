@@ -132,8 +132,18 @@ it('aceita o pedido direto no painel e abre o rascunho sem abrir WhatsApp', asyn
 it('abre as oportunidades a partir do aviso de pedido direto', async () => {
   api.get.mockResolvedValueOnce({ data: [{ id: 12, title: 'Pedido direto recebido', message: 'Você recebeu o pedido #32.', type: 'info', read: false, action_path: '/opportunities' }] });
   render(<MemoryRouter><Notifications /></MemoryRouter>);
-  const link = await screen.findByRole('link', { name: 'Ver oportunidades' });
-  expect(link.getAttribute('href')).toBe('/opportunities');
+  const link = await screen.findByRole('link', { name: 'Ver pedido' });
+  expect(link.getAttribute('href')).toBe('/opportunities?pedido=32');
+});
+
+it('abre primeiro o pedido indicado pelo aviso, sem depender da página atual da lista', async () => {
+  render(<MemoryRouter initialEntries={['/opportunities?pedido=32']}><Opportunities /></MemoryRouter>);
+  const detail = await screen.findByRole('complementary', { name: 'Detalhes do pedido' });
+  expect(detail.textContent).toContain('Pedido direto #32');
+  expect(api.get).toHaveBeenCalledWith('/opportunities', expect.objectContaining({
+    params: expect.objectContaining({ status: 'all', request_id: '32' }),
+  }));
+  expect(document.querySelector('[data-detail-open]').getAttribute('data-detail-open')).toBe('true');
 });
 
 it('permite tentar o antirrobô novamente sem apagar os dados preenchidos', async () => {

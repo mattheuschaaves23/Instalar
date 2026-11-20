@@ -9,7 +9,7 @@ const { normalizeSearchText } = require('../utils/textSearch');
 const forwardGeocode = require('../utils/forwardGeocode');
 const { validateUploadFile } = require('../utils/uploadValidation');
 const { clientFacingRequestStatus, expireOpenServiceRequests } = require('../utils/serviceRequestLifecycle');
-const { getOpportunityListing, normalizeListingOptions } = require('../services/opportunityListing');
+const { getOpportunityListing, normalizeListingOptions, parseOpportunityId } = require('../services/opportunityListing');
 const { getInstallerReadiness, normalizeBrazilianWhatsApp } = require('../utils/installerEligibility');
 const { BRAZIL_STATES } = require('../utils/postalAddress');
 const {
@@ -713,6 +713,8 @@ exports.uploadPublicRequestPhoto = async (req, res) => {
 
 exports.getOpportunities = async (req, res) => {
   try {
+    const linkedId = parseOpportunityId(req.query?.request_id);
+    if (req.query?.request_id !== undefined && !linkedId) return res.status(400).json({ error: 'Número de pedido inválido.' });
     await expireOpenServiceRequests();
     const installer = await getInstaller(req.userId);
 
@@ -723,7 +725,7 @@ exports.getOpportunities = async (req, res) => {
     const planAccess = req.planAccess || await getInstallerPlanAccess(req.userId);
 
     const tab = normalizeListingOptions(req.query).status;
-    if (!installer.is_admin && (!installer.city || !installer.state) && !['interested', 'selected'].includes(tab)) {
+    if (!linkedId && !installer.is_admin && (!installer.city || !installer.state) && !['interested', 'selected'].includes(tab)) {
       return res.status(403).json({
         error: 'Informe cidade e estado no perfil para ver pedidos da sua região.',
         code: 'PROFILE_LOCATION_REQUIRED',

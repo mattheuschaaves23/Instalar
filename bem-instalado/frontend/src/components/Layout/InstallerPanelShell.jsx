@@ -36,6 +36,11 @@ const PANEL_NAV_ITEMS = [
 ];
 
 const ADMIN_NAV_ITEM = { to: '/admin', label: 'Painel ADM', icon: 'admin', section: 'SISTEMA' };
+const NOTIFICATION_NAV = ['/dashboard', '/opportunities', '/agenda', '/budgets', '/clients', '/profile', '/notifications', '/settings'];
+
+function NotificationWordmark() {
+  return <span className="ref-panel-wordmark notifications-wordmark">Instalar<span>Pro</span></span>;
+}
 
 function PanelIcon({ type, size = 20 }) {
   const sharedProps = {
@@ -109,6 +114,7 @@ function isActiveRoute(pathname, item) {
 
 export function SidebarContent({ allowCollapse = false, badgeCounts, collapsed = false, initials, onNavigate, onToggleCollapse, userName }) {
   const location = useLocation();
+  const isInbox = location.pathname === '/notifications';
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const { isPro, loading, subscription } = useSubscription();
@@ -124,10 +130,24 @@ export function SidebarContent({ allowCollapse = false, badgeCounts, collapsed =
     navigate('/instalador/entrar', { replace: true });
   };
 
+  const renderItem = (item) => {
+    const badge = getPanelBadgeValue(item, badgeCounts);
+    return (
+      <div className="ref-panel-nav-block" key={item.to}>
+        {!isInbox && item.section ? <p>{item.section}</p> : null}
+        <NavLink className={`ref-panel-nav-link ${isActiveRoute(location.pathname, item) ? 'is-active' : ''}`} onClick={onNavigate} to={item.to}>
+          <PanelIcon type={isInbox && item.to === '/dashboard' ? 'home' : item.icon} />
+          <span>{item.label}</span>
+          {badge !== null ? <em>{badge}</em> : null}
+        </NavLink>
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="ref-panel-brand">
-        <BrandWordmark className="ref-panel-wordmark" size="sm" />
+        {isInbox ? <NotificationWordmark /> : <BrandWordmark className="ref-panel-wordmark" size="sm" />}
         <BrandMark className="ref-panel-logo ref-panel-collapsed-logo" />
         <button aria-label={allowCollapse ? (collapsed ? 'Expandir menu' : 'Recolher menu') : 'Fechar menu'} onClick={onToggleCollapse || onNavigate} type="button">
           {allowCollapse ? <span>{collapsed ? '>' : '<'}</span> : <PanelIcon size={18} type="close" />}
@@ -143,24 +163,10 @@ export function SidebarContent({ allowCollapse = false, badgeCounts, collapsed =
       </div>
 
       <nav className="ref-panel-nav">
-        {navItems.map((item) => {
-          const badge = getPanelBadgeValue(item, badgeCounts);
-
-          return (
-            <div className="ref-panel-nav-block" key={`${item.section || ''}-${item.label}`}>
-              {item.section ? <p>{item.section}</p> : null}
-              <NavLink
-                className={`ref-panel-nav-link ${isActiveRoute(location.pathname, item) ? 'is-active' : ''}`}
-                onClick={onNavigate}
-                to={item.to}
-              >
-                <PanelIcon type={item.icon} />
-                <span>{item.label}</span>
-                {badge !== null ? <em>{badge}</em> : null}
-              </NavLink>
-            </div>
-          );
-        })}
+        {isInbox && !collapsed ? <>
+          {NOTIFICATION_NAV.map((route) => navItems.find((item) => item.to === route)).filter(Boolean).map(renderItem)}
+          <details className="notifications-nav-more"><summary>Mais opções</summary>{navItems.filter((item) => !NOTIFICATION_NAV.includes(item.to)).map(renderItem)}</details>
+        </> : navItems.map(renderItem)}
       </nav>
 
       <button className="ref-panel-logout" onClick={handleLogout} type="button">
@@ -174,6 +180,7 @@ export function SidebarContent({ allowCollapse = false, badgeCounts, collapsed =
 export default function InstallerPanelShell({ children }) {
   const { user } = useAuth();
   const location = useLocation();
+  const isInbox = location.pathname === '/notifications';
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -227,7 +234,7 @@ export default function InstallerPanelShell({ children }) {
   };
 
   return (
-    <section className={`ref-panel-shell ref-panel-route-shell ${sidebarCollapsed ? 'is-collapsed' : ''} ${location.pathname === '/dashboard' ? 'is-dashboard-aqua' : ''}`.trim()}>
+    <section className={`ref-panel-shell ref-panel-route-shell ${sidebarCollapsed ? 'is-collapsed' : ''} ${location.pathname === '/dashboard' ? 'is-dashboard-aqua' : ''} ${isInbox ? 'is-notifications' : ''}`.trim()}>
       <aside className="ref-panel-sidebar" aria-label="Navegação do painel">
         <SidebarContent
           allowCollapse
@@ -287,7 +294,7 @@ export default function InstallerPanelShell({ children }) {
             <PanelIcon type="menu" />
           </button>
           <div>
-            <BrandWordmark className="ref-panel-mobile-wordmark" size="sm" />
+            {isInbox ? <NotificationWordmark /> : <BrandWordmark className="ref-panel-mobile-wordmark" size="sm" />}
           </div>
           <nav aria-label="Ações rápidas do painel">
             <Link aria-label="Abrir clientes" to="/clients"><PanelIcon type="search" size={18} /></Link>

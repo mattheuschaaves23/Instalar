@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import PaginationControls from '../Layout/PaginationControls';
@@ -129,11 +129,14 @@ function BudgetActions({ budget, busy, onApprove, onReject, onDownload, onWhatsA
 }
 
 export default function Budgets() {
+  const [params] = useSearchParams();
+  const requestedBudget = params.get('orcamento');
+  const initialQuery = /^[1-9]\d{0,9}$/.test(requestedBudget || '') ? '#' + requestedBudget : '';
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [status, setStatus] = useState('all');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [sort, setSort] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const [approvalDraft, setApprovalDraft] = useState({ budgetId: null, scheduleDate: '' });
@@ -155,6 +158,14 @@ export default function Budgets() {
   useEffect(() => {
     loadBudgets();
   }, []);
+
+  useEffect(() => {
+    if (initialQuery) {
+      setQuery(initialQuery);
+      setStatus('all');
+      setCurrentPage(1);
+    }
+  }, [initialQuery]);
 
   const openApprovalModal = (budgetId) => {
     const suggestedDate = new Date();
@@ -236,7 +247,8 @@ export default function Budgets() {
   };
 
   const counts = useMemo(() => getBudgetCounts(budgets), [budgets]);
-  const visibleBudgets = useMemo(() => getVisibleBudgets(budgets, { status, query, sort }), [budgets, status, query, sort]);
+  const exactId = initialQuery && query.trim() === initialQuery ? requestedBudget : null;
+  const visibleBudgets = useMemo(() => getVisibleBudgets(budgets, { status, query, sort, exactId }), [budgets, status, query, sort, exactId]);
   const totalPages = Math.max(1, Math.ceil(visibleBudgets.length / BUDGETS_PER_PAGE));
   const normalizedPage = Math.min(currentPage, totalPages);
   const start = (normalizedPage - 1) * BUDGETS_PER_PAGE;
