@@ -21,6 +21,7 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
   process.env.DATABASE_URL = target.toString();
   process.env.DATABASE_SSL = 'false';
   process.env.NODE_ENV = 'test';
+  process.env.EXPOSE_PASSWORD_RESET_TOKEN_FOR_TESTS = 'true';
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'integration-test-secret-with-at-least-32-characters';
   process.env.ALLOW_MANUAL_SUBSCRIPTION_CONFIRMATION = 'true';
   process.env.FRONTEND_URL = 'http://127.0.0.1:3000';

@@ -5,11 +5,12 @@ const pool = require('../config/database');
 const { jwtSecret, jwtExpiresIn } = require('../config/auth');
 const { logAudit } = require('../utils/auditLog');
 const { normalizeEmail } = require('../utils/adminAccess');
+const emailService = require('../services/email');
 const {
   isEmailEnabled,
   sendEmailVerificationEmail,
   sendPasswordResetEmail,
-} = require('../services/email');
+} = emailService;
 const { clearCsrfCookie } = require('../middleware/csrfMiddleware');
 
 const REGISTER_PLAN_PRICE = Number(process.env.SUBSCRIPTION_PRICE || 49.9);
@@ -290,7 +291,7 @@ function sanitizeNextPath(value, role = 'installer') {
   return nextPath;
 }
 
-function redirectOAuthResult(req, res, { token, next, role, platform, error }) {
+function redirectOAuthResult(req, res, { token, next, role, platform, error, passwordRevoked = false }) {
   const frontendUrl = getFrontendBaseUrl(req);
   const targetPlatform = normalizeOAuthPlatform(platform);
   const isNativeMobile = isNativeMobilePlatform(targetPlatform);
@@ -299,6 +300,7 @@ function redirectOAuthResult(req, res, { token, next, role, platform, error }) {
     if (!isNativeMobile) {
       setSessionCookie(res, token);
       const query = new URLSearchParams({ next: sanitizeNextPath(next, role) });
+      if (passwordRevoked) query.set('password_revoked', '1');
       return res.redirect(`${frontendUrl}/auth/social/callback?${query.toString()}`);
     }
 
@@ -307,6 +309,7 @@ function redirectOAuthResult(req, res, { token, next, role, platform, error }) {
       next: sanitizeNextPath(next, role),
       platform: targetPlatform,
     });
+    if (passwordRevoked) hash.set('password_revoked', '1');
 
     const callbackPath = '/auth/mobile/callback';
     return res.redirect(`${frontendUrl}${callbackPath}#${hash.toString()}`);
@@ -473,7 +476,35 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
     [accountType, provider, providerSubject, normalizedEmail]
   );
   let user = existingUserResult.rows[0];
+  let passwordRevoked = false;
   if (user) {
+    if (!user.email_verified_at) {
+      // A conta foi criada por senha e o e-mail nunca foi confirmado: quem
+      // definiu essa senha pode não ser o dono do e-mail. Ao vincular o Google
+      // (que comprova o e-mail), a senha antiga deixa de valer e as sessões
+      // abertas são revogadas. O dono pode criar senha nova por "Esqueci a senha".
+      const unusablePassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+      const revoked = await pool.query(
+        `
+          UPDATE users
+          SET password = $2, auth_version = auth_version + 1, updated_at = NOW()
+          WHERE id = $1 AND email_verified_at IS NULL
+        `,
+        [user.id, unusablePassword]
+      );
+      if (revoked.rowCount) {
+        passwordRevoked = true;
+        await logAudit({
+          actorUserId: user.id,
+          action: 'auth.oauth_link_revoked_unverified_password',
+          entityType: 'user',
+          entityId: user.id,
+          metadata: { provider },
+          req,
+        });
+      }
+    }
+
     const updatedUser = await pool.query(
       `
         UPDATE users
@@ -533,13 +564,38 @@ async function findOrCreateOAuthUser(profile, provider, role, req) {
     req,
   });
 
-  return fetchSanitizedUserById(user.id);
+  if (passwordRevoked) {
+    // Sem este aviso a conta legítima que nunca confirmou o e-mail só
+    // descobriria a senha desativada pelo "Credenciais inválidas".
+    await emailService.sendPasswordRevokedNoticeEmail({
+      to: user.email,
+      provider,
+      recoveryUrl: buildPasswordRecoveryPageUrl(req, accountType),
+    }).catch(() => null);
+  }
+
+  return { user: await fetchSanitizedUserById(user.id), passwordRevoked };
+}
+
+function buildPasswordRecoveryPageUrl(req, accountType = 'installer') {
+  const route = accountType === 'client' ? '/cliente/recuperar-senha' : '/instalador/recuperar-senha';
+  return `${getFrontendBaseUrl(req)}${route}`;
 }
 
 function buildPasswordResetToken() {
   const token = crypto.randomBytes(32).toString('hex');
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   return { token, tokenHash };
+}
+
+// O token de redefinição só volta na resposta em teste automatizado declarado
+// de forma explícita. NODE_ENV=test sozinho não basta (um servidor de homologação
+// configurado assim viraria tomada de conta), e nunca dentro da Vercel ou do Render.
+function shouldExposeResetTokenForTests() {
+  return process.env.NODE_ENV === 'test'
+    && process.env.EXPOSE_PASSWORD_RESET_TOKEN_FOR_TESTS === 'true'
+    && !process.env.VERCEL
+    && !process.env.RENDER;
 }
 
 function buildPasswordResetUrl(req, token, accountType = 'installer') {
@@ -903,13 +959,14 @@ exports.handleOAuthCallback = async (req, res) => {
 
     const oauthProfile = await exchangeGoogleCode(req, code);
 
-    const user = await findOrCreateOAuthUser(oauthProfile, provider, role, req);
+    const { user, passwordRevoked } = await findOrCreateOAuthUser(oauthProfile, provider, role, req);
 
     return redirectOAuthResult(req, res, {
       token: signToken(user),
       role,
       next,
       platform,
+      passwordRevoked,
     });
   } catch (error) {
     const redirectError = getOAuthRedirectErrorCode(error);
@@ -1139,9 +1196,7 @@ exports.forgotPassword = async (req, res) => {
       return { sent: false, reason: 'send_failed' };
     });
 
-    const shouldExposeResetToken = process.env.NODE_ENV === 'test' && !process.env.VERCEL;
-
-    if (shouldExposeResetToken) {
+    if (shouldExposeResetTokenForTests()) {
       return res.json({
         ...genericResponse,
         delivery,
@@ -1200,10 +1255,17 @@ exports.resetPassword = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(nextPassword, 10);
 
+    // O token chegou pelo e-mail da conta: quem o usou controla o e-mail. Marcar
+    // o e-mail como confirmado impede que o vínculo com o Google (que revoga a
+    // senha de conta nunca confirmada) apague a senha que o dono acabou de criar.
     await db.query(
       `
         UPDATE users
-        SET password = $1, auth_version = auth_version + 1, updated_at = NOW()
+        SET
+          password = $1,
+          auth_version = auth_version + 1,
+          email_verified_at = COALESCE(email_verified_at, NOW()),
+          updated_at = NOW()
         WHERE id = $2
       `,
       [passwordHash, resetTokenRow.user_id]

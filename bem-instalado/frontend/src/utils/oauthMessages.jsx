@@ -18,6 +18,23 @@ const OAUTH_ERROR_MESSAGES = {
   oauth_start_failed: 'Não foi possível iniciar o login social. Confira a configuração OAuth.',
 };
 
+export const PASSWORD_REVOKED_NOTICE =
+  'Por segurança, a senha antiga desta conta foi desativada, porque o e-mail ainda não tinha sido confirmado. '
+  + 'Você continua entrando com o Google. Para entrar com senha, crie uma nova em "Esqueceu sua senha?".';
+
+// Lê o retorno do login social: o app recebe no hash, a web na query.
+export function readOAuthCallbackParams(rawHash = '', rawSearch = '') {
+  const hash = String(rawHash || '').startsWith('#') ? String(rawHash).slice(1) : String(rawHash || '');
+  const params = new URLSearchParams(hash || rawSearch || '');
+
+  return {
+    token: params.get('token') || '',
+    next: params.get('next') || '/dashboard',
+    oauthError: params.get('oauth_error') || '',
+    passwordRevoked: params.get('password_revoked') === '1',
+  };
+}
+
 export function getOAuthErrorMessage(errorCode) {
   return OAUTH_ERROR_MESSAGES[errorCode] || 'Não foi possível entrar com essa conta social.';
 }
