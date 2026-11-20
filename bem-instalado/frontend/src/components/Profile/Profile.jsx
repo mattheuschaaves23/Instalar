@@ -66,7 +66,7 @@ export default function Profile() {
     {!editing ? (
     <div className="page-shell profile-owner-page">
       <header className="profile-owner-heading"><div><h2>Meu perfil</h2><p>Veja sua apresentação como o cliente vê. Para mudar os dados, toque em Editar perfil.</p></div></header>
-      <ClientProfileLink profile={profile} preview={publicPreview?.installer} failed={previewUnavailable} onRetry={retryPreview} />
+      <ClientProfileLink key={profile.id} />
       <ProfileReadiness profile={profile} onEdit={openRequiredData} />
       {previewUnavailable ? <p className="profile-visibility-note">Não foi possível atualizar avaliações ou agenda. <button className="profile-inline-button" onClick={retryPreview} type="button">Atualizar prévia</button></p> : null}
       <InstallerProfile ownerPreview={preview} />

@@ -9,6 +9,7 @@ import DecoratingWallLoader from '../Layout/DecoratingWallLoader';
 import BrandWordmark from '../Layout/BrandWordmark';
 import './InstallerProfile.css';
 import { normalizeProfileAppearance, profileAppearanceStyle } from '../../../../shared/profileAppearance.mjs';
+import linkContract from '../../../../shared/installerClientLink.json';
 import { formatCurrency, formatLongDate, formatShortDate } from '../../utils/formatters';
 import { formatInstallationDays } from '../../utils/installerDays';
 import { formatStarRating, installerRating, starFillPercent } from '../../utils/installerRating';
@@ -22,7 +23,7 @@ import {
   writePublishedClientRequest,
 } from '../../utils/clientRequest';
 import {
-  PROFILE_SECTIONS, REVIEW_FORM_ANCHOR, buildProfileSectionHash, readProfileSection,
+  PROFILE_SECTIONS, REVIEW_FORM_ANCHOR, buildProfileSectionHash, readInstallerLinkTokenFromHash, readProfileSection,
 } from '../../utils/installerProfileSections';
 
 const emptyReviewForm = { reviewer_name: '', reviewer_region: '', rating: 5, comment: '' };
@@ -118,6 +119,8 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
   const requestToken = saved?.id === requestedId ? saved.client_access_token : '';
   const linkedRequest = useMemo(() => Number.isSafeInteger(requestedId) && requestedId > 0
     ? { id: requestedId, token: requestToken } : null, [requestedId, requestToken]);
+  const requestedDirectView = query.get(linkContract.modeParameter) === '1' && !linkedRequest;
+  const inviteToken = requestedDirectView ? readInstallerLinkTokenFromHash(location.hash) : '';
 
   const sectionAnchor = readProfileSection(location.hash);
   const activeSection = sectionAnchor === REVIEW_FORM_ANCHOR ? 'avaliacoes' : sectionAnchor || 'projetos';
@@ -128,10 +131,11 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
 
   const requestProfile = useCallback(async (signal) => {
     const headers = linkedRequest?.token ? { 'X-Client-Request-Token': linkedRequest.token } : {};
+    if (inviteToken) headers[linkContract.authorizationHeader] = inviteToken;
     const params = linkedRequest ? { pedido: linkedRequest.id } : {};
     const { data } = await api.get(`/public/installers/${id}`, { headers, params, signal });
     return data;
-  }, [id, linkedRequest]);
+  }, [id, linkedRequest, inviteToken]);
 
   useEffect(() => {
     if (ownerMode) return undefined;
@@ -304,10 +308,13 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
 
   if (profileError) return (
     <main className="ig-installer-profile ig-profile-unavailable">
+      <PageMetadata noIndex title="Perfil indisponível | InstalarPro" />
       <h1>Perfil indisponível</h1>
       <p>{needsClientLogin && profileError.status === 404
         ? 'Entre com a conta que fez o pedido ou acesse com o código do pedido para ver este perfil.'
-        : profileError.message}</p>
+        : requestedDirectView && profileError.status === 404
+          ? 'Este link para orçamento não está disponível. Peça ao instalador um link atualizado.'
+          : profileError.message}</p>
       {needsClientLogin && profileError.status === 404 ? (
         <Link className="ig-profile-primary-action" to={clientLoginPath}>Entrar para ver o perfil</Link>
       ) : null}
@@ -327,7 +334,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
   const requestPath = trackingPath;
   const requestLabel = requestId ? 'Voltar ao pedido' : 'Solicitar orçamento';
   const isOwnProfile = Boolean(user && Number(user.id) === Number(installer.id));
-  const directMode = query.get('orcamento') === '1' && !linkedRequest && !isOwnProfile;
+  const directMode = requestedDirectView && !isOwnProfile;
   const showDirectForm = directMode && installer.accepts_direct_requests && directFormInstaller === installer.id;
   const profilePhoto = resolveProfileImage(installer.installer_photo || installer.logo, api.defaults.baseURL);
   const coverPhoto = gallery[0] || profilePhoto;
@@ -357,6 +364,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
       {!ownerMode ? <PageMetadata
         canonicalPath={`/installers/${installer.id}`}
         description={`${installer.display_name || installer.name} é instalador(a) de papel de parede${installer.city ? ` em ${installer.city}` : ''}. Veja trabalhos, avaliações e disponibilidade na InstalarPro.`}
+        noIndex={requestedDirectView || Boolean(linkedRequest)}
         title={`${installer.display_name || installer.name} | Instalador de papel de parede`}
       /> : null}
 
@@ -421,7 +429,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
           </div>
         </header>
 
-        {showDirectForm ? <DirectProfileRequest installer={installer} key={installer.id} onClose={() => {
+        {showDirectForm ? <DirectProfileRequest installer={installer} inviteToken={inviteToken} key={installer.id} onClose={() => {
           setDirectFormInstaller(null);
           document.querySelector('.ig-direct-open')?.focus();
         }} /> : null}
@@ -466,7 +474,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
 
         <section aria-labelledby="perfil-aba-avaliacoes" className="ig-profile-tabpanel" hidden={activeSection !== 'avaliacoes'} id="avaliacoes" role="tabpanel" tabIndex={0}>
           <div className="ig-profile-panel ig-profile-review-summary">
-            <div className="ig-panel-heading"><div><span><ProfileIcon name="star" size={18} /></span><h2>Avaliações</h2></div>{!isOwnProfile ? <Link to={sectionPath(REVIEW_FORM_ANCHOR)} onClick={requireClientLogin}>Avaliar <ProfileIcon name="chevron" size={15} /></Link> : null}</div>
+            <div className="ig-panel-heading"><div><span><ProfileIcon name="star" size={18} /></span><h2>Avaliações</h2></div>{!isOwnProfile && !directMode ? <Link to={sectionPath(REVIEW_FORM_ANCHOR)} onClick={requireClientLogin}>Avaliar <ProfileIcon name="chevron" size={15} /></Link> : null}</div>
             {reviewCount ? (
               <div className="ig-review-summary-body">
                 <div className="ig-rating-score"><strong>{rating.formatted}</strong><RatingStars value={rating.value} /><span>{rating.reviewsLabel}</span></div>
@@ -484,12 +492,12 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
               <p>A nota inicial dá lugar à média após a primeira avaliação de um cliente.</p>
             </div>}
           </div>
-          <section className="ig-profile-panel ig-profile-review-form" id={REVIEW_FORM_ANCHOR}>
+          {!directMode ? <section className="ig-profile-panel ig-profile-review-form" id={REVIEW_FORM_ANCHOR}>
             <div className="ig-panel-heading"><div><span><ProfileIcon name="star" size={18} /></span><div><p>Sua experiência</p><h2>Avalie este instalador</h2></div></div></div>
             {!user ? <div className="ig-review-locked"><p>Sua avaliação ajuda outras pessoas a escolherem com mais segurança.</p><Link className="ig-profile-primary-action" to={reviewLoginPath}>Entrar para avaliar</Link></div>
               : isOwnProfile ? <p className="ig-profile-note">Este é o seu perfil. Autoavaliações não são permitidas.</p>
                 : <form className="ig-profile-form" onSubmit={handleReviewSubmit}><label><span>Seu nome</span><input name="reviewer_name" onChange={handleReviewChange} placeholder="Como você quer aparecer" required value={reviewForm.reviewer_name} /></label><label><span>Sua região</span><input name="reviewer_region" onChange={handleReviewChange} placeholder="Cidade ou bairro" value={reviewForm.reviewer_region} /></label><label><span>Nota</span><select name="rating" onChange={handleReviewChange} value={reviewForm.rating}><option value={5}>5 estrelas</option><option value={4}>4 estrelas</option><option value={3}>3 estrelas</option><option value={2}>2 estrelas</option><option value={1}>1 estrela</option></select></label><label className="ig-profile-comment-field"><span>Comentário</span><textarea name="comment" onChange={handleReviewChange} placeholder="Conte como foi sua experiência" rows="3" value={reviewForm.comment} /></label><Turnstile action="installer_review" onExpire={() => setTurnstileToken('')} onVerify={setTurnstileToken} resetKey={turnstileResetKey} /><button className="ig-profile-primary-action" disabled={sendingReview || (isTurnstileEnabled() && !turnstileToken)} type="submit">{sendingReview ? 'Enviando...' : 'Enviar avaliação'}</button></form>}
-          </section>
+          </section> : null}
         </section>
 
         <section aria-labelledby="perfil-aba-agenda" className="ig-profile-panel ig-profile-agenda ig-profile-tabpanel" hidden={activeSection !== 'agenda'} id="agenda" role="tabpanel" tabIndex={0}>

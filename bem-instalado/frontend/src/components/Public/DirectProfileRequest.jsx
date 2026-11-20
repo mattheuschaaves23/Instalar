@@ -3,11 +3,12 @@ import { Link } from 'react-router';
 import api from '../../services/api';
 import Turnstile, { isTurnstileEnabled } from '../Security/Turnstile';
 import { buildClientRequestTrackingHash } from '../../utils/clientRequest';
+import linkContract from '../../../../shared/installerClientLink.json';
 
 const STATES = 'AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO'.split(' ');
 const emptyRequest = { client_name: '', client_phone: '', city: '', state: '', details: '', privacy_consent: false };
 
-export default function DirectProfileRequest({ installer, onClose }) {
+export default function DirectProfileRequest({ installer, inviteToken, onClose }) {
   const titleId = useId();
   const heading = useRef(null);
   const pending = useRef(false);
@@ -38,7 +39,8 @@ export default function DirectProfileRequest({ installer, onClose }) {
     setSaving(true);
     setError('');
     try {
-      const { data } = await api.post(`/public/installers/${installer.id}/direct-requests`, { ...form, turnstile_token: token });
+      const config = inviteToken ? { headers: { [linkContract.authorizationHeader]: inviteToken } } : undefined;
+      const { data } = await api.post(`/public/installers/${installer.id}/direct-requests`, { ...form, turnstile_token: token }, config);
       const hash = buildClientRequestTrackingHash(data?.service_request);
       if (!hash) throw new Error('missing_tracking_code');
       setTrackingHash(hash);

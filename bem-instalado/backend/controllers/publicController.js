@@ -5,7 +5,8 @@ const reverseGeocode = require('../utils/reverseGeocode');
 const forwardGeocode = require('../utils/forwardGeocode');
 const { normalizeSearchText } = require('../utils/textSearch');
 const { logApplicationError } = require('../utils/errorMonitoring');
-const { acceptsDirectRequests, publicProfileSql } = require('../utils/installerEligibility');
+const { publicProfileSql } = require('../utils/installerEligibility');
+const { getLinkInstaller, hasLinkTokenShape, mayUseClientLink, readInstallerLinkToken } = require('../services/installerClientLink');
 
 function reportLocationError(error, req) {
   void logApplicationError({
@@ -709,6 +710,7 @@ exports.getInstallerProfile = async (req, res) => {
       ? requestedOrder : null;
     const requestToken = String(req.headers['x-client-request-token'] || '').trim().slice(0, 80);
     const clientId = req.user?.account_type === 'client' ? req.userId : null;
+    const inviteToken = requestId ? '' : readInstallerLinkToken(req);
 
     if (!Number.isSafeInteger(installerId) || installerId <= 0 || installerId > 2147483647) {
       return res.status(400).json({ error: 'Instalador inválido.' });
@@ -717,6 +719,9 @@ exports.getInstallerProfile = async (req, res) => {
     // This endpoint can also return an account-specific preview or a
     // non-public profile associated with the caller's order.
     res.set('Cache-Control', 'private, no-store');
+    if (inviteToken) res.set('X-Robots-Tag', 'noindex, nofollow');
+    const hasInvite = hasLinkTokenShape(inviteToken) &&
+      await mayUseClientLink(await getLinkInstaller(installerId), inviteToken);
 
     const [installerResult, reviewsResult, scheduleResult, availabilityResult] = await Promise.all([
       pool.query(
@@ -789,6 +794,7 @@ exports.getInstallerProfile = async (req, res) => {
             AND (
               ${publicProfileSql('u')}
               OR $2::boolean = TRUE
+              OR $6::boolean = TRUE
               OR (
                 EXISTS (
                   SELECT 1
@@ -801,7 +807,7 @@ exports.getInstallerProfile = async (req, res) => {
               )
             )
         `,
-        [installerId, ownInstallerPreview, requestId, requestToken, clientId]
+        [installerId, ownInstallerPreview, requestId, requestToken, clientId, hasInvite]
       ),
       pool.query(
         `
@@ -845,6 +851,7 @@ exports.getInstallerProfile = async (req, res) => {
       return res.status(404).json({ error: 'Instalador não encontrado.' });
     }
 
+    const acceptsDirect = hasInvite || (!inviteToken && await mayUseClientLink(installer, ''));
     return res.json({
       installer: (() => {
         const {
@@ -877,7 +884,7 @@ exports.getInstallerProfile = async (req, res) => {
 
         return {
           ...publicInstaller,
-          accepts_direct_requests: acceptsDirectRequests(installer),
+          accepts_direct_requests: acceptsDirect,
           profile_appearance: normalizeProfileAppearance(installer.profile_appearance),
           average_rating: Number(installer.average_rating || 0),
           installation_gallery: installationGallery,

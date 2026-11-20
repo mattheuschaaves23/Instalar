@@ -26,6 +26,9 @@ const installer = { id: 42, display_name: 'Instalador QA', installation_gallery:
 const owner = { id: 42, name: 'Instalador QA', phone: '48999990000', city: 'Palhoça', state: 'SC', email: 'qa@example.test', email_verified: true, public_profile: true, certification_verified: true };
 const opportunity = { id: 32, is_direct: true, status: 'open', service_label: 'Instalação de papel de parede', city: 'Curitiba', state: 'PR' };
 const accessCode = '1234567890abcdef1234567890abcdef1234567890abcdef';
+const inviteToken = 'A'.repeat(43);
+const sharePath = `/installers/42?orcamento=1#convite=${inviteToken}`;
+const shareUrl = `https://instalarpro.com.br${sharePath}`;
 const openProfile = (initialEntry, ownerPreview) => render(
   <MemoryRouter initialEntries={[initialEntry]}><Routes>
     <Route path="/installers/:id" element={<InstallerProfile ownerPreview={ownerPreview} />} />
@@ -38,6 +41,7 @@ beforeEach(() => {
   state.user = null;
   api.get.mockReset().mockImplementation(async (url) => {
     if (url === '/users/profile') return { data: owner };
+    if (url === '/users/client-link') return { data: { status: 'ready', url: shareUrl } };
     if (url === '/public/installers/42') return { data: { installer } };
     if (url === '/opportunities') return { data: { opportunities: [opportunity], eligibility: { can_express_interest: false }, stats: { open: 1 } } };
     throw new Error('Unexpected GET');
@@ -71,11 +75,12 @@ it('substitui a nota inicial pela média real mesmo quando a primeira nota é me
   expect(screen.queryByText('Nota inicial')).toBeNull();
 });
 
-it('instalador com perfil público pode copiar o link em Meu perfil sem certificado', async () => {
+it('instalador Pro pode copiar o link com perfil oculto e sem certificado', async () => {
   state.user = { id: 42, account_type: 'installer' };
+  const defaultGet = api.get.getMockImplementation();
   api.get.mockImplementation(async (url) => url === '/users/profile'
-    ? { data: { ...owner, certification_verified: false } }
-    : { data: { installer: { ...installer, certificate_verified: false } } });
+    ? { data: { ...owner, public_profile: false, certification_verified: false } }
+    : defaultGet(url));
   const writeText = vi.fn().mockResolvedValue(undefined);
   vi.stubGlobal('navigator', Object.assign(Object.create(window.navigator), { clipboard: { writeText } }));
   openOwner();
@@ -86,20 +91,20 @@ it('instalador com perfil público pode copiar o link em Meu perfil sem certific
   expect(screen.getAllByRole('button', { name: /copiar link/i })).toHaveLength(1);
   fireEvent.click(copy);
   expect((await section.findByRole('status')).textContent).toContain('Link copiado');
-  expect(writeText).toHaveBeenCalledWith('https://instalarpro.com.br/installers/42?orcamento=1');
+  expect(writeText).toHaveBeenCalledWith(shareUrl);
 });
 
-it('explica por que o link não está disponível quando o perfil é oculto', async () => {
+it('mostra o plano Pro em vez do botão de copiar para um instalador do plano Grátis', async () => {
   state.user = { id: 42, account_type: 'installer' };
-  api.get.mockImplementation(async (url) => url === '/users/profile'
-    ? { data: { ...owner, public_profile: false, certification_verified: false } }
-    : { data: { installer: { ...installer, accepts_direct_requests: false } } });
+  const defaultGet = api.get.getMockImplementation();
+  api.get.mockImplementation(async (url) => url === '/users/client-link'
+    ? { data: { status: 'plan_required', url: null } }
+    : defaultGet(url));
   openOwner();
   const section = within(await screen.findByRole('region', { name: 'Link para clientes' }));
-  expect(section.getByText(/perfil público.*análise/i)).toBeTruthy();
+  expect(await section.findByText('Exclusivo do plano Pro.')).toBeTruthy();
   expect(section.queryByRole('button', { name: /copiar link/i })).toBeNull();
-  expect(section.getByText(/não precisa de certificado/i)).toBeTruthy();
-  expect(section.getByRole('link', { name: 'Pedir liberação pelo suporte' }).getAttribute('href')).toBe('/support');
+  expect(section.getByRole('link', { name: 'Ver plano Pro' }).getAttribute('href')).toBe('/subscription');
 });
 
 it('abre a seção de compartilhamento direto pelo atalho em Oportunidades', async () => {
@@ -118,12 +123,15 @@ it('oferece cópia manual quando o navegador não autoriza a área de transferê
   vi.stubGlobal('navigator', Object.assign(Object.create(window.navigator), { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } }));
   openOwner();
   fireEvent.click(await screen.findByRole('button', { name: 'Copiar link para clientes' }));
-  expect((await screen.findByRole('textbox', { name: 'Link para copiar manualmente' })).value).toBe('https://instalarpro.com.br/installers/42?orcamento=1');
+  expect((await screen.findByRole('textbox', { name: 'Link para copiar manualmente' })).value).toBe(shareUrl);
 });
 
 it('visitante envia só para o instalador do perfil e recebe o link privado de acompanhamento', async () => {
-  openProfile('/installers/42?orcamento=1');
+  openProfile(sharePath);
   fireEvent.click(await screen.findByRole('button', { name: 'Pedir orçamento a este instalador' }));
+  expect(api.get).toHaveBeenCalledWith('/public/installers/42', expect.objectContaining({
+    headers: { 'X-Installer-Link-Token': inviteToken },
+  }));
   const send = screen.getByRole('button', { name: 'Enviar pedido ao instalador' });
   expect(send.disabled).toBe(true);
   const entries = [
@@ -140,7 +148,7 @@ it('visitante envia só para o instalador do perfil e recebe o link privado de a
   expect(api.post).toHaveBeenCalledWith('/public/installers/42/direct-requests', {
     client_name: 'Cliente visitante', client_phone: '(48) 99999-0001', city: 'Curitiba', state: 'PR',
     details: 'Papel de parede na sala', privacy_consent: true, turnstile_token: 'qa-challenge',
-  });
+  }, { headers: { 'X-Installer-Link-Token': inviteToken } });
 });
 
 it('aceita o pedido direto no painel e abre o rascunho sem abrir WhatsApp', async () => {

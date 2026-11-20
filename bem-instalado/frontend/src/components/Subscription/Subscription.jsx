@@ -18,6 +18,7 @@ const FREE_ITEMS = [
 
 const PRO_ITEMS = [
   'Interesses, clientes e orçamentos ilimitados',
+  'Link para receber pedidos direto dos seus clientes',
   'Orçamentos com vários ambientes',
   'PDF profissional com a sua marca',
   'Dashboard comercial e análises avançadas',

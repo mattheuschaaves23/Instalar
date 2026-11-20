@@ -1,11 +1,32 @@
 const crypto = require('crypto');
 const pool = require('../config/database');
-const { normalizeBrazilianWhatsApp, acceptsDirectRequests, publicProfileSql } = require('../utils/installerEligibility');
+const { normalizeBrazilianWhatsApp, getInstallerReadiness } = require('../utils/installerEligibility');
+const {
+  buildInstallerClientLink, getLinkInstaller, hasActiveClientLinkPlan, mayUseClientLink, readInstallerLinkToken,
+} = require('../services/installerClientLink');
 const { BRAZIL_STATES } = require('../utils/postalAddress');
 const { consentVersion } = require('../../shared/legalDocuments.json');
+const linkContract = require('../../shared/installerClientLink.json');
 
 const text = (value) => typeof value === 'string' ? value.trim() : '';
 const validId = (value) => Number.isInteger(value) && value > 0 && value <= 2147483647;
+
+exports.getOwnClientLink = async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  try {
+    const installer = await getLinkInstaller(req.userId);
+    if (!installer) return res.status(404).json({ error: 'Perfil de instalador não encontrado.' });
+    if (!(await hasActiveClientLinkPlan(installer.id))) {
+      return res.json({ status: linkContract.status.planRequired, url: null });
+    }
+    if (!getInstallerReadiness(installer).ready) {
+      return res.json({ status: linkContract.status.incomplete, url: null });
+    }
+    return res.json({ status: linkContract.status.ready, url: buildInstallerClientLink(installer) });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Não foi possível carregar o link para clientes.' });
+  }
+};
 
 exports.create = async (req, res) => {
   const installerId = Number(req.params.id);
@@ -16,6 +37,7 @@ exports.create = async (req, res) => {
   const state = text(input.state).toUpperCase();
   const details = text(input.details);
   const clientId = req.user?.account_type === 'client' ? req.userId : null;
+  const linkToken = readInstallerLinkToken(req);
 
   if (!validId(installerId) || req.userId === installerId) return res.status(400).json({ error: 'Escolha outro instalador para enviar o pedido.' });
   if (name.length < 2 || name.length > 120 || !phone) return res.status(400).json({ error: 'Informe um nome e um WhatsApp brasileiro válido, com DDD.' });
@@ -27,13 +49,8 @@ exports.create = async (req, res) => {
   try {
     db = await pool.connect();
     await db.query('BEGIN');
-    const { rows: [installer] } = await db.query(
-      `SELECT name, phone, email, email_verified_at, city, state, ${publicProfileSql()} AS public_profile
-       FROM users WHERE id = $1 AND deleted_at IS NULL AND COALESCE(account_type, 'installer') = 'installer'
-       FOR SHARE`,
-      [installerId],
-    );
-    if (!acceptsDirectRequests(installer)) {
+    const installer = await getLinkInstaller(installerId, db, { lock: true });
+    if (!(await mayUseClientLink(installer, linkToken, db))) {
       await db.query('ROLLBACK');
       return res.status(404).json({ error: 'Este perfil não está disponível para receber pedidos diretos.' });
     }

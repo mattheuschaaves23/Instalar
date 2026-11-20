@@ -1,5 +1,7 @@
 const express = require('express');
 const controller = require('../controllers/userController');
+const { getOwnClientLink } = require('../controllers/directServiceRequestController');
+const linkContract = require('../../shared/installerClientLink.json');
 const auth = require('../middleware/authMiddleware');
 const requireAccountType = require('../middleware/accountTypeMiddleware');
 const requireVerifiedEmail = require('../middleware/verifiedEmailMiddleware');
@@ -18,6 +20,7 @@ const uploadSingleProfileAsset = (req, res, next) => {
 };
 
 router.get('/profile', auth, controller.getProfile);
+router.get(linkContract.ownerPath.slice('/users'.length), auth, requireInstaller, getOwnClientLink);
 router.get('/pdf-branding', auth, requireInstaller, requireVerifiedEmail, controller.getPdfBranding);
 router.get('/data-export', auth, controller.exportOwnData);
 router.delete('/account', auth, controller.deleteOwnAccount);

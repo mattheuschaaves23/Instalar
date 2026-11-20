@@ -1,17 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
-import { getInstallerRequirements } from '../../utils/installerRequirements';
-import legalDocuments from '../../../../shared/legalDocuments.json';
+import api from '../../services/api';
+import linkContract from '../../../../shared/installerClientLink.json';
 
-export default function ClientProfileLink({ profile, preview, failed, onRetry }) {
+export default function ClientProfileLink() {
   const { hash } = useLocation();
   const headingRef = useRef(null);
   const manualLinkRef = useRef(null);
   const [copyStatus, setCopyStatus] = useState('');
-  const isPublic = Boolean(profile.public_profile);
-  const hasEssentials = getInstallerRequirements(profile).every(({ complete }) => complete);
-  const canShare = isPublic && hasEssentials && preview?.accepts_direct_requests === true;
-  const url = `${legalDocuments.publicOrigin}/installers/${profile.id}?orcamento=1`;
+  const [link, setLink] = useState(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const url = link?.status === linkContract.status.ready ? link.url : null;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLink(null);
+    setCopyStatus('');
+    setFailed(false);
+    api.get(linkContract.ownerPath, { signal: controller.signal }).then(({ data }) => {
+      if (!controller.signal.aborted) setLink(data);
+    }).catch(() => {
+      if (!controller.signal.aborted) setFailed(true);
+    });
+    return () => controller.abort();
+  }, [attempt]);
 
   useEffect(() => {
     if (hash !== '#link-para-clientes') return;
@@ -20,10 +33,10 @@ export default function ClientProfileLink({ profile, preview, failed, onRetry })
   }, [hash]);
 
   useEffect(() => {
-    if (!canShare || copyStatus !== 'manual') return;
+    if (!url || copyStatus !== 'manual') return;
     manualLinkRef.current?.focus();
     manualLinkRef.current?.select();
-  }, [canShare, copyStatus]);
+  }, [url, copyStatus]);
 
   const copy = async () => {
     try {
@@ -38,10 +51,10 @@ export default function ClientProfileLink({ profile, preview, failed, onRetry })
     <section aria-labelledby="client-profile-link-title" className="profile-client-link" id="link-para-clientes">
       <div className="profile-client-link-copy">
         <h3 id="client-profile-link-title" ref={headingRef} tabIndex={-1}>Link para clientes</h3>
-        <p>Use com clientes que você encontrou por fora da InstalarPro. Mande pelo WhatsApp ou por onde preferir: o cliente preenche o pedido sem criar conta, e ele chega só para você em <strong>Oportunidades</strong>.</p>
+        <p>Com o plano Pro, mande este link pelo WhatsApp. O cliente preenche o pedido sem criar conta, e ele chega só para você em <strong>Oportunidades</strong>. Quem tem o link pode abrir seu perfil, mesmo que ele não apareça na busca.</p>
       </div>
 
-      {canShare ? (
+      {url ? (
         <div className="profile-client-link-actions">
           <button className="profile-client-link-button" onClick={copy} type="button">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -58,14 +71,12 @@ export default function ClientProfileLink({ profile, preview, failed, onRetry })
         </div>
       ) : (
         <div className="profile-client-link-state">
-          {!isPublic ? (
-            <><p><strong>Link ainda indisponível.</strong> Ele funciona com o perfil público, liberado após análise. Você não precisa de certificado para pedir a liberação.</p><Link className="profile-inline-button" to="/support">Pedir liberação pelo suporte</Link></>
-          ) : !hasEssentials ? (
+          {link?.status === linkContract.status.planRequired ? (
+            <><p><strong>Exclusivo do plano Pro.</strong> Ative o plano para receber pedidos por um link direto, sem precisar publicar seu perfil.</p><Link className="profile-inline-button" to="/subscription">Ver plano Pro</Link></>
+          ) : link?.status === linkContract.status.incomplete ? (
             <><p><strong>Faltam dados no seu perfil.</strong> Complete os dados essenciais e confirme o e-mail para liberar o link.</p><Link className="profile-inline-button" to="/profile?editar=1&secao=dados">Conferir dados para pedidos</Link></>
           ) : failed ? (
-            <><p role="status">Não foi possível confirmar se seu perfil pode receber pedidos pelo link.</p><button className="profile-inline-button" onClick={onRetry} type="button">Tentar novamente</button></>
-          ) : preview ? (
-            <p role="status">Seu perfil está público, mas o envio de pedidos pelo link ainda não está disponível.</p>
+            <><p role="status">Não foi possível carregar o link para clientes.</p><button className="profile-inline-button" onClick={() => setAttempt((value) => value + 1)} type="button">Tentar novamente</button></>
           ) : <p role="status">Verificando disponibilidade do link…</p>}
         </div>
       )}

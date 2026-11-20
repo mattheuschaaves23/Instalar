@@ -1,4 +1,5 @@
 import { readClientRequestTrackingHash } from './clientRequest';
+import linkContract from '../../../shared/installerClientLink.json';
 
 export const PROFILE_SECTIONS = [
   { id: 'projetos', label: 'Projetos', icon: 'grid' },
@@ -13,9 +14,15 @@ function isSection(value) {
   return value === REVIEW_FORM_ANCHOR || PROFILE_SECTIONS.some(({ id }) => id === value);
 }
 
+const linkTokenPattern = new RegExp(linkContract.tokenPattern);
+export function readInstallerLinkTokenFromHash(hash) {
+  const token = new URLSearchParams(String(hash || '').replace(/^#/, '')).get(linkContract.fragmentKey) || '';
+  return linkTokenPattern.test(token) ? token : '';
+}
+
 export function readProfileSection(hash) {
   const fragment = String(hash || '').replace(/^#/, '');
-  const section = readClientRequestTrackingHash(hash)
+  const section = readClientRequestTrackingHash(hash) || readInstallerLinkTokenFromHash(hash)
     ? new URLSearchParams(fragment).get('secao')
     : fragment;
   return isSection(section) ? section : '';
@@ -23,6 +30,8 @@ export function readProfileSection(hash) {
 
 export function buildProfileSectionHash(section, hash = '') {
   const target = isSection(section) ? section : PROFILE_SECTIONS[0].id;
+  const invite = readInstallerLinkTokenFromHash(hash);
+  if (invite) return `#${new URLSearchParams({ [linkContract.fragmentKey]: invite, secao: target })}`;
   const tracking = readClientRequestTrackingHash(hash);
   if (!tracking) return `#${target}`;
   return `#${new URLSearchParams({

@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-test('pedido de visitante fica com um único instalador e o aceite não duplica o orçamento', { skip: !process.env.TEST_DATABASE_URL }, async (t) => {
+test('link Pro funciona com perfil oculto, limita o pedido a um instalador e respeita o fim do plano', { skip: !process.env.TEST_DATABASE_URL }, async (t) => {
   const database = new URL(process.env.TEST_DATABASE_URL);
   assert.ok(['127.0.0.1', 'localhost', '[::1]'].includes(database.hostname), 'Use PostgreSQL local para testes de escrita.');
   process.env.DATABASE_URL = database.toString();
@@ -34,10 +34,11 @@ test('pedido de visitante fica com um único instalador e o aceite não duplica 
           ...(options.body ? { 'Content-Type': 'application/json' } : {}),
           ...(options.user ? { Authorization: `Bearer ${jwt.sign({ id: options.user, v: 0 }, jwtSecret)}` } : {}),
           ...(options.token ? { 'X-Client-Request-Token': options.token } : {}),
+          ...(options.invite ? { 'X-Installer-Link-Token': options.invite } : {}),
         },
         body: options.body ? JSON.stringify(options.body) : undefined,
       });
-      return { status: response.status, body: await response.json() };
+      return { status: response.status, headers: response.headers, body: await response.json() };
     };
     const addInstaller = async (label, visible, verified = true) => {
       const { rows } = await pool.query(`
@@ -69,21 +70,48 @@ test('pedido de visitante fica com um único instalador e o aceite não duplica 
     const profile = await api(`/public/installers/${installer}`);
     assert.equal(profile.status, 200);
     assert.equal(profile.body.installer.certificate_verified, false);
+    assert.equal(profile.body.installer.accepts_direct_requests, false);
+    assert.equal((await api('/users/client-link')).status, 401);
+    assert.deepEqual((await api('/users/client-link', { user: installer })).body, { status: 'plan_required', url: null });
+    assert.deepEqual((await api('/users/client-link', { user: hidden })).body, { status: 'plan_required', url: null });
     const directory = await api('/public/installers');
     assert.equal(directory.status, 200);
     const visible = directory.body.installers.find((row) => row.id === installer);
     assert.equal(visible?.certificate_verified, false);
     assert.equal(directory.body.installers.some((row) => row.id === hidden), false);
+
+    const hide = { method: 'PATCH', body: { public_profile: false }, user: hidden };
+    assert.equal((await api(visibilityPath, hide)).status, 200);
+    await pool.query("INSERT INTO subscriptions (user_id, plan, status) VALUES ($1, 'pro', 'active')", [installer]);
+    const ownLink = await api('/users/client-link', { user: installer });
+    assert.equal(ownLink.status, 200, JSON.stringify(ownLink.body));
+    assert.equal(ownLink.body.status, 'ready');
+    assert.match(ownLink.headers.get('cache-control'), /no-store/);
+    const url = new URL(ownLink.body.url);
+    assert.equal(url.pathname, `/installers/${installer}`);
+    assert.equal(url.search, '?orcamento=1');
+    const invite = new URLSearchParams(url.hash.slice(1)).get('convite');
+    assert.match(invite, /^[A-Za-z0-9_-]{43}$/);
+    await pool.query("UPDATE users SET phone = '' WHERE id = $1", [installer]);
+    assert.deepEqual((await api('/users/client-link', { user: installer })).body, { status: 'incomplete', url: null });
+    assert.equal((await api(`/public/installers/${installer}`, { invite })).status, 404);
+    await pool.query("UPDATE users SET phone = '48999990000' WHERE id = $1", [installer]);
+    assert.equal((await api(`/public/installers/${installer}`)).status, 404);
+    assert.equal((await api(`/public/installers/${hidden}`, { invite })).status, 404);
+    const invited = await api(`/public/installers/${installer}`, { invite });
+    assert.equal(invited.status, 200, JSON.stringify(invited.body));
+    assert.equal(invited.headers.get('x-robots-tag'), 'noindex, nofollow');
+    assert.equal(invited.body.installer.accepts_direct_requests, true);
+    assert.equal(invited.body.installer.email, undefined);
+    assert.equal(invited.body.installer.phone, undefined);
+    assert.equal((await api('/public/installers')).body.installers.some((row) => row.id === installer), false);
     const payload = {
       client_name: 'Cliente visitante QA', client_phone: '48999990001', city: 'Palhoça', state: 'SC',
       details: 'Instalação na sala', privacy_consent: true, turnstile_token: 'checked-by-qa',
     };
-    const send = (id, body = payload) => api(`/public/installers/${id}/direct-requests`, { method: 'POST', body });
+    const send = (id, body = payload) => api(`/public/installers/${id}/direct-requests`, { method: 'POST', body, invite: id === installer ? invite : undefined });
     const created = await send(installer, { ...payload, city: 'Curitiba', state: 'PR' });
     assert.equal(created.status, 201, JSON.stringify(created.body));
-    assert.equal(profile.body.installer.accepts_direct_requests, true);
-    assert.equal(profile.body.installer.email, undefined);
-    assert.equal(profile.body.installer.phone, undefined);
     requestId = created.body.service_request.id;
     const token = created.body.service_request.client_access_token;
     assert.ok(token);
@@ -165,6 +193,7 @@ test('pedido de visitante fica com um único instalador e o aceite não duplica 
     assert.equal(draftAsOwner.body.request.client_phone, '5548999990001');
     assert.equal((await api(`/budgets/${draftId}/draft`, { user: other })).status, 404);
 
+    assert.equal((await api(visibilityPath, { ...publish, user: hidden })).status, 200);
     await pool.query("UPDATE users SET certificate_file = 'qa-certificate.pdf', certification_verified = TRUE WHERE id = $1", [installer]);
     const clearCertificate = await api('/users/profile', { method: 'PUT', body: { certificate_file: '' }, user: installer });
     assert.equal(clearCertificate.status, 200);
@@ -173,9 +202,10 @@ test('pedido de visitante fica com um único instalador e o aceite não duplica 
     assert.equal(clearCertificate.body.certification_status, 'not_submitted');
     assert.equal((await api(`/public/installers/${installer}`)).body.installer.accepts_direct_requests, true);
 
-    const removed = await api(visibilityPath, { method: 'PATCH', body: { public_profile: false }, user: hidden });
-    assert.equal(removed.status, 200);
-    assert.equal((await api(`/public/installers/${installer}`)).status, 404);
+    assert.equal((await api(visibilityPath, hide)).status, 200);
+    await pool.query("UPDATE subscriptions SET expires_at = NOW() - INTERVAL '1 minute' WHERE user_id = $1", [installer]);
+    assert.deepEqual((await api('/users/client-link', { user: installer })).body, { status: 'plan_required', url: null });
+    assert.equal((await api(`/public/installers/${installer}`, { invite })).status, 404);
     assert.equal((await send(installer)).status, 404);
   } finally {
     if (server) await new Promise((resolve) => server.close(resolve));

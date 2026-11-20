@@ -1,0 +1,12 @@
+{
+  "ownerPath": "/users/client-link",
+  "authorizationHeader": "X-Installer-Link-Token",
+  "fragmentKey": "convite",
+  "modeParameter": "orcamento",
+  "tokenPattern": "^[A-Za-z0-9_-]{43}$",
+  "status": {
+    "ready": "ready",
+    "planRequired": "plan_required",
+    "incomplete": "incomplete"
+  }
+}

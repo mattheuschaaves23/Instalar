@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readClientRequestTrackingHash } from './clientRequest';
-import { buildProfileSectionHash, readProfileSection } from './installerProfileSections';
+import { buildProfileSectionHash, readInstallerLinkTokenFromHash, readProfileSection } from './installerProfileSections';
 
 describe('abas do perfil do instalador', () => {
   it.each(['projetos', 'agenda', 'avaliacoes', 'informacoes', 'avaliar-instalador'])('preserva o link direto para %s', (section) => {
@@ -21,5 +21,13 @@ describe('abas do perfil do instalador', () => {
   it('ignora fragmentos desconhecidos', () => {
     expect(readProfileSection('#outro')).toBe('');
     expect(buildProfileSectionHash('outro')).toBe('#projetos');
+  });
+
+  it('mantém o convite do perfil não listado ao alternar abas', () => {
+    const invite = 'a'.repeat(43);
+    const agenda = buildProfileSectionHash('agenda', `#convite=${invite}`);
+    expect(readProfileSection(agenda)).toBe('agenda');
+    expect(readInstallerLinkTokenFromHash(agenda)).toBe(invite);
+    expect(readClientRequestTrackingHash(agenda)).toBeNull();
   });
 });
