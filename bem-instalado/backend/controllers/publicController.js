@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const pool = require('../config/database');
 const { buildAvailableDates } = require('../utils/installerAvailability');
+const { SQL_LOCAL_TODAY, sqlLocal } = require('../utils/appTimeZone');
 const reverseGeocode = require('../utils/reverseGeocode');
 const forwardGeocode = require('../utils/forwardGeocode');
 const { normalizeSearchText } = require('../utils/textSearch');
@@ -502,8 +503,8 @@ exports.getInstallers = async (req, res) => {
             FROM schedules
             WHERE user_id = ANY($1::INT[])
               AND status <> 'canceled'
-              AND date >= CURRENT_DATE
-              AND date < CURRENT_DATE + INTERVAL '35 days'
+              AND ${sqlLocal('date')}::date >= ${SQL_LOCAL_TODAY}
+              AND ${sqlLocal('date')}::date < ${SQL_LOCAL_TODAY} + 35
             GROUP BY user_id
           `,
           [installerIds]
@@ -514,8 +515,8 @@ exports.getInstallers = async (req, res) => {
             FROM installer_availability_slots
             WHERE user_id = ANY($1::INT[])
               AND is_active = TRUE
-              AND slot_date >= CURRENT_DATE
-              AND slot_date < CURRENT_DATE + INTERVAL '35 days'
+              AND slot_date >= ${SQL_LOCAL_TODAY}
+              AND slot_date < ${SQL_LOCAL_TODAY} + 35
             ORDER BY slot_date ASC, start_time ASC
           `,
           [installerIds]
@@ -825,8 +826,8 @@ exports.getInstallerProfile = async (req, res) => {
           FROM schedules
           WHERE user_id = $1
             AND status <> 'canceled'
-            AND date >= CURRENT_DATE
-            AND date < CURRENT_DATE + INTERVAL '35 days'
+            AND ${sqlLocal('date')}::date >= ${SQL_LOCAL_TODAY}
+            AND ${sqlLocal('date')}::date < ${SQL_LOCAL_TODAY} + 35
         `,
         [installerId]
       ),
@@ -836,8 +837,8 @@ exports.getInstallerProfile = async (req, res) => {
           FROM installer_availability_slots
           WHERE user_id = $1
             AND is_active = TRUE
-            AND slot_date >= CURRENT_DATE
-            AND slot_date < CURRENT_DATE + INTERVAL '70 days'
+            AND slot_date >= ${SQL_LOCAL_TODAY}
+            AND slot_date < ${SQL_LOCAL_TODAY} + 70
           ORDER BY slot_date ASC, start_time ASC
           LIMIT 120
         `,

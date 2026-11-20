@@ -1,3 +1,5 @@
+const { localDateKey } = require('./appTimeZone');
+
 const VALID_DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 function normalizeInstallationDays(value) {
@@ -15,15 +17,17 @@ function normalizeInstallationDays(value) {
   return [];
 }
 
+// As datas candidatas sao meio-dia UTC (09:00 em Sao Paulo) do dia de Sao Paulo,
+// entao a chave e o dia da semana saem dos campos UTC, sem depender do fuso do servidor.
 function dateKey(date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
+  const year = date.getUTCFullYear();
+  const month = `${date.getUTCMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getUTCDate()}`.padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
 function weekdayKey(date) {
-  return VALID_DAYS[date.getDay()];
+  return VALID_DAYS[date.getUTCDay()];
 }
 
 function buildAvailableDates(installationDays, busyDates = [], limit = 5) {
@@ -36,16 +40,14 @@ function buildAvailableDates(installationDays, busyDates = [], limit = 5) {
   const blocked = new Set(
     busyDates
       .filter(Boolean)
-      .map((value) => dateKey(new Date(value)))
+      .map((value) => localDateKey(value))
   );
 
   const results = [];
-  const current = new Date();
-  current.setHours(12, 0, 0, 0);
+  const [year, month, day] = localDateKey(new Date()).split('-').map(Number);
 
   for (let step = 0; step < 35 && results.length < limit; step += 1) {
-    const candidate = new Date(current);
-    candidate.setDate(current.getDate() + step);
+    const candidate = new Date(Date.UTC(year, month - 1, day + step, 12, 0, 0, 0));
 
     if (!normalizedDays.includes(weekdayKey(candidate))) {
       continue;

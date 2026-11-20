@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS budgets (
   installment_interest_rate NUMERIC(5, 2) NOT NULL DEFAULT 0,
   payment_terms JSONB NOT NULL DEFAULT '[]'::jsonb,
   approved_date TIMESTAMP,
-  schedule_date TIMESTAMP,
+  schedule_date TIMESTAMPTZ,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS schedules (
   client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   title VARCHAR(200) NOT NULL,
   description TEXT,
-  date TIMESTAMP NOT NULL,
+  date TIMESTAMPTZ NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
   service_street VARCHAR(160),
   service_number VARCHAR(30),
