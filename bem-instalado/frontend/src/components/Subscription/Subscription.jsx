@@ -259,15 +259,21 @@ export default function Subscription() {
             Comece grátis.
             <span>Cresça no seu ritmo.</span>
           </h1>
-          <p>
-            Organize seu trabalho sem pagar nada e ative o Pro quando precisar de mais volume,
-            apresentação e controle.
-          </p>
-          <div className="subscription-v3-hero-points">
-            <span>Sem fidelidade</span>
-            <span>Cancele quando quiser</span>
-            <span>Seus dados continuam salvos</span>
-          </div>
+          {isStoreApp ? (
+            <p>Veja o seu plano e quanto você já usou neste mês.</p>
+          ) : (
+            <>
+              <p>
+                Organize seu trabalho sem pagar nada e ative o Pro quando precisar de mais volume,
+                apresentação e controle.
+              </p>
+              <div className="subscription-v3-hero-points">
+                <span>Sem fidelidade</span>
+                <span>Cancele quando quiser</span>
+                <span>Seus dados continuam salvos</span>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="subscription-v3-current">
@@ -302,16 +308,20 @@ export default function Subscription() {
           <div aria-hidden="true" className="subscription-v3-plan-shine" />
           <div className="subscription-v3-plan-head">
             <div>
-              <span className="subscription-v3-plan-label">Mais escolhido</span>
+              <span className="subscription-v3-plan-label">{isStoreApp ? 'Sem limites' : 'Mais escolhido'}</span>
               <h2>Pro</h2>
             </div>
-            <span className="subscription-v3-pro-badge">{isPro ? 'Plano atual' : 'Recomendado'}</span>
+            {isPro || !isStoreApp ? (
+              <span className="subscription-v3-pro-badge">{isPro ? 'Plano atual' : 'Recomendado'}</span>
+            ) : null}
           </div>
 
-          <div className="subscription-v3-price">
-            <strong>{formatCurrency(pricing.amount)}</strong>
-            <span>por {pricing.period || 'mês'}</span>
-          </div>
+          {isStoreApp ? null : (
+            <div className="subscription-v3-price">
+              <strong>{formatCurrency(pricing.amount)}</strong>
+              <span>por {pricing.period || 'mês'}</span>
+            </div>
+          )}
           <p className="subscription-v3-plan-description">
             Para trabalhar sem limites e apresentar uma operação mais profissional.
           </p>
@@ -319,11 +329,7 @@ export default function Subscription() {
 
           <div className="subscription-v3-plan-action">
             {!isPro ? (
-              isStoreApp ? (
-                <div className="subscription-v3-store-note">
-                  Assine pelo site. O plano aparece no aplicativo automaticamente.
-                </div>
-              ) : (
+              isStoreApp ? null : (
                 <>
                   <button
                     className="subscription-v3-primary"
@@ -437,11 +443,13 @@ export default function Subscription() {
         <div className="subscription-v3-provider-error">{subscription.provider_error}</div>
       ) : null}
 
-      <footer className="subscription-v3-footer">
-        <span>Pagamento protegido</span>
-        <span>Ativação automática</span>
-        <span>Sem taxa de cancelamento</span>
-      </footer>
+      {isStoreApp ? null : (
+        <footer className="subscription-v3-footer">
+          <span>Pagamento protegido</span>
+          <span>Ativação automática</span>
+          <span>Sem taxa de cancelamento</span>
+        </footer>
+      )}
     </section>
   );
 }

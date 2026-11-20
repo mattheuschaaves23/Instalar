@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 import PageIntro from '../Layout/PageIntro';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import api from '../../services/api';
+import { isNativeStoreApp } from '../../utils/nativePlatform';
+import { planLinkLabel } from '../../utils/storePlanCopy';
 
 const DEFAULT_BRANDING = {
   brand_name: '',
@@ -147,9 +149,13 @@ export default function PdfBranding() {
               <PdfBrandingIcon type="lock" />
               <div>
                 <strong>Personalização disponível no Pro</strong>
-                <span>Você pode montar sua prévia agora; para salvar e aplicar aos PDFs, ative o plano Pro.</span>
+                <span>
+                  {isNativeStoreApp()
+                    ? 'Você pode montar sua prévia agora; salvar e aplicar aos PDFs é um recurso do plano Pro.'
+                    : 'Você pode montar sua prévia agora; para salvar e aplicar aos PDFs, ative o plano Pro.'}
+                </span>
               </div>
-              <Link to="/subscription">Conhecer o Pro</Link>
+              <Link to="/subscription">{planLinkLabel('Conhecer o Pro')}</Link>
             </div>
           ) : null}
 

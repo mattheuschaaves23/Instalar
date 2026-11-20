@@ -1107,7 +1107,7 @@ exports.createAvailabilitySlot = async (req, res) => {
     if (isLimitReached(planAccess, 'availability_slots')) {
       return upgradeRequired(res, {
         code: 'FREE_AVAILABILITY_LIMIT',
-        error: `O plano Grátis permite até ${planAccess.limits.availability_slots} horários futuros. Exclua um horário ou assine o Pro para adicionar sem limite.`,
+        error: `O plano Grátis permite até ${planAccess.limits.availability_slots} horários futuros. Exclua um horário para adicionar outro; no Pro, não há limite de horários.`,
         planAccess,
         feature: 'unlimited_availability',
       });

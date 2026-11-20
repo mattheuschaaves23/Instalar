@@ -65,7 +65,7 @@ exports.createClient = async (req, res) => {
     if (isLimitReached(planAccess, 'clients')) {
       return upgradeRequired(res, {
         code: 'FREE_CLIENT_LIMIT',
-        error: `O plano Grátis permite até ${planAccess.limits.clients} clientes. Você pode editar ou excluir os atuais, ou assinar o Pro para cadastrar sem limite.`,
+        error: `O plano Grátis permite até ${planAccess.limits.clients} clientes. Você pode editar ou excluir os atuais; no Pro, o cadastro de clientes é ilimitado.`,
         planAccess,
         feature: 'unlimited_clients',
       });
