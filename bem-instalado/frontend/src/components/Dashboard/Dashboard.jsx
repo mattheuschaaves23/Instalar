@@ -11,6 +11,7 @@ import {
 } from '../Layout/panelBadgeCounts';
 import { SidebarContent } from '../Layout/InstallerPanelShell';
 import { hasAdminAccess } from '../../utils/adminAccess';
+import { formatStarRating, installerRating } from '../../utils/installerRating';
 import BrandMark from '../Layout/BrandMark';
 import BrandWordmark from '../Layout/BrandWordmark';
 import {
@@ -630,7 +631,7 @@ export default function Dashboard() {
       completed_this_week: 0,
       available_dates: [],
       ranking_position: null,
-      average_rating: 0,
+      average_rating: null,
       review_count: 0,
       approved_this_month: 0,
       pending_budgets: 0,
@@ -906,6 +907,7 @@ export default function Dashboard() {
     },
   ];
 
+  const publicRating = metrics.average_rating == null ? null : installerRating(metrics);
   const quickSummary = [
     { label: 'Receita', value: formatCurrency(metrics.monthly_revenue), tone: 'positive' },
     {
@@ -918,8 +920,8 @@ export default function Dashboard() {
       tone: 'neutral',
     },
     {
-      label: 'Nota pública',
-      value: Number(metrics.average_rating || 0).toFixed(1),
+      label: publicRating?.isInitial ? 'Nota inicial' : 'Nota pública',
+      value: publicRating?.formatted ?? '—',
       tone: 'neutral',
     },
     {
@@ -1290,7 +1292,7 @@ export default function Dashboard() {
                 <div className="ref-panel-ranking-row" key={item.id || item.display_name || item.name || `ranking-${index}`}>
                   <em>{item.ranking_position ? `#${item.ranking_position}` : '-'}</em>
                   <span>{item.display_name || 'Instalador'}</span>
-                  <strong>{Number(item.average_rating || 0).toFixed(1)}</strong>
+                  <strong>{Number(item.review_count || 0) ? formatStarRating(item.average_rating) : 'Sem nota real'}</strong>
                 </div>
               )) : (
                 <p className="ref-panel-empty-copy">O ranking aparecerá quando houver serviços e avaliações reais.</p>
@@ -1676,7 +1678,7 @@ export default function Dashboard() {
                   <div className="dashboard-neo-top-item" key={item.id || item.display_name || item.name || `top-${index}`}>
                     <span>#{item.ranking_position}</span>
                     <p>{item.display_name}</p>
-                    <strong>{Number(item.average_rating || 0).toFixed(1)}</strong>
+                    <strong>{Number(item.review_count || 0) ? formatStarRating(item.average_rating) : 'Sem nota real'}</strong>
                   </div>
                 ))}
               </div>

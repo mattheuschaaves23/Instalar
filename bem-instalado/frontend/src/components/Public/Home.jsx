@@ -26,6 +26,7 @@ import ApprovedRequestIcon from './RequestIcon';
 import RequestManualAddress from './RequestManualAddress';
 import { EMPTY_MANUAL_ADDRESS, addressSearchKey, isPostalQuery, manualAddressFromLocation, manualAddressFromQuery, buildManualLocation, postalDigits, validateManualAddress } from '../../utils/requestAddress';
 import { getPreciseBrowserPosition, describeGpsAddress, manualAddressFromGps } from '../../utils/requestGeolocation';
+import { installerRating } from '../../utils/installerRating';
 
 const AUTO_LOCATION_SESSION_KEY = 'papelperto_client_location_checked';
 const INSTALLERS_PER_PAGE = 6;
@@ -566,6 +567,22 @@ function getInstallerMatchScore(installer, request) {
   }
 
   return Math.min(98, score);
+}
+
+function InstallerRatingLine({ installer }) {
+  const rating = installerRating(installer);
+  return (
+    <div className="client-app-rating-line">
+      <AppIcon name="star" />
+      <strong>{rating.formatted}</strong>
+      <span>{rating.isInitial ? 'Nota inicial · ' : ''}{rating.reviewsLabel}</span>
+    </div>
+  );
+}
+
+function InstallerInterestRating({ interest }) {
+  const rating = installerRating(interest);
+  return <small>{rating.formatted} estrelas · {rating.isInitial ? 'Nota inicial · ' : ''}{rating.reviewsLabel}</small>;
 }
 
 function getInstallerMatchReasons(installer, request) {
@@ -2665,11 +2682,7 @@ export default function Home() {
                           </button>
                         </div>
 
-                        <div className="client-app-rating-line">
-                          <AppIcon name="star" />
-                          <strong>{Number(installer.average_rating || 0).toFixed(1)}</strong>
-                          <span>({installer.review_count || 0} avaliações)</span>
-                        </div>
+                        <InstallerRatingLine installer={installer} />
 
                         <div className="client-app-match-row">
                           <span className="client-app-match-pill">{matchScore}% compatível</span>
@@ -2757,11 +2770,7 @@ export default function Home() {
                         </button>
                       </div>
 
-                      <div className="client-app-rating-line">
-                        <AppIcon name="star" />
-                        <strong>{Number(installer.average_rating || 0).toFixed(1)}</strong>
-                        <span>({installer.review_count || 0} avaliações)</span>
-                      </div>
+                      <InstallerRatingLine installer={installer} />
 
                       <div className="client-app-match-row">
                         <span className="client-app-match-pill">{matchScore}% compatível</span>
@@ -2979,9 +2988,7 @@ export default function Home() {
                     <div className="client-app-interest-copy">
                       <strong>{interest.display_name}</strong>
                       <span>{[interest.city, interest.state].filter(Boolean).join(', ') || 'Região informada no perfil'}</span>
-                      <small>
-                        {Number(interest.average_rating || 0).toFixed(1)} estrelas · {interest.review_count || 0} avaliações
-                      </small>
+                      <InstallerInterestRating interest={interest} />
                     </div>
                     <div className="client-app-interest-actions">
                       <Link

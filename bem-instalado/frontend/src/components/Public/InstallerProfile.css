@@ -206,9 +206,9 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
 .ig-rating-score > strong { color: var(--ig-ink); font-size: 2.65rem; font-weight: 850; letter-spacing: -.07em; line-height: 1; }
 .ig-rating-score > span { color: var(--ig-muted); font-size: .63rem; font-weight: 700; }
 .ig-profile-stars { display: inline-flex; gap: .07rem; color: #d9e1e3; }
-.ig-profile-stars i { font-size: .88rem; font-style: normal; line-height: 1; }
+.ig-profile-stars i { position: relative; font-size: .88rem; font-style: normal; line-height: 1; }
+.ig-profile-stars i::after { position: absolute; inset: 0; content: '★'; color: var(--ig-star); clip-path: inset(0 calc(100% - var(--ig-star-fill)) 0 0); }
 .ig-profile-stars.is-compact i { font-size: .66rem; }
-.ig-profile-stars i.is-filled { color: var(--ig-star); }
 .ig-rating-distribution { display: grid; align-content: center; gap: .35rem; }
 .ig-rating-distribution > div { display: grid; grid-template-columns: .7rem .8rem minmax(1.8rem, 1fr) 1rem; gap: .2rem; align-items: center; color: var(--ig-muted); font-size: .61rem; font-weight: 750; }
 .ig-rating-distribution svg { color: var(--ig-star); fill: var(--ig-star); }
@@ -223,7 +223,6 @@ html[data-site-theme='dark'] .ig-profile-primary-action { color: #12100d; }
 .ig-review-snippets p { display: -webkit-box; overflow: hidden; margin: .17rem 0 0; color: var(--ig-muted); font-size: .62rem; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .ig-review-snippets time { display: block; margin-top: .22rem; color: var(--ig-muted); font-size: .54rem; font-weight: 750; }
 .ig-review-empty { min-height: 13.25rem; display: grid; place-content: center; justify-items: center; gap: .35rem; padding: 1.3rem; color: var(--ig-muted); text-align: center; }
-.ig-review-empty svg { color: var(--ig-star); }
 .ig-review-empty strong { margin-top: .25rem; color: var(--ig-ink); font-size: .82rem; }
 .ig-review-empty p { max-width: 18rem; margin: 0; font-size: .71rem; line-height: 1.45; }
 

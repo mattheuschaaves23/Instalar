@@ -34,6 +34,7 @@ const openProfile = (initialEntry, ownerPreview) => render(
 const openOwner = () => render(<MemoryRouter initialEntries={['/profile#link-para-clientes']}><Profile /></MemoryRouter>);
 
 beforeEach(() => {
+  Element.prototype.scrollIntoView = vi.fn();
   state.user = null;
   api.get.mockReset().mockImplementation(async (url) => {
     if (url === '/users/profile') return { data: owner };
@@ -48,6 +49,27 @@ beforeEach(() => {
   });
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+it('mostra 2,5 como nota inicial sem contar uma avaliação de cliente', async () => {
+  openProfile('/installers/42#avaliacoes');
+  const initialRating = await screen.findByRole('link', { name: /2,5.*nota inicial/i });
+  expect(initialRating.getAttribute('href')).toContain('#avaliacoes');
+  const reviews = within(screen.getByRole('tabpanel', { name: 'Avaliações' }));
+  expect(reviews.getByText('0 avaliações de clientes')).toBeTruthy();
+  expect(reviews.getByRole('img', { name: '2,5 de 5 estrelas' })).toBeTruthy();
+});
+
+it('substitui a nota inicial pela média real mesmo quando a primeira nota é menor', async () => {
+  api.get.mockResolvedValueOnce({ data: {
+    installer: { ...installer, average_rating: '2.0', review_count: 1 },
+    reviews: [{ reviewer_name: 'Cliente de teste', rating: 2, comment: 'Atendimento concluído' }],
+  } });
+  openProfile('/installers/42#avaliacoes');
+  expect(await screen.findByRole('link', { name: /2,0.*1 avaliação/i })).toBeTruthy();
+  const reviews = within(screen.getByRole('tabpanel', { name: 'Avaliações' }));
+  expect(reviews.getAllByRole('img', { name: '2,0 de 5 estrelas' })).toHaveLength(2);
+  expect(screen.queryByText('Nota inicial')).toBeNull();
+});
 
 it('instalador encontra a explicação no topo e copia o link público em Meu perfil', async () => {
   state.user = { id: 42, account_type: 'installer' };

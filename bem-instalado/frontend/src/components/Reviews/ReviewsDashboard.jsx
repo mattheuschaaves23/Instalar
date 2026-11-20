@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { formatShortDate } from '../../utils/formatters';
+import { formatStarRating, installerRating, starFillPercent } from '../../utils/installerRating';
 import DecoratingWallLoader from '../Layout/DecoratingWallLoader';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { ProFeatureNotice } from '../Subscription/PlanUsage';
@@ -35,26 +36,20 @@ function ReviewIcon({ type }) {
 }
 
 function RatingStars({ value }) {
-  const rating = Math.round(Number(value || 0));
-
+  const star = 'm12 3.8 2.45 4.95 5.47.8-3.96 3.86.94 5.45L12 16.28l-4.9 2.58.94-5.45-3.96-3.86 5.47-.8z';
   return (
-    <span className="reviews-rating-stars" aria-label={`${rating} de 5`}>
-      {[1, 2, 3, 4, 5].map((item) => (
-        <svg
-          aria-hidden="true"
-          className={item <= rating ? 'is-filled' : ''}
-          key={item}
-          viewBox="0 0 24 24"
-        >
-          <path d="m12 3.8 2.45 4.95 5.47.8-3.96 3.86.94 5.45L12 16.28l-4.9 2.58.94-5.45-3.96-3.86 5.47-.8z" />
-        </svg>
-      ))}
+    <span className="reviews-rating-stars" aria-label={`${formatStarRating(value)} de 5 estrelas`} role="img">
+      {Array.from({ length: 5 }, (_, index) => {
+        const fill = starFillPercent(value, index);
+        return (
+          <svg aria-hidden="true" className={fill === 100 ? 'is-filled' : undefined} key={index} viewBox="0 0 24 24">
+            <path d={star} />
+            {fill > 0 && fill < 100 ? <path d={star} fill="var(--site-accent-strong)" stroke="none" style={{ clipPath: `inset(0 ${100 - fill}% 0 0)` }} /> : null}
+          </svg>
+        );
+      })}
     </span>
   );
-}
-
-function formatRating(value) {
-  return Number(value || 0).toFixed(1).replace('.', ',');
 }
 
 function formatPercent(value) {
@@ -178,6 +173,7 @@ export default function ReviewsDashboard() {
     return <ReviewsLoadingState />;
   }
 
+  const rating = data?.summary ? installerRating(summary) : null;
   const metrics = [
     {
       label: 'Avaliações totais',
@@ -232,10 +228,10 @@ export default function ReviewsDashboard() {
         </div>
 
         <div className="reviews-dashboard-score-card">
-          <span>Nota média</span>
-          <strong>{formatRating(summary.average_rating)}</strong>
-          <RatingStars value={summary.average_rating} />
-          <p>{summary.review_count || 0} avaliações recebidas</p>
+          <span>{rating?.isInitial ? 'Nota inicial' : 'Nota média'}</span>
+          <strong>{rating?.formatted ?? '—'}</strong>
+          {rating ? <RatingStars value={rating.value} /> : null}
+          <p>{rating ? `${rating.reviewsLabel} de clientes` : 'Nota indisponível'}</p>
         </div>
       </div>
 
@@ -284,7 +280,7 @@ export default function ReviewsDashboard() {
               <p>Distribuição</p>
               <h2>Notas recebidas</h2>
             </div>
-            <span>{formatRating(summary.average_rating)}/5</span>
+            <span>{rating && !rating.isInitial ? `${rating.formatted}/5` : 'Sem avaliações'}</span>
           </div>
           <div className="reviews-rating-breakdown">
             {distribution.map((item) => (

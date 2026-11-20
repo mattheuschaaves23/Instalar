@@ -11,6 +11,7 @@ import './InstallerProfile.css';
 import { normalizeProfileAppearance, profileAppearanceStyle } from '../../../../shared/profileAppearance.mjs';
 import { formatCurrency, formatLongDate, formatShortDate } from '../../utils/formatters';
 import { formatInstallationDays } from '../../utils/installerDays';
+import { formatStarRating, installerRating, starFillPercent } from '../../utils/installerRating';
 import PageMetadata from './PageMetadata';
 import Turnstile, { isTurnstileEnabled } from '../Security/Turnstile';
 import DirectProfileRequest from './DirectProfileRequest';
@@ -71,10 +72,9 @@ function ProfileIcon({ name, size = 20 }) {
 }
 
 function RatingStars({ value, compact = false }) {
-  const rounded = Math.max(0, Math.min(5, Math.round(Number(value || 0))));
   return (
-    <span aria-label={`${rounded} de 5 estrelas`} className={`ig-profile-stars${compact ? ' is-compact' : ''}`}>
-      {Array.from({ length: 5 }).map((_, index) => <i aria-hidden="true" className={index < rounded ? 'is-filled' : ''} key={index}>★</i>)}
+    <span aria-label={`${formatStarRating(value)} de 5 estrelas`} className={`ig-profile-stars${compact ? ' is-compact' : ''}`} role="img">
+      {Array.from({ length: 5 }, (_, index) => <i aria-hidden="true" key={index} style={{ '--ig-star-fill': `${starFillPercent(value, index)}%` }}>★</i>)}
     </span>
   );
 }
@@ -335,8 +335,8 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
   const locationLabel = [installer.city, installer.state].filter(Boolean).join(' · ') || installer.service_region || 'Região a confirmar';
   const warrantyLabel = installer.safety?.provides_warranty ? `${installer.safety.warranty_days || 0} dias de garantia` : 'Garantia a combinar';
   const hasAvailability = Boolean(slots.length || installer.available_dates?.length);
-  const rating = Number(installer.average_rating || 0);
-  const reviewCount = Number(installer.review_count || 0);
+  const rating = installerRating(installer);
+  const reviewCount = rating.reviewCount;
   const certified = Boolean(installer.certificate_verified);
   const profileActionPath = isOwnProfile ? '/profile?editar=1'
     : needsClientLogin ? clientLoginPath : requestPath;
@@ -388,7 +388,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
             <p className="ig-profile-role">Instalador de papel de parede</p>
             <div className="ig-profile-meta">
               <span><ProfileIcon name="location" size={16} />{locationLabel}</span>
-              {reviewCount ? <Link to={sectionPath('avaliacoes')}><ProfileIcon name="star" size={15} /><strong>{rating.toFixed(1)}</strong> ({reviewCount} avaliações)</Link> : <span><ProfileIcon name="shield" size={15} />Perfil profissional</span>}
+              <Link to={sectionPath('avaliacoes')}><ProfileIcon name="star" size={15} /><strong>{rating.formatted}</strong>{rating.isInitial ? ' · Nota inicial' : ` (${rating.reviewsLabel})`}</Link>
             </div>
           </div>
 
@@ -416,7 +416,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
 
           <div aria-label="Estatísticas do profissional" className="ig-profile-stats">
             <Link to={sectionPath('projetos')}><strong>{gallery.length}</strong><span>projetos</span></Link>
-            <Link to={sectionPath('avaliacoes')}><strong>{reviewCount}</strong><span>avaliações</span></Link>
+            <Link to={sectionPath('avaliacoes')}><strong>{reviewCount}</strong><span>{reviewCount === 1 ? 'avaliação' : 'avaliações'}</span></Link>
             <Link to={sectionPath('informacoes')}><strong>{installer.unique_clients_served || 0}</strong><span>clientes</span></Link>
           </div>
         </header>
@@ -469,7 +469,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
             <div className="ig-panel-heading"><div><span><ProfileIcon name="star" size={18} /></span><h2>Avaliações</h2></div>{!isOwnProfile ? <Link to={sectionPath(REVIEW_FORM_ANCHOR)} onClick={requireClientLogin}>Avaliar <ProfileIcon name="chevron" size={15} /></Link> : null}</div>
             {reviewCount ? (
               <div className="ig-review-summary-body">
-                <div className="ig-rating-score"><strong>{rating.toFixed(1)}</strong><RatingStars value={rating} /><span>{reviewCount} avaliações</span></div>
+                <div className="ig-rating-score"><strong>{rating.formatted}</strong><RatingStars value={rating.value} /><span>{rating.reviewsLabel}</span></div>
                 <div className="ig-rating-distribution">
                   {ratingDistribution.map((item) => <div key={item.rating}><span>{item.rating}</span><ProfileIcon name="star" size={13} /><i><b style={{ width: item.width }} /></i><em>{item.count}</em></div>)}
                 </div>
@@ -477,7 +477,12 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
                   {reviews.slice(0, 2).map((review, index) => <article key={`${review.reviewer_name}-${review.created_at}-${index}`}><span>{getInitials(review.reviewer_name)}</span><div><strong>{review.reviewer_name}</strong><RatingStars compact value={review.rating} /><p>{review.comment || 'Cliente recomendou este profissional.'}</p><time>{formatShortDate(review.created_at)}</time></div></article>)}
                 </div>
               </div>
-            ) : <div className="ig-review-empty"><ProfileIcon name="star" size={27} /><strong>Sem avaliações ainda</strong><p>Clientes poderão avaliar o atendimento após a conclusão do serviço.</p></div>}
+            ) : <div className="ig-review-empty">
+              <strong>{rating.formatted} · Nota inicial</strong>
+              <RatingStars value={rating.value} />
+              <p>{rating.reviewsLabel} de clientes</p>
+              <p>A nota inicial dá lugar à média após a primeira avaliação de um cliente.</p>
+            </div>}
           </div>
           <section className="ig-profile-panel ig-profile-review-form" id={REVIEW_FORM_ANCHOR}>
             <div className="ig-panel-heading"><div><span><ProfileIcon name="star" size={18} /></span><div><p>Sua experiência</p><h2>Avalie este instalador</h2></div></div></div>
