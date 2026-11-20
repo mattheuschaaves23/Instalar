@@ -140,6 +140,7 @@ export default function App() {
               <Route element={<Clients />} path="/clients/new" />
               <Route element={<Budgets />} path="/budgets" />
               <Route element={<BudgetForm />} path="/budgets/new" />
+              <Route element={<BudgetForm />} path="/budgets/:draftId/complete" />
               <Route element={<Agenda />} path="/agenda" />
               <Route element={<ReviewsDashboard />} path="/reviews" />
               <Route element={<Notifications />} path="/notifications" />

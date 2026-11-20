@@ -201,7 +201,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
       const { data } = await api.post(`/public/service-requests/${request.id}/interests/${interest.id}/select`, {}, { headers });
       const selectedRequest = { ...request, ...data.request };
       writePublishedClientRequest(selectedRequest);
-      toast.success('Instalador escolhido. Acompanhe seu pedido para conversar com o profissional.');
+      toast.success('Instalador escolhido e avisado para preparar o orçamento.');
       navigate(`/cliente/pedido${buildClientRequestTrackingHash(selectedRequest)}`, { replace: true });
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível escolher o instalador.');

@@ -217,7 +217,7 @@ exports.getOverview = async (_req, res) => {
           (SELECT COUNT(*)::int FROM users WHERE COALESCE(certification_verified, FALSE) = TRUE AND deleted_at IS NULL) AS certified_installers,
           (SELECT COUNT(*)::int FROM users WHERE account_type = 'client' AND deleted_at IS NULL) AS total_clients,
           (SELECT COUNT(*)::int FROM clients) AS total_legacy_clients,
-          (SELECT COUNT(*)::int FROM budgets) AS total_budgets,
+          (SELECT COUNT(*)::int FROM budgets WHERE status IS DISTINCT FROM 'draft') AS total_budgets,
           (SELECT COUNT(*)::int FROM budgets WHERE status = 'pending') AS pending_budgets,
           (SELECT COUNT(*)::int FROM budgets WHERE status = 'approved') AS approved_budgets,
           (
@@ -405,6 +405,7 @@ exports.listUsers = async (req, res) => {
             COUNT(*)::int AS budgets_count,
             COUNT(*) FILTER (WHERE status = 'approved')::int AS approved_count
           FROM budgets
+          WHERE status IS DISTINCT FROM 'draft'
           GROUP BY user_id
         )
         SELECT

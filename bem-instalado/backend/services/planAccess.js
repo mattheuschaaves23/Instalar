@@ -91,6 +91,7 @@ async function getInstallerPlanAccess(userId, db = pool, options = {}) {
             SELECT COUNT(*)::int
             FROM budgets
             WHERE user_id = $1
+              AND status IS DISTINCT FROM 'draft'
               AND created_at >= date_trunc('month', CURRENT_TIMESTAMP)
               AND created_at < date_trunc('month', CURRENT_TIMESTAMP) + INTERVAL '1 month'
           ) AS monthly_budgets,

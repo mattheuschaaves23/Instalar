@@ -67,6 +67,7 @@ const panelRoutes = {
 export function getRouteModules(path) {
   const pathname = String(path || '').split(/[?#]/)[0].replace(/\/$/, '') || '/';
   if (panelRoutes[pathname]) return ['Layout', panelRoutes[pathname]];
+  if (/^\/budgets\/[1-9]\d*\/complete$/.test(pathname)) return ['Layout', 'BudgetForm'];
   if (publicRoutes[pathname]) return [publicRoutes[pathname]];
   if (/^\/installers\/[^/]+$/.test(pathname)) return ['InstallerProfile'];
   return [];

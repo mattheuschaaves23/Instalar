@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { formatCurrency } from '../../utils/formatters';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import PlanUsage from '../Subscription/PlanUsage';
 import ClientForm from '../Clients/ClientForm';
+import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import { installmentInfo, installmentAmountLabel, installmentConditionsLabel, paymentOptionsLabel } from '../../../../shared/installmentTerms.mjs';
 
 const INSTALLMENT_OPTIONS = Array.from({ length: 11 }, (_, index) => index + 2);
@@ -124,9 +125,9 @@ function BudgetIcon({ type }) {
   }
 }
 
-function createEnvironment() {
+function createEnvironment(name = '') {
   return {
-    name: '',
+    name,
     height: '',
     width: '',
     rolls_manual: '',
@@ -147,16 +148,62 @@ function createStepState(isDone, isActive) {
 }
 
 export default function BudgetForm() {
+  const { draftId } = useParams();
+  return draftId ? <BudgetDraftLoader key={draftId} draftId={draftId} /> : <BudgetEditor />;
+}
+
+function BudgetDraftLoader({ draftId }) {
+  const [load, setLoad] = useState({ request: null, error: '' });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    api.get(`/budgets/${draftId}/draft`, { signal: controller.signal })
+      .then(({ data }) => setLoad({ request: data.request, error: '' }))
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          setLoad({ request: null, error: error.response?.data?.error || 'Não foi possível carregar o rascunho.' });
+        }
+      });
+    return () => controller.abort();
+  }, [draftId]);
+
+  if (load.request) return <BudgetEditor draft={load.request} draftId={draftId} />;
+
+  return (
+    <section className="lux-panel p-6">
+      {load.error ? <p role="alert">{load.error}</p> : <p role="status">Carregando rascunho…</p>}
+      <Link className="ghost-button mt-4" to="/budgets">Voltar aos orçamentos</Link>
+    </section>
+  );
+}
+
+function DraftRequestDetails({ draft }) {
+  const measurements = [draft.wall_size, draft.roll_count].filter(Boolean).join(' · ');
+  return (
+    <section aria-label="Dados do pedido original" className="budget-modern-calculation-block grid gap-2 break-words p-4">
+      <strong>Pedido #{draft.id} · {draft.service_label || 'Instalação de papel de parede'}</strong>
+      <p>{draft.place_label || 'Local'}: {[draft.address_reference, draft.neighborhood, draft.city, draft.state, draft.zip_code].filter(Boolean).join(' · ') || 'A confirmar com o cliente'}</p>
+      <p>Ambientes: {draft.rooms?.join(', ') || 'Não informados'}</p>
+      <p>Medidas e rolos: {draft.measurement_detail || measurements || 'Não informados'}</p>
+      {draft.material_label ? <p>Material: {draft.material_label}</p> : null}
+      {draft.details ? <p>Observação do cliente: {draft.details}</p> : null}
+      <p>Confirme as medidas por ambiente e defina os preços e as condições antes de salvar.</p>
+    </section>
+  );
+}
+
+function BudgetEditor({ draft = null, draftId = null }) {
   const navigate = useNavigate();
   const { isPro, refreshSubscription } = useSubscription();
   const [clients, setClients] = useState([]);
   const [clientId, setClientId] = useState('');
   const [showClientForm, setShowClientForm] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
+  const [saving, setSaving] = useState(false);
   const [pricingMode, setPricingMode] = useState('roll');
   const [rollArea, setRollArea] = useState(4.5);
   const [pricePerRoll, setPricePerRoll] = useState(0);
-  const [pricePerSquareMeter, setPricePerSquareMeter] = useState(10);
+  const [pricePerSquareMeter, setPricePerSquareMeter] = useState(draft ? '' : 10);
   const [removalPricePerRoll, setRemovalPricePerRoll] = useState(0);
   const [profileDefaults, setProfileDefaults] = useState({ rollPrice: 0, removalPricePerRoll: 0 });
   const [installmentEnabled, setInstallmentEnabled] = useState(false);
@@ -164,9 +211,10 @@ export default function BudgetForm() {
   const [interestFreeInstallments, setInterestFreeInstallments] = useState(3);
   const [installmentInterestRate, setInstallmentInterestRate] = useState(0);
   const [upfrontPaymentTerms, setUpfrontPaymentTerms] = useState(createUpfrontPaymentTerms);
-  const [environments, setEnvironments] = useState([createEnvironment()]);
+  const [environments, setEnvironments] = useState(() => [createEnvironment(draft?.rooms?.[0])]);
 
   useEffect(() => {
+    if (draft) return;
     api.get('/clients').then((response) => setClients(response.data)).catch(() => null);
 
     api.get('/users/profile')
@@ -182,7 +230,7 @@ export default function BudgetForm() {
         setRemovalPricePerRoll(profileDefaultRemovalPrice);
       })
       .catch(() => null);
-  }, []);
+  }, [draft]);
 
   const updateEnvironment = (index, field, value) => {
     setEnvironments((current) =>
@@ -195,7 +243,10 @@ export default function BudgetForm() {
       toast('Vários ambientes no mesmo orçamento estão disponíveis no plano Pro.');
       return;
     }
-    setEnvironments((current) => [...current, createEnvironment()]);
+    setEnvironments((current) => {
+      const nextRoom = draft?.rooms?.find((room) => !current.some((item) => item.name === room));
+      return [...current, createEnvironment(nextRoom)];
+    });
   };
 
   useEffect(() => {
@@ -306,27 +357,32 @@ export default function BudgetForm() {
       .map((term) => `${term.label}${term.discount_percent > 0 ? ` ${term.discount_percent}%` : ''}`)
       .join(' • ')
     : 'Não definido';
-  const selectedClient = clients.find((client) => Number(client.id) === Number(clientId));
-  const selectedClientAddress = [
+  const selectedClient = draft
+    ? { name: draft.client_name, phone: draft.client_phone, email: draft.client_email }
+    : clients.find((client) => Number(client.id) === Number(clientId));
+  const selectedClientAddress = (draft
+    ? [draft.address_reference, draft.neighborhood, draft.city, draft.state, draft.zip_code].filter(Boolean).join(' • ')
+    : [
     [
       selectedClient?.street,
       selectedClient?.house_number && `Nº ${selectedClient.house_number}`,
     ].filter(Boolean).join(', '),
     [selectedClient?.neighborhood, [selectedClient?.city, selectedClient?.state].filter(Boolean).join(' - ')].filter(Boolean).join(', '),
     selectedClient?.zip_code && `CEP ${selectedClient.zip_code}`,
-  ].filter(Boolean).join(' • ') || selectedClient?.address || 'Endereço não informado';
+    ].filter(Boolean).join(' • ')) || selectedClient?.address || 'Endereço não informado';
+  const hasClient = Boolean(draft || Number(clientId) > 0);
   const canCalculate = totals.area > 0;
-  const canSave = canCalculate && grandTotal > 0 && Number(clientId) > 0;
+  const canSave = canCalculate && grandTotal > 0 && hasClient;
 
   const steps = [
-    { number: 1, label: 'Cliente', state: createStepState(Boolean(clientId), activeStep === 1) },
+    { number: 1, label: 'Cliente', state: createStepState(hasClient, activeStep === 1) },
     { number: 2, label: 'Cálculo', state: createStepState(canCalculate && grandTotal > 0, activeStep === 2) },
     { number: 3, label: 'Resumo', state: createStepState(canCalculate && grandTotal > 0 && activeStep > 3, activeStep === 3) },
-    { number: 4, label: 'Enviar', state: createStepState(false, activeStep === 4) },
+    { number: 4, label: 'Salvar', state: createStepState(false, activeStep === 4) },
   ];
 
   const continueFromClient = () => {
-    if (!Number(clientId)) {
+    if (!hasClient) {
       toast.error('Escolha o cliente antes de montar o orçamento.');
       return;
     }
@@ -381,6 +437,7 @@ export default function BudgetForm() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (saving || activeStep !== 4) return;
 
     const normalizedClientId = Number(clientId);
     const normalizedPricePerRoll = Number(pricePerRoll);
@@ -391,7 +448,7 @@ export default function BudgetForm() {
     const normalizedInterestFreeCount = Number(interestFreeInstallments);
     const normalizedInterestRate = Number(installmentInterestRate);
 
-    if (!Number.isInteger(normalizedClientId) || normalizedClientId <= 0) {
+    if (!draft && (!Number.isInteger(normalizedClientId) || normalizedClientId <= 0)) {
       toast.error('Selecione um cliente válido.');
       return;
     }
@@ -479,9 +536,10 @@ export default function BudgetForm() {
       return;
     }
 
+    setSaving(true);
     try {
-      await api.post('/budgets', {
-        client_id: normalizedClientId,
+      const payload = {
+        ...(draft ? {} : { client_id: normalizedClientId }),
         pricing_mode: pricingMode,
         roll_area: normalizedRollArea,
         price_per_roll: normalizedPricePerRoll,
@@ -500,13 +558,18 @@ export default function BudgetForm() {
           rolls_manual: pricingMode === 'roll' && environment.rolls_manual ? Number(environment.rolls_manual) : null,
           removal_included: Boolean(environment.removal_included),
         })),
-      });
+      };
+      if (draft) await api.put(`/budgets/${draftId}/draft`, payload);
+      else await api.post('/budgets', payload);
 
       await refreshSubscription();
-      toast.success('Orçamento criado.');
+      notifyPanelBadgeCountsChanged();
+      toast.success(draft ? 'Orçamento concluído. Nenhuma mensagem foi enviada.' : 'Orçamento criado.');
       navigate('/budgets');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Não foi possível criar o orçamento.');
+      toast.error(error.response?.data?.error || 'Não foi possível salvar o orçamento.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -519,8 +582,8 @@ export default function BudgetForm() {
           </button>
 
           <div className="budget-modern-topbar-copy">
-            <h1>Novo orçamento</h1>
-            <p>Cliente, cálculo, resumo e envio — uma etapa por vez.</p>
+            <h1>{draft ? 'Completar orçamento' : 'Novo orçamento'}</h1>
+            <p>{draft ? 'Rascunho criado automaticamente quando o cliente escolheu você.' : 'Cliente, cálculo, resumo e envio — uma etapa por vez.'}</p>
           </div>
 
           <span className="budget-modern-progress">Etapa {activeStep} de 4</span>
@@ -550,13 +613,14 @@ export default function BudgetForm() {
                   <BudgetIcon type={activeStep === 1 ? 'summary' : activeStep === 4 ? 'save' : 'measure'} />
                 </div>
                 <div>
-                  <h2>{activeStep === 1 ? 'Escolha o cliente' : activeStep === 2 ? 'Monte o orçamento' : activeStep === 4 ? 'Confirme o envio' : 'Revise o orçamento'}</h2>
-                  <p>{activeStep === 1 ? 'Defina para quem este orçamento será criado.' : activeStep === 2 ? 'Preencha os detalhes para montar o orçamento em uma única etapa.' : activeStep === 4 ? 'Confira os dados finais antes de salvar o orçamento.' : 'Confira os valores antes de seguir para o envio.'}</p>
+                  <h2>{activeStep === 1 ? (draft ? 'Confira o cliente e o pedido' : 'Escolha o cliente') : activeStep === 2 ? 'Monte o orçamento' : activeStep === 4 ? 'Confirme os dados' : 'Revise o orçamento'}</h2>
+                  <p>{activeStep === 1 ? (draft ? 'Estes dados vieram do pedido que o cliente compartilhou com você.' : 'Defina para quem este orçamento será criado.') : activeStep === 2 ? 'Preencha os detalhes para montar o orçamento em uma única etapa.' : activeStep === 4 ? 'Confira os dados finais antes de salvar o orçamento.' : 'Confira os valores antes de salvar.'}</p>
                 </div>
               </header>
 
               {activeStep === 2 ? (
                 <>
+              {draft ? <DraftRequestDetails draft={draft} /> : null}
               <div className="budget-modern-section budget-modern-calculation-section">
                 <div className="budget-modern-calculation-base budget-modern-calculation-block">
                   <div className="budget-modern-calculation-base-head">
@@ -564,8 +628,9 @@ export default function BudgetForm() {
                       <span>01 · Material e cobrança</span>
                       <strong>Defina o valor e o rendimento do material</strong>
                     </div>
-                    <div className="budget-modern-mode-switch">
+                    <div aria-label="Unidade de cobrança" className="budget-modern-mode-switch" role="group">
                       <button
+                        aria-pressed={pricingMode === 'roll'}
                         className={pricingMode === 'roll' ? 'is-active' : ''}
                         onClick={() => setPricingMode('roll')}
                         type="button"
@@ -573,6 +638,7 @@ export default function BudgetForm() {
                         Por rolo
                       </button>
                       <button
+                        aria-pressed={pricingMode === 'square_meter'}
                         className={pricingMode === 'square_meter' ? 'is-active' : ''}
                         onClick={() => setPricingMode('square_meter')}
                         type="button"
@@ -910,7 +976,20 @@ export default function BudgetForm() {
                 </>
               ) : null}
 
-              {activeStep === 1 ? (
+              {activeStep === 1 && draft ? (
+                <div className="budget-modern-section grid gap-4">
+                  <div className="grid gap-1 break-words">
+                    <strong>{selectedClient.name}</strong>
+                    <p>{[selectedClient.phone, selectedClient.email].filter(Boolean).join(' · ')}</p>
+                  </div>
+                  <DraftRequestDetails draft={draft} />
+                  <div className="budget-modern-actions-bar">
+                    <button className="budget-modern-primary-cta" onClick={continueFromClient} type="button">Continuar para o cálculo</button>
+                  </div>
+                </div>
+              ) : null}
+
+              {activeStep === 1 && !draft ? (
               <div className="budget-modern-section">
                 <div className="budget-modern-section-title">
                   <div>
@@ -970,7 +1049,7 @@ export default function BudgetForm() {
                   <div className="budget-modern-section-title">
                     <div>
                       <BudgetIcon type="save" />
-                      <span>4. Enviar orçamento</span>
+                      <span>4. Salvar orçamento</span>
                     </div>
                   </div>
 
@@ -988,8 +1067,8 @@ export default function BudgetForm() {
                     <button className="budget-modern-secondary-cta" onClick={() => setActiveStep(3)} type="button">
                       Voltar ao resumo
                     </button>
-                    <button className="budget-modern-primary-cta" disabled={!canSave} type="submit">
-                      Salvar orçamento
+                    <button className="budget-modern-primary-cta" disabled={!canSave || saving} type="submit">
+                      {saving ? 'Salvando…' : 'Salvar orçamento'}
                     </button>
                   </div>
                 </div>
@@ -1159,7 +1238,7 @@ export default function BudgetForm() {
                       Ajustar cálculo
                     </button>
                     <button className="budget-modern-primary-cta" disabled={!canSave} onClick={() => setActiveStep(4)} type="button">
-                      Continuar para envio
+                      Continuar para salvar
                     </button>
                   </div>
                 </div>

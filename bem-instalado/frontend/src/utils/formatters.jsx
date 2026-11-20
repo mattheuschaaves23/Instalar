@@ -71,6 +71,7 @@ export function formatLongDate(value) {
 
 export function formatStatusLabel(status) {
   const map = {
+    draft: 'Rascunho',
     pending: 'Pendente',
     approved: 'Aprovado',
     rejected: 'Rejeitado',

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import PageIntro from '../Layout/PageIntro';
@@ -8,6 +9,7 @@ import { formatDateTime, formatStatusLabel } from '../../utils/formatters';
 import { getWebPushSupport, registerWebPushNotifications, webPushStatusMessage } from '../../services/webPushNotifications';
 
 const NOTIFICATIONS_PER_PAGE = 8;
+const isBudgetDraftPath = (path) => /^\/budgets\/[1-9]\d*\/complete$/.test(path || '');
 
 export default function Notifications() {
   const [items, setItems] = useState([]);
@@ -121,11 +123,16 @@ export default function Notifications() {
                     </p>
                   </div>
 
-                  {!item.read ? (
-                    <button className="gold-button" onClick={() => markAsRead(item.id)} type="button">
-                      Marcar como lida
-                    </button>
-                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    {isBudgetDraftPath(item.action_path) ? (
+                      <Link className="gold-button" to={item.action_path}>Abrir rascunho</Link>
+                    ) : null}
+                    {!item.read ? (
+                      <button className={isBudgetDraftPath(item.action_path) ? 'ghost-button' : 'gold-button'} onClick={() => markAsRead(item.id)} type="button">
+                        Marcar como lida
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </article>
             ))}

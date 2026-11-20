@@ -14,6 +14,8 @@ router.use(hasSubscription);
 
 router.post('/', controller.createBudget);
 router.get('/', controller.getBudgets);
+router.get('/:id/draft', controller.getBudgetDraft);
+router.put('/:id/draft', controller.createBudget);
 router.get('/:id', controller.getBudget);
 router.put('/:id/approve', controller.approveBudget);
 router.put('/:id/reject', controller.rejectBudget);

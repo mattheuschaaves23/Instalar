@@ -16,7 +16,9 @@ async function requestJson(baseUrl, path, options = {}) {
 }
 
 test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulado', { skip: !enabled }, async (t) => {
-  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+  const target = new URL(process.env.TEST_DATABASE_URL);
+  assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(target.hostname), 'Teste de escrita exige PostgreSQL local/isolado.');
+  process.env.DATABASE_URL = target.toString();
   process.env.DATABASE_SSL = 'false';
   process.env.NODE_ENV = 'test';
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'integration-test-secret-with-at-least-32-characters';
@@ -199,6 +201,8 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
         whatsapp_contact_consent: true,
         service: 'wallpaper',
         service_label: 'Instalação de papel de parede',
+        rooms: ['Sala', 'Quarto'],
+        measurement_detail: 'Medidas aproximadas',
         city: 'Palhoça',
         state: 'SC',
         latitude: -27.6450,
@@ -346,18 +350,69 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
     );
     assert.equal(unauthorizedSelection.response.status, 400);
 
-    const selection = await requestJson(
-      baseUrl,
-      `/api/public/service-requests/${serviceRequest.id}/interests/${chosenInterest.id}/select`,
-      {
-        method: 'POST',
-        headers: { 'X-Client-Request-Token': serviceRequest.client_access_token },
-        body: JSON.stringify({}),
-      }
-    );
+    assert.equal((await pool.query('SELECT id FROM budgets WHERE source_service_request_id = $1', [serviceRequest.id])).rowCount, 0);
+    const selectPath = `/api/public/service-requests/${serviceRequest.id}/interests`;
+    const selectionOptions = {
+      method: 'POST',
+      headers: { 'X-Client-Request-Token': serviceRequest.client_access_token },
+      body: '{}',
+    };
+    const [selection, retriedSelection] = await Promise.all([
+      requestJson(baseUrl, `${selectPath}/${chosenInterest.id}/select`, selectionOptions),
+      requestJson(baseUrl, `${selectPath}/${chosenInterest.id}/select`, selectionOptions),
+    ]);
     assert.equal(selection.response.status, 200, JSON.stringify(selection.body));
+    assert.equal(retriedSelection.response.status, 200);
     assert.equal(selection.body.selected_interest.selected, true);
     assert.ok(selection.body.selected_interest.whatsapp_url);
+
+    const draftList = await requestJson(baseUrl, '/api/budgets?include_drafts=true', { headers: authHeaders });
+    assert.equal(draftList.response.status, 200, JSON.stringify(draftList.body));
+    const drafts = draftList.body.filter((budget) => budget.source_service_request_id === serviceRequest.id);
+    assert.equal(drafts.length, 1);
+    const [draft] = drafts;
+    assert.equal(draft.status, 'draft');
+    assert.equal(draft.client_id, null);
+    assert.equal(draft.client_name, 'Cliente Teste');
+    assert.deepEqual((await requestJson(baseUrl, '/api/budgets', { headers: authHeaders })).body, []);
+    assert.equal((await pool.query('SELECT id FROM clients WHERE user_id = $1', [installerId])).rowCount, 0);
+    const draftPath = `/api/budgets/${draft.id}/draft`;
+    const draftDetails = await requestJson(baseUrl, draftPath, { headers: authHeaders });
+    assert.equal(draftDetails.response.status, 200, JSON.stringify(draftDetails.body));
+    assert.equal(draftDetails.response.headers.get('cache-control'), 'private, no-store');
+    assert.deepEqual(draftDetails.body.request.rooms, ['Sala', 'Quarto']);
+    assert.equal(draftDetails.body.request.measurement_detail, 'Medidas aproximadas');
+    assert.equal(draftDetails.body.request.client_access_token, undefined);
+    assert.equal((await requestJson(baseUrl, draftPath, { headers: secondInstallerHeaders })).response.status, 404);
+    assert.equal((await requestJson(baseUrl, draftPath, { headers: clientHeaders })).response.status, 403);
+    const getAlerts = (headers) => requestJson(baseUrl, '/api/notifications', { headers });
+    const draftActionPath = `/budgets/${draft.id}/complete`;
+    const alerts = (await getAlerts(authHeaders)).body.filter((item) => item.action_path === draftActionPath);
+    assert.equal(alerts.length, 1);
+    assert.equal(alerts[0].read, false);
+    assert.equal((await getAlerts(secondInstallerHeaders)).body.some((item) => item.action_path === draftActionPath), false);
+    assert.equal((await requestJson(baseUrl, `/api/budgets/${draft.id}/pdf`, { headers: authHeaders })).response.status, 409);
+    assert.equal((await requestJson(baseUrl, `/api/budgets/${draft.id}/whatsapp`, { headers: authHeaders })).response.status, 409);
+    assert.equal((await requestJson(baseUrl, `/api/budgets/${draft.id}/approve`, { method: 'PUT', headers: authHeaders, body: '{}' })).response.status, 409);
+
+    const saveDraft = (headers, payload) => requestJson(baseUrl, draftPath, { method: 'PUT', headers, body: JSON.stringify(payload) });
+    const complete = { price_per_roll: 150, environments: [{ name: 'Sala', height: 3, width: 4 }] };
+    assert.equal((await saveDraft(authHeaders, { environments: complete.environments })).response.status, 400);
+    assert.equal((await saveDraft(secondInstallerHeaders, complete)).response.status, 404);
+    const completions = await Promise.all([
+      saveDraft(authHeaders, complete),
+      saveDraft(authHeaders, complete),
+    ]);
+    assert.deepEqual(completions.map(({ response }) => response.status), [200, 200], JSON.stringify(completions.map(({ body }) => body)));
+    assert.deepEqual(completions[0].body, completions[1].body);
+    const completed = completions[0].body;
+    assert.equal(completed.id, draft.id);
+    assert.equal(completed.status, 'pending');
+    assert.equal(Number(completed.total_amount), 450);
+    assert.equal((await pool.query('SELECT id FROM clients WHERE user_id = $1', [installerId])).rowCount, 1);
+    assert.equal((await pool.query('SELECT id FROM environments WHERE budget_id = $1', [draft.id])).rowCount, 1);
+    assert.equal((await requestJson(baseUrl, `/api/budgets/${draft.id}/pdf`, { headers: authHeaders })).response.status, 200);
+    assert.equal((await pool.query('SELECT id FROM service_proposals WHERE service_request_id = $1', [serviceRequest.id])).rowCount, 0);
 
     const minimalOrder = await requestJson(baseUrl, '/api/public/service-requests', {
       method: 'POST', headers: clientHeaders,
@@ -381,6 +436,20 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
     });
     assert.equal(chooseMinimal.response.status, 200, JSON.stringify(chooseMinimal.body));
     assert.equal(chooseMinimal.body.selected_interest.installer_id, secondInstallerId);
+    const freeBudgets = (await requestJson(baseUrl, '/api/budgets?include_drafts=true', { headers: secondInstallerHeaders })).body;
+    const minimalDraft = freeBudgets.find((item) => item.source_service_request_id === minimalRequest.id);
+    assert.ok(minimalDraft);
+    const freeAccess = (await requestJson(baseUrl, '/api/subscriptions', { headers: secondInstallerHeaders })).body.plan_access;
+    assert.equal(freeAccess.usage.monthly_budgets, 0);
+    assert.equal(freeAccess.usage.clients, 0);
+    const cancelMinimal = await requestJson(baseUrl, `/api/public/service-requests/${minimalRequest.id}/status`, {
+      method: 'PATCH', headers: clientHeaders, body: JSON.stringify({ status: 'canceled' }),
+    });
+    assert.equal(cancelMinimal.response.status, 200, JSON.stringify(cancelMinimal.body));
+    const canceledDraft = await requestJson(baseUrl, `/api/budgets/${minimalDraft.id}/draft`, {
+      method: 'PUT', headers: secondInstallerHeaders, body: JSON.stringify(complete),
+    });
+    assert.equal(canceledDraft.response.status, 409);
 
     await t.test('cliques simultâneos não duplicam interesses nem permitem dois escolhidos', async () => {
       const created = await requestJson(baseUrl, '/api/public/service-requests', {
@@ -420,6 +489,11 @@ test('cadastro, pagamento, proposta, contratação e conclusão com SMTP simulad
       assert.equal(retry.response.status, 200, JSON.stringify(retry.body));
       const afterRetry = await pool.query("SELECT COUNT(*)::int AS count FROM notifications WHERE title = 'Você foi escolhido' AND message LIKE $1", [`%pedido #${raceRequest.id}.%`]);
       assert.equal(afterRetry.rows[0].count, 1);
+      const raceBudgets = await pool.query(
+        'SELECT user_id, status FROM budgets WHERE source_service_request_id = $1',
+        [raceRequest.id]
+      );
+      assert.deepEqual(raceBudgets.rows, [{ user_id: winner.installer_id, status: 'draft' }]);
     });
 
     const selectedOpportunities = await requestJson(baseUrl, '/api/opportunities?status=selected', {

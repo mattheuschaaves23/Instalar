@@ -1105,39 +1105,35 @@ exports.selectServiceRequestInterest = async (req, res) => {
       [interest.installer_id, requestId]
     );
 
-    if (request.status !== 'selected') {
-      await client.query(
-        `
-          INSERT INTO notifications (user_id, title, message, type, read)
-          VALUES ($1, 'Você foi escolhido', $2, 'success', FALSE)
-        `,
-        [
-          interest.installer_id,
-          `O cliente escolheu você para conversar sobre o pedido #${requestId}. O contato já está liberado em Oportunidades.`,
-        ]
-      );
+    const draftResult = await client.query(
+      `INSERT INTO budgets (user_id, source_service_request_id, status)
+       VALUES ($1, $2, 'draft')
+       RETURNING id`,
+      [interest.installer_id, requestId]
+    );
+    const draftPath = `/budgets/${draftResult.rows[0].id}/complete`;
 
-      await client.query(
-        `
-          INSERT INTO notifications (user_id, title, message, type, read)
-          SELECT
-            installer_id,
-            'Pedido finalizado',
-            $2,
-            'info',
-            FALSE
-          FROM service_request_interests
-          WHERE request_id = $1
-            AND installer_id <> $3
-            AND status = 'interested'
-        `,
-        [
-          requestId,
-          `O cliente escolheu outro profissional no pedido #${requestId}. Continue acompanhando as novas oportunidades da sua região.`,
-          interest.installer_id,
-        ]
-      );
-    }
+    await client.query(
+      `INSERT INTO notifications (user_id, title, message, type, read, action_path)
+       VALUES ($1, 'Você foi escolhido', $2, 'success', FALSE, $3)`,
+      [
+        interest.installer_id,
+        `O cliente escolheu você no pedido #${requestId}. Abra o rascunho em Orçamentos para conferir as medidas e completar os valores.`,
+        draftPath,
+      ]
+    );
+
+    await client.query(
+      `INSERT INTO notifications (user_id, title, message, type, read)
+       SELECT installer_id, 'Pedido finalizado', $2, 'info', FALSE
+       FROM service_request_interests
+       WHERE request_id = $1 AND installer_id <> $3 AND status = 'interested'`,
+      [
+        requestId,
+        `O cliente escolheu outro profissional no pedido #${requestId}. Continue acompanhando as novas oportunidades da sua região.`,
+        interest.installer_id,
+      ]
+    );
 
     await client.query('COMMIT');
     client.release();
@@ -1148,8 +1144,8 @@ exports.selectServiceRequestInterest = async (req, res) => {
     await sendPushToUser({
       userId: interest.installer_id,
       title: 'Você foi escolhido',
-      body: 'O cliente escolheu você. Envie uma proposta pela InstalarPro.',
-      data: { route: '/opportunities', requestId },
+      body: 'O cliente escolheu você. Complete o orçamento na InstalarPro.',
+      data: { route: draftPath, url: draftPath },
     }).catch(() => null);
 
     return res.json({
@@ -1214,11 +1210,15 @@ exports.updateClientServiceRequestStatus = async (req, res) => {
           completed_at = CASE WHEN $1::varchar = 'closed' THEN NOW() ELSE completed_at END,
           canceled_at = CASE WHEN $1::varchar = 'canceled' THEN NOW() ELSE canceled_at END,
           updated_at = NOW()
-        WHERE id = $2
+        WHERE id = $2 AND status = $3
         RETURNING *
       `,
-      [nextStatus, requestId]
+      [nextStatus, requestId, current.status]
     );
+
+    if (!result.rowCount) {
+      return res.status(409).json({ error: 'O pedido mudou. Atualize a página antes de continuar.' });
+    }
 
     if (current.selected_installer_id) {
       await pool.query(

@@ -28970,6 +28970,10 @@ html[data-site-theme='dark'] .panel-v3 .settings-panel--danger {
   color: #ffffff !important;
 }
 
+html[data-site-theme='light'] .dashboard-reference-layout.aqua-panel-theme .budget-modern-mode-switch button.is-active {
+  color: #145465 !important;
+}
+
 .dashboard-reference-layout.aqua-panel-theme :is(
   .budget-modern-stepper,
   .budget-modern-section,

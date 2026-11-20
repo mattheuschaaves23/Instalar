@@ -10,6 +10,7 @@ import PlanUsage from '../Subscription/PlanUsage';
 import { installmentInfo, installmentAmountLabel, installmentConditionsLabel } from '../../../../shared/installmentTerms.mjs';
 
 const BUDGETS_PER_PAGE = 6;
+const ACTIVE_DRAFT_REQUEST_STATUSES = new Set(['selected', 'proposal_sent', 'scheduled', 'in_progress']);
 
 function formatToDatetimeLocal(date) {
   const safe = date instanceof Date ? date : new Date(date);
@@ -33,7 +34,7 @@ export default function Budgets() {
 
   const loadBudgets = async () => {
     try {
-      const response = await api.get('/budgets');
+      const response = await api.get('/budgets', { params: { include_drafts: true } });
       setBudgets(response.data);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível carregar orçamentos.');
@@ -143,7 +144,7 @@ export default function Budgets() {
         description="Veja os valores, o status e a próxima ação de cada orçamento."
         eyebrow="Comercial"
         stats={[
-          { label: 'Total de propostas', value: `${budgets.length}`, detail: 'Todas as propostas registradas.' },
+          { label: 'Total de orçamentos', value: `${budgets.length}`, detail: 'Inclui rascunhos de pedidos da InstalarPro.' },
           {
             label: 'Aprovados',
             value: `${budgets.filter((budget) => budget.status === 'approved').length}`,
@@ -162,7 +163,10 @@ export default function Budgets() {
 
       <div className="grid gap-4">
         <div className="list-surface lux-panel fade-up min-w-0 overflow-hidden">
-          {paginatedBudgets.map((budget, index) => (
+          {paginatedBudgets.map((budget, index) => {
+            const isDraft = budget.status === 'draft';
+            const canComplete = ACTIVE_DRAFT_REQUEST_STATUSES.has(budget.source_request_status);
+            return (
             <article
               className="list-row"
               key={budget.id}
@@ -181,13 +185,25 @@ export default function Budgets() {
 
                   <div className="grid gap-2 break-words text-sm text-[var(--muted)] md:grid-cols-3">
                     <p>Criado em {formatDateTime(budget.created_at)}</p>
-                    <p>Total calculado {formatCurrency(budget.total_amount)}</p>
-                    <p>{formatPaymentTerms(budget)}</p>
+                    {budget.source_service_request_id ? <p>Pedido da InstalarPro #{budget.source_service_request_id}</p> : null}
+                    {isDraft ? (
+                      <p>{canComplete
+                        ? 'Falta conferir as medidas e informar os valores.'
+                        : 'Pedido encerrado. Este rascunho não pode ser concluído.'}</p>
+                    ) : <>
+                      <p>Total calculado {formatCurrency(budget.total_amount)}</p>
+                      <p>{formatPaymentTerms(budget)}</p>
+                    </>}
                   </div>
                   {budget.installment_enabled ? <p className="text-sm text-[var(--muted)]">{installmentConditionsLabel(installmentInfo(budget))}</p> : null}
                 </div>
 
                 <div className="action-cluster flex flex-wrap gap-3">
+                  {isDraft ? (
+                    canComplete
+                      ? <Link className="gold-button w-full sm:w-auto" to={`/budgets/${budget.id}/complete`}>Completar orçamento</Link>
+                      : null
+                  ) : <>
                   {budget.status === 'pending' ? (
                     <>
                       <button disabled={Boolean(mutatingBudgetId)} className="gold-button w-full sm:w-auto" onClick={() => openApprovalModal(budget.id)} type="button">
@@ -204,10 +220,12 @@ export default function Budgets() {
                   <button className="ghost-button w-full sm:w-auto" onClick={() => openWhatsapp(budget.id)} type="button">
                     Enviar no WhatsApp
                   </button>
+                  </>}
                 </div>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
 
         {budgets.length > 0 ? (

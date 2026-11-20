@@ -177,6 +177,76 @@ function parseScheduleDateTime(value) {
   };
 }
 
+const ACTIVE_DRAFT_REQUEST_STATUSES = ['selected', 'proposal_sent', 'scheduled', 'in_progress'];
+
+async function findDraftRequest(db, budgetId, installerId, lock = false) {
+  const { rows } = await db.query(
+    `SELECT sr.id, sr.status, sr.client_name, sr.client_phone, sr.client_email, sr.city, sr.state,
+            sr.neighborhood, sr.zip_code, sr.address_reference, sr.service_label, sr.place_label,
+            sr.rooms, sr.measurement_detail, sr.wall_size, sr.roll_count, sr.material_label, sr.details
+       FROM service_requests sr
+       JOIN budgets b ON b.source_service_request_id = sr.id
+      WHERE b.id = $1 AND b.user_id = $2 AND b.status = 'draft'
+        AND sr.selected_installer_id = b.user_id
+      ${lock ? 'FOR UPDATE OF sr, b' : ''}`,
+    [budgetId, installerId]
+  );
+  return rows[0];
+}
+
+async function attachDraftClient(db, installerId, request, planAccess) {
+  const name = request.client_name.trim().slice(0, 100);
+  const reference = request.address_reference || null;
+  const email = request.client_email || null;
+  const values = [
+    installerId, name, request.client_phone, email, request.city, request.state,
+    request.neighborhood, request.zip_code, reference,
+  ];
+  // Match contact AND location, without replacing any saved client data.
+  const existing = await db.query(
+    `SELECT id FROM clients
+      WHERE user_id = $1 AND name = $2
+        AND regexp_replace(phone, '[^0-9]', '', 'g') = regexp_replace($3, '[^0-9]', '', 'g')
+        AND COALESCE(email, '') = COALESCE($4, '')
+        AND COALESCE(city, '') = COALESCE($5, '')
+        AND COALESCE(state, '') = COALESCE($6, '')
+        AND COALESCE(neighborhood, '') = COALESCE($7, '')
+        AND COALESCE(zip_code, '') = COALESCE($8, '')
+        AND COALESCE(address_reference, '') = COALESCE($9, '')
+        AND NULLIF(street, '') IS NULL AND NULLIF(house_number, '') IS NULL
+        AND COALESCE(address, '') = COALESCE($9, '')
+      ORDER BY id LIMIT 1 FOR KEY SHARE`,
+    values
+  );
+  if (existing.rows[0]) return existing.rows[0].id;
+  if (isLimitReached(planAccess, 'clients')) return null;
+
+  const created = await db.query(
+    `INSERT INTO clients (
+       user_id, name, phone, email, city, state, neighborhood, zip_code, address_reference, address
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9) RETURNING id`,
+    values
+  );
+  return created.rows[0].id;
+}
+
+exports.getBudgetDraft = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0 || id > 2147483647) {
+      return res.status(400).json({ error: 'Rascunho inválido.' });
+    }
+    const request = await findDraftRequest(pool, id, req.userId);
+    if (!request) return res.status(404).json({ error: 'Rascunho não encontrado ou já concluído.' });
+    if (!ACTIVE_DRAFT_REQUEST_STATUSES.includes(request.status)) {
+      return res.status(409).json({ error: 'Este pedido foi encerrado e o rascunho não pode ser concluído.' });
+    }
+    return res.set('Cache-Control', 'private, no-store').json({ request });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Não foi possível abrir o rascunho.' });
+  }
+};
+
 exports.createBudget = async (req, res) => {
   let db;
   let transactionStarted = false;
@@ -199,7 +269,8 @@ exports.createBudget = async (req, res) => {
       removal_price,
       removal_price_per_roll,
     } = req.body;
-    const cleanClientId = Number(client_id);
+    let cleanClientId = Number(client_id);
+    const draftId = req.params?.id === undefined ? null : Number(req.params.id);
     const cleanPricingMode = normalizePricingMode(pricing_mode);
     const cleanRollArea = roll_area === null || roll_area === undefined || String(roll_area).trim() === ''
       ? DEFAULT_ROLL_AREA
@@ -228,7 +299,11 @@ exports.createBudget = async (req, res) => {
       ? 0
       : Number(removal_price);
 
-    if (!Number.isInteger(cleanClientId) || cleanClientId <= 0) {
+    if (draftId !== null && (!Number.isSafeInteger(draftId) || draftId <= 0 || draftId > 2147483647)) {
+      return res.status(400).json({ error: 'Rascunho inválido.' });
+    }
+
+    if (draftId === null && (!Number.isInteger(cleanClientId) || cleanClientId <= 0)) {
       return res.status(400).json({ error: 'Cliente inválido.' });
     }
 
@@ -236,7 +311,29 @@ exports.createBudget = async (req, res) => {
       return res.status(400).json({ error: 'Cliente e ambientes são obrigatórios.' });
     }
 
-    const planAccess = req.planAccess || await getInstallerPlanAccess(req.userId, db);
+    await db.query('BEGIN');
+    transactionStarted = true;
+    await db.query('SELECT pg_advisory_xact_lock($1)', [req.userId]);
+
+    let draftRequest;
+    if (draftId !== null) {
+      draftRequest = await findDraftRequest(db, draftId, req.userId, true);
+      if (!draftRequest) {
+        const existing = await db.query(
+          `SELECT * FROM budgets
+           WHERE id = $1 AND user_id = $2 AND source_service_request_id IS NOT NULL AND status <> 'draft'`,
+          [draftId, req.userId]
+        );
+        if (!existing.rows[0]) return res.status(404).json({ error: 'Rascunho não encontrado.' });
+        return res.json(existing.rows[0]);
+      }
+      if (!ACTIVE_DRAFT_REQUEST_STATUSES.includes(draftRequest.status)) {
+        return res.status(409).json({ error: 'Este pedido foi encerrado e o rascunho não pode ser concluído.' });
+      }
+    }
+
+    // Re-check usage under the same lock used by manual and automatic budgets.
+    const planAccess = await getInstallerPlanAccess(req.userId, db);
 
     if (isLimitReached(planAccess, 'monthly_budgets')) {
       return upgradeRequired(res, {
@@ -299,10 +396,9 @@ exports.createBudget = async (req, res) => {
       }
     }
 
-    const clientCheck = await db.query('SELECT id FROM clients WHERE id = $1 AND user_id = $2', [cleanClientId, req.userId]);
-
-    if (!clientCheck.rowCount) {
-      return res.status(404).json({ error: 'Cliente não encontrado.' });
+    if (!draftRequest) {
+      const clientCheck = await db.query('SELECT id FROM clients WHERE id = $1 AND user_id = $2 FOR KEY SHARE', [cleanClientId, req.userId]);
+      if (!clientCheck.rowCount) return res.status(404).json({ error: 'Cliente não encontrado.' });
     }
 
     let totalArea = 0;
@@ -403,11 +499,53 @@ exports.createBudget = async (req, res) => {
     const removalCost = totalRemovalByEnvironment;
     const totalAmount = subtotal + removalCost;
 
-    await db.query('BEGIN');
-    transactionStarted = true;
+    if (draftRequest) {
+      cleanClientId = await attachDraftClient(db, req.userId, draftRequest, planAccess);
+      if (cleanClientId === null) {
+        return upgradeRequired(res, {
+          code: 'FREE_CLIENT_LIMIT',
+          error: 'O limite de clientes do plano Grátis foi atingido. Libere espaço ou assine o Pro para concluir este rascunho.',
+          planAccess,
+          feature: 'unlimited_clients',
+        });
+      }
+    }
 
-    const budgetResult = await db.query(
-      `
+    const budgetValues = [
+      req.userId,
+      cleanClientId,
+      cleanPricingMode,
+      cleanRollArea,
+      cleanPricingMode === 'roll' ? cleanPricePerRoll : 0,
+      cleanPricingMode === 'square_meter' ? cleanPricePerSquareMeter : 0,
+      totalRolls,
+      totalArea,
+      subtotal,
+      removalCost,
+      usesRemovalPerRoll && totalRemovalRolls > 0,
+      usesRemovalPerRoll && totalRemovalRolls > 0 ? removalPricePerRoll : 0,
+      usesRemovalPerRoll ? totalRemovalRolls : 0,
+      totalAmount,
+      installmentsEnabled,
+      installmentsEnabled ? installmentsCount : 1,
+      installmentsEnabled ? interestFreeInstallments : 1,
+      installmentsEnabled ? Math.round(installmentInterestRate * 100) / 100 : 0,
+      JSON.stringify(upfrontPaymentTerms),
+    ];
+
+    const budgetResult = draftRequest
+      ? await db.query(
+        `UPDATE budgets SET client_id = $2, status = 'pending', pricing_mode = $3, roll_area = $4,
+           price_per_roll = $5, price_per_square_meter = $6, total_rolls = $7, total_area = $8,
+           subtotal_rolls = $9, removal_cost = $10, removal_included = $11,
+           removal_price_per_roll = $12, removal_rolls = $13, total_amount = $14,
+           installment_enabled = $15, installments_count = $16, interest_free_installments = $17,
+           installment_interest_rate = $18, payment_terms = $19, created_at = NOW(), updated_at = NOW()
+         WHERE user_id = $1 AND id = $20 AND status = 'draft'
+         RETURNING *`,
+        [...budgetValues, draftId]
+      )
+      : await db.query(`
         INSERT INTO budgets (
           user_id,
           client_id,
@@ -433,27 +571,7 @@ exports.createBudget = async (req, res) => {
         VALUES ($1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
         RETURNING *
       `,
-      [
-        req.userId,
-        cleanClientId,
-        cleanPricingMode,
-        cleanRollArea,
-        cleanPricingMode === 'roll' ? cleanPricePerRoll : 0,
-        cleanPricingMode === 'square_meter' ? cleanPricePerSquareMeter : 0,
-        totalRolls,
-        totalArea,
-        subtotal,
-        removalCost,
-        usesRemovalPerRoll && totalRemovalRolls > 0,
-        usesRemovalPerRoll && totalRemovalRolls > 0 ? removalPricePerRoll : 0,
-        usesRemovalPerRoll ? totalRemovalRolls : 0,
-        totalAmount,
-        installmentsEnabled,
-        installmentsEnabled ? installmentsCount : 1,
-        installmentsEnabled ? interestFreeInstallments : 1,
-        installmentsEnabled ? Math.round(installmentInterestRate * 100) / 100 : 0,
-        JSON.stringify(upfrontPaymentTerms),
-      ]
+      budgetValues
     );
 
     const budget = budgetResult.rows[0];
@@ -498,12 +616,8 @@ exports.createBudget = async (req, res) => {
 
     await db.query('COMMIT');
     transactionStarted = false;
-    return res.status(201).json(budget);
+    return res.status(draftRequest ? 200 : 201).json(budget);
   } catch (error) {
-    if (transactionStarted) {
-      await db.query('ROLLBACK');
-    }
-
     if (error?.message === 'VALIDATION_ENV_NAME') {
       return res.status(400).json({ error: 'Cada ambiente precisa ter um nome.' });
     }
@@ -530,6 +644,7 @@ exports.createBudget = async (req, res) => {
 
     return res.status(500).json({ error: 'Erro ao criar orçamento.' });
   } finally {
+    if (transactionStarted) await db.query('ROLLBACK').catch(() => null);
     db?.release();
   }
 };
@@ -554,13 +669,16 @@ exports.getBudgets = async (req, res) => {
 
     const { rows } = await pool.query(
       `
-        SELECT b.*, c.name AS client_name
+        SELECT b.*, COALESCE(c.name, sr.client_name) AS client_name, sr.status AS source_request_status
         FROM budgets b
-        JOIN clients c ON c.id = b.client_id
+        LEFT JOIN clients c ON c.id = b.client_id AND c.user_id = b.user_id
+        LEFT JOIN service_requests sr ON sr.id = b.source_service_request_id
+          AND sr.selected_installer_id = b.user_id
         WHERE b.user_id = $1
+          AND (b.status IS DISTINCT FROM 'draft' OR ($2::boolean AND sr.id IS NOT NULL))
         ORDER BY b.created_at DESC
       `,
-      [req.userId]
+      [req.userId, req.query.include_drafts === 'true']
     );
 
     return res.json(rows);
@@ -892,6 +1010,10 @@ exports.generatePDF = async (req, res) => {
       return res.status(404).json({ error: 'Orçamento não encontrado.' });
     }
 
+    if (budget.status === 'draft') {
+      return res.status(409).json({ error: 'Complete o rascunho antes de baixar o PDF.' });
+    }
+
     const clientResult = await pool.query(`SELECT * FROM clients WHERE id = $1 AND user_id = $2`, [budget.client_id, req.userId]);
     const userResult = await pool.query(
       `
@@ -939,7 +1061,7 @@ exports.sendWhatsApp = async (req, res) => {
       `
         SELECT b.*, c.name AS client_name, c.phone
         FROM budgets b
-        JOIN clients c ON c.id = b.client_id
+        LEFT JOIN clients c ON c.id = b.client_id AND c.user_id = b.user_id
         WHERE b.id = $1 AND b.user_id = $2
       `,
       [req.params.id, req.userId]
@@ -949,6 +1071,10 @@ exports.sendWhatsApp = async (req, res) => {
 
     if (!budget) {
       return res.status(404).json({ error: 'Orçamento não encontrado.' });
+    }
+
+    if (budget.status === 'draft') {
+      return res.status(409).json({ error: 'Complete o rascunho antes de enviar pelo WhatsApp.' });
     }
 
     const { installmentInfo, installmentAmountLabel, installmentConditionsLabel } = await import('../../shared/installmentTerms.mjs');
