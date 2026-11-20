@@ -26,27 +26,6 @@ html[data-site-theme='dark'] .notifications-inbox {
   --notice-on-accent: #112b34;
 }
 
-.dashboard-reference-layout.aqua-panel-theme .ref-panel-shell.is-notifications .ref-panel-main { background: #eef5f8 !important; }
-html[data-site-theme='dark'] .dashboard-reference-layout.aqua-panel-theme .ref-panel-shell.is-notifications .ref-panel-main { background: #0c1218 !important; }
-.ref-panel-shell.is-notifications .ref-panel-content { padding-block-start: clamp(24px, 4vw, 54px); }
-.is-notifications .notifications-wordmark { color: #122332; font-size: clamp(1.55rem, 2.62vw, 2.6rem); line-height: 1; font-weight: 800; letter-spacing: -.052em; white-space: nowrap; }
-html[data-site-theme] .is-notifications .notifications-wordmark > span { color: #075f8a !important; }
-html[data-site-theme='dark'] .is-notifications .notifications-wordmark { color: #f3f7f9; }
-html[data-site-theme='dark'] .is-notifications .notifications-wordmark > span { color: #9ed3ed !important; }
-.is-notifications .notifications-nav-more summary { padding: .65rem 1rem; color: inherit; font-size: .85rem; cursor: pointer; }
-.is-notifications .ref-panel-user { display: none; }
-@media (min-width: 901px) {
-  .ref-panel-shell.is-notifications .ref-panel-topbar { display: none; }
-}
-@media (min-width: 1200px) {
-  .ref-panel-shell.is-notifications:not(.is-collapsed) .ref-panel-sidebar { width: clamp(240px, 18vw, 276px); box-shadow: none; }
-  .ref-panel-shell.is-notifications:not(.is-collapsed) .ref-panel-main { padding-inline-start: clamp(240px, 18vw, 276px); }
-  .ref-panel-shell.is-notifications:not(.is-collapsed) .ref-panel-brand { min-height: 100px; padding-inline: 1.8rem .5rem; border-bottom-color: transparent; }
-  .ref-panel-shell.is-notifications:not(.is-collapsed) .ref-panel-nav-link { min-height: clamp(44px, 4.6vw, 70px); gap: .8rem; padding-inline: clamp(.7rem, 1.45vw, 1.4rem) .65rem; font-size: clamp(1.05rem, 1.55vw, 1.45rem); }
-  .ref-panel-shell.is-notifications:not(.is-collapsed) .ref-panel-nav-link svg { width: clamp(22px, 2.1vw, 30px); height: auto; }
-  .ref-panel-shell.is-notifications .ref-panel-content { padding-inline: clamp(24px, 2.3vw, 36px) clamp(24px, 1.75vw, 30px); }
-}
-
 .notifications-heading {
   display: flex;
   flex-wrap: wrap;
@@ -94,29 +73,30 @@ html[data-site-theme] .dashboard-reference-layout.aqua-panel-theme .notification
 .notifications-type-filter svg { position: absolute; top: 50%; right: .8rem; transform: translateY(-50%); pointer-events: none; }
 
 .notifications-list { overflow: clip; border: 1px solid var(--notice-frame); border-radius: .75rem; background: var(--notice-surface); }
-.notifications-list h2 { margin: 0; padding: .7em .9em; color: var(--notice-ink); font-size: clamp(1.1rem, 1.75vw, 1.65rem); font-weight: 780; line-height: 1.1; }
+.notifications-list h2 { margin: 0; padding: .65rem 1rem; color: var(--notice-ink); font-size: 1rem; font-weight: 750; line-height: 1.2; }
 .notifications-list ul { margin: 0; padding: 0; list-style: none; }
 .notifications-list section + section { border-top: 1px solid var(--notice-line); }
 .notifications-row {
   display: grid;
-  grid-template-columns: clamp(3rem, 8vw, 7.7rem) minmax(0, 1fr) minmax(4.4rem, .24fr) minmax(9.7rem, .38fr);
+  grid-template-columns: 3rem minmax(0, 1fr) 5.4rem 11rem;
   grid-template-areas: 'icon copy time actions';
   align-items: center;
-  gap: .35rem clamp(.65rem, 1.6vw, 1.65rem);
-  min-height: clamp(4.9rem, 7.4vw, 7.3rem);
-  padding: .86rem clamp(.75rem, 1.35vw, 1.35rem);
+  gap: .3rem .85rem;
+  min-height: 3.75rem;
+  padding: .5rem 1rem;
   border-top: 1px solid var(--notice-line);
 }
 .notifications-row[data-unread='true'] { background: var(--notice-unread); }
-.notifications-row-icon { grid-area: icon; display: grid; grid-template-columns: auto 1fr; align-items: center; justify-items: center; gap: clamp(.22rem, .85vw, .75rem); min-height: 2.15rem; padding-inline-end: .4rem; border-inline-end: 1px solid var(--notice-frame); }
-.notifications-dot { width: clamp(.39rem, .9vw, .86rem); aspect-ratio: 1; border-radius: 50%; background: var(--notice-accent); }
+.notifications-row-icon { grid-area: icon; display: grid; grid-template-columns: auto 1fr; align-items: center; justify-items: center; gap: .25rem; min-height: 1.7rem; padding-inline-end: .35rem; border-inline-end: 1px solid var(--notice-frame); }
+.notifications-dot { width: .45rem; aspect-ratio: 1; border-radius: 50%; background: var(--notice-accent); }
 .notifications-row[data-unread='false'] .notifications-dot { visibility: hidden; }
-.notifications-row-icon svg { width: clamp(1.25rem, 2.9vw, 2.65rem); height: auto; }
+.notifications-row-icon svg { width: 1.3rem; height: auto; }
 .notifications-copy { grid-area: copy; min-width: 0; overflow-wrap: anywhere; }
-.notifications-copy h3 { margin: 0; color: var(--notice-ink); font-size: clamp(1rem, 1.95vw, 1.85rem); font-weight: 780; line-height: 1.17; letter-spacing: -.02em; }
-.notifications-copy p { margin: .25rem 0 0; color: var(--notice-muted); font-size: clamp(.88rem, 1.55vw, 1.45rem); line-height: 1.32; white-space: pre-line; }
-.notifications-time { grid-area: time; color: var(--notice-muted); font-size: clamp(.79rem, 1.45vw, 1.4rem); white-space: nowrap; }
+.notifications-copy h3 { margin: 0; color: var(--notice-ink); font-size: 1rem; font-weight: 750; line-height: 1.25; text-wrap: balance; }
+.notifications-copy p { margin: .15rem 0 0; color: var(--notice-muted); font-size: .875rem; line-height: 1.35; white-space: pre-line; text-wrap: pretty; }
+.notifications-time { grid-area: time; color: var(--notice-muted); font-size: .81rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .notifications-row-actions { grid-area: actions; display: flex; align-items: center; justify-content: flex-end; min-width: 0; gap: .3rem; }
+.notifications-inbox .notifications-row-actions .notifications-button { min-height: 36px; padding-block: .36rem; font-size: .85rem; }
 .notifications-row-actions .notifications-action { width: 100%; min-width: 0; overflow-wrap: anywhere; }
 .notifications-inbox .notifications-action.is-primary { background: var(--notice-accent); color: var(--notice-on-accent); }
 html[data-site-theme] .dashboard-reference-layout.aqua-panel-theme .notifications-inbox .notifications-action { color: var(--notice-accent-text) !important; }
@@ -131,10 +111,6 @@ html[data-site-theme] .dashboard-reference-layout.aqua-panel-theme .notification
 .notifications-error { margin-bottom: .8rem; color: #a02128; }
 html[data-site-theme='dark'] .notifications-error { color: #ffb4b4; }
 
-@media (max-width: 900px) {
-  .ref-panel-shell.is-notifications .ref-panel-content { padding-block-start: 1rem; }
-  .ref-panel-shell.is-notifications .ref-panel-bottom-nav { display: none; }
-}
 @media (max-width: 700px) {
   .notifications-heading { display: grid; grid-template-columns: minmax(0, 1fr); }
   .notifications-heading-actions { display: grid; grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr); }
@@ -144,9 +120,13 @@ html[data-site-theme='dark'] .notifications-error { color: #ffb4b4; }
   .notifications-tabs { border-bottom: 1px solid var(--notice-frame); }
   .notifications-tabs button { padding-inline: .55rem; }
   .notifications-type-filter { width: 100%; }
-  .notifications-row { grid-template-columns: 2.5rem minmax(0, 1fr) auto; grid-template-areas: 'icon copy time' 'icon actions actions'; align-items: start; gap: .45rem .55rem; min-height: 0; }
+  .notifications-list h2 { padding-inline: .75rem; }
+  .notifications-row { grid-template-columns: 2.15rem minmax(0, 1fr) auto; grid-template-areas: 'icon copy time' 'icon actions actions'; align-items: start; gap: .2rem .5rem; min-height: 0; padding: .5rem .75rem; }
+  .notifications-row:not(:has(.notifications-row-actions)) { grid-template-areas: 'icon copy time'; }
   .notifications-row-icon { margin-top: .15rem; padding-inline-end: .25rem; }
   .notifications-time { margin-top: .12rem; }
+  .notifications-inbox .notifications-row-actions .notifications-button { min-height: 44px; }
+  .notifications-inbox .notifications-row-check { min-width: 44px; }
   .notifications-row[data-unread='false'] .notifications-row-actions { justify-content: flex-start; }
   .notifications-row[data-unread='false'] .notifications-action { width: auto; justify-content: flex-start; padding-inline: 0; }
 }

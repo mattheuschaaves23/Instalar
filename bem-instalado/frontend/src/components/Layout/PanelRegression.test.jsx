@@ -19,7 +19,7 @@ import BudgetForm from '../Budgets/BudgetForm';
 beforeEach(() => {
   fixtures.subscription = { isPro: false, loading: false, subscription: { plan: 'free' }, planAccess: { limits: {} }, refreshSubscription: vi.fn(async () => null) };
 });
-const render = (element) => renderToStaticMarkup(<MemoryRouter>{element}</MemoryRouter>);
+const render = (element, path = '/') => renderToStaticMarkup(<MemoryRouter initialEntries={[path]}>{element}</MemoryRouter>);
 
 it('centro do gráfico usa superfície legível no tema claro', () => {
   const root = postcss.parse(readFileSync(new URL('../../index.css', import.meta.url), 'utf8'));
@@ -42,6 +42,17 @@ describe('rótulo do plano no menu', () => {
   });
   it('nome acessível indica se o menu está recolhido', () => {
     expect(render(<SidebarContent allowCollapse collapsed initials="CF" userName="Conta fictícia" />)).toContain('aria-label="Expandir menu"');
+  });
+  it('mantém o menu completo e as mesmas seções ao entrar em Notificações', () => {
+    const sidebar = <SidebarContent initials="CF" userName="Conta fictícia" />;
+    const markup = render(sidebar, '/notifications');
+    const menuStructure = (html) => html.match(/(?:<p>[^<]+<\/p>|href="\/(?!brand\/)[^"]+")/g);
+    expect(menuStructure(markup)).toEqual(menuStructure(render(sidebar, '/budgets')));
+    expect(markup).toContain('ref-panel-nav-link is-active');
+    expect(markup).toContain('alt="Logo InstalarPro"');
+    expect(markup).toContain('Avaliações');
+    expect(markup).toContain('Suporte');
+    expect(markup).not.toContain('Mais opções');
   });
 });
 
