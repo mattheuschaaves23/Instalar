@@ -71,8 +71,11 @@ it('substitui a nota inicial pela média real mesmo quando a primeira nota é me
   expect(screen.queryByText('Nota inicial')).toBeNull();
 });
 
-it('instalador encontra a explicação no topo e copia o link público em Meu perfil', async () => {
+it('instalador com perfil público pode copiar o link em Meu perfil sem certificado', async () => {
   state.user = { id: 42, account_type: 'installer' };
+  api.get.mockImplementation(async (url) => url === '/users/profile'
+    ? { data: { ...owner, certification_verified: false } }
+    : { data: { installer: { ...installer, certificate_verified: false } } });
   const writeText = vi.fn().mockResolvedValue(undefined);
   vi.stubGlobal('navigator', Object.assign(Object.create(window.navigator), { clipboard: { writeText } }));
   openOwner();
@@ -95,7 +98,8 @@ it('explica por que o link não está disponível quando o perfil é oculto', as
   const section = within(await screen.findByRole('region', { name: 'Link para clientes' }));
   expect(section.getByText(/perfil público.*análise/i)).toBeTruthy();
   expect(section.queryByRole('button', { name: /copiar link/i })).toBeNull();
-  expect(section.getByRole('link', { name: 'Ver configuração do perfil' }).getAttribute('href')).toBe('/profile?editar=1&secao=perfil');
+  expect(section.getByText(/não precisa de certificado/i)).toBeTruthy();
+  expect(section.getByRole('link', { name: 'Pedir liberação pelo suporte' }).getAttribute('href')).toBe('/support');
 });
 
 it('abre a seção de compartilhamento direto pelo atalho em Oportunidades', async () => {

@@ -39,19 +39,41 @@ test('pedido de visitante fica com um único instalador e o aceite não duplica 
       });
       return { status: response.status, body: await response.json() };
     };
-    const addInstaller = async (label, visible) => {
+    const addInstaller = async (label, visible, verified = true) => {
       const { rows } = await pool.query(`
         INSERT INTO users (name,email,password,phone,city,state,latitude,longitude,account_type,email_verified_at,public_profile,certification_verified)
-        VALUES ($1,$2,'fixture','48999990000','Palhoça','SC',-27.6,-48.6,'installer',NOW(),$3,TRUE) RETURNING id
-      `, [label, `direct-${label}-${Date.now()}@example.test`, visible]);
+        VALUES ($1,$2,'fixture','48999990000','Palhoça','SC',-27.6,-48.6,'installer',NOW(),$3,$4) RETURNING id
+      `, [label, `direct-${label}-${Date.now()}@example.test`, visible, verified]);
       ids.push(rows[0].id);
       return rows[0].id;
     };
-    const installer = await addInstaller('Escolhido', true);
+    // Old installs defaulted public_profile to true before there was an approval.
+    const installer = await addInstaller('Escolhido', true, false);
     const other = await addInstaller('Outro', true);
     const hidden = await addInstaller('Oculto', false);
+    await pool.query('UPDATE users SET is_admin = TRUE WHERE id = $1', [hidden]);
+    assert.equal((await api(`/public/installers/${installer}`)).status, 404);
+    const legacyOwner = await api('/users/profile', { user: installer });
+    assert.equal(legacyOwner.status, 200);
+    assert.equal(legacyOwner.body.public_profile, false);
+    const initialDirectory = await api('/public/installers');
+    assert.equal(initialDirectory.status, 200);
+    assert.equal(initialDirectory.body.installers.some((row) => row.id === installer), false);
+    assert.equal(initialDirectory.body.installers.some((row) => row.id === other && row.certificate_verified), true);
+    const visibilityPath = `/admin/users/${installer}/public-profile`;
+    const publish = { method: 'PATCH', body: { public_profile: true } };
+    assert.equal((await api(visibilityPath, { ...publish, user: installer })).status, 403);
+    const approved = await api(visibilityPath, { ...publish, user: hidden });
+    assert.equal(approved.status, 200, JSON.stringify(approved.body));
+    assert.equal(approved.body.user.public_profile, true);
     const profile = await api(`/public/installers/${installer}`);
     assert.equal(profile.status, 200);
+    assert.equal(profile.body.installer.certificate_verified, false);
+    const directory = await api('/public/installers');
+    assert.equal(directory.status, 200);
+    const visible = directory.body.installers.find((row) => row.id === installer);
+    assert.equal(visible?.certificate_verified, false);
+    assert.equal(directory.body.installers.some((row) => row.id === hidden), false);
     const payload = {
       client_name: 'Cliente visitante QA', client_phone: '48999990001', city: 'Palhoça', state: 'SC',
       details: 'Instalação na sala', privacy_consent: true, turnstile_token: 'checked-by-qa',
@@ -99,7 +121,6 @@ test('pedido de visitante fica com um único instalador e o aceite não duplica 
       { code: '23514' },
     );
     assert.equal((await api(`/public/service-requests/${alternate.id}/status`, { token: alternate.client_access_token, method: 'PATCH', body: { status: 'canceled' } })).status, 200);
-    await pool.query('UPDATE users SET is_admin = TRUE WHERE id = $1', [hidden]);
     const reopened = await api(`/admin/service-requests/${alternate.id}/status`, { user: hidden, method: 'PATCH', body: { status: 'open' } });
     assert.equal(reopened.status, 200, JSON.stringify(reopened.body));
     assert.equal(reopened.body.request.status, 'open');
@@ -143,6 +164,19 @@ test('pedido de visitante fica com um único instalador e o aceite não duplica 
     assert.equal(draftAsOwner.status, 200);
     assert.equal(draftAsOwner.body.request.client_phone, '5548999990001');
     assert.equal((await api(`/budgets/${draftId}/draft`, { user: other })).status, 404);
+
+    await pool.query("UPDATE users SET certificate_file = 'qa-certificate.pdf', certification_verified = TRUE WHERE id = $1", [installer]);
+    const clearCertificate = await api('/users/profile', { method: 'PUT', body: { certificate_file: '' }, user: installer });
+    assert.equal(clearCertificate.status, 200);
+    assert.equal(clearCertificate.body.public_profile, true);
+    assert.equal(clearCertificate.body.certification_verified, false);
+    assert.equal(clearCertificate.body.certification_status, 'not_submitted');
+    assert.equal((await api(`/public/installers/${installer}`)).body.installer.accepts_direct_requests, true);
+
+    const removed = await api(visibilityPath, { method: 'PATCH', body: { public_profile: false }, user: hidden });
+    assert.equal(removed.status, 200);
+    assert.equal((await api(`/public/installers/${installer}`)).status, 404);
+    assert.equal((await send(installer)).status, 404);
   } finally {
     if (server) await new Promise((resolve) => server.close(resolve));
     if (ids.length) await pool.query('DELETE FROM users WHERE id = ANY($1::int[])', [ids]);

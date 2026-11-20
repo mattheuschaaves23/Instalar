@@ -464,7 +464,7 @@ export default function AdminDashboard() {
     await updateTrust(targetUser.id, { featured_installer: nextFeatured });
   };
 
-  const confirmCertificationAction = async (targetUser) => {
+  const confirmCertificationAction = async (targetUser, { publish = false } = {}) => {
     const nextVerified = !targetUser.certification_verified;
 
     if (nextVerified && !targetUser.has_certificate) {
@@ -472,7 +472,7 @@ export default function AdminDashboard() {
       return;
     }
 
-    const actionLabel = nextVerified ? 'validar o certificado deste instalador' : 'remover a validação do certificado';
+    const actionLabel = nextVerified ? (publish ? 'validar o certificado e publicar o perfil' : 'validar o certificado deste instalador') : 'remover a validação do certificado';
     const confirmed = await confirm(`Confirma ${actionLabel} para ${targetUser.name}?`);
 
     if (!confirmed) {
@@ -486,11 +486,11 @@ export default function AdminDashboard() {
 
     setSavingUserId(targetUser.id);
     try {
-      await api.post(`/admin/installer-verifications/${targetUser.id}/decision`, { decision: 'approve', publish: true });
-      toast.success('Certificado aprovado e perfil publicado na vitrine.');
+      await api.post(`/admin/installer-verifications/${targetUser.id}/decision`, { decision: 'approve', publish });
+      toast.success(publish ? 'Certificado aprovado e perfil publicado na vitrine.' : 'Certificado aprovado.');
       await Promise.all([loadUsers(userFilters), loadVerifications(), loadOverview()]);
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Não foi possível aprovar e publicar este instalador.');
+      toast.error(error.response?.data?.error || 'Não foi possível aprovar o certificado.');
     } finally {
       setSavingUserId(null);
     }
@@ -1238,7 +1238,7 @@ export default function AdminDashboard() {
                 <p className="eyebrow">Fila de aprovação</p>
                 <h2 className="mt-2 text-xl font-semibold text-[var(--text)]">Instaladores aguardando revisão</h2>
                 <p className="mt-1 text-sm text-[var(--muted)]">
-                  Ao aprovar, o selo é validado e o perfil entra automaticamente na vitrine pública.
+                  Esta fila é para o selo de verificado. Para publicar sem certificado, use “Mostrar na vitrine”, em Usuários.
                 </p>
               </div>
               <button className="ghost-button !min-h-0 !px-3 !py-2 text-xs" onClick={loadVerifications} type="button">
@@ -1268,7 +1268,7 @@ export default function AdminDashboard() {
                     <button
                       className="gold-button w-full !min-h-0 !px-3 !py-2 text-xs"
                       disabled={savingUserId === item.id}
-                      onClick={() => confirmCertificationAction({ ...item, certification_verified: false, has_certificate: true })}
+                      onClick={() => confirmCertificationAction({ ...item, certification_verified: false, has_certificate: true }, { publish: true })}
                       type="button"
                     >
                       Aprovar e publicar

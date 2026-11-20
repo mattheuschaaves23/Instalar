@@ -22,7 +22,7 @@ const {
 } = require('../services/planAccess');
 const { sendMarketplaceEmail } = require('../services/email');
 const { sendPushToUser } = require('../services/push');
-const { getInstallerReadiness } = require('../utils/installerEligibility');
+const { getInstallerReadiness, publicProfileSql } = require('../utils/installerEligibility');
 
 const PDF_BRANDING_DEFAULTS = Object.freeze({
   brand_name: '',
@@ -263,7 +263,7 @@ exports.exportOwnData = async (req, res) => {
           accepts_service_contract, provides_warranty, warranty_days,
           default_price_per_roll, default_removal_price, latitude, longitude,
           service_radius_km, business_name, city, state, service_region, bio,
-          installation_method, service_hours, installation_days, public_profile,
+          installation_method, service_hours, installation_days, ${publicProfileSql()} AS public_profile,
           years_experience, created_at, updated_at
          FROM users WHERE id = $1 LIMIT 1`,
         [req.userId]
@@ -590,7 +590,7 @@ exports.getProfile = async (req, res) => {
           base_service_cost,
           travel_fee,
           monthly_goal,
-          public_profile,
+          ${publicProfileSql()} AS public_profile,
           years_experience,
           wallpaper_store_recommended,
           document_type,
@@ -723,7 +723,7 @@ exports.updateProfile = async (req, res) => {
       [req.userId]
     );
     const certificateChanged = Boolean(
-      normalizedCertificateFile
+      typeof normalizedCertificateFile === 'string'
       && normalizedCertificateFile !== String(currentCertificate.rows[0]?.certificate_file || '')
     );
 
@@ -774,7 +774,7 @@ exports.updateProfile = async (req, res) => {
           installer_photo = COALESCE($4, installer_photo),
           installation_gallery = CASE WHEN $5::jsonb IS NULL THEN installation_gallery ELSE $5::jsonb END,
           certificate_file = COALESCE($6, certificate_file),
-          certificate_name = COALESCE($7, certificate_name),
+          certificate_name = CASE WHEN $6::text = '' THEN '' ELSE COALESCE($7, certificate_name) END,
           business_name = COALESCE($8, business_name),
           city = COALESCE($9, city),
           state = COALESCE($10, state),
@@ -837,7 +837,7 @@ exports.updateProfile = async (req, res) => {
           base_service_cost,
           travel_fee,
           monthly_goal,
-          public_profile,
+          ${publicProfileSql()} AS public_profile,
           years_experience,
           wallpaper_store_recommended,
           document_type,
@@ -898,22 +898,27 @@ exports.updateProfile = async (req, res) => {
     };
 
     if (certificateChanged) {
+      const hasNewCertificate = Boolean(normalizedCertificateFile);
       const statusResult = await pool.query(
         `UPDATE users
          SET certification_verified = FALSE,
-             public_profile = FALSE,
-             certification_status = 'pending',
-             certificate_submitted_at = NOW(),
+             public_profile = ${publicProfileSql()},
+             public_profile_approved_at = CASE WHEN ${publicProfileSql()}
+               THEN COALESCE(public_profile_approved_at, NOW()) ELSE NULL END,
+             featured_installer = FALSE,
+             certification_status = CASE WHEN $2::boolean THEN 'pending' ELSE 'not_submitted' END,
+             certificate_submitted_at = CASE WHEN $2::boolean THEN NOW() ELSE NULL END,
              certificate_reviewed_at = NULL,
              certificate_reviewed_by = NULL,
              certificate_rejection_reason = NULL,
              updated_at = NOW()
          WHERE id = $1
-         RETURNING certification_verified, public_profile, certification_status, certificate_submitted_at,
+         RETURNING certification_verified, public_profile, featured_installer, certification_status, certificate_submitted_at,
                    certificate_reviewed_at, certificate_rejection_reason`,
-        [req.userId]
+        [req.userId, hasNewCertificate]
       );
       profile = { ...profile, ...statusResult.rows[0] };
+      if (!hasNewCertificate) return res.json(profile);
 
       await pool.query(
         `INSERT INTO notifications (user_id, title, message, type, read)
@@ -1181,7 +1186,7 @@ exports.getDashboard = async (req, res) => {
               certification_verified,
               featured_installer,
               monthly_goal,
-              public_profile,
+              ${publicProfileSql()} AS public_profile,
               wallpaper_store_recommended,
               document_type,
               document_id,
@@ -1392,7 +1397,7 @@ exports.getReviewsDashboard = async (req, res) => {
           SELECT
             id,
             COALESCE(NULLIF(business_name, ''), name) AS display_name,
-            COALESCE(public_profile, false) AS public_profile
+            ${publicProfileSql()} AS public_profile
           FROM users
           WHERE id = $1
         `,

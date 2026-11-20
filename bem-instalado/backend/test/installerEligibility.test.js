@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { getInstallerReadiness, normalizeBrazilianWhatsApp } = require('../utils/installerEligibility');
+const { acceptsDirectRequests, getInstallerReadiness, normalizeBrazilianWhatsApp } = require('../utils/installerEligibility');
 const essential = {
   name: 'Instalador Teste', phone: '(48) 99999-9999', city: 'Palhoça', state: 'SC',
   email: 'qa@example.test', email_verified_at: new Date(),
@@ -21,6 +21,12 @@ test('campos opcionais e selo não substituem os dados essenciais', () => {
   });
   assert.equal(readiness.ready, false);
   assert.deepEqual(readiness.missing_fields, ['name', 'phone', 'city', 'state', 'email_verified']);
+});
+
+test('link para clientes exige perfil publicado e dados essenciais, não o certificado', () => {
+  assert.equal(acceptsDirectRequests({ ...essential, public_profile: true, certification_verified: false }), true);
+  assert.equal(acceptsDirectRequests({ ...essential, public_profile: false, certification_verified: true }), false);
+  assert.equal(acceptsDirectRequests({ ...essential, public_profile: true, email_verified_at: null }), false);
 });
 
 test('normaliza telefone nacional e com DDI sem aceitar número fictício curto', () => {

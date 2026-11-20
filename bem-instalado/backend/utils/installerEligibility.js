@@ -29,7 +29,14 @@ function getInstallerReadiness(profile = {}) {
 }
 
 function acceptsDirectRequests(profile) {
-  return Boolean(profile?.public_profile && profile.certification_verified && getInstallerReadiness(profile).ready);
+  return Boolean(profile?.public_profile && getInstallerReadiness(profile).ready);
 }
 
-module.exports = { acceptsDirectRequests, getInstallerReadiness, normalizeBrazilianWhatsApp };
+function publicProfileSql(alias = '') {
+  const prefix = alias ? `${alias}.` : '';
+  return `(COALESCE(${prefix}public_profile, false) AND (
+    COALESCE(${prefix}certification_verified, false) OR ${prefix}public_profile_approved_at IS NOT NULL
+  ))`;
+}
+
+module.exports = { acceptsDirectRequests, getInstallerReadiness, normalizeBrazilianWhatsApp, publicProfileSql };

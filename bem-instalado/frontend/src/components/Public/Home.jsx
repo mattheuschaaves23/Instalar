@@ -530,7 +530,7 @@ function getInstallerMatchScore(installer, request) {
   }
 
   const hasAvailability = Boolean((installer.availability_slots || []).length || (installer.available_dates || []).length);
-  const isVerified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
+  const isVerified = Boolean(installer.certificate_verified);
   const sameCity =
     request.city &&
     installer.city &&
@@ -610,7 +610,7 @@ function getInstallerMatchReasons(installer, request) {
     reasons.push('Agenda disponível');
   }
 
-  if (installer.certificate_verified || installer.safety?.document_masked) {
+  if (installer.certificate_verified) {
     reasons.push('Perfil verificado');
   }
 
@@ -795,7 +795,7 @@ export default function Home() {
 
     const quickFiltered = categoryFiltered.filter((installer) => {
       if (quickFilter === 'verified') {
-        return Boolean(installer.certificate_verified || installer.safety?.document_masked);
+        return Boolean(installer.certificate_verified);
       }
 
       if (quickFilter === 'available') {
@@ -2645,7 +2645,7 @@ export default function Home() {
               {favoriteInstallers.slice(0, 3).map((installer) => {
                 const availability = getAvailabilityState(installer);
                 const tags = deriveInstallerTags(installer);
-                const isVerified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
+                const isVerified = Boolean(installer.certificate_verified);
                 const matchScore = getInstallerMatchScore(installer, serviceRequest);
                 const matchReasons = getInstallerMatchReasons(installer, serviceRequest);
 
@@ -2725,7 +2725,7 @@ export default function Home() {
             {paginatedInstallers.map((installer) => {
               const availability = getAvailabilityState(installer);
               const tags = deriveInstallerTags(installer);
-              const isVerified = Boolean(installer.certificate_verified || installer.safety?.document_masked);
+              const isVerified = Boolean(installer.certificate_verified);
               const matchScore = getInstallerMatchScore(installer, serviceRequest);
               const matchReasons = getInstallerMatchReasons(installer, serviceRequest);
 

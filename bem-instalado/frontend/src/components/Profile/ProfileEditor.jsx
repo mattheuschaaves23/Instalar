@@ -60,7 +60,7 @@ const initialSlotForm = {
 };
 
 const imageHint = 'PNG, JPG ou WEBP (máx. 3MB). A imagem é salva no perfil.';
-const certificateHint = 'Opcional. PDF, PNG, JPG ou WEBP (máx. 4MB). A análise libera o selo de verificado; não é necessária para aceitar pedidos.';
+const certificateHint = 'Opcional. PDF, PNG, JPG ou WEBP (máx. 4MB). Serve para obter o selo de verificado; não é necessário para liberar o link ou aceitar pedidos.';
 
 function buildMonthKey(date = new Date()) {
   const month = `${date.getMonth() + 1}`.padStart(2, '0');

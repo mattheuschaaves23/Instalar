@@ -2,6 +2,7 @@ const pool = require('../config/database');
 const { clientFacingRequestStatus, expireOpenServiceRequests } = require('../utils/serviceRequestLifecycle');
 const { sendMarketplaceEmail } = require('../services/email');
 const { sendPushToUser } = require('../services/push');
+const { publicProfileSql } = require('../utils/installerEligibility');
 const ADMIN_MUTATION_LOCK_ID = 19772402;
 const DASHBOARD_AD_TYPES = new Set(['image', 'video', 'text']);
 
@@ -209,8 +210,7 @@ exports.getOverview = async (_req, res) => {
             SELECT COUNT(*)::int
             FROM users
             WHERE account_type = 'installer'
-              AND COALESCE(public_profile, FALSE) = TRUE
-              AND COALESCE(certification_verified, FALSE) = TRUE
+              AND ${publicProfileSql()}
               AND deleted_at IS NULL
           ) AS public_installers,
           (SELECT COUNT(*)::int FROM users WHERE COALESCE(featured_installer, FALSE) = TRUE AND deleted_at IS NULL) AS featured_installers,
@@ -416,7 +416,7 @@ exports.listUsers = async (req, res) => {
           u.phone,
           u.city,
           u.state,
-          u.public_profile,
+          ${publicProfileSql('u')} AS public_profile,
           u.is_admin,
           u.featured_installer,
           u.certification_verified,
@@ -652,7 +652,7 @@ exports.listInstallerVerifications = async (req, res) => {
          u.certificate_submitted_at,
          u.certificate_reviewed_at,
          u.certificate_rejection_reason,
-         u.public_profile,
+         ${publicProfileSql('u')} AS public_profile,
          reviewer.name AS reviewed_by_name,
          EXTRACT(EPOCH FROM (NOW() - COALESCE(u.certificate_submitted_at, u.updated_at)))::int AS waiting_seconds
        FROM users u
@@ -711,7 +711,10 @@ exports.decideInstallerVerification = async (req, res) => {
       `UPDATE users
        SET certification_verified = $2,
            certification_status = $3,
-           public_profile = $4,
+           public_profile = ($4::boolean OR ${publicProfileSql()}),
+           public_profile_approved_at = CASE WHEN $4::boolean OR ${publicProfileSql()}
+             THEN COALESCE(public_profile_approved_at, NOW()) ELSE NULL END,
+           featured_installer = CASE WHEN NOT $2::boolean THEN FALSE ELSE featured_installer END,
            certificate_reviewed_at = NOW(),
            certificate_reviewed_by = $5,
            certificate_rejection_reason = $6,
@@ -721,9 +724,10 @@ exports.decideInstallerVerification = async (req, res) => {
                  certificate_reviewed_at, certificate_rejection_reason`,
       [installerId, approved, approved ? 'approved' : 'rejected', approved && publish, req.userId, approved ? null : reason]
     );
-    const title = approved ? 'Certificado aprovado e perfil publicado' : 'Certificado precisa de ajuste';
+    const isPublic = Boolean(updated.rows[0].public_profile);
+    const title = approved ? (publish ? 'Certificado aprovado e perfil publicado' : 'Certificado aprovado') : 'Certificado precisa de ajuste';
     const message = approved
-      ? 'Seu certificado foi aprovado e seu perfil já está visível para clientes na busca.'
+      ? `Seu certificado foi aprovado.${isPublic ? ' Seu perfil está visível para clientes na busca.' : ' A liberação do perfil público é independente do selo.'}`
       : `Seu certificado não foi aprovado. Motivo: ${reason}`;
     await db.query(
       `INSERT INTO notifications (user_id, title, message, type, read)
@@ -825,7 +829,7 @@ exports.updateUserPublicProfile = async (req, res) => {
 
     if (nextPublicProfile) {
       const trustResult = await pool.query(
-        `SELECT account_type, certification_verified, certificate_file FROM users WHERE id = $1 AND deleted_at IS NULL LIMIT 1`,
+        `SELECT account_type FROM users WHERE id = $1 AND deleted_at IS NULL LIMIT 1`,
         [targetUserId]
       );
       const trust = trustResult.rows[0];
@@ -834,18 +838,14 @@ exports.updateUserPublicProfile = async (req, res) => {
       if (trust.account_type !== 'installer') {
         return res.status(400).json({ error: 'A visibilidade pública é exclusiva para instaladores.' });
       }
-      if (!trust.certification_verified || !String(trust.certificate_file || '').trim()) {
-        return res.status(400).json({
-          error: 'Valide o certificado antes de liberar este profissional na busca.',
-          code: 'CERTIFICATION_REQUIRED',
-        });
-      }
     }
 
     const { rows } = await pool.query(
       `
         UPDATE users
-        SET public_profile = $1, updated_at = NOW()
+        SET public_profile = $1,
+            public_profile_approved_at = CASE WHEN $1::boolean THEN COALESCE(public_profile_approved_at, NOW()) ELSE NULL END,
+            updated_at = NOW()
         WHERE id = $2 AND account_type = 'installer' AND deleted_at IS NULL
         RETURNING id, name, email, public_profile, updated_at
       `,
@@ -938,7 +938,9 @@ exports.updateUserTrust = async (req, res) => {
         UPDATE users
         SET
           certification_verified = COALESCE($2, certification_verified),
-          public_profile = CASE WHEN $2::boolean = FALSE THEN FALSE ELSE public_profile END,
+          public_profile = CASE WHEN $2::boolean IS NOT NULL THEN ${publicProfileSql()} ELSE public_profile END,
+          public_profile_approved_at = CASE WHEN $2::boolean IS NOT NULL AND ${publicProfileSql()}
+            THEN COALESCE(public_profile_approved_at, NOW()) ELSE public_profile_approved_at END,
           featured_installer = CASE WHEN $2::boolean = FALSE THEN FALSE ELSE COALESCE($1, featured_installer) END,
           updated_at = NOW()
         WHERE id = $3 AND deleted_at IS NULL
@@ -948,7 +950,7 @@ exports.updateUserTrust = async (req, res) => {
           email,
           featured_installer,
           certification_verified,
-          public_profile,
+          ${publicProfileSql()} AS public_profile,
           is_admin,
           updated_at
       `,
@@ -1084,6 +1086,7 @@ exports.deleteUser = async (req, res) => {
           SET
             deleted_at = NOW(),
             public_profile = FALSE,
+            public_profile_approved_at = NULL,
             featured_installer = FALSE,
             certification_verified = FALSE,
             is_admin = FALSE,
@@ -1117,6 +1120,7 @@ exports.restoreUser = async (req, res) => {
           deleted_at = NULL,
           is_admin = FALSE,
           public_profile = FALSE,
+          public_profile_approved_at = NULL,
           featured_installer = FALSE,
           certification_verified = FALSE,
           updated_at = NOW()

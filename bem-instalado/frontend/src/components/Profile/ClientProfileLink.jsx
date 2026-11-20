@@ -8,7 +8,7 @@ export default function ClientProfileLink({ profile, preview, failed, onRetry })
   const headingRef = useRef(null);
   const manualLinkRef = useRef(null);
   const [copyStatus, setCopyStatus] = useState('');
-  const isPublic = Boolean(profile.public_profile && profile.certification_verified);
+  const isPublic = Boolean(profile.public_profile);
   const hasEssentials = getInstallerRequirements(profile).every(({ complete }) => complete);
   const canShare = isPublic && hasEssentials && preview?.accepts_direct_requests === true;
   const url = `${legalDocuments.publicOrigin}/installers/${profile.id}?orcamento=1`;
@@ -59,7 +59,7 @@ export default function ClientProfileLink({ profile, preview, failed, onRetry })
       ) : (
         <div className="profile-client-link-state">
           {!isPublic ? (
-            <><p><strong>Link ainda indisponível.</strong> Ele só funciona com o perfil público, liberado após análise. Você ainda pode aceitar pedidos comuns com os dados essenciais completos.</p><Link className="profile-inline-button" to="/profile?editar=1&secao=perfil">Ver configuração do perfil</Link></>
+            <><p><strong>Link ainda indisponível.</strong> Ele funciona com o perfil público, liberado após análise. Você não precisa de certificado para pedir a liberação.</p><Link className="profile-inline-button" to="/support">Pedir liberação pelo suporte</Link></>
           ) : !hasEssentials ? (
             <><p><strong>Faltam dados no seu perfil.</strong> Complete os dados essenciais e confirme o e-mail para liberar o link.</p><Link className="profile-inline-button" to="/profile?editar=1&secao=dados">Conferir dados para pedidos</Link></>
           ) : failed ? (

@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const pool = require('../config/database');
-const { normalizeBrazilianWhatsApp, acceptsDirectRequests } = require('../utils/installerEligibility');
+const { normalizeBrazilianWhatsApp, acceptsDirectRequests, publicProfileSql } = require('../utils/installerEligibility');
 const { BRAZIL_STATES } = require('../utils/postalAddress');
 const { consentVersion } = require('../../shared/legalDocuments.json');
 
@@ -28,7 +28,7 @@ exports.create = async (req, res) => {
     db = await pool.connect();
     await db.query('BEGIN');
     const { rows: [installer] } = await db.query(
-      `SELECT name, phone, email, email_verified_at, city, state, public_profile, certification_verified
+      `SELECT name, phone, email, email_verified_at, city, state, ${publicProfileSql()} AS public_profile
        FROM users WHERE id = $1 AND deleted_at IS NULL AND COALESCE(account_type, 'installer') = 'installer'
        FOR SHARE`,
       [installerId],

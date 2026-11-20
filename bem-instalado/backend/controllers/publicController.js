@@ -5,7 +5,7 @@ const reverseGeocode = require('../utils/reverseGeocode');
 const forwardGeocode = require('../utils/forwardGeocode');
 const { normalizeSearchText } = require('../utils/textSearch');
 const { logApplicationError } = require('../utils/errorMonitoring');
-const { acceptsDirectRequests } = require('../utils/installerEligibility');
+const { acceptsDirectRequests, publicProfileSql } = require('../utils/installerEligibility');
 
 function reportLocationError(error, req) {
   void logApplicationError({
@@ -76,8 +76,7 @@ exports.getSitemap = async (req, res) => {
       `SELECT id, updated_at
        FROM users
        WHERE COALESCE(account_type, 'installer') = 'installer'
-         AND COALESCE(public_profile, false) = true
-         AND COALESCE(certification_verified, false) = true
+         AND ${publicProfileSql()}
          AND deleted_at IS NULL
        ORDER BY updated_at DESC NULLS LAST, id ASC`
     );
@@ -416,8 +415,8 @@ exports.getInstallers = async (req, res) => {
           GROUP BY user_id
         ) schedule_stats ON schedule_stats.user_id = u.id
         WHERE COALESCE(u.account_type, 'installer') = 'installer'
-          AND COALESCE(u.public_profile, false) = true
-          AND COALESCE(u.certification_verified, false) = true
+          AND ${publicProfileSql('u')}
+          AND u.deleted_at IS NULL
           AND ($1 = '%%' OR (
             TRANSLATE(LOWER(COALESCE(u.business_name, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
             OR TRANSLATE(LOWER(COALESCE(u.name, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
@@ -456,8 +455,8 @@ exports.getInstallers = async (req, res) => {
             COALESCE(u.featured_installer, false) AS featured_installer
           FROM users u
           WHERE COALESCE(u.account_type, 'installer') = 'installer'
-            AND COALESCE(u.public_profile, false) = true
-            AND COALESCE(u.certification_verified, false) = true
+            AND ${publicProfileSql('u')}
+            AND u.deleted_at IS NULL
             AND ($1 = '%%' OR (
               TRANSLATE(LOWER(COALESCE(u.business_name, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
               OR TRANSLATE(LOWER(COALESCE(u.name, '')), 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ', 'aaaaaceeeeiiiinooooouuuuyy') LIKE $1
@@ -550,8 +549,8 @@ exports.getInstallers = async (req, res) => {
           FROM installer_reviews ir
           JOIN users u ON u.id = ir.installer_id
           WHERE COALESCE(u.account_type, 'installer') = 'installer'
-            AND COALESCE(u.public_profile, false) = true
-            AND COALESCE(u.certification_verified, false) = true
+            AND ${publicProfileSql('u')}
+            AND u.deleted_at IS NULL
           ORDER BY ir.created_at DESC
           LIMIT 6
         `
@@ -726,7 +725,7 @@ exports.getInstallerProfile = async (req, res) => {
             u.id,
             u.name,
             COALESCE(NULLIF(u.business_name, ''), u.name) AS display_name,
-            u.public_profile, u.phone, u.email, u.email_verified_at,
+            ${publicProfileSql('u')} AS public_profile, u.phone, u.email, u.email_verified_at,
             u.logo,
             u.installer_photo,
             COALESCE(u.installation_gallery, '[]'::jsonb) AS installation_gallery,
@@ -788,10 +787,7 @@ exports.getInstallerProfile = async (req, res) => {
             AND COALESCE(u.account_type, 'installer') = 'installer'
             AND u.deleted_at IS NULL
             AND (
-              (
-                COALESCE(u.public_profile, false) = true
-                AND COALESCE(u.certification_verified, false) = true
-              )
+              ${publicProfileSql('u')}
               OR $2::boolean = TRUE
               OR (
                 EXISTS (
@@ -923,8 +919,8 @@ const legacyCreateReview = async (req, res) => {
         FROM users
         WHERE id = $1
           AND COALESCE(account_type, 'installer') = 'installer'
-          AND COALESCE(public_profile, false) = true
-          AND COALESCE(certification_verified, false) = true
+          AND ${publicProfileSql()}
+          AND deleted_at IS NULL
       `,
       [installerId]
     );
@@ -1029,8 +1025,8 @@ exports.createReview = async (req, res) => {
         FROM users
         WHERE id = $1
           AND COALESCE(account_type, 'installer') = 'installer'
-          AND COALESCE(public_profile, false) = true
-          AND COALESCE(certification_verified, false) = true
+          AND ${publicProfileSql()}
+          AND deleted_at IS NULL
       `,
       [installerId]
     );
