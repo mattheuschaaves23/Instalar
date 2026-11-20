@@ -3,6 +3,7 @@ const { sendMarketplaceEmail } = require('../services/email');
 const { sendPushToUser } = require('../services/push');
 const { notifyOperationalAlert } = require('../services/operationalAlerts');
 const { logApplicationError } = require('../utils/errorMonitoring');
+const { clientFacingRequestStatus } = require('../utils/serviceRequestLifecycle');
 
 function text(value, max = 2000) {
   return String(value || '').trim().slice(0, max);
@@ -245,7 +246,8 @@ exports.getClientProposal = async (req, res) => {
        WHERE sp.service_request_id = $1`,
       [requestId]
     );
-    return res.json({ proposal: serializeProposal(result.rows[0]), request_status: request.status });
+    res.set('Cache-Control', 'private, no-store');
+    return res.json({ proposal: serializeProposal(result.rows[0]), request_status: clientFacingRequestStatus(request) });
   } catch (_error) {
     return res.status(500).json({ error: 'Não foi possível carregar a proposta.' });
   }

@@ -407,3 +407,49 @@ html[data-site-theme] .ig-installer-profile .ig-profile-verified {
   background: var(--profile-brand, #175cd3);
   color: #fff !important;
 }
+
+.ig-direct-unavailable { margin: 0; color: var(--ig-muted); font-size: .78rem; line-height: 1.4; }
+.ig-direct-secondary {
+  min-height: 2.65rem;
+  padding: .55rem .85rem;
+  border: 1px solid var(--ig-line);
+  border-radius: .75rem;
+  background: var(--ig-surface-soft);
+  color: var(--ig-ink);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.ig-direct-secondary:hover { border-color: var(--ig-accent); }
+.ig-direct-request { max-width: 46rem; margin: 1rem auto; padding: clamp(1rem, 3vw, 1.65rem); }
+.ig-direct-request header { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: space-between; align-items: start; margin-bottom: 1rem; }
+.ig-direct-request header h2 { margin: 0 0 .35rem; font-size: clamp(1.12rem, 3vw, 1.4rem); }
+.ig-direct-request p { margin: 0; color: var(--ig-muted); line-height: 1.5; }
+.ig-direct-request form, .ig-direct-fields { display: grid; gap: .85rem; }
+.ig-direct-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ig-direct-fields label { display: grid; gap: .3rem; font-weight: 750; font-size: .85rem; }
+.ig-direct-fields :is(input, select, textarea) {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.7rem;
+  padding: .5rem .7rem;
+  border: 1px solid var(--ig-line);
+  border-radius: .55rem;
+  background: var(--ig-surface-soft);
+  color: var(--ig-ink);
+  font: inherit;
+}
+.ig-direct-fields textarea { resize: vertical; }
+.ig-direct-message { grid-column: 1 / -1; }
+.ig-direct-consent { display: flex; gap: .55rem; align-items: start; color: var(--ig-muted); line-height: 1.5; font-size: .85rem; }
+.ig-direct-consent input { margin-top: .2rem; }
+.ig-direct-consent a { color: var(--ig-accent-deep); text-decoration: underline; }
+.ig-direct-request form > button { justify-self: start; }
+.ig-direct-request p.ig-direct-error { color: #a52020; }
+html[data-site-theme='dark'] .ig-direct-request p.ig-direct-error { color: #ffb4b4; }
+@media (max-width: 720px) {
+  .ig-profile-hero-actions .ig-direct-open { display: inline-flex; grid-column: 1 / -1; }
+  .ig-direct-fields { grid-template-columns: 1fr; }
+  .ig-direct-request form > button { justify-self: stretch; }
+}

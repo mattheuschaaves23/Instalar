@@ -39,6 +39,7 @@ html[data-site-theme='dark'] .opp-workspace {
 .opp-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-block-end: 24px; }
 .opp-heading h1 { margin: 0; color: var(--opp-ink); font-size: clamp(26px, 2.8vw, 34px); font-weight: 750; line-height: 1.2; letter-spacing: -.04em; }
 .opp-heading p { margin: 8px 0 0; color: var(--opp-muted); font-size: 15px; line-height: 1.55; }
+.opp-heading-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: .5rem; }
 html[data-site-theme] .opp-workspace :is(.opp-primary, .opp-secondary, .opp-icon-button, .opp-back-to-list, .opp-text-button) { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 44px; padding: 10px 16px; border: 1px solid var(--opp-line); border-radius: 9px; background: var(--opp-surface); color: var(--opp-ink); font-size: 14px; font-weight: 650; line-height: 1.4; text-decoration: none; cursor: pointer; }
 html[data-site-theme] .opp-workspace .opp-primary { border-color: var(--opp-blue); background: var(--opp-blue); color: #fff; }
 html[data-site-theme] .dashboard-reference-layout.installer-workspace.aqua-panel-theme .opp-workspace .opp-primary { color: #fff !important; }
@@ -156,7 +157,7 @@ html[data-site-theme] .opp-workspace .marketplace-proposal :is(input, textarea) 
   .opp-card-photo { width: 106px; flex-basis: 106px; }
 }
 @container (max-width: 540px) {
-  .opp-heading { align-items: start; gap: 10px; margin-block-end: 18px; }
+  .opp-heading { flex-wrap: wrap; align-items: start; gap: 10px; margin-block-end: 18px; }
   .opp-heading h1 { font-size: 26px; }
   .opp-heading p { font-size: 13px; }
   html[data-site-theme] .opp-heading .opp-secondary { flex-shrink: 0; min-width: 42px; padding-inline: 9px; font-size: 12px; }

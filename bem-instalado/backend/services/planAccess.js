@@ -97,10 +97,11 @@ async function getInstallerPlanAccess(userId, db = pool, options = {}) {
           ) AS monthly_budgets,
           (
             SELECT COUNT(*)::int
-            FROM service_request_interests
-            WHERE installer_id = $1
-              AND created_at >= date_trunc('month', CURRENT_TIMESTAMP)
-              AND created_at < date_trunc('month', CURRENT_TIMESTAMP) + INTERVAL '1 month'
+            FROM service_request_interests sri
+            JOIN service_requests sr ON sr.id = sri.request_id
+            WHERE sri.installer_id = $1 AND sr.direct_installer_id IS NULL
+              AND sri.created_at >= date_trunc('month', CURRENT_TIMESTAMP)
+              AND sri.created_at < date_trunc('month', CURRENT_TIMESTAMP) + INTERVAL '1 month'
           ) AS monthly_interests,
           (
             SELECT COUNT(*)::int

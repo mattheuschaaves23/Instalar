@@ -8,7 +8,7 @@ const { publicAssetUrl, storeProfileAsset } = require('../services/objectStorage
 const { normalizeSearchText } = require('../utils/textSearch');
 const forwardGeocode = require('../utils/forwardGeocode');
 const { validateUploadFile } = require('../utils/uploadValidation');
-const { expireOpenServiceRequests } = require('../utils/serviceRequestLifecycle');
+const { clientFacingRequestStatus, expireOpenServiceRequests } = require('../utils/serviceRequestLifecycle');
 const { getOpportunityListing, normalizeListingOptions } = require('../services/opportunityListing');
 const { getInstallerReadiness, normalizeBrazilianWhatsApp } = require('../utils/installerEligibility');
 const { BRAZIL_STATES } = require('../utils/postalAddress');
@@ -242,7 +242,8 @@ function serializeOpportunity(row) {
     photo_count: Number(row.photo_count || 0),
     photo_names: row.photo_names || [],
     photo_urls: row.photo_urls || [],
-    status: row.status,
+    status: clientFacingRequestStatus(row),
+    is_direct: Boolean(row.direct_installer_id),
     can_contact_on_interest: Boolean(row.whatsapp_contact_consent_at && openForInterest
       && normalizeBrazilianWhatsApp(row.client_phone)),
     interest_whatsapp_url: row.my_interest_status === 'interested' && !selectedByMe && openForInterest
@@ -286,7 +287,8 @@ function serializeClientRequest(row) {
     city: row.city,
     state: row.state,
     photo_urls: row.photo_urls || [],
-    status: row.status,
+    status: clientFacingRequestStatus(row),
+    is_direct: Boolean(row.direct_installer_id),
     client_access_token: row.client_access_token || null,
     interests_count: Number(row.interests_count || 0),
     last_interest_at: row.last_interest_at || null,
@@ -798,6 +800,7 @@ exports.expressInterest = async (req, res) => {
         SELECT *
         FROM service_requests
         WHERE id = $1
+          AND direct_installer_id IS NULL
           AND status = 'open'
           AND (expires_at IS NULL OR expires_at > NOW())
         LIMIT 1
@@ -995,6 +998,7 @@ exports.getPublicServiceRequestInterests = async (req, res) => {
       [requestId]
     );
 
+    res.set('Cache-Control', 'private, no-store');
     return res.json({
       request: serializeClientRequest(request),
       interests: result.rows.map((row) => serializeClientInterest(row, request)),
@@ -1198,7 +1202,7 @@ exports.updateClientServiceRequestStatus = async (req, res) => {
       return res.status(409).json({ error: 'Escolha um instalador antes de concluir o pedido.' });
     }
 
-    if (!['open', 'selected'].includes(current.status)) {
+    if (!['open', 'direct_pending', 'selected'].includes(current.status)) {
       return res.status(409).json({ error: 'Este pedido já foi encerrado.' });
     }
 

@@ -13,9 +13,13 @@ function getClientIp(req) {
   return String(req.ip || req.socket?.remoteAddress || '').replace(/^::ffff:/, '');
 }
 
-async function requireTurnstile(req, res, next) {
+async function verifyTurnstile(req, res, next, requiredAction) {
   const secret = getSecret();
-  if (!secret) return next();
+  if (!secret) {
+    return requiredAction
+      ? res.status(503).json({ error: 'A verificação de segurança está indisponível. Tente novamente mais tarde.', code: 'TURNSTILE_UNAVAILABLE' })
+      : next();
+  }
 
   const token = String(req.body?.turnstile_token || '').trim();
   if (!token) {
@@ -36,7 +40,7 @@ async function requireTurnstile(req, res, next) {
       signal: controller.signal,
     });
     const verification = await response.json().catch(() => null);
-    if (!response.ok || !verification?.success) {
+    if (!response.ok || !verification?.success || (requiredAction && verification.action !== requiredAction)) {
       return res.status(403).json({ error: 'A verificação de segurança expirou. Tente novamente.', code: 'TURNSTILE_INVALID' });
     }
     return next();
@@ -47,4 +51,7 @@ async function requireTurnstile(req, res, next) {
   }
 }
 
-module.exports = { getClientIp, isTurnstileEnabled, requireTurnstile };
+const requireTurnstile = (req, res, next) => verifyTurnstile(req, res, next);
+const requireDirectRequestTurnstile = (req, res, next) => verifyTurnstile(req, res, next, 'direct_service_request');
+
+module.exports = { getClientIp, isTurnstileEnabled, requireTurnstile, requireDirectRequestTurnstile };

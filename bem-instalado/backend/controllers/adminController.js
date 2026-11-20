@@ -1,5 +1,5 @@
 const pool = require('../config/database');
-const { expireOpenServiceRequests } = require('../utils/serviceRequestLifecycle');
+const { clientFacingRequestStatus, expireOpenServiceRequests } = require('../utils/serviceRequestLifecycle');
 const { sendMarketplaceEmail } = require('../services/email');
 const { sendPushToUser } = require('../services/push');
 const ADMIN_MUTATION_LOCK_ID = 19772402;
@@ -242,7 +242,7 @@ exports.getOverview = async (_req, res) => {
           ) AS inactive_subscriptions,
           (SELECT COUNT(*)::int FROM payments WHERE status = 'pending') AS pending_payments,
           (SELECT COUNT(*)::int FROM service_requests) AS total_service_requests,
-          (SELECT COUNT(*)::int FROM service_requests WHERE status = 'open') AS open_service_requests,
+          (SELECT COUNT(*)::int FROM service_requests WHERE status IN ('open', 'direct_pending')) AS open_service_requests,
           (SELECT COUNT(*)::int FROM service_requests WHERE status = 'selected') AS selected_service_requests,
           (
             SELECT COUNT(*)::int FROM service_requests
@@ -568,7 +568,7 @@ exports.listServiceRequests = async (req, res) => {
         LEFT JOIN users selected ON selected.id = sr.selected_installer_id
         LEFT JOIN service_request_interests sri ON sri.request_id = sr.id
         WHERE
-          ($1 = 'all' OR sr.status = $1)
+          ($1 = 'all' OR sr.status = $1 OR ($1 = 'open' AND sr.status = 'direct_pending'))
           AND (
             $2 = ''
             OR sr.client_name ILIKE ('%' || $2 || '%')
@@ -586,7 +586,7 @@ exports.listServiceRequests = async (req, res) => {
 
     const total = Number(rows[0]?.total_count || 0);
     return res.json({
-      requests: rows.map(({ total_count, ...request }) => request),
+      requests: rows.map(({ total_count, ...request }) => ({ ...request, status: clientFacingRequestStatus(request) })),
       pagination: buildPagination(page, limit, total),
     });
   } catch (_error) {
@@ -610,7 +610,10 @@ exports.updateServiceRequestStatus = async (req, res) => {
     const { rows } = await pool.query(
       `
         UPDATE service_requests
-        SET status = $1, updated_at = NOW()
+        SET status = CASE WHEN $1 = 'open' AND direct_installer_id IS NOT NULL THEN 'direct_pending' ELSE $1 END,
+            expires_at = CASE WHEN $1 = 'open' AND direct_installer_id IS NOT NULL AND expires_at <= NOW()
+                THEN NOW() + INTERVAL '15 days' ELSE expires_at END,
+            updated_at = NOW()
         WHERE id = $2
           AND ($1 <> 'open' OR selected_installer_id IS NULL)
         RETURNING id, status, updated_at
@@ -624,7 +627,7 @@ exports.updateServiceRequestStatus = async (req, res) => {
       });
     }
 
-    return res.json({ request: rows[0] });
+    return res.json({ request: { ...rows[0], status: clientFacingRequestStatus(rows[0]) } });
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao atualizar o pedido.' });
   }

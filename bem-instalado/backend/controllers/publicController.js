@@ -5,6 +5,7 @@ const reverseGeocode = require('../utils/reverseGeocode');
 const forwardGeocode = require('../utils/forwardGeocode');
 const { normalizeSearchText } = require('../utils/textSearch');
 const { logApplicationError } = require('../utils/errorMonitoring');
+const { acceptsDirectRequests } = require('../utils/installerEligibility');
 
 function reportLocationError(error, req) {
   void logApplicationError({
@@ -725,6 +726,7 @@ exports.getInstallerProfile = async (req, res) => {
             u.id,
             u.name,
             COALESCE(NULLIF(u.business_name, ''), u.name) AS display_name,
+            u.public_profile, u.phone, u.email, u.email_verified_at,
             u.logo,
             u.installer_photo,
             COALESCE(u.installation_gallery, '[]'::jsonb) AS installation_gallery,
@@ -855,6 +857,10 @@ exports.getInstallerProfile = async (req, res) => {
           emergency_contact: _emergencyContact,
           emergency_phone: _emergencyPhone,
           safety_notes: _safetyNotes,
+          public_profile: _publicProfile,
+          phone: _phone,
+          email: _email,
+          email_verified_at: _emailVerifiedAt,
           accepts_service_contract: _acceptsContract,
           provides_warranty: _providesWarranty,
           warranty_days: _warrantyDays,
@@ -875,6 +881,7 @@ exports.getInstallerProfile = async (req, res) => {
 
         return {
           ...publicInstaller,
+          accepts_direct_requests: acceptsDirectRequests(installer),
           profile_appearance: normalizeProfileAppearance(installer.profile_appearance),
           average_rating: Number(installer.average_rating || 0),
           installation_gallery: installationGallery,

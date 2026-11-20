@@ -13,6 +13,7 @@ import { formatCurrency, formatLongDate, formatShortDate } from '../../utils/for
 import { formatInstallationDays } from '../../utils/installerDays';
 import PageMetadata from './PageMetadata';
 import Turnstile, { isTurnstileEnabled } from '../Security/Turnstile';
+import DirectProfileRequest from './DirectProfileRequest';
 import {
   buildClientRequestTrackingHash,
   readClientRequestTrackingHash,
@@ -108,8 +109,10 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
   const [sendingReview, setSendingReview] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [directFormInstaller, setDirectFormInstaller] = useState(null);
 
-  const requestedId = Number(new URLSearchParams(location.search).get('pedido'));
+  const query = new URLSearchParams(location.search);
+  const requestedId = Number(query.get('pedido'));
   const tracking = readClientRequestTrackingHash(location.hash);
   const saved = tracking?.id === requestedId ? tracking : readPublishedClientRequest();
   const requestToken = saved?.id === requestedId ? saved.client_access_token : '';
@@ -324,6 +327,8 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
   const requestPath = trackingPath;
   const requestLabel = requestId ? 'Voltar ao pedido' : 'Solicitar orçamento';
   const isOwnProfile = Boolean(user && Number(user.id) === Number(installer.id));
+  const directMode = query.get('orcamento') === '1' && !linkedRequest && !isOwnProfile;
+  const showDirectForm = directMode && installer.accepts_direct_requests && directFormInstaller === installer.id;
   const profilePhoto = resolveProfileImage(installer.installer_photo || installer.logo, api.defaults.baseURL);
   const coverPhoto = gallery[0] || profilePhoto;
   const appearance = normalizeProfileAppearance(installer.profile_appearance);
@@ -394,6 +399,12 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
                 <ProfileIcon name="check" size={20} />
                 {selecting ? 'Confirmando escolha…' : 'Escolher este instalador'}
               </button>
+            ) : directMode ? (
+              installer.accepts_direct_requests ? (
+                <button className="ig-profile-primary-action ig-direct-open" type="button" aria-expanded={showDirectForm} onClick={() => setDirectFormInstaller(installer.id)}>
+                  <ProfileIcon name="message" size={18} />Pedir orçamento a este instalador
+                </button>
+              ) : <span className="ig-direct-unavailable">O perfil não está recebendo pedidos por este link.</span>
             ) : <Link className="ig-profile-primary-action" to={profileActionPath}><ProfileIcon name={isOwnProfile ? 'document' : 'message'} size={18} />{profileActionLabel}</Link>}
             {needsClientLogin ? <Link className="ig-profile-back" to={trackingPath}>Acessar com o código do pedido</Link> : null}
           </div>
@@ -409,6 +420,11 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
             <Link to={sectionPath('informacoes')}><strong>{installer.unique_clients_served || 0}</strong><span>clientes</span></Link>
           </div>
         </header>
+
+        {showDirectForm ? <DirectProfileRequest installer={installer} key={installer.id} onClose={() => {
+          setDirectFormInstaller(null);
+          document.querySelector('.ig-direct-open')?.focus();
+        }} /> : null}
 
         <section aria-label="Destaques do profissional" className="ig-profile-trust-grid">
           {trustItems.map((item) => (
@@ -472,7 +488,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
         </section>
 
         <section aria-labelledby="perfil-aba-agenda" className="ig-profile-panel ig-profile-agenda ig-profile-tabpanel" hidden={activeSection !== 'agenda'} id="agenda" role="tabpanel" tabIndex={0}>
-          <div className="ig-panel-heading"><div><span><ProfileIcon name="calendar" size={18} /></span><div><p>Disponibilidade</p><h2>Próximos horários livres</h2></div></div><Link to={profileActionPath}>{profileActionLabel}</Link></div>
+          <div className="ig-panel-heading"><div><span><ProfileIcon name="calendar" size={18} /></span><div><p>Disponibilidade</p><h2>Próximos horários livres</h2></div></div>{!directMode ? <Link to={profileActionPath}>{profileActionLabel}</Link> : null}</div>
           {slots.length ? (
             <div className="ig-slot-grid">{slots.slice(0, 4).map(([date, dateSlots]) => <article key={date}><strong>{formatLongDate(`${date}T12:00:00`)}</strong><span>{dateSlots.map((slot) => `${slot.start_time} – ${slot.end_time}`).join(' · ')}</span></article>)}</div>
           ) : installer.available_dates?.length ? (
@@ -489,7 +505,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
         <aside className="ig-profile-store"><div><span>Parceiro recomendado</span><h2>{marketplace.title}</h2><p>{marketplace.description}</p><small>{(marketplace.highlights || []).slice(0, 2).join(' · ')}</small></div><a href={marketplace.url || 'https://www.beminstalado.com.br'} rel="noreferrer" target="_blank">{marketplace.cta_label || 'Conhecer a loja'} <ProfileIcon name="chevron" size={16} /></a></aside>
       </section>
 
-      {!ownerMode ? <div className="ig-profile-mobile-action">
+      {!ownerMode && !directMode ? <div className="ig-profile-mobile-action">
         {chooseAction ? (
           <button className="ig-profile-primary-action ig-profile-choose" disabled={selecting} onClick={chooseInstaller} type="button">
             <ProfileIcon name="check" size={20} />

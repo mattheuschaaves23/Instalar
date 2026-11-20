@@ -2,6 +2,7 @@
 const pool = require('../config/database');
 const generateBudgetPDF = require('../utils/generatePDF');
 const generateWhatsAppLink = require('../utils/whatsapp');
+const { normalizeBrazilianWhatsApp } = require('../utils/installerEligibility');
 const {
   getInstallerPlanAccess,
   isLimitReached,
@@ -1059,7 +1060,7 @@ exports.sendWhatsApp = async (req, res) => {
   try {
     const budgetResult = await pool.query(
       `
-        SELECT b.*, c.name AS client_name, c.phone
+        SELECT b.*, c.name AS client_name, c.phone, c.whatsapp
         FROM budgets b
         LEFT JOIN clients c ON c.id = b.client_id AND c.user_id = b.user_id
         WHERE b.id = $1 AND b.user_id = $2
@@ -1077,6 +1078,11 @@ exports.sendWhatsApp = async (req, res) => {
       return res.status(409).json({ error: 'Complete o rascunho antes de enviar pelo WhatsApp.' });
     }
 
+    const contactPhone = normalizeBrazilianWhatsApp(budget.whatsapp) || normalizeBrazilianWhatsApp(budget.phone);
+    if (!contactPhone) {
+      return res.status(409).json({ error: 'Adicione um telefone válido com DDD na página Clientes para enviar este orçamento pelo WhatsApp.' });
+    }
+
     const { installmentInfo, installmentAmountLabel, installmentConditionsLabel } = await import('../../shared/installmentTerms.mjs');
     const installment = installmentInfo(budget);
     const installmentText = installment.enabled
@@ -1088,7 +1094,7 @@ exports.sendWhatsApp = async (req, res) => {
       : '';
 
     const link = generateWhatsAppLink(
-      budget.phone,
+      contactPhone,
       `Olá ${budget.client_name}, seu orçamento #${budget.id} ficou em R$ ${Number(budget.total_amount || 0).toFixed(2)}.${installmentText}${upfrontPaymentText}`
     );
 

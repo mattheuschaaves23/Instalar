@@ -28,4 +28,8 @@ function getInstallerReadiness(profile = {}) {
   };
 }
 
-module.exports = { getInstallerReadiness, normalizeBrazilianWhatsApp };
+function acceptsDirectRequests(profile) {
+  return Boolean(profile?.public_profile && profile.certification_verified && getInstallerReadiness(profile).ready);
+}
+
+module.exports = { acceptsDirectRequests, getInstallerReadiness, normalizeBrazilianWhatsApp };

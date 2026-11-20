@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import toast from 'react-hot-toast';
@@ -65,7 +65,7 @@ export function OpportunityCard({ item, selected, onSelect }) {
         <strong className="opp-card-title">{getOpportunityTitle(item)}</strong>
         <span className="opp-card-location"><OpportunityIcon name="map" />{[item.neighborhood, item.city, item.state].filter(Boolean).join(', ') || 'Região a confirmar'}</span>
         <span className="opp-card-facts"><span><OpportunityIcon name="area" />{getOpportunityArea(item)}</span><span><OpportunityIcon name="calendar" />{item.urgency_label || 'Prazo a combinar'}</span></span>
-        <span className="opp-card-bottom"><span className={'opp-state opp-state--' + state.key}>{state.key === 'new' ? 'Novo' : state.label}</span><time dateTime={Number.isFinite(Date.parse(item.created_at)) ? item.created_at : undefined}>{formatOpportunityDate(item.created_at)}</time><span>{item.distance_label || 'Distância a confirmar'}</span></span>
+        <span className="opp-card-bottom"><span className={'opp-state opp-state--' + state.key}>{state.key === 'new' ? (item.is_direct ? 'Pedido direto' : 'Novo') : state.label}</span><time dateTime={Number.isFinite(Date.parse(item.created_at)) ? item.created_at : undefined}>{formatOpportunityDate(item.created_at)}</time><span>{item.is_direct ? 'Link do seu perfil' : item.distance_label || 'Distância a confirmar'}</span></span>
       </span>
       <OpportunityIcon name="chevron" />
     </button>
@@ -91,7 +91,7 @@ export function OpportunityDetail({ item, eligibility, sending, onInterest, onCl
     <aside className="opp-detail" id="opp-order-detail" aria-label="Detalhes do pedido">
       <button className="opp-back-to-list" type="button" onClick={onClose}><OpportunityIcon name="back" />Voltar aos pedidos</button>
       <header className="opp-detail-head">
-        <div><h2 ref={titleRef} tabIndex={-1}>{getOpportunityTitle(item)}</h2><p>Pedido #{item.id}</p></div>
+        <div><h2 ref={titleRef} tabIndex={-1}>{getOpportunityTitle(item)}</h2><p>{item.is_direct ? 'Pedido direto' : 'Pedido'} #{item.id}</p></div>
         <button className="opp-icon-button opp-detail-close" type="button" aria-label="Fechar detalhes do pedido" onClick={onClose}><OpportunityIcon name="close" /></button>
       </header>
       <div className="opp-gallery">
@@ -99,7 +99,7 @@ export function OpportunityDetail({ item, eligibility, sending, onInterest, onCl
         : <div className="opp-cover opp-cover-empty"><OpportunityIcon name="photo" size={32} /><p>O cliente não enviou fotos.</p></div>}
       {photos.length > 1 ? <div className="opp-photo-options" aria-label="Fotos do pedido">{photos.map((src, index) => <button key={src + index} type="button" onClick={() => setPhotoIndex(index)} aria-label={'Ver foto ' + (index + 1)} aria-pressed={photoIndex === index}><OpportunityPhoto src={src} /></button>)}</div> : null}
       </div>
-      <div className="opp-client"><span className="opp-client-avatar" aria-hidden="true">{item.client_name?.split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase() || <OpportunityIcon name="briefcase" />}</span><div><strong>{item.client_name || 'Cliente da região'}</strong><p>{[item.neighborhood, item.city, item.state].filter(Boolean).join(', ') || 'Região a confirmar'}</p></div></div>
+      <div className="opp-client"><span className="opp-client-avatar" aria-hidden="true">{item.client_name?.split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase() || <OpportunityIcon name="briefcase" />}</span><div><strong>{item.client_name || (item.is_direct ? 'Cliente do seu perfil' : 'Cliente da região')}</strong><p>{[item.neighborhood, item.city, item.state].filter(Boolean).join(', ') || 'Região a confirmar'}</p></div></div>
       <dl className="opp-fact-grid">
         <div><dt>Medidas</dt><dd>{getOpportunityArea(item)}</dd></div>
         <div><dt>Serviço</dt><dd>{item.service_label || 'A combinar'}</dd></div>
@@ -113,7 +113,9 @@ export function OpportunityDetail({ item, eligibility, sending, onInterest, onCl
         {item.selected_by_me ? <>
           {item.whatsapp_url ? <WhatsAppAction href={item.whatsapp_url}>Chamar no WhatsApp</WhatsAppAction> : null}
           <MarketplaceProposal requestId={item.id} requestStatus={item.status} onUpdated={onUpdated} triggerClassName="opp-primary" />
-        </> : closed || item.not_selected ? null : item.interest_whatsapp_url ? <WhatsAppAction href={item.interest_whatsapp_url} primary>Reabrir WhatsApp</WhatsAppAction>
+        </> : closed || item.not_selected ? null : item.is_direct ? (
+          <><button className="opp-primary" type="button" disabled={sending} onClick={() => onInterest(item)}><OpportunityIcon name="check" size={21} />{sending ? 'Preparando orçamento…' : 'Aceitar e montar orçamento'}</button><p className="opp-action-note">Este cliente enviou o pedido só para você. Aceitar abre um rascunho, sem enviar mensagens nem confirmar o serviço.</p></>
+        ) : item.interest_whatsapp_url ? <WhatsAppAction href={item.interest_whatsapp_url} primary>Reabrir WhatsApp</WhatsAppAction>
           : item.interested_by_me ? null : eligibility.can_express_interest !== false
             ? <><button className="opp-primary" type="button" disabled={sending} onClick={() => onInterest(item)}><OpportunityIcon name={item.can_contact_on_interest ? 'whatsapp' : 'check'} size={21} />{sending ? 'Registrando interesse...' : 'Tenho interesse'}</button><p className="opp-action-note">{item.can_contact_on_interest ? 'Abre o WhatsApp. Você envia a mensagem.' : 'Seu interesse será apresentado ao cliente.'}<br />O cliente escolhe o profissional.</p></>
             : <><Link className="opp-primary" to={readinessLink}>{readinessLink === '/subscription' ? 'Conhecer o Pro' : 'Revisar meu perfil'}</Link><p className="opp-action-note">{eligibility.message || 'Complete os dados essenciais para demonstrar interesse.'}</p></>}
@@ -123,6 +125,7 @@ export function OpportunityDetail({ item, eligibility, sending, onInterest, onCl
 }
 
 export default function Opportunities() {
+  const navigate = useNavigate();
   const { refreshSubscription } = useSubscription();
   const [filters, setFilters] = useState(initialFilters);
   const [search, setSearch] = useState('');
@@ -190,13 +193,17 @@ export default function Opportunities() {
   const handleInterest = async (item) => {
     if (pendingInterest.current) return;
     pendingInterest.current = true;
-    const whatsAppTab = item.can_contact_on_interest && !Capacitor.isNativePlatform() ? window.open('about:blank', '_blank') : null;
+    const whatsAppTab = !item.is_direct && item.can_contact_on_interest && !Capacitor.isNativePlatform() ? window.open('about:blank', '_blank') : null;
     if (whatsAppTab) whatsAppTab.opener = null;
     setSendingId(item.id);
     try {
-      const { data } = await api.post('/opportunities/' + item.id + '/interest');
+      const { data } = await api.post('/opportunities/' + item.id + (item.is_direct ? '/accept-direct' : '/interest'));
       notifyPanelBadgeCountsChanged();
       void refreshSubscription();
+      if (item.is_direct) {
+        if (alive.current) navigate(`/budgets/${data.budget_id}/complete`);
+        return;
+      }
       if (alive.current) {
         setSearch('');
         setFilters({ ...initialFilters, status: 'interested' });
@@ -209,13 +216,19 @@ export default function Opportunities() {
       } else { whatsAppTab?.close(); toast.success('Interesse registrado. Acompanhe em “Meus interesses”.'); }
     } catch (error) {
       whatsAppTab?.close();
-      toast.error(error.response?.data?.error || 'Não foi possível registrar o interesse.');
+      toast.error(error.response?.data?.error || (item.is_direct ? 'Não foi possível aceitar o pedido direto.' : 'Não foi possível registrar o interesse.'));
     } finally { pendingInterest.current = false; if (alive.current) setSendingId(null); }
   };
 
   return (
     <div className="opp-workspace" data-detail-open={detailOpen && Boolean(selected)}>
-      <header className="opp-heading"><div><h1>Oportunidades</h1><p>Encontre seu próximo serviço na sua região.</p></div><button className="opp-secondary" disabled={result.loading} onClick={reload} type="button"><OpportunityIcon name="refresh" />Atualizar</button></header>
+      <header className="opp-heading">
+        <div><h1>Oportunidades</h1><p>Encontre seu próximo serviço na sua região.</p></div>
+        <div className="opp-heading-actions">
+          <Link className="opp-secondary" to="/profile#link-para-clientes">Link para clientes</Link>
+          <button className="opp-secondary" disabled={result.loading} onClick={reload} type="button"><OpportunityIcon name="refresh" />Atualizar</button>
+        </div>
+      </header>
       <div className="opp-tabs" role="tablist" aria-label="Situação das oportunidades">{TABS.map((item, index) => <button key={item.value} ref={(node) => { tabRefs.current[index] = node; }} role="tab" id={'opp-tab-' + item.value} aria-selected={filters.status === item.value} aria-controls="opp-results" tabIndex={filters.status === item.value ? 0 : -1} type="button" onClick={() => changeTab(item.value)} onKeyDown={(event) => {
         const next = event.key === 'ArrowRight' ? (index + 1) % TABS.length : event.key === 'ArrowLeft' ? (index + TABS.length - 1) % TABS.length : event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1 : null;
         if (next === null) return;

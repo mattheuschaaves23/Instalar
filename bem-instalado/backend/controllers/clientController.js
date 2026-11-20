@@ -20,6 +20,7 @@ function normalizeClientType(value) {
 
 exports.createClient = async (req, res) => {
   try {
+    const quickCreate = req.body.quick_create === true;
     const { normalizeDocument, isValidDocument: hasValidDocument } = await import('../../shared/documents.mjs');
     const {
       name,
@@ -37,12 +38,14 @@ exports.createClient = async (req, res) => {
       state,
       zip_code,
       address_reference,
-    } = req.body;
+    } = quickCreate ? { name: req.body.name } : req.body;
 
     const clientType = normalizeClientType(client_type);
-    const document = normalizeDocument(document_id);
+    const document = quickCreate ? null : normalizeDocument(document_id);
+    const cleanName = typeof name === 'string' ? name.trim() : '';
+    const cleanPhone = normalizeNullableString(phone);
 
-    if (!hasValidDocument(document, clientType)) {
+    if (!quickCreate && !hasValidDocument(document, clientType)) {
       return res.status(400).json({ error: `Informe um ${clientType === 'company' ? 'CNPJ' : 'CPF'} válido.` });
     }
 
@@ -50,8 +53,12 @@ exports.createClient = async (req, res) => {
       return res.status(400).json({ error: 'Informe a pessoa responsável pela empresa.' });
     }
 
-    if (!normalizeNullableString(name) || !normalizeNullableString(phone)) {
-      return res.status(400).json({ error: 'Nome e telefone são obrigatórios.' });
+    if (!cleanName || Array.from(cleanName).length > 100) {
+      return res.status(400).json({ error: 'Informe um nome de cliente com até 100 caracteres.' });
+    }
+
+    if (!quickCreate && !cleanPhone) {
+      return res.status(400).json({ error: 'Informe o telefone do cliente.' });
     }
 
     const planAccess = req.planAccess || await getInstallerPlanAccess(req.userId);
@@ -89,11 +96,11 @@ exports.createClient = async (req, res) => {
       `,
       [
         req.userId,
-        String(name).trim(),
-        String(phone).trim(),
+        cleanName,
+        cleanPhone || '',
         clientType,
         document,
-        normalizeNullableString(whatsapp) || String(phone).trim(),
+        normalizeNullableString(whatsapp) || cleanPhone,
         clientType === 'company' ? normalizeNullableString(contact_name) : null,
         normalizeNullableString(email),
         normalizeNullableString(address),

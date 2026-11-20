@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { formatDocument, isValidDocument, normalizeDocument } from '../../../../shared/documents.mjs';
@@ -35,7 +35,8 @@ function digitsOnly(value) {
 }
 
 function formatPhone(value) {
-  const digits = digitsOnly(value).slice(0, 11);
+  const raw = digitsOnly(value);
+  const digits = (raw.startsWith('55') && (raw.length === 12 || raw.length === 13) ? raw.slice(2) : raw).slice(0, 11);
 
   if (digits.length <= 2) return digits ? `(${digits}` : '';
   if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
@@ -87,11 +88,14 @@ function ClientFormIcon({ type }) {
   }
 }
 
-export default function ClientForm({ client = null, onClose, onSaved }) {
+export default function ClientForm({ client = null, quickCreate = false, onClose, onSaved }) {
+  const titleId = useId();
   const [form, setForm] = useState(emptyForm);
   const [samePhoneAsWhatsApp, setSamePhoneAsWhatsApp] = useState(true);
   const [saving, setSaving] = useState(false);
   const [lookingUpZip, setLookingUpZip] = useState(false);
+  const onlyName = quickCreate && !client;
+  const requireDetails = !client && !onlyName;
   const isCompany = form.client_type === 'company';
   const documentLabel = isCompany ? 'CNPJ' : 'CPF';
   const nameLabel = isCompany ? 'Razão social' : 'Nome completo';
@@ -132,7 +136,7 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
       address_reference: client.address_reference || '',
       address: client.address || '',
     });
-    setSamePhoneAsWhatsApp(Boolean(phone) && phone === whatsapp);
+    setSamePhoneAsWhatsApp(phone === whatsapp);
   }, [client]);
 
   const handleChange = (event) => {
@@ -208,22 +212,27 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
     const hasCompleteAddress = [form.zip_code, form.street, form.house_number, form.neighborhood, form.city, form.state]
       .every((value) => String(value || '').trim());
 
-    if (!form.name.trim() || !form.phone.trim()) {
-      toast.error('Preencha o nome e o telefone do cliente.');
+    if (!form.name.trim()) {
+      toast.error('Preencha o nome do cliente.');
       return;
     }
 
-    if (!documentUnchanged && !isValidDocument(form.document_id, form.client_type)) {
+    if (requireDetails && !form.phone.trim()) {
+      toast.error('Preencha o telefone do cliente.');
+      return;
+    }
+
+    if (!onlyName && !documentUnchanged && !isValidDocument(form.document_id, form.client_type)) {
       toast.error(`Informe um ${documentLabel} válido.`);
       return;
     }
 
-    if (isCompany && !form.contact_name.trim()) {
+    if (isCompany && (requireDetails || client?.client_type !== 'company') && !form.contact_name.trim()) {
       toast.error('Informe a pessoa responsável pela empresa.');
       return;
     }
 
-    if (!hasCompleteAddress) {
+    if (requireDetails && !hasCompleteAddress) {
       toast.error('Complete o endereço da instalação.');
       return;
     }
@@ -242,9 +251,11 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
         delete payload.document_id;
         delete payload.client_type;
       }
+      if (client && !payload.phone) delete payload.phone;
+      if (client && !payload.contact_name.trim()) delete payload.contact_name;
       const response = client?.id
         ? await api.put(`/clients/${client.id}`, payload)
-        : await api.post('/clients', payload);
+        : await api.post('/clients', onlyName ? { name: form.name.trim(), quick_create: true } : payload);
 
       toast.success(client ? 'Cliente atualizado.' : 'Cliente cadastrado.');
       onSaved?.(response.data);
@@ -256,20 +267,42 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
     }
   };
 
+  const footer = (
+    <footer className="client-form-footer">
+      <button className="client-form-cancel" onClick={onClose} type="button">Cancelar</button>
+      <button className="client-form-submit" disabled={saving} type="submit"><ClientFormIcon type="save" />{saving ? 'Salvando...' : client ? 'Salvar alterações' : 'Salvar e continuar'}</button>
+    </footer>
+  );
+
   return (
-    <div aria-modal="true" className="client-form-overlay" role="dialog">
-      <section className="client-form-modal">
+    <div aria-labelledby={titleId} aria-modal="true" className="client-form-overlay" role="dialog">
+      <section className={`client-form-modal${onlyName ? ' client-form-modal--quick' : ''}`}>
         <header className="client-form-header">
           <div>
             <p>{client ? 'Editar contato' : 'Novo contato'}</p>
-            <h2>{client ? 'Atualizar cliente' : 'Cadastrar cliente'}</h2>
-            <span>Salve as informações do cliente e do endereço para usar em orçamentos, atendimentos e rota.</span>
+            <h2 id={titleId}>{client ? 'Atualizar cliente' : onlyName ? 'Adicionar cliente ao orçamento' : 'Cadastrar cliente'}</h2>
+            <span>{onlyName
+              ? 'Só o nome é necessário. Você pode completar o cadastro depois na página Clientes.'
+              : client ? 'Atualize os dados que você tem. Os demais campos podem ser preenchidos depois.'
+                : 'Salve as informações do cliente e do endereço para usar em orçamentos, atendimentos e rota.'}</span>
           </div>
           <button aria-label="Fechar cadastro de cliente" className="client-form-close" onClick={onClose} type="button">
             <ClientFormIcon type="close" />
           </button>
         </header>
 
+        {onlyName ? (
+          <form className="client-form-body" onSubmit={handleSubmit}>
+            <section className="client-form-section">
+              <label className="client-form-field">
+                <span>Nome do cliente <b>*</b></span>
+                <input autoFocus maxLength={100} name="name" onChange={handleChange} placeholder="Ex.: Mariana Silva" required value={form.name} />
+              </label>
+            </section>
+            {footer}
+          </form>
+        ) : (
+        <>
         <div className="client-form-type-row">
           <div className="client-form-type-switch" role="group" aria-label="Tipo de cliente">
             <button className={!isCompany ? 'is-active' : ''} onClick={() => handleClientTypeChange('person')} type="button">
@@ -293,20 +326,20 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
             <div className="client-form-grid client-form-grid--contact">
               <label className="client-form-field client-form-field--wide">
                 <span>{nameLabel} <b>*</b></span>
-                <input autoFocus name="name" onChange={handleChange} placeholder={isCompany ? 'Digite a razão social' : 'Digite o nome completo'} value={form.name} />
+                <input autoFocus maxLength={100} name="name" onChange={handleChange} placeholder={isCompany ? 'Digite a razão social' : 'Digite o nome completo'} required value={form.name} />
               </label>
               <label className="client-form-field">
-                <span>{documentLabel} <b>*</b></span>
+                <span>{documentLabel} {requireDetails ? <b>*</b> : null}</span>
                 <input inputMode={isCompany ? 'text' : 'numeric'} maxLength={isCompany ? 18 : 14} name="document_id" onChange={handleChange} placeholder={documentPlaceholder} value={form.document_id} />
               </label>
               {isCompany ? (
                 <label className="client-form-field">
-                  <span>Responsável <b>*</b></span>
+                  <span>Responsável {requireDetails || client?.client_type !== 'company' ? <b>*</b> : null}</span>
                   <input name="contact_name" onChange={handleChange} placeholder="Nome do responsável" value={form.contact_name} />
                 </label>
               ) : null}
               <label className="client-form-field">
-                <span>Telefone <b>*</b></span>
+                <span>Telefone {requireDetails ? <b>*</b> : null}</span>
                 <div className="client-form-input-icon"><ClientFormIcon type="phone" /><input inputMode="tel" name="phone" onChange={handleChange} placeholder="(00) 00000-0000" value={form.phone} /></div>
               </label>
               <label className="client-form-field">
@@ -334,7 +367,7 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
 
             <div className="client-form-grid client-form-grid--address">
               <label className="client-form-field">
-                <span>CEP <b>*</b></span>
+                <span>CEP {requireDetails ? <b>*</b> : null}</span>
                 <div className="client-form-zip-control">
                   <input inputMode="numeric" name="zip_code" onChange={handleChange} placeholder="00000-000" value={form.zip_code} />
                   <button disabled={lookingUpZip} onClick={lookupZipCode} type="button"><ClientFormIcon type="search" />{lookingUpZip ? 'Buscando' : 'Buscar'}</button>
@@ -342,11 +375,11 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
                 <small>Buscar endereço pelo CEP</small>
               </label>
               <label className="client-form-field client-form-field--span-2">
-                <span>Rua <b>*</b></span>
+                <span>Rua {requireDetails ? <b>*</b> : null}</span>
                 <input name="street" onChange={handleChange} placeholder="Nome da rua" value={form.street} />
               </label>
               <label className="client-form-field">
-                <span>Número <b>*</b></span>
+                <span>Número {requireDetails ? <b>*</b> : null}</span>
                 <input name="house_number" onChange={handleChange} placeholder="Número" value={form.house_number} />
               </label>
               <label className="client-form-field client-form-field--span-2">
@@ -354,15 +387,15 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
                 <input name="address" onChange={handleChange} placeholder="Apto, sala, bloco, etc." value={form.address} />
               </label>
               <label className="client-form-field">
-                <span>Bairro <b>*</b></span>
+                <span>Bairro {requireDetails ? <b>*</b> : null}</span>
                 <input name="neighborhood" onChange={handleChange} placeholder="Nome do bairro" value={form.neighborhood} />
               </label>
               <label className="client-form-field client-form-field--span-2">
-                <span>Cidade <b>*</b></span>
+                <span>Cidade {requireDetails ? <b>*</b> : null}</span>
                 <input name="city" onChange={handleChange} placeholder="Nome da cidade" value={form.city} />
               </label>
               <label className="client-form-field">
-                <span>Estado <b>*</b></span>
+                <span>Estado {requireDetails ? <b>*</b> : null}</span>
                 <select name="state" onChange={handleChange} value={form.state}>
                   <option value="">UF</option>
                   {BRAZILIAN_STATES.map(([value, label]) => <option key={value} value={value}>{value} — {label}</option>)}
@@ -382,11 +415,10 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
             </label>
           </section>
 
-          <footer className="client-form-footer">
-            <button className="client-form-cancel" onClick={onClose} type="button">Cancelar</button>
-            <button className="client-form-submit" disabled={saving} type="submit"><ClientFormIcon type="save" />{saving ? 'Salvando...' : client ? 'Salvar alterações' : 'Salvar e continuar'}</button>
-          </footer>
+          {footer}
         </form>
+        </>
+        )}
       </section>
     </div>
   );

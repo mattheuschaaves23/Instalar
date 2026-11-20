@@ -14,7 +14,7 @@ test('PostgreSQL isolado: abas, histórico, filtros, contadores e paginação da
     await db.query(`CREATE TEMP TABLE service_requests (
       id integer PRIMARY KEY, service_label text, rooms text[], city text, state text,
       neighborhood text, latitude numeric, longitude numeric, place_type text,
-      photo_urls jsonb DEFAULT '[]', selected_installer_id integer, selected_at timestamp,
+      photo_urls jsonb DEFAULT '[]', selected_installer_id integer, selected_at timestamp, direct_installer_id integer,
       status text, expires_at timestamp, created_at timestamp DEFAULT NOW()
     ) ON COMMIT DROP;
     CREATE TEMP TABLE service_request_interests (

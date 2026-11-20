@@ -9,7 +9,8 @@ import { formatDateTime, formatStatusLabel } from '../../utils/formatters';
 import { getWebPushSupport, registerWebPushNotifications, webPushStatusMessage } from '../../services/webPushNotifications';
 
 const NOTIFICATIONS_PER_PAGE = 8;
-const isBudgetDraftPath = (path) => /^\/budgets\/[1-9]\d*\/complete$/.test(path || '');
+const notificationAction = (path) => path === '/opportunities' ? 'Ver oportunidades'
+  : /^\/budgets\/[1-9]\d*\/complete$/.test(path || '') ? 'Abrir rascunho' : '';
 
 export default function Notifications() {
   const [items, setItems] = useState([]);
@@ -103,7 +104,9 @@ export default function Notifications() {
       <div className="grid gap-4">
         {paginatedItems.length > 0 ? (
           <div className="list-surface notification-surface">
-            {paginatedItems.map((item, index) => (
+            {paginatedItems.map((item, index) => {
+              const action = notificationAction(item.action_path);
+              return (
               <article
                 className="list-row fade-up"
                 key={item.id}
@@ -124,18 +127,18 @@ export default function Notifications() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {isBudgetDraftPath(item.action_path) ? (
-                      <Link className="gold-button" to={item.action_path}>Abrir rascunho</Link>
+                    {action ? (
+                      <Link className="gold-button" to={item.action_path}>{action}</Link>
                     ) : null}
                     {!item.read ? (
-                      <button className={isBudgetDraftPath(item.action_path) ? 'ghost-button' : 'gold-button'} onClick={() => markAsRead(item.id)} type="button">
+                      <button className={action ? 'ghost-button' : 'gold-button'} onClick={() => markAsRead(item.id)} type="button">
                         Marcar como lida
                       </button>
                     ) : null}
                   </div>
                 </div>
               </article>
-            ))}
+            ); })}
           </div>
         ) : null}
 

@@ -1099,11 +1099,12 @@ export default function Home() {
 
       if (previousCount !== null && nextInterests.length > previousCount) {
         const addedCount = nextInterests.length - previousCount;
-        const notificationMessage = `${addedCount} novo${addedCount === 1 ? '' : 's'} instalador${addedCount === 1 ? '' : 'es'} interessado${addedCount === 1 ? '' : 's'} no seu pedido.`;
+        const isDirect = response.data?.request?.is_direct;
+        const notificationMessage = isDirect ? 'O instalador aceitou preparar seu orçamento.' : `${addedCount} novo${addedCount === 1 ? '' : 's'} instalador${addedCount === 1 ? '' : 'es'} interessado${addedCount === 1 ? '' : 's'} no seu pedido.`;
         toast.success(notificationMessage);
 
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.hidden) {
-          new Notification('Novo interesse no seu pedido', { body: notificationMessage });
+          new Notification(isDirect ? 'Pedido direto aceito' : 'Novo interesse no seu pedido', { body: notificationMessage });
         }
       }
 
@@ -1133,11 +1134,7 @@ export default function Home() {
         headers: { 'X-Client-Request-Token': request.client_access_token },
       });
       setServiceProposal(response.data?.proposal || null);
-      if (response.data?.request_status && response.data.request_status !== request.status) {
-        const nextRequest = { ...request, status: response.data.request_status };
-        setPublishedRequest(nextRequest);
-        writePublishedClientRequest(nextRequest);
-      }
+      // /interests owns request state; an in-flight proposal read must not overwrite it.
     } catch (_error) {
       setServiceProposal(null);
     } finally {
@@ -2507,17 +2504,19 @@ export default function Home() {
               <div>
                 <p className="client-app-kicker">Seu pedido</p>
                 <h2>
-                  {publishedRequest
+                  {publishedRequest?.is_direct ? 'Seu pedido direto foi enviado' : publishedRequest
                     ? 'Seu pedido está publicado'
                     : 'Tudo pronto para receber interessados'}
                 </h2>
                 <span>
-                  {[requestSnapshot.serviceLabel, filters.city, filters.state].filter(Boolean).join(' · ')}
+                  {(publishedRequest?.is_direct
+                    ? [publishedRequest.service_label, publishedRequest.city, publishedRequest.state]
+                    : [requestSnapshot.serviceLabel, filters.city, filters.state]).filter(Boolean).join(' · ')}
                 </span>
               </div>
-              <button className="client-app-result-edit" onClick={() => editGuidedRequest(2)} type="button">
+              {!publishedRequest?.is_direct ? <button className="client-app-result-edit" onClick={() => editGuidedRequest(2)} type="button">
                 Editar pedido
-              </button>
+              </button> : null}
             </section>
 
             {SHOW_PUBLIC_INSTALLER_DIRECTORY ? (
@@ -2814,10 +2813,10 @@ export default function Home() {
         {hasGuidedRequest && (showPublishForm || publishedRequest) ? (
           <section className="client-app-opportunity-publish fade-up" id="publicar-pedido">
             <div className="client-app-opportunity-copy">
-              <p className="client-app-kicker">{publishedRequest ? 'Pedido publicado' : 'Último passo'}</p>
-              <h3>{publishedRequest ? 'Instaladores da região já podem responder' : 'Publique para os instaladores da região'}</h3>
+              <p className="client-app-kicker">{publishedRequest?.is_direct ? 'Pedido direto' : publishedRequest ? 'Pedido publicado' : 'Último passo'}</p>
+              <h3>{publishedRequest?.is_direct ? 'Seu pedido foi enviado ao instalador' : publishedRequest ? 'Instaladores da região já podem responder' : 'Publique para os instaladores da região'}</h3>
               <span>
-                {publishedRequest
+                {publishedRequest?.is_direct ? 'Acompanhe aqui se o profissional aceitar preparar o orçamento.' : publishedRequest
                   ? 'Quando alguém quiser atender, o perfil aparecerá logo abaixo para você comparar.'
                   : 'Você decide se aceita mensagens de instaladores pelo WhatsApp. Seu endereço completo fica reservado para quem você escolher.'}
               </span>
@@ -2825,8 +2824,8 @@ export default function Home() {
 
             {publishedRequest ? (
               <div className="client-app-opportunity-success">
-                <strong>Pedido #{publishedRequest.id} publicado</strong>
-                <span>Vários profissionais podem demonstrar interesse. Você decide qual deles chamar no final.</span>
+                <strong>{publishedRequest.is_direct ? `Pedido direto #${publishedRequest.id}` : `Pedido #${publishedRequest.id} publicado`}</strong>
+                <span>{publishedRequest.is_direct ? 'Somente o profissional do link recebeu esta solicitação.' : 'Vários profissionais podem demonstrar interesse. Você decide qual deles chamar no final.'}</span>
                 <div className="client-app-tracking-actions">
                   <button className="client-app-ghost-button" onClick={copyRequestTrackingLink} type="button">
                     Copiar link para acompanhar
@@ -2948,12 +2947,12 @@ export default function Home() {
           <section className="client-app-interest-board fade-up" id="interessados">
             <div className="client-app-interest-head">
               <div>
-                <p className="client-app-kicker">Quem se interessou</p>
-                <h3>{selectedInterest ? 'Contato liberado' : 'Compare quem quer atender você'}</h3>
+                <p className="client-app-kicker">{publishedRequest.is_direct ? 'Pedido direto' : 'Quem se interessou'}</p>
+                <h3>{selectedInterest ? 'Contato liberado' : publishedRequest.is_direct ? 'Resposta do instalador' : 'Compare quem quer atender você'}</h3>
                 <span>
                   {selectedInterest
                     ? 'Você e o profissional escolhido já podem conversar pelo WhatsApp.'
-                    : 'Veja os perfis e chame somente um instalador quando estiver pronto.'}
+                    : publishedRequest.is_direct ? 'O pedido foi enviado somente ao profissional do link.' : 'Veja os perfis e chame somente um instalador quando estiver pronto.'}
                 </span>
               </div>
               <button className="client-app-ghost-button" onClick={() => loadRequestInterests()} type="button">
@@ -2963,7 +2962,7 @@ export default function Home() {
 
             {requestInterests.length === 0 ? (
               <div className="client-app-interest-empty">
-                <strong>Nenhum interessado ainda</strong>
+                <strong>{publishedRequest.is_direct ? (publishedRequest.status === 'open' ? 'Aguardando o instalador' : 'Este pedido foi encerrado') : 'Nenhum interessado ainda'}</strong>
                 <span>Volte mais tarde ou ative os avisos desta página.</span>
               </div>
             ) : (

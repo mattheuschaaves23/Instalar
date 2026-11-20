@@ -6,6 +6,7 @@ import InstallerProfile from '../Public/InstallerProfile';
 import DecoratingWallLoader from '../Layout/DecoratingWallLoader';
 import ProfileEditor from './ProfileEditor';
 import ProfileReadiness from './ProfileReadiness';
+import ClientProfileLink from './ClientProfileLink';
 import { getProfileEditSection } from './profileEditing';
 import { buildOwnerProfilePreview } from './profilePresentation';
 import './Profile.css';
@@ -36,6 +37,7 @@ export default function Profile() {
   }, [user?.id, attempt]);
 
   const [previewAttempt, setPreviewAttempt] = useState(0);
+  const retryPreview = () => setPreviewAttempt((value) => value + 1);
   useEffect(() => {
     if (!profile?.id || editing) return undefined;
     const controller = new AbortController();
@@ -64,9 +66,9 @@ export default function Profile() {
     {!editing ? (
     <div className="page-shell profile-owner-page">
       <header className="profile-owner-heading"><div><h2>Meu perfil</h2><p>Veja sua apresentação como o cliente vê. Para mudar os dados, toque em Editar perfil.</p></div></header>
+      <ClientProfileLink profile={profile} preview={publicPreview?.installer} failed={previewUnavailable} onRetry={retryPreview} />
       <ProfileReadiness profile={profile} onEdit={openRequiredData} />
-      {!profile.public_profile ? <p className="profile-visibility-note">Esta é sua prévia. Seu perfil ainda não está na busca pública; isso não impede aceitar pedidos quando os dados essenciais estão completos.</p> : null}
-      {previewUnavailable ? <p className="profile-visibility-note" role="status">Não foi possível atualizar avaliações ou agenda. <button className="profile-inline-button" onClick={() => setPreviewAttempt((value) => value + 1)} type="button">Tentar novamente</button></p> : null}
+      {previewUnavailable ? <p className="profile-visibility-note">Não foi possível atualizar avaliações ou agenda. <button className="profile-inline-button" onClick={retryPreview} type="button">Atualizar prévia</button></p> : null}
       <InstallerProfile ownerPreview={preview} />
     </div>
     ) : null}

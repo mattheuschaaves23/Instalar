@@ -48,8 +48,9 @@ async function getOpportunityListing(db, installer, userId, query) {
         ${fold('sr.state')} = NULLIF($3, '') AS same_state
       FROM service_requests sr
       LEFT JOIN service_request_interests sri ON sri.request_id = sr.id AND sri.installer_id = $1
-      WHERE sr.selected_installer_id = $1 OR sri.status IN ('interested', 'selected')
-        OR (sr.status = 'open' AND (sr.expires_at IS NULL OR sr.expires_at > NOW()))
+      WHERE (sr.direct_installer_id IS NULL OR sr.direct_installer_id = $1)
+        AND (sr.selected_installer_id = $1 OR sri.status IN ('interested', 'selected')
+          OR (sr.status IN ('open', 'direct_pending') AND (sr.expires_at IS NULL OR sr.expires_at > NOW())))
     ), visible AS (
       SELECT *, CASE WHEN selected_by_me THEN 'selected'
         WHEN my_interest_id IS NOT NULL THEN 'interested' ELSE 'open' END AS workspace_tab,
@@ -58,6 +59,7 @@ async function getOpportunityListing(db, installer, userId, query) {
       WHERE selected_by_me OR my_interest_id IS NOT NULL
         OR (status = 'open' AND (expires_at IS NULL OR expires_at > NOW())
           AND (same_city OR distance_km <= $6))
+        OR (status = 'direct_pending' AND direct_installer_id = $1 AND expires_at > NOW())
     ), filtered AS (
       SELECT * FROM visible
       WHERE ($7 = 'all' OR workspace_tab = $7)

@@ -91,6 +91,7 @@ function normalizePublishedRequest(request) {
     city: cleanText(request?.city, 120),
     state: cleanText(request?.state, 2).toUpperCase(),
     status: cleanText(request?.status, 30) || 'open',
+    ...(request?.is_direct === true ? { is_direct: true } : {}),
     saved_at: savedAt.toISOString(),
   };
 }

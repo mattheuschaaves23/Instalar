@@ -32674,6 +32674,10 @@ html[data-site-theme='dark'] .dashboard-reference-layout.installer-workspace.aqu
   box-shadow: 0 24px 70px rgba(17, 46, 54, 0.26);
 }
 
+.client-form-modal--quick {
+  width: min(100%, 33rem);
+}
+
 .client-form-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

@@ -432,6 +432,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
       ...current.filter((item) => Number(item.id) !== Number(client.id)),
     ]);
     setClientId(String(client.id));
+    setActiveStep(2);
     refreshSubscription().catch(() => null);
   };
 
@@ -1054,7 +1055,10 @@ function BudgetEditor({ draft = null, draftId = null }) {
                   </div>
 
                   <p className="budget-modern-send-copy">
-                    O orçamento será salvo como pendente. Em seguida, você poderá baixar o PDF ou enviar no WhatsApp pela lista de orçamentos.
+                    O orçamento será salvo como pendente. Você poderá baixar o PDF pela lista de orçamentos.
+                    {' '}{selectedClient?.whatsapp || selectedClient?.phone
+                      ? 'Também poderá enviar pelo WhatsApp.'
+                      : 'Para enviar pelo WhatsApp, adicione o telefone na página Clientes.'}
                   </p>
 
                   <div className="budget-modern-send-checks">
@@ -1293,6 +1297,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
         <ClientForm
           onClose={() => setShowClientForm(false)}
           onSaved={handleClientCreated}
+          quickCreate
         />
       ) : null}
     </section>
