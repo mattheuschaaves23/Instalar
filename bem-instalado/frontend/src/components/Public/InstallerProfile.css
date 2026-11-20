@@ -421,10 +421,38 @@ html[data-site-theme] .ig-installer-profile .ig-profile-verified {
   cursor: pointer;
 }
 .ig-direct-secondary:hover { border-color: var(--ig-accent); }
-.ig-direct-request { max-width: 46rem; margin: 1rem auto; padding: clamp(1rem, 3vw, 1.65rem); }
-.ig-direct-request header { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: space-between; align-items: start; margin-bottom: 1rem; }
-.ig-direct-request header h2 { margin: 0 0 .35rem; font-size: clamp(1.12rem, 3vw, 1.4rem); }
+.ig-direct-request {
+  position: fixed;
+  inset: 0;
+  width: min(44rem, calc(100% - 2rem));
+  max-width: none;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--ig-line);
+  border-radius: 1rem;
+  background: var(--ig-surface);
+  color: var(--ig-ink);
+}
+.ig-direct-request[open] { display: flex; flex-direction: column; }
+.ig-direct-request::backdrop { background: rgb(11 19 26 / 66%); }
+html:has(.ig-direct-request[open]) { overflow: hidden; }
+.ig-direct-request-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .75rem;
+  align-items: start;
+  flex: 0 0 auto;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border-bottom: 1px solid var(--ig-line);
+}
+.ig-direct-request-header h2 { margin: 0 0 .35rem; font-size: clamp(1.15rem, 3vw, 1.45rem); text-wrap: balance; }
+.ig-direct-request-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: clamp(1rem, 3vw, 1.5rem); scroll-padding-block: 1rem; }
 .ig-direct-request p { margin: 0; color: var(--ig-muted); line-height: 1.5; }
+.ig-direct-close { display: inline-grid; place-items: center; min-width: 44px; min-height: 44px; padding: .5rem; }
+.ig-direct-request :focus-visible { outline: 2px solid var(--ig-accent); outline-offset: 2px; }
 .ig-direct-request form, .ig-direct-fields { display: grid; gap: .85rem; }
 .ig-direct-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .ig-direct-fields label { display: grid; gap: .3rem; font-weight: 750; font-size: .85rem; }
@@ -449,6 +477,9 @@ html[data-site-theme] .ig-installer-profile .ig-profile-verified {
 html[data-site-theme='dark'] .ig-direct-request p.ig-direct-error { color: #ffb4b4; }
 @media (max-width: 720px) {
   .ig-profile-hero-actions .ig-direct-open { display: inline-flex; grid-column: 1 / -1; }
+  .ig-direct-request { width: 100%; height: 100%; max-height: none; border: 0; border-radius: 0; }
+  .ig-direct-request-header { padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 1rem max(1rem, env(safe-area-inset-left)); }
+  .ig-direct-request-body { padding: 1rem max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); }
   .ig-direct-fields { grid-template-columns: 1fr; }
   .ig-direct-request form > button { justify-self: stretch; }
 }

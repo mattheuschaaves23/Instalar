@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -111,6 +111,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [directFormInstaller, setDirectFormInstaller] = useState(null);
+  const directFormTrigger = useRef(null);
 
   const query = new URLSearchParams(location.search);
   const requestedId = Number(query.get('pedido'));
@@ -409,7 +410,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
               </button>
             ) : directMode ? (
               installer.accepts_direct_requests ? (
-                <button className="ig-profile-primary-action ig-direct-open" type="button" aria-expanded={showDirectForm} onClick={() => setDirectFormInstaller(installer.id)}>
+                <button aria-controls={showDirectForm ? 'ig-direct-request-dialog' : undefined} aria-expanded={showDirectForm} aria-haspopup="dialog" className="ig-profile-primary-action ig-direct-open" onClick={() => setDirectFormInstaller(installer.id)} ref={directFormTrigger} type="button">
                   <ProfileIcon name="message" size={18} />Pedir orçamento a este instalador
                 </button>
               ) : <span className="ig-direct-unavailable">O perfil não está recebendo pedidos por este link.</span>
@@ -431,7 +432,7 @@ export default function InstallerProfile({ ownerPreview = null } = {}) {
 
         {showDirectForm ? <DirectProfileRequest installer={installer} inviteToken={inviteToken} key={installer.id} onClose={() => {
           setDirectFormInstaller(null);
-          document.querySelector('.ig-direct-open')?.focus();
+          directFormTrigger.current?.focus({ preventScroll: true });
         }} /> : null}
 
         <section aria-label="Destaques do profissional" className="ig-profile-trust-grid">

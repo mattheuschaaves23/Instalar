@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import api from '../../services/api';
 import Turnstile, { isTurnstileEnabled } from '../Security/Turnstile';
@@ -10,7 +10,9 @@ const emptyRequest = { client_name: '', client_phone: '', city: '', state: '', d
 
 export default function DirectProfileRequest({ installer, inviteToken, onClose }) {
   const titleId = useId();
+  const dialog = useRef(null);
   const heading = useRef(null);
+  const scrollArea = useRef(null);
   const pending = useRef(false);
   const [form, setForm] = useState(emptyRequest);
   const [token, setToken] = useState('');
@@ -22,9 +24,12 @@ export default function DirectProfileRequest({ installer, inviteToken, onClose }
   const [trackingHash, setTrackingHash] = useState('');
   const verificationAvailable = isTurnstileEnabled();
 
-  useEffect(() => {
-    heading.current?.focus();
-    heading.current?.scrollIntoView?.({ block: 'nearest' });
+  useLayoutEffect(() => {
+    const frame = dialog.current;
+    if (!frame) return;
+    if (!frame.open) frame.showModal();
+    if (scrollArea.current) scrollArea.current.scrollTop = 0;
+    heading.current?.focus({ preventScroll: true });
   }, [trackingHash]);
 
   function change(event) {
@@ -56,16 +61,28 @@ export default function DirectProfileRequest({ installer, inviteToken, onClose }
   }
 
   return (
-    <section className="ig-profile-panel ig-direct-request" aria-labelledby={titleId}>
-      <header>
+    <dialog
+      aria-describedby={`${titleId}-description`}
+      aria-labelledby={titleId}
+      aria-modal="true"
+      className="ig-direct-request"
+      id="ig-direct-request-dialog"
+      onCancel={(event) => { if (pending.current) event.preventDefault(); }}
+      onClose={onClose}
+      ref={dialog}
+    >
+      <header className="ig-direct-request-header">
         <div>
           <h2 id={titleId} ref={heading} tabIndex={-1}>{trackingHash ? 'Pedido direto enviado' : 'Pedir orçamento a este instalador'}</h2>
-          <p>{trackingHash
+          <p id={`${titleId}-description`}>{trackingHash
             ? `Só ${installer.display_name} recebeu o pedido. Guarde o link privado para acompanhar a resposta.`
             : `Envie uma solicitação só para ${installer.display_name}. Você não precisa criar conta e o envio não contrata o serviço.`}</p>
         </div>
-        {!trackingHash ? <button className="ig-direct-secondary" type="button" onClick={onClose} disabled={saving}>Fechar formulário</button> : null}
+        <button aria-label="Fechar formulário" className="ig-direct-secondary ig-direct-close" disabled={saving} onClick={() => dialog.current?.close()} type="button">
+          <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" viewBox="0 0 24 24" width="18"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
       </header>
+      <div className="ig-direct-request-body" ref={scrollArea}>
       {trackingHash ? <Link className="ig-profile-primary-action" to={`/cliente/pedido${trackingHash}`}>Acompanhar pedido</Link> : (
         <form onSubmit={send}>
           <div className="ig-direct-fields">
@@ -89,6 +106,7 @@ export default function DirectProfileRequest({ installer, inviteToken, onClose }
           <button className="ig-profile-primary-action" disabled={saving || !form.privacy_consent || !verificationAvailable || !token} type="submit">{saving ? 'Enviando…' : 'Enviar pedido ao instalador'}</button>
         </form>
       )}
-    </section>
+      </div>
+    </dialog>
   );
 }

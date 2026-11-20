@@ -36,6 +36,13 @@ const openProfile = (initialEntry, ownerPreview) => render(
 );
 const openOwner = () => render(<MemoryRouter initialEntries={['/profile#link-para-clientes']}><Profile /></MemoryRouter>);
 
+// The browser e2e checks native modal behavior; jsdom needs only the open/close lifecycle.
+HTMLDialogElement.prototype.showModal ??= function showModal() { this.setAttribute('open', ''); };
+HTMLDialogElement.prototype.close ??= function close() {
+  this.removeAttribute('open');
+  this.dispatchEvent(new Event('close', { bubbles: true }));
+};
+
 beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
   state.user = null;
@@ -126,6 +133,20 @@ it('oferece cópia manual quando o navegador não autoriza a área de transferê
   expect((await screen.findByRole('textbox', { name: 'Link para copiar manualmente' })).value).toBe(shareUrl);
 });
 
+it('abre o orçamento por cima do perfil e devolve o foco ao botão ao fechar', async () => {
+  openProfile(sharePath);
+  const trigger = await screen.findByRole('button', { name: 'Pedir orçamento a este instalador' });
+  expect(screen.queryByRole('dialog')).toBeNull();
+  trigger.focus();
+  fireEvent.click(trigger);
+  const dialog = screen.getByRole('dialog', { name: 'Pedir orçamento a este instalador' });
+  expect(dialog.open).toBe(true);
+  expect(document.activeElement).toBe(within(dialog).getByRole('heading'));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Fechar formulário' }));
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(document.activeElement).toBe(trigger);
+});
+
 it('visitante envia só para o instalador do perfil e recebe o link privado de acompanhamento', async () => {
   openProfile(sharePath);
   fireEvent.click(await screen.findByRole('button', { name: 'Pedir orçamento a este instalador' }));
@@ -183,7 +204,7 @@ it('abre primeiro o pedido indicado pelo aviso, sem depender da página atual da
 it('permite tentar o antirrobô novamente sem apagar os dados preenchidos', async () => {
   openProfile('/installers/42?orcamento=1');
   fireEvent.click(await screen.findByRole('button', { name: 'Pedir orçamento a este instalador' }));
-  const form = within(screen.getByRole('region', { name: 'Pedir orçamento a este instalador' }));
+  const form = within(screen.getByRole('dialog', { name: 'Pedir orçamento a este instalador' }));
   fireEvent.change(form.getByLabelText('Seu nome'), { target: { value: 'Cliente visitante' } });
   fireEvent.click(form.getByRole('button', { name: 'Simular falha na verificação' }));
   expect(form.getByRole('alert').textContent).toContain('verificação');
