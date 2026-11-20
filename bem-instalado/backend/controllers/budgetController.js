@@ -507,7 +507,7 @@ exports.createBudget = async (req, res) => {
       if (cleanClientId === null) {
         return upgradeRequired(res, {
           code: 'FREE_CLIENT_LIMIT',
-          error: 'O limite de clientes do plano Grátis foi atingido. Libere espaço ou assine o Pro para concluir este rascunho.',
+          error: 'O limite de clientes do plano Grátis foi atingido. Libere espaço para concluir este rascunho; no Pro, o cadastro de clientes é ilimitado.',
           planAccess,
           feature: 'unlimited_clients',
         });
