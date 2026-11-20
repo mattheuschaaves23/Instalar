@@ -2,6 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import api from '../../services/api';
 import linkContract from '../../../../shared/installerClientLink.json';
+import { isNativeStoreApp } from '../../utils/nativePlatform';
+import { planLinkLabel } from '../../utils/storePlanCopy';
+
+// No app das lojas nao se manda ativar/assinar o Pro (politica de pagamento das lojas).
+export function clientLinkPlanCopy(storeApp = isNativeStoreApp()) {
+  return storeApp
+    ? 'Com o Pro, você recebe pedidos por um link direto, sem precisar publicar seu perfil.'
+    : 'Ative o plano para receber pedidos por um link direto, sem precisar publicar seu perfil.';
+}
 
 export default function ClientProfileLink() {
   const { hash } = useLocation();
@@ -72,7 +81,7 @@ export default function ClientProfileLink() {
       ) : (
         <div className="profile-client-link-state">
           {link?.status === linkContract.status.planRequired ? (
-            <><p><strong>Exclusivo do plano Pro.</strong> Ative o plano para receber pedidos por um link direto, sem precisar publicar seu perfil.</p><Link className="profile-inline-button" to="/subscription">Ver plano Pro</Link></>
+            <><p><strong>Exclusivo do plano Pro.</strong> {clientLinkPlanCopy()}</p><Link className="profile-inline-button" to="/subscription">{planLinkLabel('Ver plano Pro')}</Link></>
           ) : link?.status === linkContract.status.incomplete ? (
             <><p><strong>Faltam dados no seu perfil.</strong> Complete os dados essenciais e confirme o e-mail para liberar o link.</p><Link className="profile-inline-button" to="/profile?editar=1&secao=dados">Conferir dados para pedidos</Link></>
           ) : failed ? (
