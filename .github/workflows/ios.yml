@@ -43,6 +43,10 @@ jobs:
         run: npm ci
 
       - name: Gerar aplicativo web dos instaladores
+        # Chave PÚBLICA do widget Turnstile (a mesma da Vercel). Variável de repositório,
+        # não segredo. Sem ela o build para com erro (scripts/appBuildEnv.mjs).
+        env:
+          REACT_APP_TURNSTILE_SITE_KEY: ${{ vars.REACT_APP_TURNSTILE_SITE_KEY }}
         run: npm run build:ios:web
 
       - name: Sincronizar projeto iOS
