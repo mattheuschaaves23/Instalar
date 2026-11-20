@@ -1,7 +1,6 @@
 const { createHmac, timingSafeEqual } = require('node:crypto');
 const pool = require('../config/database');
-const { getLatestSubscription } = require('./planAccess');
-const { isProSubscription } = require('../utils/planAccess');
+const { getInstallerPlanAccess } = require('./planAccess');
 const { acceptsDirectRequests, getInstallerReadiness, publicProfileSql } = require('../utils/installerEligibility');
 const { publicOrigin } = require('../../shared/legalDocuments.json');
 const contract = require('../../shared/installerClientLink.json');
@@ -39,8 +38,15 @@ async function getLinkInstaller(installerId, db = pool, { lock = false } = {}) {
   return rows[0] || null;
 }
 
-async function hasActiveClientLinkPlan(installerId, db = pool) {
-  return isProSubscription(await getLatestSubscription(installerId, db));
+async function hasProClientLinkAccess(installerId, db = pool) {
+  try {
+    // Match the Pro access shown in the installer panel without creating or changing subscriptions.
+    const planAccess = await getInstallerPlanAccess(installerId, db, { includeUsage: false, reconcileSubscription: false });
+    return planAccess.is_pro;
+  } catch (error) {
+    if (error.code === 'USER_NOT_FOUND') return false;
+    throw error;
+  }
 }
 
 function buildInstallerClientLink(installer) {
@@ -51,15 +57,15 @@ function buildInstallerClientLink(installer) {
 }
 
 async function mayUseClientLink(installer, token, db = pool) {
-  // Older links of public profiles can still work, but never bypass the active plan.
+  // Older links of public profiles can still work, but never bypass the Pro access check.
   const eligible = token
     ? matchesInstallerLinkToken(installer, token) && getInstallerReadiness(installer).ready
     : acceptsDirectRequests(installer);
   if (!eligible) return false;
-  return hasActiveClientLinkPlan(installer.id, db);
+  return hasProClientLinkAccess(installer.id, db);
 }
 
 module.exports = {
-  buildInstallerClientLink, getLinkInstaller, hasActiveClientLinkPlan, hasLinkTokenShape,
+  buildInstallerClientLink, getLinkInstaller, hasProClientLinkAccess, hasLinkTokenShape,
   mayUseClientLink, readInstallerLinkToken,
 };

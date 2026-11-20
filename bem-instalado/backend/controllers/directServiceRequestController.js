@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const pool = require('../config/database');
 const { normalizeBrazilianWhatsApp, getInstallerReadiness } = require('../utils/installerEligibility');
 const {
-  buildInstallerClientLink, getLinkInstaller, hasActiveClientLinkPlan, mayUseClientLink, readInstallerLinkToken,
+  buildInstallerClientLink, getLinkInstaller, hasProClientLinkAccess, mayUseClientLink, readInstallerLinkToken,
 } = require('../services/installerClientLink');
 const { BRAZIL_STATES } = require('../utils/postalAddress');
 const { consentVersion } = require('../../shared/legalDocuments.json');
@@ -16,7 +16,7 @@ exports.getOwnClientLink = async (req, res) => {
   try {
     const installer = await getLinkInstaller(req.userId);
     if (!installer) return res.status(404).json({ error: 'Perfil de instalador não encontrado.' });
-    if (!(await hasActiveClientLinkPlan(installer.id))) {
+    if (!(await hasProClientLinkAccess(installer.id))) {
       return res.json({ status: linkContract.status.planRequired, url: null });
     }
     if (!getInstallerReadiness(installer).ready) {

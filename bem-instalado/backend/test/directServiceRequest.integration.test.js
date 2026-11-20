@@ -73,7 +73,13 @@ test('link Pro funciona com perfil oculto, limita o pedido a um instalador e res
     assert.equal(profile.body.installer.accepts_direct_requests, false);
     assert.equal((await api('/users/client-link')).status, 401);
     assert.deepEqual((await api('/users/client-link', { user: installer })).body, { status: 'plan_required', url: null });
-    assert.deepEqual((await api('/users/client-link', { user: hidden })).body, { status: 'plan_required', url: null });
+    const adminLink = await api('/users/client-link', { user: hidden });
+    assert.equal(adminLink.body.status, 'ready', 'O acesso Pro que o painel já reconhece deve liberar o link.');
+    const adminInvite = new URLSearchParams(new URL(adminLink.body.url).hash.slice(1)).get('convite');
+    const adminProfile = await api(`/public/installers/${hidden}`, { invite: adminInvite });
+    assert.equal(adminProfile.status, 200);
+    assert.equal(adminProfile.body.installer.accepts_direct_requests, true);
+    assert.equal((await pool.query('SELECT 1 FROM subscriptions WHERE user_id = $1', [hidden])).rowCount, 0);
     const directory = await api('/public/installers');
     assert.equal(directory.status, 200);
     const visible = directory.body.installers.find((row) => row.id === installer);

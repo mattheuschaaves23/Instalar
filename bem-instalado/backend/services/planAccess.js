@@ -54,6 +54,7 @@ async function ensureFreeSubscription(userId, db = pool) {
 
 async function getInstallerPlanAccess(userId, db = pool, options = {}) {
   const includeUsage = options.includeUsage !== false;
+  const readSubscription = options.reconcileSubscription === false ? getLatestSubscription : ensureFreeSubscription;
   const [userResult, subscription] = await Promise.all([
     db.query(
       `
@@ -70,7 +71,7 @@ async function getInstallerPlanAccess(userId, db = pool, options = {}) {
       `,
       [userId]
     ),
-    ensureFreeSubscription(userId, db),
+    readSubscription(userId, db),
   ]);
   const user = userResult.rows[0];
 
