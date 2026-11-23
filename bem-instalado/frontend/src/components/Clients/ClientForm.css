@@ -1,0 +1,124 @@
+@import '../Budgets/QuoteTheme.css';
+
+.quote-client-modal {
+  --contact-padding: clamp(1.15rem, 2.4vw, 2.3rem);
+  width: min(80vw, 77rem);
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  border: 1px solid var(--quote-border);
+  border-radius: 0.95rem;
+  padding: 0;
+  background: var(--quote-surface);
+  box-shadow: 0 14px 48px #16253b38;
+  overflow: auto;
+}
+.quote-client-modal::backdrop { background: #192e4959; backdrop-filter: blur(4px); }
+.quote-client-modal--quick { width: min(100% - 2rem, 35rem); }
+.quote-client-modal :is(h2, h3, p) { margin: 0; }
+.quote-client-header { position: relative; padding: clamp(1rem, 1.55vw, 1.5rem) var(--contact-padding) 0; }
+.quote-client-header h2 {
+  color: var(--quote-ink);
+  font-size: clamp(1.55rem, 2.75vw, 2.48rem);
+  font-weight: 800;
+  line-height: 1.16;
+  letter-spacing: -0.045em;
+  padding-inline-end: 2rem;
+}
+.quote-client-header h2:focus { outline: none; }
+.quote-client-header p { color: var(--quote-muted); font-size: clamp(0.92rem, 1.35vw, 1.27rem); margin-top: 0.55rem; }
+.quote-client-close {
+  position: absolute;
+  inset: clamp(0.75rem, 1.5vw, 1.5rem) clamp(0.75rem, 1.5vw, 1.5rem) auto auto;
+  display: grid;
+  place-items: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  border-radius: 0.45rem;
+  color: var(--quote-muted);
+}
+.quote-client-close:hover { background: var(--quote-faint); }
+.quote-client-close svg { width: 1.6rem; height: 1.6rem; }
+.quote-client-form { padding: 0 var(--contact-padding); }
+.quote-client-type { display: flex; padding: clamp(0.95rem, 1.5vw, 1.4rem) 0 1.2rem; border-bottom: 1px solid var(--quote-border); }
+.quote-client-type button {
+  min-height: clamp(2.6rem, 3.55vw, 3.4rem);
+  min-width: min(14.8rem, 50%);
+  border: 1px solid var(--quote-border);
+  color: var(--quote-ink);
+  padding-inline: 0.65rem;
+  font-size: clamp(0.95rem, 1.45vw, 1.38rem);
+  font-weight: 680;
+  background: var(--quote-surface);
+}
+.quote-client-type button:first-child { border-radius: 0.55rem 0 0 0.55rem; }
+.quote-client-type button:last-child { border-radius: 0 0.55rem 0.55rem 0; }
+.quote-client-type button + button { margin-inline-start: -1px; }
+.quote-client-type button[aria-pressed='true'] { background: var(--quote-soft); color: var(--quote-link); position: relative; }
+.quote-client-type button:hover { background: var(--quote-faint); }
+.quote-client-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: clamp(1rem, 1.7vw, 1.65rem) 0; }
+.quote-client-section { display: grid; gap: clamp(0.72rem, 1.15vw, 1.12rem); align-content: start; min-width: 0; }
+.quote-client-section:first-child { padding-inline-end: clamp(1rem, 2vw, 2rem); }
+.quote-client-section + .quote-client-section { border-inline-start: 1px solid var(--quote-border); padding-inline-start: clamp(1rem, 2.25vw, 2.2rem); }
+.quote-client-section h3 { color: var(--quote-ink); font-size: clamp(1.15rem, 1.8vw, 1.75rem); font-weight: 780; letter-spacing: -0.034em; }
+.quote-client-field { min-width: 0; display: grid; gap: 0.36rem; color: var(--quote-ink); font-size: clamp(0.9rem, 1.28vw, 1.2rem); font-weight: 620; }
+.quote-client-field b { color: var(--quote-danger); }
+.quote-client-modal :is(input:not([type='checkbox']), select) {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--quote-control);
+  border-radius: 0.53rem;
+  background: var(--quote-surface);
+  color: var(--quote-ink);
+  padding: 0.4rem 0.65rem;
+  height: clamp(2.58rem, 3.18vw, 3rem);
+  font: inherit;
+  font-weight: 450;
+}
+.quote-client-modal :is(input, select, button):focus-visible { outline: 2px solid var(--quote-blue); outline-offset: 2px; }
+.quote-client-field input:focus { border-color: var(--quote-blue); box-shadow: inset 0 0 0 1px var(--quote-blue); }
+.quote-client-field input[aria-invalid='true'] { border-color: var(--quote-danger); }
+.quote-client-modal .quote-client-error { color: var(--quote-danger); font-size: 0.92rem; margin-bottom: 0.75rem; }
+.quote-client-cep-status { color: var(--quote-muted); font-size: 0.85rem; }
+.quote-client-cep-status[data-error='true'] { color: var(--quote-danger); }
+.quote-client-check { display: flex; gap: 0.7rem; align-items: center; min-height: 1.75rem; width: fit-content; color: var(--quote-muted); font-size: clamp(0.9rem, 1.28vw, 1.2rem); cursor: pointer; }
+.quote-client-check input { appearance: auto; accent-color: var(--quote-btn); width: 1.1rem; height: 1.1rem; flex: none; }
+.quote-client-cep-row { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(max-content, 0.9fr); gap: 0.65rem; width: min(100%, 25rem); }
+.quote-client-address-row { display: grid; grid-template-columns: 3fr minmax(4.8rem, 1fr); gap: 0.8rem; }
+.quote-client-quick-body { padding-block: 1.3rem; }
+.quote-client-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: clamp(0.85rem, 1.4vw, 1.35rem) 0;
+  border-top: 1px solid var(--quote-border);
+}
+.quote-client-modal .quote-client-button {
+  min-height: clamp(2.58rem, 3.18vw, 3rem);
+  padding: 0.4rem clamp(0.7rem, 1.45vw, 1.4rem);
+  border: 1px solid var(--quote-control);
+  border-radius: 0.49rem;
+  color: var(--quote-link);
+  background: var(--quote-surface);
+  font-size: clamp(0.9rem, 1.3vw, 1.22rem);
+  font-weight: 690;
+}
+.quote-client-modal .quote-client-button:hover { background: var(--quote-faint); }
+.quote-client-modal .quote-client-button--primary { background: var(--quote-btn); border-color: var(--quote-btn); color: var(--quote-btn-text); }
+.quote-client-modal .quote-client-button--primary:not(:disabled):hover { background: var(--quote-btn-hover); border-color: var(--quote-btn-hover); }
+.quote-client-modal :is(.quote-client-close, .quote-client-button):disabled { opacity: 0.65; cursor: not-allowed; }
+
+@media (max-width: 850px) {
+  .quote-client-modal { width: min(100% - 2rem, 45rem); }
+}
+@media (max-width: 570px) {
+  .quote-client-modal { max-width: calc(100vw - 1rem); width: calc(100% - 1rem); max-height: calc(100dvh - 1rem); }
+  .quote-client-sections { grid-template-columns: minmax(0, 1fr); }
+  .quote-client-section:first-child { padding: 0; }
+  .quote-client-section + .quote-client-section { padding: 1rem 0 0; margin-top: 1rem; border-inline-start: 0; border-top: 1px solid var(--quote-border); }
+  .quote-client-modal :is(input:not([type='checkbox']), select) { font-size: 1rem; }
+  .quote-client-footer .quote-client-button--primary { flex: 1 1 auto; }
+}

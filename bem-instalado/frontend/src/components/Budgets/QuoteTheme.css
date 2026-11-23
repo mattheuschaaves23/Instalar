@@ -1,0 +1,39 @@
+.quote-wizard,
+.quote-client-modal {
+  --quote-bg: #ebf2fa;
+  --quote-surface: #fff;
+  --quote-faint: #f1f5fa;
+  --quote-border: #bdcde0;
+  --quote-control: #879ab0;
+  --quote-ink: #102038;
+  --quote-muted: #465870;
+  --quote-blue: #065db8;
+  --quote-link: #064fa8;
+  --quote-btn: #065db8;
+  --quote-btn-hover: #034a96;
+  --quote-btn-text: #fff;
+  --quote-soft: #e1effc;
+  --quote-danger: #9b293d;
+  color: var(--quote-ink);
+  font-family: 'Public Sans', 'Segoe UI', sans-serif;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+html[data-site-theme='dark'] :is(.quote-wizard, .quote-client-modal) {
+  --quote-bg: #151d29;
+  --quote-surface: #1d2837;
+  --quote-faint: #243348;
+  --quote-border: #45576e;
+  --quote-control: #758ba6;
+  --quote-ink: #edf4ff;
+  --quote-muted: #becde0;
+  --quote-blue: #87baff;
+  --quote-link: #9dccff;
+  --quote-btn: #1768bd;
+  --quote-btn-hover: #1d59a0;
+  --quote-btn-text: #fff;
+  --quote-soft: #243e5d;
+  --quote-danger: #ffadba;
+  color-scheme: dark;
+}
