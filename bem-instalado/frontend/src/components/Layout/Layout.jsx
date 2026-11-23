@@ -42,6 +42,15 @@ export default function Layout() {
     setSidebarOpen(false);
   }, [location.pathname]);
 
+  if (/^\/budgets\/(?:new|[^/]+\/complete)\/?$/.test(location.pathname)) {
+    return (
+      <>
+        <EmailVerificationNotice />
+        <PageOutlet />
+      </>
+    );
+  }
+
   if (isInstallerPanelRoute) {
     return (
       <div className="app-layout dashboard-reference-layout installer-workspace aqua-panel-theme">

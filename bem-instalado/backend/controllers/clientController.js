@@ -21,6 +21,7 @@ function normalizeClientType(value) {
 exports.createClient = async (req, res) => {
   try {
     const quickCreate = req.body.quick_create === true;
+    const allowIncomplete = req.body.allow_incomplete === true;
     const { normalizeDocument, isValidDocument: hasValidDocument } = await import('../../shared/documents.mjs');
     const {
       name,
@@ -41,15 +42,15 @@ exports.createClient = async (req, res) => {
     } = quickCreate ? { name: req.body.name } : req.body;
 
     const clientType = normalizeClientType(client_type);
-    const document = quickCreate ? null : normalizeDocument(document_id);
+    const document = quickCreate ? null : (normalizeDocument(document_id) || null);
     const cleanName = typeof name === 'string' ? name.trim() : '';
     const cleanPhone = normalizeNullableString(phone);
 
-    if (!quickCreate && !hasValidDocument(document, clientType)) {
+    if (!quickCreate && (!allowIncomplete || normalizeNullableString(document_id)) && !hasValidDocument(document, clientType)) {
       return res.status(400).json({ error: `Informe um ${clientType === 'company' ? 'CNPJ' : 'CPF'} válido.` });
     }
 
-    if (clientType === 'company' && !normalizeNullableString(contact_name)) {
+    if (clientType === 'company' && !allowIncomplete && !normalizeNullableString(contact_name)) {
       return res.status(400).json({ error: 'Informe a pessoa responsável pela empresa.' });
     }
 
@@ -57,7 +58,7 @@ exports.createClient = async (req, res) => {
       return res.status(400).json({ error: 'Informe um nome de cliente com até 100 caracteres.' });
     }
 
-    if (!quickCreate && !cleanPhone) {
+    if (!quickCreate && !allowIncomplete && !cleanPhone) {
       return res.status(400).json({ error: 'Informe o telefone do cliente.' });
     }
 
