@@ -11,6 +11,32 @@
 
 html[data-site-theme='dark'] .client-app-page {
   background: #101010 !important;
+  color: var(--dark-ui-text);
+}
+
+html[data-site-theme='dark'] .client-app-page :is(
+  .client-app-chip-link:not(.client-app-logout-button),
+  .client-app-empty strong,
+  .client-app-interest-empty strong,
+  .client-app-tracking-lookup label span
+) {
+  color: var(--dark-ui-text);
+}
+
+html[data-site-theme='dark'] .client-app-page :is(.client-app-empty p, .client-app-interest-empty span) {
+  color: var(--dark-ui-muted);
+}
+
+html[data-site-theme='dark'] .client-app-tracking-lookup .client-app-search-submit,
+html[data-site-theme='dark'] .client-app-account-request-actions .gold-button {
+  border-color: var(--dark-ui-accent-line);
+  background: var(--dark-ui-fill);
+  color: var(--dark-ui-on-fill);
+}
+
+html[data-site-theme='dark'] .client-app-tracking-lookup .client-app-search-submit:hover:not(:disabled),
+html[data-site-theme='dark'] .client-app-account-request-actions .gold-button:hover:not(:disabled) {
+  background: var(--dark-ui-fill-deep);
 }
 
 .client-app-notification-menu .client-app-notification-action {
@@ -25,7 +51,7 @@ html[data-site-theme='dark'] .client-app-page {
 }
 
 html[data-site-theme='dark'] .client-app-notification-menu .client-app-notification-action {
-  color: #f4c968;
+  color: var(--dark-ui-accent-strong);
 }
 
 .client-app-shell {
@@ -121,15 +147,15 @@ html[data-site-theme='dark'] .installer-public-page {
   --profile-canvas: #090909;
   --profile-card: rgba(20, 20, 20, 0.96);
   --profile-card-soft: #171717;
-  --profile-ink: #f7f4ee;
-  --profile-muted: #bbb5ab;
-  --profile-line: #39352d;
-  --profile-accent: #dfad49;
-  --profile-accent-strong: #f1c66e;
-  --profile-accent-soft: #2c220f;
+  --profile-ink: var(--dark-ui-text);
+  --profile-muted: var(--dark-ui-muted);
+  --profile-line: var(--dark-ui-line);
+  --profile-accent: var(--dark-ui-accent);
+  --profile-accent-strong: var(--dark-ui-accent-strong);
+  --profile-accent-soft: var(--dark-ui-selected);
   background:
-    radial-gradient(circle at 5% 0%, rgba(183, 125, 26, 0.17), transparent 19rem),
-    radial-gradient(circle at 96% 20%, rgba(181, 129, 37, 0.1), transparent 23rem),
+    radial-gradient(circle at 5% 0%, rgba(var(--dark-ui-accent-rgb), 0.17), transparent 19rem),
+    radial-gradient(circle at 96% 20%, rgba(var(--dark-ui-accent-rgb), 0.1), transparent 23rem),
     var(--profile-canvas);
 }
 
@@ -4294,7 +4320,7 @@ html[data-site-theme='dark'] .installer-profile-marketplace {
     border: 0;
     background: transparent;
     text-decoration: none;
-    color: rgba(255, 247, 233, 0.68);
+    color: var(--dark-ui-muted, rgba(255, 247, 233, 0.68));
     display: grid;
     justify-items: center;
     align-content: center;

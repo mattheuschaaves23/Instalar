@@ -35,9 +35,9 @@ html[data-site-theme='dark'] .ig-installer-profile {
   --ig-accent-soft: #202830;
   --ig-violet: var(--profile-brand-light, #a4c8ff);
   --ig-success: #4fca84;
-  --ig-star: #efc969;
+  --ig-star: var(--dark-ui-accent-strong);
   background:
-    radial-gradient(circle at 94% 4%, rgba(214, 165, 61, .09), transparent 24rem),
+    radial-gradient(circle at 94% 4%, rgba(var(--dark-ui-accent-rgb), 0.09), transparent 24rem),
     radial-gradient(circle at 6% 20%, rgba(255, 255, 255, .035), transparent 20rem),
     var(--ig-page);
 }
