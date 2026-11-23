@@ -18,10 +18,15 @@ O build do aplicativo exige `REACT_APP_TURNSTILE_SITE_KEY` (chave pública do
 widget Turnstile, a mesma da Vercel). Sem ela o build para com erro, porque o
 servidor de produção recusa cadastro e recuperação de senha sem o token. No
 GitHub Actions ela vem da variável de repositório de mesmo nome; na máquina
-local, defina no terminal ou em `.env.android.local` (ignorado pelo git). O
-widget também precisa aceitar o hostname `localhost` no painel da Cloudflare,
-porque o aplicativo roda em `https://localhost` (Android) e
-`capacitor://localhost` (iOS).
+local, defina no terminal ou em `.env.android.local` (ignorado pelo git).
+
+O aplicativo roda em `https://app.instalarpro.com.br` (Android) e
+`capacitor://app.instalarpro.com.br` (iOS), definido em `server.hostname` do
+`capacitor.config.json`. Esse endereço é interno do WebView (não precisa de DNS
+nem de site no ar). Como a Cloudflare libera automaticamente os subdomínios de
+um hostname do widget, basta o widget do site ter `instalarpro.com.br`: não é
+preciso liberar `localhost`. Se mudar o hostname, ajuste também a lista de
+origens do CORS em `backend/server.js` (o teste `mobileCors.test.js` confere).
 
 ```bash
 npm ci

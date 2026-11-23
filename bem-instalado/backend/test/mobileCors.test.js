@@ -31,6 +31,21 @@ test('produção aceita a origem do app Android e do app iOS sem configuração 
   assert.equal(result['https://instalapro.example'].allowOrigin, 'https://instalapro.example');
 });
 
+// O app passa a rodar em https://app.instalarpro.com.br (server.hostname do
+// Capacitor) para o widget Turnstile do site valer no app sem liberar
+// localhost. A origem que o capacitor.config.json gera tem de passar no CORS,
+// senão o app novo nem faz login. localhost segue aceito pelo APK 1.0.35.
+test('produção aceita a origem do WebView configurada no capacitor.config.json', () => {
+  const config = require('../../frontend/capacitor.config.json');
+  const hostname = config.server?.hostname || 'localhost';
+  assert.notEqual(hostname, 'localhost', 'o app deve rodar no subdomínio próprio, não em localhost');
+  const androidOrigin = `${config.server?.androidScheme || 'http'}://${hostname}`;
+  const iosOrigin = `${config.server?.iosScheme || 'capacitor'}://${hostname}`;
+  const result = preflight([androidOrigin, iosOrigin]);
+  assert.equal(result[androidOrigin].allowOrigin, androidOrigin);
+  assert.equal(result[iosOrigin].allowOrigin, iosOrigin);
+});
+
 test('produção continua recusando origem desconhecida e localhost de desenvolvimento', () => {
   const result = preflight(['https://site-estranho.example', 'http://localhost:3000', 'capacitor://outro-host']);
   for (const origin of Object.keys(result)) {

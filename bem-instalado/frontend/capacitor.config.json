@@ -18,6 +18,7 @@
   },
   "server": {
     "androidScheme": "https",
+    "hostname": "app.instalarpro.com.br",
     "errorPath": "native-error.html"
   }
 }
