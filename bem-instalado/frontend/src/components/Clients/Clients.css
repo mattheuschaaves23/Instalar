@@ -1,0 +1,626 @@
+.clients-directory {
+  --cd-page: #eaf1fa;
+  --cd-surface: #fcfdff;
+  --cd-head: #e1ecf7;
+  --cd-line: #b7c5d6;
+  --cd-divider: #d2dbe6;
+  --cd-ink: #101f34;
+  --cd-muted: #495a70;
+  --cd-link: #0843ad;
+  --cd-primary: #0d589f;
+  --cd-active: #0647c8;
+  --cd-avatar: #d3edfb;
+  --cd-avatar-ink: #10536d;
+  --cd-badge: #e3e9ef;
+  --cd-badge-active: #cfe7fc;
+  --cd-danger: #9e282f;
+  container: client-directory / inline-size;
+  min-width: 0;
+  width: 100%;
+  background: var(--cd-page);
+  color: var(--cd-ink);
+  font-family: 'Public Sans', 'Segoe UI', sans-serif;
+}
+
+html[data-site-theme='dark'] .clients-directory {
+  --cd-page: #151b24;
+  --cd-surface: #1c2531;
+  --cd-head: #233244;
+  --cd-line: #4a5e75;
+  --cd-divider: #3a4a5e;
+  --cd-ink: #edf4fd;
+  --cd-muted: #bac9d9;
+  --cd-link: #9dc9ff;
+  --cd-primary: #2369aa;
+  --cd-active: #83b7fb;
+  --cd-avatar: #1e4564;
+  --cd-avatar-ink: #c1e8ff;
+  --cd-badge: #324154;
+  --cd-badge-active: #254972;
+  --cd-danger: #ffb2b8;
+}
+
+.clients-directory-content {
+  --text: var(--cd-ink);
+  --cd-control: clamp(2.75rem, 4.5cqi, 4.5rem);
+  --cd-body: clamp(1rem, 1.66cqi, 1.66rem);
+  --cd-gutter: clamp(1rem, 1.95cqi, 2rem);
+  padding: clamp(1.5rem, 2.55cqi, 2.6rem) var(--cd-gutter) clamp(1.5rem, 3cqi, 3rem);
+  font-size: var(--cd-body);
+}
+
+.clients-directory :focus-visible {
+  outline: 2px solid var(--cd-active);
+  outline-offset: 2px;
+}
+
+.clients-directory-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.clients-directory-head h1 {
+  margin: 0;
+  font: inherit;
+  font-size: clamp(2.15rem, 4.05cqi, 4.05rem);
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--cd-ink);
+  text-wrap: balance;
+}
+
+html[data-site-theme] .clients-directory .clients-directory-head p {
+  margin: 0.2em 0 0;
+  color: var(--cd-muted) !important;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+html[data-site-theme] .clients-directory .clients-directory-primary,
+.clients-directory .clients-directory-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45em;
+  min-height: var(--cd-control, 2.75rem);
+  padding: 0.4em 1em;
+  border: 1px solid transparent;
+  border-radius: clamp(0.45rem, 0.7cqi, 0.75rem);
+  background: var(--cd-primary);
+  color: #fff !important;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.clients-directory-primary:hover {
+  background: #104c8a;
+}
+
+.clients-directory-primary svg {
+  width: 1.45em;
+  height: 1.45em;
+  flex: none;
+}
+
+.clients-directory-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--cd-line);
+  margin-top: clamp(1.1rem, 2.55cqi, 2.55rem);
+  gap: 0.2em;
+}
+
+html[data-site-theme] .clients-directory .clients-directory-tabs button,
+.clients-directory .clients-directory-tabs button {
+  display: flex;
+  min-height: clamp(2.75rem, 4.5cqi, 4.5rem);
+  align-items: center;
+  gap: 0.48em;
+  padding: 0.35em 0.95em 0.5em;
+  border-bottom: clamp(2px, 0.24cqi, 4px) solid transparent;
+  color: var(--cd-muted) !important;
+  font-weight: 550;
+}
+
+html[data-site-theme] .clients-directory .clients-directory-tabs button[aria-pressed='true'],
+.clients-directory .clients-directory-tabs button[aria-pressed='true'] {
+  border-color: var(--cd-active);
+  color: var(--cd-link) !important;
+  font-weight: 700;
+}
+
+.clients-directory-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.6em;
+  padding: 0.05em 0.35em;
+  border-radius: 0.45em;
+  background: var(--cd-badge);
+  color: var(--cd-ink);
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+}
+
+.clients-directory .clients-directory-tabs button[aria-pressed='true'] .clients-directory-count {
+  background: var(--cd-badge-active);
+  color: var(--cd-link) !important;
+}
+
+.clients-directory-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 2.8fr) minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: clamp(0.55rem, 1.25cqi, 1.25rem);
+  margin-block: clamp(1rem, 2.5cqi, 2.5rem) clamp(1rem, 2.7cqi, 2.7rem);
+}
+
+.clients-directory-search,
+.clients-directory-select {
+  min-width: 0;
+  position: relative;
+}
+
+.clients-directory .clients-directory-tools :is(input, select) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--cd-control);
+  padding: 0.48em 0.9em;
+  border: 1px solid var(--cd-line);
+  border-radius: clamp(0.5rem, 0.75cqi, 0.75rem);
+  background: var(--cd-surface);
+  color: var(--cd-ink);
+  font: inherit;
+}
+
+.clients-directory .clients-directory-search input {
+  padding-inline-start: 3.15em;
+}
+
+.clients-directory-search input::placeholder {
+  color: var(--cd-muted);
+  opacity: 1;
+}
+
+.clients-directory .clients-directory-select select {
+  appearance: none;
+  padding-inline-end: 2.5em;
+  text-overflow: ellipsis;
+}
+
+.clients-directory-tools svg {
+  position: absolute;
+  top: 50%;
+  width: 1.05em;
+  height: 1.05em;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.clients-directory-search svg {
+  inset-inline-start: 0.9em;
+  width: 1.45em;
+  height: 1.45em;
+  color: var(--cd-muted);
+}
+
+.clients-directory-select svg {
+  inset-inline-end: 0.72em;
+}
+
+.clients-directory-list {
+  min-width: 0;
+  border: 1px solid var(--cd-line);
+  border-radius: clamp(0.65rem, 1cqi, 1rem);
+  background: var(--cd-surface);
+}
+
+.clients-directory-table {
+  width: 100%;
+  border-spacing: 0;
+  border-collapse: separate;
+  table-layout: fixed;
+  color: inherit;
+  text-align: left;
+}
+
+.clients-directory-table thead th {
+  padding: 0.68em 0.86em;
+  border-bottom: 1px solid var(--cd-divider);
+  background: var(--cd-head);
+  font-weight: 700;
+}
+
+.clients-directory-table thead th:first-child {
+  width: 25%;
+  border-start-start-radius: clamp(0.6rem, 0.95cqi, 0.95rem);
+}
+
+.clients-directory-table thead th:nth-child(2) {
+  width: 23%;
+}
+
+.clients-directory-table thead th:nth-child(3) {
+  width: 18%;
+}
+
+.clients-directory-table thead th:nth-child(4) {
+  width: 17%;
+}
+
+.clients-directory-table thead th:last-child {
+  border-start-end-radius: clamp(0.6rem, 0.95cqi, 0.95rem);
+}
+
+.clients-directory-table tbody :is(td, th) {
+  height: clamp(3.65rem, 6.08cqi, 6.1rem);
+  padding: 0.35em 0.86em;
+  border-bottom: 1px solid var(--cd-divider);
+  vertical-align: middle;
+}
+
+.clients-directory-person {
+  display: flex;
+  align-items: center;
+  gap: 0.82em;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.clients-directory-person > span:last-child,
+.clients-directory-row-contact > span,
+.clients-directory-row-city > span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clients-directory .clients-directory-person .clients-directory-avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 2.52em;
+  height: 2.42em;
+  border-radius: 50%;
+  background: var(--cd-avatar);
+  color: var(--cd-avatar-ink) !important;
+  font-weight: 800;
+}
+
+.clients-directory .clients-directory-table .clients-directory-status {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.18em 0.68em;
+  border-radius: 0.5em;
+  background: var(--cd-badge);
+  color: var(--cd-muted) !important;
+  font-size: 0.92em;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.clients-directory .clients-directory-status[data-status='complete'] {
+  background: var(--cd-badge-active);
+  color: var(--cd-link) !important;
+}
+
+.clients-directory-row-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  white-space: nowrap;
+}
+
+.clients-directory .clients-directory-row-buttons .clients-directory-view,
+.clients-directory .clients-directory-empty button {
+  min-height: 2.75rem;
+  color: var(--cd-link) !important;
+  font-weight: 650;
+}
+
+.clients-directory-view:hover,
+.clients-directory-empty button:hover {
+  text-decoration: underline;
+}
+
+.clients-directory-action-divider,
+.clients-directory-more summary {
+  color: var(--cd-muted);
+}
+
+.clients-directory-more {
+  position: relative;
+}
+
+.clients-directory-more summary {
+  display: grid;
+  place-items: center;
+  min-width: 2rem;
+  min-height: 2.75rem;
+  list-style: none;
+  cursor: pointer;
+}
+
+.clients-directory-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.clients-directory-more svg {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.clients-directory-actions-panel {
+  position: absolute;
+  z-index: 10;
+  inset-block-end: calc(100% + 0.25rem);
+  inset-inline-end: 0;
+  min-width: 10rem;
+  padding: 0.25rem;
+  border: 1px solid var(--cd-line);
+  border-radius: 0.6rem;
+  background: var(--cd-surface);
+  box-shadow: 0 4px 12px rgb(15 28 49 / 10%);
+  font-size: 0.9rem;
+}
+
+.clients-directory-actions-panel button {
+  display: block;
+  width: 100%;
+  min-height: 2.65rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.35rem;
+  text-align: left;
+}
+
+.clients-directory-actions-panel button:hover {
+  background: var(--cd-head);
+}
+
+.clients-directory .clients-directory-actions-panel .clients-directory-danger {
+  color: var(--cd-danger) !important;
+}
+
+.clients-directory-list-footer,
+.clients-directory-empty {
+  padding: 0.86em;
+  color: var(--cd-muted);
+}
+
+.clients-directory-list-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  min-height: clamp(3.2rem, 5.2cqi, 5.2rem);
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+}
+
+.clients-directory-list-footer .pagination-shell {
+  margin: 0;
+  padding: 0;
+}
+
+.clients-directory-empty {
+  text-align: center;
+}
+
+.clients-directory-empty strong,
+.clients-directory-empty button {
+  display: block;
+  margin-inline: auto;
+}
+
+.clients-directory-quota {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.8em;
+}
+
+.clients-directory .clients-directory-quota a {
+  color: var(--cd-link) !important;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.clients-directory-dialog {
+  --text: var(--cd-ink);
+  position: fixed;
+  inset: 0;
+  width: min(100% - 2rem, 34rem);
+  max-height: calc(100% - 2rem);
+  margin: auto;
+  padding: 1.25rem;
+  border: 1px solid var(--cd-line);
+  border-radius: 0.95rem;
+  background: var(--cd-surface);
+  color: var(--cd-ink);
+  overflow: auto;
+}
+
+.clients-directory-dialog::backdrop {
+  background: rgb(12 25 44 / 55%);
+}
+
+.clients-directory-dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.clients-directory-dialog-head p,
+.clients-directory-dialog dt {
+  color: var(--cd-muted);
+  font-size: 0.86rem;
+}
+
+.clients-directory-dialog h2 {
+  margin: 0;
+  color: var(--cd-ink);
+  font-size: 1.55rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.clients-directory-dialog-head button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--cd-divider);
+  border-radius: 0.5rem;
+}
+
+.clients-directory-dialog-head svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.clients-directory-dialog dl {
+  display: grid;
+  gap: 0.7rem;
+  margin-block: 1rem;
+  padding-block: 1rem;
+  border-block: 1px solid var(--cd-divider);
+}
+
+.clients-directory-dialog dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.clients-directory-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@container client-directory (max-width: 50rem) {
+  .clients-directory-content {
+    font-size: 1rem;
+  }
+
+  .clients-directory-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .clients-directory-table tbody {
+    display: block;
+  }
+
+  .clients-directory-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--cd-divider);
+  }
+
+  .clients-directory-table tbody :is(td, th) {
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .clients-directory-table tbody th {
+    grid-column: 1 / -1;
+  }
+
+  .clients-directory-row-contact,
+  .clients-directory-row-city {
+    grid-column: 1;
+    padding-inline-start: 3.35em !important;
+    font-size: 0.925em;
+  }
+
+  .clients-directory-row-status {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    text-align: end;
+  }
+
+  .clients-directory-row-actions {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .clients-directory-row-buttons {
+    gap: 0.35em;
+  }
+
+  .clients-directory-more summary {
+    min-width: 2.75rem;
+  }
+}
+
+@container client-directory (max-width: 33rem) {
+  .clients-directory-head {
+    flex-wrap: wrap;
+    gap: 0.85rem;
+  }
+
+  .clients-directory-head > div {
+    flex: 1 1 11rem;
+  }
+
+  .clients-directory-tools {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    font-size: 0.88rem;
+  }
+
+  .clients-directory-search {
+    grid-column: 1 / -1;
+  }
+
+  .clients-directory .clients-directory-search input {
+    padding-inline-start: 2.65em;
+  }
+
+  .clients-directory-tabs {
+    gap: 0.1em;
+    font-size: 0.82rem;
+  }
+
+  html[data-site-theme] .clients-directory .clients-directory-tabs button,
+  .clients-directory .clients-directory-tabs button {
+    gap: 0.3em;
+    padding-inline: 0.4em;
+  }
+
+  .clients-directory-content {
+    --cd-gutter: clamp(0.7rem, 3cqi, 1rem);
+    padding-top: 1rem;
+  }
+
+  .clients-directory-row-contact,
+  .clients-directory-row-city {
+    grid-column: 1 / -1;
+    padding-inline-start: 0 !important;
+  }
+
+  .clients-directory-row-status {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+    text-align: start;
+  }
+}
