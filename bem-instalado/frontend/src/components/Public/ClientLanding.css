@@ -5,8 +5,8 @@
   --lp6-gold: var(--site-accent, #cda349);
   --lp6-gold-light: var(--site-accent-strong, #f0d28a);
   --lp6-gold-dark: var(--site-accent-deep, #8d6922);
-  --lp6-text: #f7f2e8;
-  --lp6-muted: rgba(247, 242, 232, 0.66);
+  --lp6-text: var(--dark-ui-text, #f7f2e8);
+  --lp6-muted: var(--dark-ui-muted, rgba(247, 242, 232, 0.66));
   --lp6-line: rgba(var(--site-accent-rgb), 0.24);
   min-height: 100vh;
   overflow: hidden;
@@ -214,7 +214,7 @@
    globais aplicados pelo navegador. */
 .lp6-header:not(.is-scrolled) .lp6-login,
 .lp6-header:not(.is-scrolled) .lp6-login:visited {
-  background: #15120c !important;
+  background: var(--dark-ui-subtle, #15120c) !important;
   border-color: var(--lp6-gold) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
@@ -292,7 +292,7 @@
   background:
     radial-gradient(
       circle at var(--lp6-light-x) var(--lp6-light-y),
-      rgba(242, 210, 138, 0.14),
+      rgba(var(--dark-ui-accent-rgb, 242, 210, 138), 0.14),
       transparent 19rem
     );
   mix-blend-mode: screen;
@@ -307,7 +307,7 @@
   bottom: -20%;
   left: -16%;
   width: 9%;
-  background: linear-gradient(90deg, transparent, rgba(242, 210, 138, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--dark-ui-accent-rgb, 242, 210, 138), 0.2), transparent);
   content: '';
   filter: blur(0.4rem);
   transform: skewX(-14deg);
@@ -1038,7 +1038,7 @@
 
 .lp6-footer > span {
   grid-column: 1 / -1;
-  color: rgba(247, 242, 232, 0.35);
+  color: var(--dark-ui-muted, rgba(247, 242, 232, 0.35));
   font-size: 0.54rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;

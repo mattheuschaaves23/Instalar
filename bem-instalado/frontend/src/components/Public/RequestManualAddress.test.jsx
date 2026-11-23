@@ -39,8 +39,11 @@ it('distingue o link de atribuição do mapa sem depender só de cor', () => {
   expect(rule).toMatch(/text-decoration(?:-line)?:\s*underline/);
 });
 
-it('o botão de continuar mantém texto escuro legível sobre o fundo claro nos dois temas', () => {
+it('o botão de continuar mantém uma combinação de fundo e texto para cada tema', () => {
   const css = readFileSync(new URL('./RequestComposer.css', import.meta.url), 'utf8');
   const rule = css.match(/html\[data-site-theme\] \.client-request-redesign \.client-app-request-actions \.client-app-search-submit\s*\{([^}]+)\}/)[1];
   expect(rule).toMatch(/color:\s*#181613\s*!important/);
+  const darkRule = css.match(/html\[data-site-theme='dark'\] \.client-request-redesign \.client-app-request-actions \.client-app-search-submit\s*\{([^}]+)\}/)[1];
+  expect(darkRule).toMatch(/background:\s*var\(--dark-ui-fill\)\s*!important/);
+  expect(darkRule).toMatch(/color:\s*var\(--dark-ui-on-fill\)\s*!important/);
 });
