@@ -13,11 +13,12 @@ import { installmentInfo, installmentAmountLabel, installmentConditionsLabel, pa
 const INSTALLMENT_OPTIONS = Array.from({ length: 11 }, (_, index) => index + 2);
 const INTEREST_FREE_INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1);
 const INSTALLMENT_INTEREST_OPTIONS = [0, 1, 1.5, 2, 2.5, 3, 4, 5];
+const MAX_REMOVAL_ROLLS = 1000;
+const REMOVAL_ROLLS_ERROR = 'Informe de 1 a 1000 rolos inteiros para a remoção.';
 const UPFRONT_PAYMENT_METHODS = [
   { id: 'pix', label: 'Pix' },
   { id: 'boleto', label: 'Boleto' },
   { id: 'debit_card', label: 'Cartão de débito' },
-  { id: 'credit_card', label: 'Cartão à vista' },
   { id: 'cash', label: 'Dinheiro' },
   { id: 'bank_transfer', label: 'Transferência' },
 ];
@@ -235,6 +236,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
   const [pricePerRoll, setPricePerRoll] = useState(0);
   const [pricePerSquareMeter, setPricePerSquareMeter] = useState(draft ? '' : 10);
   const [removalPricePerRoll, setRemovalPricePerRoll] = useState(0);
+  const [removalRollsInput, setRemovalRollsInput] = useState('');
   const [profileDefaults, setProfileDefaults] = useState({ rollPrice: 0, removalPricePerRoll: 0 });
   const [installmentEnabled, setInstallmentEnabled] = useState(false);
   const [installmentsCount, setInstallmentsCount] = useState(3);
@@ -290,6 +292,9 @@ function BudgetEditor({ draft = null, draftId = null }) {
   };
 
   const removalIncluded = environments.some((environment) => Boolean(environment.removal_included));
+  const manualRemovalRolls = removalIncluded && removalRollsInput !== '' ? Number(removalRollsInput) : null;
+  const invalidRemovalRolls = manualRemovalRolls !== null &&
+    (!Number.isInteger(manualRemovalRolls) || manualRemovalRolls < 1 || manualRemovalRolls > MAX_REMOVAL_ROLLS);
   const rollYield = Number(rollArea);
   const effectiveRollArea = Number.isFinite(rollYield) && rollYield > 0 ? rollYield : 0;
 
@@ -332,17 +337,21 @@ function BudgetEditor({ draft = null, draftId = null }) {
           { area: 0, rolls: 0, removalRolls: 0, subtotal: 0, total: 0 }
         );
         const unitRemovalPrice = Number(removalPricePerRoll || 0);
-        const removal = removalIncluded && Number.isFinite(unitRemovalPrice)
-          ? baseTotals.removalRolls * unitRemovalPrice
+        const removalRolls = invalidRemovalRolls ? 0 : (manualRemovalRolls ?? baseTotals.removalRolls);
+        const removalRate = manualRemovalRolls === null ? unitRemovalPrice : Math.round(unitRemovalPrice * 100) / 100;
+        const removal = removalIncluded && Number.isFinite(unitRemovalPrice) && unitRemovalPrice >= 0
+          ? removalRolls * removalRate
           : 0;
 
         return {
           ...baseTotals,
+          automaticRemovalRolls: baseTotals.removalRolls,
+          removalRolls,
           removal,
           total: baseTotals.subtotal + removal,
         };
       })(),
-    [environmentBreakdown, removalIncluded, removalPricePerRoll]
+    [environmentBreakdown, invalidRemovalRolls, manualRemovalRolls, removalIncluded, removalPricePerRoll]
   );
 
   const grandTotal = totals.total;
@@ -420,6 +429,10 @@ function BudgetEditor({ draft = null, draftId = null }) {
   };
 
   const continueFromCalculation = () => {
+    if (invalidRemovalRolls) {
+      toast.error(REMOVAL_ROLLS_ERROR);
+      return;
+    }
     if (!canCalculate || grandTotal <= 0) {
       toast.error('Preencha as medidas e os valores para calcular o orçamento.');
       return;
@@ -434,6 +447,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
     setPricePerRoll(profileDefaults.rollPrice);
     setPricePerSquareMeter(10);
     setRemovalPricePerRoll(profileDefaults.removalPricePerRoll);
+    setRemovalRollsInput('');
     setInstallmentEnabled(false);
     setInstallmentsCount(3);
     setInterestFreeInstallments(3);
@@ -510,6 +524,11 @@ function BudgetEditor({ draft = null, draftId = null }) {
       return;
     }
 
+    if (invalidRemovalRolls) {
+      toast.error(REMOVAL_ROLLS_ERROR);
+      return;
+    }
+
     if (
       installmentEnabled &&
       (!Number.isInteger(normalizedInstallmentsCount) ||
@@ -582,6 +601,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
         upfront_payment_terms: selectedUpfrontPaymentTerms,
         removal_included: removalIncluded,
         removal_price_per_roll: removalIncluded ? normalizedRemovalPricePerRoll : 0,
+        ...(manualRemovalRolls !== null ? { removal_rolls: manualRemovalRolls } : {}),
         environments: environments.map((environment) => ({
           name: environment.name,
           height: Number(environment.height),
@@ -855,12 +875,38 @@ function BudgetEditor({ draft = null, draftId = null }) {
                     </div>
                   </label>
 
-                  <div className="budget-modern-removal-summary">
+                  <label className="budget-modern-field">
+                    <span>Rolos a remover</span>
+                    <div className="budget-modern-currency-input">
+                      <input
+                        aria-describedby="budget-removal-rolls-help"
+                        aria-invalid={invalidRemovalRolls || undefined}
+                        disabled={!removalIncluded}
+                        inputMode="numeric"
+                        max={MAX_REMOVAL_ROLLS}
+                        min="1"
+                        onChange={(event) => setRemovalRollsInput(event.target.value)}
+                        placeholder={String(totals.automaticRemovalRolls || '')}
+                        step="1"
+                        type="number"
+                        value={removalRollsInput}
+                      />
+                    </div>
+                  </label>
+
+                  <div aria-live="polite" className="budget-modern-removal-summary">
                     <span>Remoção selecionada</span>
-                    {removalIncluded
-                      ? <strong>{totals.removalRolls} rolo{totals.removalRolls === 1 ? '' : 's'} • {formatCurrency(totals.removal)}</strong>
-                      : <strong>Nenhum ambiente marcado</strong>}
+                    {invalidRemovalRolls
+                      ? <strong>Quantidade inválida</strong>
+                      : removalIncluded
+                        ? <strong>{totals.removalRolls} rolo{totals.removalRolls === 1 ? '' : 's'} • {formatCurrency(totals.removal)}</strong>
+                        : <strong>Nenhum ambiente marcado</strong>}
                   </div>
+                  <p id="budget-removal-rolls-help" className="budget-modern-removal-help">
+                    {invalidRemovalRolls ? REMOVAL_ROLLS_ERROR : removalIncluded
+                      ? 'Deixe em branco para usar a quantidade calculada dos ambientes marcados.'
+                      : 'Marque “Remover papel” em um ambiente para informar a quantidade.'}
+                  </p>
                 </div>
 
                 <div className="budget-modern-payment-conditions budget-modern-calculation-block">
@@ -1295,7 +1341,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
                 <strong>{formatCurrency(totals.subtotal)}</strong>
               </div>
               <div className="budget-modern-summary-row">
-                <span>Remoção por rolo ({totals.removalRolls} rolos marcados)</span>
+                <span>Remoção por rolo ({totals.removalRolls} rolo{totals.removalRolls === 1 ? '' : 's'})</span>
                 <strong>{formatCurrency(totals.removal)}</strong>
               </div>
               <div className="budget-modern-summary-row">

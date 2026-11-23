@@ -32172,9 +32172,16 @@ html[data-site-theme='dark'] .dashboard-reference-layout.installer-workspace.aqu
 
 .dashboard-reference-layout.installer-workspace.aqua-panel-theme .budget-modern-removal-rate {
   width: 100%;
-  grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 18rem) minmax(0, 11rem) minmax(0, 1fr);
+  row-gap: 0.4rem;
   align-items: center;
   padding: 0.8rem;
+}
+
+.budget-modern-removal-help {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.78rem;
 }
 
 .dashboard-reference-layout.installer-workspace.aqua-panel-theme .budget-modern-removal-summary {
@@ -32233,6 +32240,17 @@ html[data-site-theme='dark'] .dashboard-reference-layout.installer-workspace.aqu
 }
 
 @media (max-width: 680px) {
+  .dashboard-reference-layout.installer-workspace.aqua-panel-theme .budget-modern-removal-rate {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-reference-layout.installer-workspace.aqua-panel-theme .budget-modern-removal-summary {
+    grid-column: 1 / -1;
+    min-height: 0;
+    padding: 0;
+    border: 0 !important;
+  }
+
   .dashboard-reference-layout.installer-workspace.aqua-panel-theme .budget-modern-payment-conditions-body .budget-modern-installment-control {
     padding: 0 0 0.7rem !important;
     border-right: 0 !important;
