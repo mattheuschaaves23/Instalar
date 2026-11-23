@@ -57,20 +57,22 @@ describe('rótulo do plano no menu', () => {
 });
 
 describe('carteira acessível em todas as larguras', () => {
-  it('a regra padrão não esconde a única lista de clientes', () => {
-    const root = postcss.parse(readFileSync(new URL('../../index.css', import.meta.url), 'utf8'));
-    const values = [];
+  it('mantém uma tabela e o cadastro acessíveis enquanto carrega', () => {
+    const root = postcss.parse(readFileSync(new URL('../Clients/Clients.css', import.meta.url), 'utf8'));
+    const hiddenTables = [];
     root.walkRules((rule) => {
-      if (rule.selector.split(',').map((value) => value.trim()).includes('.client-intake-mobile-list') && rule.parent.type === 'root') {
-        rule.walkDecls('display', (decl) => values.push(decl.value));
+      if (rule.selector.split(',').map((value) => value.trim()).includes('.clients-directory-table')) {
+        rule.walkDecls('display', (decl) => {
+          if (decl.value === 'none') hiddenTables.push(rule.selector);
+        });
       }
     });
-    expect(values.at(-1)).toBe('grid');
+    expect(hiddenTables).toEqual([]);
     const markup = render(<Clients />);
-    expect(markup).toContain('Clientes cadastrados');
-    expect(markup).toContain('Nenhum cliente cadastrado');
-    expect(markup).toContain('aria-label="Novo cliente"');
-    expect(markup).toContain('aria-label="Voltar ao início"');
+    expect(markup).toContain('aria-label="Clientes cadastrados"');
+    expect(markup).toContain('aria-label="Buscar clientes"');
+    expect(markup).toContain('Carregando clientes');
+    expect(markup).toContain('Novo cliente');
   });
 });
 
