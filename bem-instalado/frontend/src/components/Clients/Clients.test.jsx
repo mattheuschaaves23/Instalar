@@ -11,6 +11,11 @@ const subscription = vi.hoisted(() => ({ isPro: true, planAccess: null }));
 vi.mock('../../contexts/SubscriptionContext', () => ({
   useSubscription: () => ({ ...subscription, refreshSubscription: async () => {} }),
 }));
+const platform = vi.hoisted(() => ({ storeApp: false }));
+vi.mock('../../utils/nativePlatform', async (importOriginal) => ({
+  ...(await importOriginal()),
+  isNativeStoreApp: () => platform.storeApp,
+}));
 vi.mock('./ClientForm', () => ({
   default: ({ client, onClose, onSaved }) => (
     <div aria-label={client ? `Editar ${client.name}` : 'Novo cadastro'} role="dialog">
@@ -52,6 +57,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   subscription.isPro = true;
   subscription.planAccess = null;
+  platform.storeApp = false;
   api.get.mockResolvedValue({ data: records });
   api.delete.mockResolvedValue({ data: { success: true } });
 });
@@ -134,6 +140,18 @@ describe('carteira de clientes', () => {
     expect(await screen.findByText('4 de 15 no plano Grátis')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Conhecer o Pro' }).getAttribute('href')).toBe('/subscription');
     expect(names()).toHaveLength(4);
+  });
+
+  // Regressao (fd523dc): a carteira nova trouxe "Conhecer o Pro" literal; no app das lojas
+  // nenhuma tela pode convidar a assinar (politica de pagamento do Google e da Apple).
+  it('no app das lojas a cota do plano Gratis nao convida a assinar o Pro', async () => {
+    platform.storeApp = true;
+    subscription.isPro = false;
+    subscription.planAccess = { limits: { clients: 15 } };
+    open();
+    expect(await screen.findByText('4 de 15 no plano Grátis')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Ver meu plano' }).getAttribute('href')).toBe('/subscription');
+    expect(screen.queryByText(/Conhecer o Pro/)).toBeNull();
   });
 
   it('reinicia a paginação quando se aplica uma busca e permite recuperar erro de carregamento', async () => {
