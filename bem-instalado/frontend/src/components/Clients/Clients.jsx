@@ -178,8 +178,9 @@ export default function Clients() {
     const entries = clients.map((client) => {
       const label = cityOf(client);
       const cityKey = normalize(label);
+      const contact = tidy(client.email) || tidy(client.whatsapp) || tidy(client.phone);
       if (client.city && !citiesByKey.has(cityKey)) citiesByKey.set(cityKey, label);
-      return { client, cityKey, label, status: statusOf(client) };
+      return { client, cityKey, contact, label, status: statusOf(client) };
     });
     const complete = entries.filter(({ status }) => status.id === 'complete').length;
     return {
@@ -313,7 +314,7 @@ export default function Clients() {
               <tr role="row"><th scope="col" role="columnheader">Cliente</th><th scope="col" role="columnheader">Contato</th><th scope="col" role="columnheader">Localização</th><th scope="col" role="columnheader">Cadastro</th><th scope="col" role="columnheader">Ações</th></tr>
             </thead>
             <tbody role="rowgroup">
-              {!loading && !error ? visible.map(({ client, label, status }) => (
+              {!loading && !error ? visible.map(({ client, contact, label, status }) => (
                 <tr key={client.id} role="row">
                   <th scope="row" role="rowheader">
                     <span className="clients-directory-person">
@@ -321,10 +322,10 @@ export default function Clients() {
                       <span title={client.name}>{client.name}</span>
                     </span>
                   </th>
-                  <td className="clients-directory-row-contact" role="cell" title={client.email || client.whatsapp || client.phone || undefined}>
-                    <span>{tidy(client.email) || tidy(client.whatsapp) || tidy(client.phone) || '—'}</span>
+                  <td className="clients-directory-row-contact" data-empty={!contact} role="cell" title={contact || undefined}>
+                    <span>{contact || '—'}</span>
                   </td>
-                  <td className="clients-directory-row-city" role="cell"><span>{label || '—'}</span></td>
+                  <td className="clients-directory-row-city" data-empty={!label} role="cell"><span>{label || '—'}</span></td>
                   <td className="clients-directory-row-status" role="cell"><span className="clients-directory-status" data-status={status.id}>{status.label}</span></td>
                   <td className="clients-directory-row-actions" role="cell">
                     <div className="clients-directory-row-buttons">
