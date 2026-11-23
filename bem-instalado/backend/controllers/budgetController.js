@@ -11,6 +11,8 @@ const {
 
 const DEFAULT_ROLL_AREA = 4.5;
 const MAX_ROLL_AREA = 1000;
+const MAX_REMOVAL_ROLLS = 1000;
+const MAX_BUDGET_AMOUNT = 99_999_999.99; // NUMERIC(10, 2)
 const UPFRONT_PAYMENT_METHODS = new Set([
   'pix',
   'boleto',
@@ -276,6 +278,7 @@ exports.createBudget = async (req, res) => {
       removal_included,
       removal_price,
       removal_price_per_roll,
+      removal_rolls,
     } = req.body;
     let cleanClientId = Number(client_id);
     const draftId = req.params?.id === undefined ? null : Number(req.params.id);
@@ -298,10 +301,20 @@ exports.createBudget = async (req, res) => {
     const installmentInterestRate = installmentsEnabled ? requestedInstallmentInterestRate : 0;
     const upfrontPaymentTerms = normalizeUpfrontPaymentTerms(upfront_payment_terms);
     const usesRemovalPerRoll = Object.prototype.hasOwnProperty.call(req.body || {}, 'removal_price_per_roll');
+    const hasManualRemovalRolls = removal_rolls !== undefined && removal_rolls !== null;
+    const manualRemovalRolls = typeof removal_rolls === 'number' ? removal_rolls : NaN;
+    if (hasManualRemovalRolls && (
+      !usesRemovalPerRoll ||
+      !Number.isInteger(manualRemovalRolls) || manualRemovalRolls < 1 || manualRemovalRolls > MAX_REMOVAL_ROLLS
+    )) {
+      return res.status(400).json({ error: 'Informe de 1 a 1000 rolos inteiros para a remoção por rolo.' });
+    }
     const removalIncludedByRoll = normalizeBoolean(removal_included);
-    const removalPricePerRoll = removal_price_per_roll === null || removal_price_per_roll === undefined || String(removal_price_per_roll).trim() === ''
+    const rawRemovalPricePerRoll = removal_price_per_roll === null || removal_price_per_roll === undefined || String(removal_price_per_roll).trim() === ''
       ? 0
       : Number(removal_price_per_roll);
+    const removalUnitCents = Math.round(rawRemovalPricePerRoll * 100);
+    const removalPricePerRoll = hasManualRemovalRolls && rawRemovalPricePerRoll >= 0 ? removalUnitCents / 100 : rawRemovalPricePerRoll;
     const legacyRemovalIncluded = normalizeBoolean(removal_included);
     const legacyRemovalPrice = removal_price === null || removal_price === undefined || String(removal_price).trim() === ''
       ? 0
@@ -484,6 +497,8 @@ exports.createBudget = async (req, res) => {
         area,
         rollsAuto,
         rollsManual,
+        rollsUsed,
+        subtotal: subtotalByEnvironment,
         pricePerSquareMeter: cleanPricingMode === 'square_meter' ? cleanPricePerSquareMeter : 0,
         pricePerRoll: cleanPricingMode === 'roll' ? cleanPricePerRoll : 0,
         removalIncluded: removalIncludedByEnvironment,
@@ -492,6 +507,32 @@ exports.createBudget = async (req, res) => {
         total,
       };
     });
+
+    if (hasManualRemovalRolls) {
+      if (!totalRemovalRolls) {
+        return res.status(400).json({ error: 'Marque pelo menos um ambiente para remoção.' });
+      }
+
+      const removalCents = manualRemovalRolls * removalUnitCents;
+      if (subtotal + removalCents / 100 > MAX_BUDGET_AMOUNT) {
+        return res.status(400).json({ error: 'O valor total do orçamento excede o limite suportado.' });
+      }
+
+      // Store the exact quote-level amount, distributing its cents across the marked
+      // rooms in proportion to the original estimate, without inventing room quantities.
+      let runningWeight = 0;
+      let allocatedCents = 0;
+      for (const environment of computedEnvironments) {
+        if (!environment.removalIncluded) continue;
+        runningWeight += environment.rollsUsed;
+        const cumulativeCents = Math.round((runningWeight / totalRemovalRolls) * removalCents);
+        environment.removalTotal = (cumulativeCents - allocatedCents) / 100;
+        environment.total = environment.subtotal + environment.removalTotal;
+        allocatedCents = cumulativeCents;
+      }
+      totalRemovalRolls = manualRemovalRolls;
+      totalRemovalByEnvironment = removalCents / 100;
+    }
 
     const hasEnvironmentRemoval = !usesRemovalPerRoll && computedEnvironments.some((environment) => environment.removalIncluded);
     const fallbackLegacyRemoval = !usesRemovalPerRoll && legacyRemovalIncluded ? legacyRemovalPrice : 0;
