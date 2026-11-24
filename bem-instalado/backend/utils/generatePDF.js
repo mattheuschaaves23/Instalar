@@ -5,7 +5,7 @@ const crypto = require('node:crypto');
 const PDFDocument = require('pdfkit');
 const { decodeAssetKey, isObjectStorageConfigured } = require('../services/objectStorage');
 const { defaultScope } = require('../../shared/pdfBranding.json');
-const { normalizePdfBranding, normalizeText } = require('./pdfBranding');
+const { resolvePdfBranding, normalizeText } = require('./pdfBranding');
 
 const INK = '#10243C';
 const MUTED = '#45586D';
@@ -35,19 +35,6 @@ function validUntil(value, days) {
   const [day, month, year] = issue.split('/').map(Number);
   const date = new Date(Date.UTC(year, month - 1, day + days, 12));
   return formatDate(date);
-}
-
-function accentInk(hex) {
-  // Keep bright custom swatches for decoration, but darken them for readable text on paper.
-  const rgb = hex.slice(1).match(/../g).map(part => parseInt(part, 16));
-  function luminance(channels) {
-    return channels.map(value => {
-      const srgb = value / 255;
-      return srgb <= 0.04045 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4;
-    }).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
-  }
-  while (luminance(rgb) > 0.14) rgb.forEach((value, index) => { rgb[index] = Math.floor(value * 0.87); });
-  return '#' + rgb.map(value => value.toString(16).padStart(2, '0')).join('');
 }
 
 async function brandImage(value, userId, kind) {
@@ -96,14 +83,22 @@ function upfrontTerms(value) {
   });
 }
 
-function render(doc, { budget, client, environments, user, isPro, branding, logo, photo, installment, example }) {
+function render(doc, { budget, client, environments, user, branding, logo, photo, installment, example, colors }) {
   const width = doc.page.width - 2 * M;
   const right = M + width;
-  const compact = branding.template === 'compact';
+  const basic = branding.template === 'basic';
+  const technical = branding.template === 'compact';
   const classic = branding.template === 'classic';
+  const studio = branding.template === 'studio';
+  const compact = branding.density === 'dense' || (branding.density === 'auto' && (basic || technical));
   const accent = branding.accent_color;
-  const accentText = accentInk(accent);
-  const brand = branding.brand_name || clean(user.business_name, 80) || (isPro ? clean(user.name, 80) : '') || 'InstalarPro';
+  const accentText = colors.accentInk(accent);
+  const brand = basic ? 'InstalarPro' : branding.brand_name || clean(user.business_name, 80) || clean(user.name, 80) || 'InstalarPro';
+  const themeTint = basic ? '#F1F3F5' : colors.tint(accent, 0.09);
+  const background = branding.paper_tone === 'tinted' ? colors.tint(accent, 0.035) : classic && branding.paper_tone === 'auto' ? '#FCF9F3' : PAPER;
+  const headingFont = ({
+    sans: 'Helvetica-Bold', serif: 'Times-Bold', mono: 'Courier-Bold',
+  })[branding.heading_font] || (classic ? 'Times-Bold' : technical ? 'Courier-Bold' : 'Helvetica-Bold');
   const issue = formatDate(budget.created_at || new Date());
   const valid = validUntil(budget.created_at, branding.validity_days);
   const id = clean(budget.id, 45);
@@ -111,22 +106,23 @@ function render(doc, { budget, client, environments, user, isPro, branding, logo
   const rawStatus = clean(budget.status, 24).toLowerCase();
   const status = ({ approved: 'Aprovado', rejected: 'Rejeitado', pending: 'Pendente', completed: 'Concluído', canceled: 'Cancelado' })[rawStatus] || 'Pendente';
   const total = money(budget.total_amount);
-  const pad = compact ? 12 : 16;
+  const pad = compact ? 10 : branding.density === 'spacious' ? 22 : 16;
   let y = 0;
 
-  const style = (size, color = INK, bold = false) => doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(size).fillColor(color);
-  const measure = (value, w, size, bold = false) => style(size, INK, bold).heightOfString(value, { width: w, lineGap: 2 });
-  function write(value, x, top, w, { size = 10, color = INK, bold = false, align = 'left' } = {}) {
-    style(size, color, bold).text(value, x, top, { width: w, align, lineGap: 2 });
+  const style = (size, color = INK, bold = false, font) => doc.font(font || (bold ? 'Helvetica-Bold' : 'Helvetica')).fontSize(size).fillColor(color);
+  const measure = (value, w, size, bold = false, font) => style(size, INK, bold, font).heightOfString(value, { width: w, lineGap: 2 });
+  function write(value, x, top, w, { size = 10, color = INK, bold = false, align = 'left', font } = {}) {
+    style(size, color, bold, font).text(value, x, top, { width: w, align, lineGap: 2 });
   }
-  function fixed(value, x, top, w, { size = 9, color = MUTED, bold = false, align = 'left' } = {}) {
-    style(size, color, bold);
+  function fixed(value, x, top, w, { size = 9, color = MUTED, bold = false, align = 'left', font } = {}) {
+    style(size, color, bold, font);
     let output = value;
     if (doc.widthOfString(output) > w) {
       while (output.length && doc.widthOfString(output + '...') > w) output = output.slice(0, -1);
       output += '...';
     }
-    doc.text(output, align === 'right' ? x + w - doc.widthOfString(output) : x, top, { width: 0, lineBreak: false });
+    const remaining = w - doc.widthOfString(output);
+    doc.text(output, x + (align === 'right' ? remaining : align === 'center' ? remaining / 2 : 0), top, { width: 0, lineBreak: false });
   }
   const rule = (top, from = M, to = right) => doc.moveTo(from, top).lineTo(to, top).lineWidth(0.7).stroke(RULE);
   const image = (data, x, top, w, h) => {
@@ -140,35 +136,84 @@ function render(doc, { budget, client, environments, user, isPro, branding, logo
   };
 
   function header(continued = false) {
+    if (background !== PAPER) doc.rect(0, 0, doc.page.width, doc.page.height).fill(background);
     if (continued) {
-      fixed(brand, M, 32, width / 2, { size: 12, bold: true, color: INK });
+      fixed(brand, M, 32, width / 2, { size: 12, font: headingFont, color: INK });
       fixed(`${identifier} / Continuação`, M + width / 2, 34, width / 2, { align: 'right' });
       rule(56);
       y = 73;
       return;
     }
-    const top = compact ? 30 : 40;
-    const darkText = classic ? PAPER : INK;
-    const secondary = classic ? '#DFEAF5' : MUTED;
-    const mediaBlock = photo ? 56 : 0;
-    const rightWidth = 119;
-    const brandX = M + (logo ? 61 : 0);
-    const maxLeft = width - rightWidth - mediaBlock - 17;
-    const titleSize = compact ? 19 : 24;
-    const titleHeight = measure(branding.document_title, maxLeft, titleSize, true);
-    const headerBottom = top + 21 + titleHeight + pad;
-    if (classic) doc.rect(0, 0, doc.page.width, headerBottom + 6).fill(INK);
-    if (!compact) doc.rect(classic ? 0 : M, classic ? 0 : 22, classic ? doc.page.width : width, classic ? 6 : 4).fill(accent);
-    const left = image(logo, M, top - 8, 48, 27) ? brandX : M;
-    fixed(brand, left, top, maxLeft - (left - M), { size: 11, color: classic ? PAPER : accentText, bold: true });
-    write(branding.document_title, M, top + 19, maxLeft, { size: titleSize, color: darkText, bold: true });
-    const metaX = right - mediaBlock - rightWidth;
-    fixed(identifier, metaX, top, rightWidth, { size: 11, color: darkText, bold: true, align: 'right' });
-    fixed(`Emissão: ${issue || '-'}`, metaX, top + 17, rightWidth, { color: secondary, align: 'right' });
-    fixed(example ? 'Exemplo ilustrativo' : status, metaX, top + 32, rightWidth, { color: secondary, align: 'right' });
-    image(photo, right - 44, top - 4, 44, 44);
-    if (!classic) rule(headerBottom);
-    y = headerBottom + (compact ? 15 : 20);
+    const title = branding.document_title;
+    const subtitle = branding.document_subtitle;
+    const metadata = [identifier, `Emissão: ${issue || '-'}`, branding.show_status ? status : '', example ? 'Exemplo ilustrativo' : ''].filter(Boolean);
+    const titleOptions = { font: headingFont };
+    if (studio) {
+      const leftWidth = width - 156;
+      const titleTop = 84;
+      const titleHeight = measure(title, leftWidth, 28, true, headingFont);
+      const subHeight = subtitle ? measure(subtitle, leftWidth, 10) + 5 : 0;
+      const end = Math.max(190, titleTop + titleHeight + subHeight + pad + 4);
+      doc.rect(0, 0, doc.page.width, end).fill(accentText);
+      if (branding.show_pattern) {
+        doc.save().rect(0, 0, doc.page.width, end).clip().strokeOpacity(0.14).lineWidth(1);
+        for (let dx = -10; dx <= 55; dx += 13) doc.moveTo(doc.page.width - 145 + dx, end).lineTo(doc.page.width + dx, end - 80).stroke(PAPER);
+        doc.restore();
+      }
+      const hasLogo = image(logo, M, 26, 51, 32);
+      fixed(brand, M + (hasLogo ? 62 : 0), 42, leftWidth - (hasLogo ? 62 : 0), { size: 12, bold: true, color: PAPER });
+      write(title, M, titleTop, leftWidth, { ...titleOptions, size: 28, color: PAPER });
+      if (subtitle) write(subtitle, M, titleTop + titleHeight + 4, leftWidth, { size: 10, color: PAPER });
+      image(photo, right - 37, 25, 37, 37);
+      metadata.forEach((line, i) => fixed(line, right - 130, 77 + i * 13, 130, { align: 'right', color: PAPER }));
+      fixed('Total do orçamento', right - 135, end - 47, 135, { align: 'right', color: PAPER });
+      fixed(total, right - 142, end - 34, 142, { align: 'right', color: PAPER, size: 19, bold: true });
+      y = end + pad;
+      return;
+    }
+    if (classic) {
+      const centered = { align: 'center' };
+      image(logo, M, 32, 44, 36);
+      image(photo, right - 38, 32, 38, 38);
+      fixed(brand, M + 55, 42, width - 110, { ...centered, size: 12, color: accentText, bold: true });
+      if (branding.show_pattern) {
+        rule(64, M + width / 2 - 42, M + width / 2 + 42);
+        doc.save().translate(M + width / 2, 64).rotate(45).rect(-2.5, -2.5, 5, 5).fill(accent).restore();
+      }
+      const top = 77;
+      const h = measure(title, width - 32, 32, true, headingFont);
+      write(title, M + 16, top, width - 32, { ...centered, ...titleOptions, size: 32 });
+      if (subtitle) write(subtitle, M + 24, top + h + 1, width - 48, { ...centered, size: 10, color: MUTED });
+      const metaY = top + h + (subtitle ? measure(subtitle, width - 48, 10) + 9 : 9);
+      fixed(metadata.join('   /   '), M, metaY, width, { ...centered, size: 9 });
+      rule(metaY + 20);
+      y = metaY + 20 + pad;
+      return;
+    }
+    const top = 35;
+    const badge = technical ? 137 : 112;
+    const titleWidth = width - badge - 14;
+    const titleSize = basic ? 21 : 22;
+    const titleY = 56;
+    const titleH = measure(title, titleWidth, titleSize, true, headingFont);
+    const subtitleH = subtitle ? measure(subtitle, titleWidth, 10) + 3 : 0;
+    if (technical) {
+      doc.rect(M, 23, width, 3).fill(accent);
+      doc.rect(right - badge, top, badge, 62).lineWidth(0.7).stroke(accentText);
+      if (branding.show_pattern) {
+        for (let step = 0; step < 7; step += 1) doc.rect(M + step * 5, 27, 1, step % 2 ? 4 : 6).fill(accent);
+      }
+      image(photo, right - badge + 8, top + 20, 25, 25);
+    }
+    const hasLogo = image(logo, M, top - 3, 34, 17);
+    fixed(brand, M + (hasLogo ? 39 : 0), top + 3, titleWidth - (hasLogo ? 39 : 0), { size: 10, bold: true, color: accentText });
+    write(title, M, titleY, titleWidth, { ...titleOptions, size: titleSize });
+    if (subtitle) write(subtitle, M, titleY + titleH + 2, titleWidth, { size: 10, color: MUTED });
+    const metaInset = technical && photo ? 32 : 0;
+    metadata.forEach((line, i) => fixed(line, right - badge + 5 + metaInset, top + 8 + i * 14, badge - (technical ? 13 : 5) - metaInset, { align: 'right', bold: i === 0 }));
+    const line = Math.max(technical ? 105 : 87, top + 8 + (metadata.length - 1) * 14 + 13, titleY + titleH + subtitleH + 8);
+    rule(line);
+    y = line + pad;
   }
 
   function room(height) {
@@ -178,7 +223,7 @@ function render(doc, { budget, client, environments, user, isPro, branding, logo
     return true;
   }
   function heading(title) {
-    write(title, M, y, width, { size: 13, bold: true });
+    write(title, M, y, width, { size: classic ? 16 : 13, font: headingFont });
     y += 19;
   }
   function paragraph(title, content) {
@@ -199,17 +244,20 @@ function render(doc, { budget, client, environments, user, isPro, branding, logo
     [clean(client.neighborhood, 80), [clean(client.city, 60), clean(client.state, 8)].filter(Boolean).join(' - ')].filter(Boolean).join(', '),
     clean(client.zip_code, 14) && `CEP ${clean(client.zip_code, 14)}`,
   ].filter(Boolean).join(' / ') || clean(client.address, 300);
-  const half = (width - 20) / 2;
+  const gutter = technical ? 28 : 20;
+  const half = (width - gutter) / 2;
   const contact = (person, enabled) => enabled ? [clean(person.phone, 40), clean(person.email, 125)].filter(Boolean) : [];
   const parties = [
     { label: 'Preparado por', name: clean(user.name, 100) || brand, lines: contact(user, branding.show_contact) },
     { label: 'Cliente e local', name: clean(client.name, 120) || 'Cliente', lines: [...contact(client, branding.show_client_contact), address].filter(Boolean) },
   ];
+  if (studio || technical) parties.reverse();
   const partyHeight = Math.max(...parties.map(({ name, lines }) =>
     measure(name, half, 11, true) + lines.reduce((sum, line) => sum + measure(line, half, 9) + 2, 0)));
   room(partyHeight + 29);
+  if (technical) doc.rect(M - 6, y - 5, width + 12, partyHeight + 26).fill(themeTint);
   parties.forEach(({ label, name, lines }, index) => {
-    const x = M + index * (half + 20);
+    const x = M + index * (half + gutter);
     write(label, x, y, half, { size: 9, color: MUTED });
     write(name, x, y + 14, half, { size: 11, bold: true });
     let lineY = y + 16 + measure(name, half, 11, true);
@@ -221,19 +269,33 @@ function render(doc, { budget, client, environments, user, isPro, branding, logo
   y += partyHeight + 17 + pad;
 
   const detail = branding.show_measurements;
-  const tableWidths = detail ? [width - 324, 96, 68, 49, 111] : [width - 120, 120];
+  const prices = branding.show_environment_prices;
+  const cols = [...(technical ? [['Nº', 34]] : []), ['Ambiente', 0],
+    ...(detail ? [['Medidas', 102], ['Área', 68], ['Rolos', 46]] : []), ...(prices ? [['Valor', 108]] : [])];
+  const nameIndex = technical ? 1 : 0;
+  const nameWidth = width - cols.reduce((sum, column) => sum + column[1], 0);
+  cols[nameIndex][1] = nameWidth;
+  const cardNameWidth = prices ? width - 177 : width - 65;
   function tableHeader(continued = false) {
     heading(continued ? 'Ambientes (continuação)' : 'Ambientes');
-    doc.rect(M, y, width, 24).fill('#EDF3FA');
+    if (studio) {
+      y += 3;
+      return;
+    }
+    if (!classic) doc.rect(M, y, width, 24).fill(technical ? accentText : themeTint);
+    else rule(y);
     let x = M;
-    (detail ? ['Ambiente', 'Medidas', 'Área', 'Rolos', 'Valor'] : ['Ambiente', 'Valor']).forEach((label, i) => {
-      fixed(label, x + 8, y + 7, tableWidths[i] - 16, { bold: true, color: MUTED, align: i === 0 ? 'left' : 'right' });
-      x += tableWidths[i];
+    cols.forEach(([label, colWidth], i) => {
+      fixed(label, x + 8, y + 7, colWidth - 16, { bold: true, color: technical ? PAPER : MUTED, align: i <= nameIndex ? 'left' : 'right' });
+      x += colWidth;
     });
     y += 24;
+    if (classic) rule(y);
   }
   const roomName = environment => clean(environment.name, 180) || 'Ambiente';
-  const rowSize = name => Math.max(compact ? 22 : 26, measure(name, tableWidths[0] - 16, 10) + 10);
+  const rowSize = name => studio
+    ? Math.max(compact ? 29 : 35, measure(name, cardNameWidth, 11, true) + 14 + (detail ? 13 : 0))
+    : Math.max(compact ? 22 : 27, measure(name, nameWidth - 16, 10) + 10);
   room(43 + (environments.length ? rowSize(roomName(environments[0])) : 27));
   tableHeader();
   if (!environments.length) {
@@ -241,21 +303,35 @@ function render(doc, { budget, client, environments, user, isPro, branding, logo
     y += 27;
     rule(y);
   }
-  environments.forEach(environment => {
+  environments.forEach((environment, index) => {
     const rolls = number(environment.rolls_manual) > 0 ? number(environment.rolls_manual) : number(environment.rolls_auto);
     const name = roomName(environment);
-    const values = [name, ...(detail ? [
-      `${decimal(environment.width)} x ${decimal(environment.height)} m`,
-      `${decimal(environment.area)} m²`,
-      String(rolls),
-    ] : []), money(number(environment.total) - number(environment.removal_total))];
+    const dimensions = `${decimal(environment.width)} x ${decimal(environment.height)} m`;
+    const area = `${decimal(environment.area)} m²`;
+    const value = money(number(environment.total) - number(environment.removal_total));
+    const rank = String(index + 1).padStart(2, '0');
     const rowHeight = rowSize(name);
-    if (room(rowHeight)) tableHeader(true);
+    if (room(rowHeight + (studio ? 5 : 0))) tableHeader(true);
+    if (studio) {
+      doc.roundedRect(M, y, width, rowHeight, 5).fill(themeTint);
+      doc.circle(M + 19, y + 16, 10).fill(accentText);
+      fixed(rank, M + 9, y + 12, 20, { size: 7, color: PAPER, bold: true, align: 'center' });
+      write(name, M + 38, y + 7, cardNameWidth, { size: 11, bold: true });
+      if (detail) fixed(`${dimensions}  /  ${area}  /  ${rolls} ${rolls === 1 ? 'rolo' : 'rolos'}`, M + 38,
+        y + 7 + measure(name, cardNameWidth, 11, true), cardNameWidth, { size: 8 });
+      if (prices) fixed(value, right - 120, y + 11, 108, { align: 'right', color: accentText, size: 11, bold: true });
+      y += rowHeight + (compact ? 4 : 6);
+      return;
+    }
+    const values = [...(technical ? [rank] : []), name, ...(detail ? [dimensions, area, String(rolls)] : []), ...(prices ? [value] : [])];
+    if (technical && index % 2 === 0) doc.rect(M, y, width, rowHeight).fill(themeTint);
     let x = M;
     values.forEach((value, i) => {
-      if (!i) write(value, x + 8, y + 6, tableWidths[i] - 16);
-      else fixed(value, x + 8, y + 7, tableWidths[i] - 16, { color: INK, align: 'right' });
-      x += tableWidths[i];
+      const colWidth = cols[i][1];
+      if (i === nameIndex) write(value, x + 8, y + 6, colWidth - 16);
+      else fixed(value, x + 8, y + 7, colWidth - 16, { color: i === 0 ? accentText : INK, align: i === 0 ? 'left' : 'right', font: technical && i === 0 ? 'Courier-Bold' : undefined });
+      if (technical && i > 0) doc.moveTo(x, y).lineTo(x, y + rowHeight).lineWidth(0.5).stroke(RULE);
+      x += colWidth;
     });
     y += rowHeight;
     rule(y);
@@ -273,19 +349,22 @@ function render(doc, { budget, client, environments, user, isPro, branding, logo
   const totals = [['Subtotal do serviço', money(budget.subtotal_rolls)]];
   if (removalCost > 0) totals.push([number(budget.removal_price_per_roll) > 0 ? `Remoção (${removalRolls} rolos x ${money(budget.removal_price_per_roll)})` : 'Remoção', money(removalCost)]);
   if (detail) totals.unshift([`${decimal(budget.total_area)} m² / ${number(budget.total_rolls)} rolos`, '']);
-  const totalHeight = totals.length * 16 + (compact ? 36 : 48);
+  const totalHeight = totals.length * 16 + (studio || classic ? 0 : compact ? 36 : 48);
   room(totalHeight);
   totals.forEach(([label, value]) => {
     write(label, M + 8, y, width - 144, { size: 9, color: MUTED });
     fixed(value, right - 135, y, 127, { color: INK, align: 'right' });
     y += 16;
   });
-  const totalBox = compact ? 35 : 45;
-  if (compact) rule(y);
-  else doc.rect(M, y, width, totalBox).fill('#EDF3FA');
-  fixed('Total do orçamento', M + 10, y + totalBox / 2 - 5, width / 2, { size: 11, color: accentText, bold: true });
-  fixed(total, right - 200, y + totalBox / 2 - 9, 190, { size: compact ? 17 : 21, color: accentText, bold: true, align: 'right' });
-  y += totalBox + pad;
+  if (!studio && !classic) {
+    const totalBox = compact ? 35 : 45;
+    if (basic) rule(y);
+    else doc.rect(M, y, width, totalBox).fill(themeTint);
+    fixed('Total do orçamento', M + 10, y + totalBox / 2 - 5, width / 2, { size: 11, color: accentText, bold: true });
+    fixed(total, right - 200, y + totalBox / 2 - 9, 190, { size: compact ? 17 : 21, color: accentText, bold: true, align: 'right' });
+    y += totalBox;
+  }
+  y += pad;
 
   const commercial = [
     ...(payment.length ? payment : ['Formas de pagamento não informadas.']),
@@ -293,12 +372,21 @@ function render(doc, { budget, client, environments, user, isPro, branding, logo
     formatDate(budget.approved_date) && `Aprovado em: ${formatDate(budget.approved_date)}`,
     formatDate(budget.schedule_date) && `Instalação: ${formatDate(budget.schedule_date)}`,
   ].filter(Boolean);
-  room(20 + commercial.reduce((sum, line) => sum + measure(line, width, 9) + 2, 0));
+  const commercialWidth = classic ? width - 200 : width;
+  const termsHeight = 20 + commercial.reduce((sum, line) => sum + measure(line, commercialWidth, 9) + 2, 0);
+  room(classic ? Math.max(termsHeight, 70) : termsHeight);
+  const termsY = y;
   heading('Pagamento e condições');
   commercial.forEach(line => {
-    write(line, M, y, width, { size: 9, color: MUTED });
-    y += measure(line, width, 9) + 2;
+    write(line, M, y, commercialWidth, { size: 9, color: MUTED });
+    y += measure(line, commercialWidth, 9) + 2;
   });
+  if (classic) {
+    doc.rect(right - 171, termsY, 171, 63).lineWidth(0.8).stroke(accentText);
+    fixed('Total do orçamento', right - 162, termsY + 12, 153, { size: 10, align: 'center', color: accentText });
+    fixed(total, right - 162, termsY + 29, 153, { size: 22, align: 'center', color: accentText, font: headingFont });
+    y = Math.max(y, termsY + 63);
+  }
   y += pad;
   if (branding.show_scope) paragraph('Escopo e observações', branding.scope_text || defaultScope);
   paragraph('Mensagem final', branding.closing_text);
@@ -316,7 +404,7 @@ function render(doc, { budget, client, environments, user, isPro, branding, logo
     doc.switchToPage(pages.start + index);
     const bottom = doc.page.height - 42;
     rule(bottom - 8);
-    fixed(isPro ? `${brand} / ${identifier}` : 'Gerado com InstalarPro', M, bottom, width * 0.48, { size: 8 });
+    fixed(basic ? 'Gerado com InstalarPro' : branding.footer_text || `${brand} / ${identifier}`, M, bottom, width * 0.48, { size: 8 });
     if (branding.show_contact && user.phone) fixed(clean(user.phone, 40), M + width * 0.50, bottom, width * 0.30, { size: 8 });
     fixed(`${index + 1} / ${pages.count}`, right - 60, bottom, 60, { size: 8, align: 'right' });
   }
@@ -325,10 +413,11 @@ function render(doc, { budget, client, environments, user, isPro, branding, logo
 module.exports = async function generateBudgetPDF({
   budget, client = {}, environments = [], user = {}, isPro = false, branding = null, example = false,
 }) {
-  const normalized = normalizePdfBranding(isPro || example ? branding : null);
+  const normalized = resolvePdfBranding(branding, isPro || example);
   // Keep the same rendering path for a real quote and an unsaved example.
-  const [terms, logo, photo] = await Promise.all([
+  const [terms, colors, logo, photo] = await Promise.all([
     import('../../shared/installmentTerms.mjs'),
+    import('../../shared/pdfColors.mjs'),
     (isPro || example) && normalized.show_logo ? brandImage(user.logo, user.id, 'logo') : null,
     (isPro || example) && normalized.show_installer_photo ? brandImage(user.installer_photo, user.id, 'installer-photo') : null,
   ]);
@@ -342,7 +431,7 @@ module.exports = async function generateBudgetPDF({
   });
   try {
     render(doc, {
-      budget, client, environments, user, isPro: isPro || example, branding: normalized, logo, photo, example,
+      budget, client, environments, user, branding: normalized, logo, photo, example, colors,
       installment: { ...installment, amountLabel: terms.installmentAmountLabel(installment), conditionsLabel: terms.installmentConditionsLabel(installment) },
     });
     doc.end();

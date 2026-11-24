@@ -1,4 +1,4 @@
-const { defaults, limits, templates, validityOptions } = require('../../shared/pdfBranding.json');
+const { defaults, basic, appearanceOptions, limits, templates, validityOptions } = require('../../shared/pdfBranding.json');
 
 function normalizeText(value, limit, multiline = false) {
   if (typeof value !== 'string') return '';
@@ -15,7 +15,7 @@ function normalizePdfBranding(value) {
   const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   const result = { ...defaults };
   for (const [key, limit] of Object.entries(limits)) {
-    result[key] = normalizeText(source[key], limit, key.endsWith('_text')) || defaults[key];
+    result[key] = normalizeText(source[key], limit, ['intro_text', 'scope_text', 'closing_text'].includes(key)) || defaults[key];
   }
   for (const key of Object.keys(defaults).filter(field => field.startsWith('show_'))) {
     if (typeof source[key] === 'boolean') result[key] = source[key];
@@ -23,8 +23,16 @@ function normalizePdfBranding(value) {
   const color = typeof source.accent_color === 'string' ? source.accent_color.trim().toUpperCase() : '';
   if (/^#[0-9A-F]{6}$/.test(color)) result.accent_color = color;
   if (templates.some(template => template.id === source.template)) result.template = source.template;
+  for (const [key, options] of Object.entries(appearanceOptions)) {
+    if (options.some(option => option.id === source[key])) result[key] = source[key];
+  }
   if (validityOptions.includes(source.validity_days)) result.validity_days = source.validity_days;
   return result;
 }
 
-module.exports = { normalizePdfBranding, normalizeText };
+function resolvePdfBranding(value, canCustomize) {
+  const branding = normalizePdfBranding(canCustomize ? value : null);
+  return !canCustomize || branding.template === 'basic' ? { ...defaults, ...basic } : branding;
+}
+
+module.exports = { normalizePdfBranding, normalizeText, resolvePdfBranding };

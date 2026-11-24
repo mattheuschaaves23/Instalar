@@ -110,3 +110,44 @@ test('inclui imagens PNG do profissional somente quando habilitadas', async () =
   const withoutLogo = await inspectPdf({ ...input, branding: { show_logo: false } });
   assert.doesNotMatch(withoutLogo.document, /\/Subtype \/Image/);
 });
+
+test('modelo gratuito mantém valores, sem personalização salva nem identidade Pro', async () => {
+  const { text } = await inspectPdf({
+    ...sample, user: { name: 'Ana', business_name: 'Companhia Pro' },
+    branding: { template: 'classic', brand_name: 'Minha marca', document_subtitle: 'Meu subtítulo', show_environment_prices: false },
+  });
+  for (const expected of ['Orçamento de instalação', 'Gerado com InstalarPro', 'Total do orçamento', 'R$ 960,00']) assert.ok(text.includes(expected), expected);
+  for (const hidden of ['Companhia Pro', 'Minha marca', 'Meu subtítulo']) assert.ok(!text.includes(hidden), hidden);
+  const basic = await inspectPdf({ ...sample, isPro: true, branding: { template: 'basic', document_title: 'customizado' } });
+  assert.match(basic.text, /Orçamento de instalação/);
+  assert.doesNotMatch(basic.text, /customizado/);
+});
+
+test('modelos Pro têm hierarquias e renderização distintas', async () => {
+  const make = template => inspectPdf({ ...sample, isPro: true, branding: { template } });
+  const [studio, classic, technical] = await Promise.all(['studio', 'classic', 'compact'].map(make));
+  assert.ok(studio.text.indexOf('Total do orçamento') < studio.text.indexOf('Sala de estar'));
+  assert.ok(classic.text.indexOf('Total do orçamento') > classic.text.indexOf('Pagamento e condições'));
+  assert.match(classic.document, /\/BaseFont \/Times-Bold/);
+  assert.match(technical.document, /\/BaseFont \/Courier-Bold/);
+  assert.match(technical.text, /Nº/);
+});
+
+test('personalização Pro não muda condições ou total e preserva quebra de página', async () => {
+  const { text, document, textPages } = await inspectPdf({
+    ...sample, isPro: true,
+    environments: Array.from({ length: 47 }, (_, index) => ({ ...sample.environments[0], name: `Bloco ${index + 1}` })),
+    branding: {
+      template: 'compact', heading_font: 'serif', paper_tone: 'tinted', density: 'spacious',
+      document_subtitle: 'Subtítulo do instalador', footer_text: 'Rodapé personalizado',
+      show_status: false, show_environment_prices: false, show_pattern: false,
+    },
+  });
+  assert.match(document, /\/BaseFont \/Times-Bold/);
+  assert.match(text, /Subtítulo do instalador/);
+  assert.match(text, /Bloco 47/);
+  assert.match(text, /1\.280,00/);
+  assert.doesNotMatch(text, /Pendente|960,00/);
+  assert.ok(textPages.length >= 2);
+  textPages.forEach(page => assert.match(page, /Rodapé personalizado/));
+});

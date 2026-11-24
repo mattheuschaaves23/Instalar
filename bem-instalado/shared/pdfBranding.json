@@ -4,6 +4,11 @@
     "brand_name": "",
     "document_title": "Proposta comercial de instalação",
     "accent_color": "#175DAA",
+    "document_subtitle": "",
+    "footer_text": "",
+    "heading_font": "auto",
+    "paper_tone": "auto",
+    "density": "auto",
     "intro_text": "",
     "closing_text": "",
     "scope_text": "",
@@ -13,15 +18,32 @@
     "show_contact": true,
     "show_client_contact": true,
     "show_measurements": true,
+    "show_environment_prices": true,
+    "show_status": true,
+    "show_pattern": true,
     "show_scope": true,
     "show_signature": true
   },
   "templates": [
-    { "id": "studio", "label": "Estúdio", "description": "Faixa de cor e destaque no total." },
-    { "id": "classic", "label": "Clássico", "description": "Cabeçalho escuro e elegante." },
-    { "id": "compact", "label": "Essencial", "description": "Enxuto, com menos altura e tinta." }
+    { "id": "basic", "label": "Gratuito", "description": "Uma página limpa, com tabela simples e a assinatura visual do InstalarPro." },
+    { "id": "studio", "label": "Estúdio", "description": "Capa com cor, total em destaque logo no início e ambientes organizados em cartões." },
+    { "id": "classic", "label": "Clássico", "description": "Título centralizado em estilo editorial, linhas finas e um quadro de investimento no fechamento." },
+    { "id": "compact", "label": "Técnico", "description": "Ficha de obra com código da proposta, grade de medidas e linhas numeradas." }
   ],
-  "limits": { "brand_name": 80, "document_title": 100, "intro_text": 320, "closing_text": 320, "scope_text": 480 },
+  "basic": {
+    "template": "basic",
+    "document_title": "Orçamento de instalação",
+    "accent_color": "#334155",
+    "show_logo": false,
+    "show_installer_photo": false,
+    "show_pattern": false
+  },
+  "appearanceOptions": {
+    "heading_font": [{ "id": "auto", "label": "Padrão do modelo" }, { "id": "sans", "label": "Sem serifa" }, { "id": "serif", "label": "Com serifa" }, { "id": "mono", "label": "Monoespaçada" }],
+    "paper_tone": [{ "id": "auto", "label": "Padrão do modelo" }, { "id": "white", "label": "Branco" }, { "id": "tinted", "label": "Levemente colorido" }],
+    "density": [{ "id": "auto", "label": "Padrão do modelo" }, { "id": "spacious", "label": "Espaçoso" }, { "id": "dense", "label": "Compacto" }]
+  },
+  "limits": { "brand_name": 80, "document_title": 100, "document_subtitle": 110, "footer_text": 65, "intro_text": 320, "closing_text": 320, "scope_text": 480 },
   "validityOptions": [7, 15, 30, 45, 60, 90],
   "accentOptions": [
     { "value": "#175DAA", "label": "Azul" },
