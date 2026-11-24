@@ -11004,8 +11004,7 @@ body {
   }
 }
 
-.dashboard-neo-mobile-range,
-.dashboard-neo-mobile-dock {
+.dashboard-neo-mobile-range {
   display: none;
 }
 
@@ -11328,51 +11327,6 @@ body {
   .dashboard-neo-mini-feed,
   .dashboard-neo-top-list {
     display: none;
-  }
-
-  .dashboard-neo-mobile-dock {
-    position: fixed;
-    left: 0.7rem;
-    right: 0.7rem;
-    bottom: 0.7rem;
-    z-index: 28;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.25rem;
-    padding: 0.5rem 0.45rem calc(0.55rem + env(safe-area-inset-bottom));
-    border: 1px solid rgba(var(--site-accent-rgb), 0.18);
-    border-radius: 20px;
-    background: rgba(10, 9, 8, 0.94);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
-    backdrop-filter: blur(16px);
-  }
-
-  .dashboard-neo-mobile-tab {
-    min-height: 3.8rem;
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: 0.3rem;
-    border-radius: 14px;
-    color: var(--muted);
-    text-decoration: none;
-    transition: background 180ms ease, color 180ms ease, transform 180ms ease;
-  }
-
-  .dashboard-neo-mobile-tab svg {
-    width: 1.1rem;
-    height: 1.1rem;
-  }
-
-  .dashboard-neo-mobile-tab span {
-    font-size: 0.64rem;
-    line-height: 1.1;
-    text-align: center;
-  }
-
-  .dashboard-neo-mobile-tab.is-active {
-    background: rgba(var(--site-accent-rgb), 0.14);
-    color: var(--gold-strong);
   }
 }
 
@@ -17286,18 +17240,6 @@ html[data-site-theme] .client-login-installer-link svg {
   }
 }
 
-@keyframes dashboardDockEnter {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 18px, 0);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
 @media (max-width: 768px) {
   .app-layout-shell .panel-topbar {
     position: sticky;
@@ -17388,8 +17330,7 @@ html[data-site-theme] .client-login-installer-link svg {
   .dashboard-neo-filter,
   .dashboard-neo-view-tab,
   .dashboard-neo-nav,
-  .dashboard-neo-select,
-  .dashboard-neo-mobile-tab {
+  .dashboard-neo-select {
     min-height: 3rem;
   }
 
@@ -17794,63 +17735,6 @@ html[data-site-theme] .client-login-installer-link svg {
     grid-template-columns: 2rem minmax(0, 1fr) auto;
     gap: 0.55rem;
   }
-
-  .dashboard-neo-mobile-dock {
-    position: fixed;
-    left: 0.75rem;
-    right: 0.75rem;
-    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-    z-index: 34;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.25rem;
-    padding: 0.44rem;
-    border: 1px solid rgba(var(--site-accent-rgb), 0.2);
-    border-radius: 22px;
-    background: rgba(10, 9, 8, 0.96);
-    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
-    backdrop-filter: blur(16px);
-    animation: dashboardDockEnter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both;
-  }
-
-  .dashboard-neo-mobile-tab {
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: 0.28rem;
-    padding: 0.36rem 0.16rem;
-    border-radius: 16px;
-    color: var(--muted);
-    text-decoration: none;
-    transition:
-      background-color 160ms ease,
-      color 160ms ease,
-      transform 160ms ease;
-  }
-
-  .dashboard-neo-mobile-tab:active {
-    transform: translate3d(0, 1px, 0) scale(0.98);
-  }
-
-  .dashboard-neo-mobile-tab svg {
-    width: 1.08rem;
-    height: 1.08rem;
-  }
-
-  .dashboard-neo-mobile-tab span {
-    max-width: 100%;
-    font-size: 0.54rem;
-    line-height: 1.08;
-    overflow: hidden;
-    text-align: center;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .dashboard-neo-mobile-tab.is-active {
-    background: rgba(var(--site-accent-rgb), 0.15);
-    color: var(--gold-strong);
-  }
 }
 
 @media (max-width: 420px) {
@@ -17934,22 +17818,16 @@ html[data-site-theme] .client-login-installer-link svg {
   .dashboard-neo-metrics {
     grid-template-columns: 1fr;
   }
-
-  .dashboard-neo-mobile-tab span {
-    font-size: 0.5rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dashboard-neo-shell,
   .dashboard-neo-card,
-  .dashboard-neo-panel,
-  .dashboard-neo-mobile-dock {
+  .dashboard-neo-panel {
     animation: none !important;
   }
 
-  .dashboard-neo-view-tab,
-  .dashboard-neo-mobile-tab {
+  .dashboard-neo-view-tab {
     transition: none !important;
   }
 }
