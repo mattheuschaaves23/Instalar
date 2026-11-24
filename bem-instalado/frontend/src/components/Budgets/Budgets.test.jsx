@@ -49,12 +49,21 @@ describe('lista de orçamentos', () => {
     expect(draft.queryByRole('button', { name: /PDF|WhatsApp|Mais ações/ })).toBeNull();
   });
 
-  it('sincroniza abas e seletor, busca sem acento e aceita número com #', async () => {
+  it('usa só as abas para filtrar por status e só um atalho para a agenda', async () => {
+    await open();
+    const filters = within(screen.getByRole('group', { name: 'Filtrar orçamentos por status' }));
+    expect(filters.getAllByRole('button')).toHaveLength(5);
+    expect(screen.queryByRole('combobox', { name: 'Filtrar por status' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Ver agenda' }).getAttribute('href')).toBe('/agenda');
+    expect(screen.getByRole('combobox', { name: 'Ordenar orçamentos' }).value).toBe('newest');
+  });
+
+  it('filtra pelas abas, busca sem acento e aceita número com #', async () => {
     await open();
     fireEvent.click(screen.getByRole('button', { name: /Rascunhos/ }));
-    expect(screen.getByRole('combobox', { name: 'Filtrar por status' }).value).toBe('draft');
+    expect(screen.getByRole('button', { name: /Rascunhos/ }).getAttribute('aria-pressed')).toBe('true');
     expect(table().queryByText('Pedro Lima')).toBeNull();
-    fireEvent.change(screen.getByRole('combobox', { name: 'Filtrar por status' }), { target: { value: 'approved' } });
+    fireEvent.click(screen.getByRole('button', { name: /Aprovados/ }));
     expect(screen.getByRole('button', { name: /Aprovados/ }).getAttribute('aria-pressed')).toBe('true');
     const search = screen.getByRole('searchbox');
     fireEvent.change(search, { target: { value: 'ana ribeiro' } });
@@ -90,7 +99,7 @@ describe('lista de orçamentos', () => {
       expect(table().getByText('Mariana Silva')).toBeTruthy();
       expect(table().queryByText('Cliente de dezembro')).toBeNull();
 
-      fireEvent.change(screen.getByRole('combobox', { name: 'Filtrar por status' }), { target: { value: 'pending' } });
+      fireEvent.click(screen.getByRole('button', { name: /Pendentes/ }));
       fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Rafael' } });
       expect(table().getByText('Rafael Costa')).toBeTruthy();
       expect(table().queryByText('Mariana Silva')).toBeNull();

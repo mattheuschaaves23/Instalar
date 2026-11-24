@@ -286,8 +286,14 @@ export default function Budgets() {
       <header className="budget-list-heading">
         <h1 id="budget-list-title">Orçamentos</h1>
         <div className="budget-list-header-actions">
-          <Link className="budget-list-button is-agenda-desktop" to="/agenda">Ver agenda</Link>
-          <Link className="budget-list-button is-primary" to="/budgets/new"><ListIcon name="plus" />Novo orçamento</Link>
+          <Link aria-label="Ver agenda" className="budget-list-button is-agenda" to="/agenda">
+            <ListIcon name="agenda" /><span>Ver agenda</span>
+          </Link>
+          <Link aria-label="Novo orçamento" className="budget-list-button is-primary" to="/budgets/new">
+            <ListIcon name="plus" />
+            <span className="budget-list-new-label">Novo orçamento</span>
+            <span aria-hidden="true" className="budget-list-new-short">Novo</span>
+          </Link>
         </div>
       </header>
 
@@ -315,15 +321,17 @@ export default function Budgets() {
             <ListIcon name="chevron" />
           </span>
         </label>
-        <label className="budget-list-select budget-list-sort">
-          <span className="sr-only">Ordenar orçamentos</span>
-          <select value={sort} onChange={(event) => { setSort(event.target.value); setCurrentPage(1); }}>
-            <option value="newest">Mais recentes</option>
-            <option value="oldest">Mais antigos</option>
-            <option value="highest">Maior valor</option>
-            <option value="lowest">Menor valor</option>
-          </select>
-          <ListIcon name="chevron" />
+        <label className="budget-list-filter-field budget-list-sort">
+          <span aria-hidden="true" className="budget-list-sort-caption">Ordenar</span>
+          <span className="budget-list-select">
+            <select aria-label="Ordenar orçamentos" value={sort} onChange={(event) => { setSort(event.target.value); setCurrentPage(1); }}>
+              <option value="newest">Mais recentes</option>
+              <option value="oldest">Mais antigos</option>
+              <option value="highest">Maior valor</option>
+              <option value="lowest">Menor valor</option>
+            </select>
+            <ListIcon name="chevron" />
+          </span>
         </label>
         {dateFilter.period === 'custom' ? (
           <fieldset className="budget-list-date-range">
@@ -340,16 +348,6 @@ export default function Budgets() {
             {invalidDateRange ? <p id={dateErrorId} role="status">A data final não pode ser anterior à inicial.</p> : null}
           </fieldset>
         ) : null}
-        <div className="budget-list-mobile-tools">
-          <label className="budget-list-select">
-            <span className="sr-only">Filtrar por status</span>
-            <select value={status} onChange={(event) => changeStatus(event.target.value)}>
-              {BUDGET_FILTERS.map((filter) => <option key={filter.value} value={filter.value}>Status: {filter.label}</option>)}
-            </select>
-            <ListIcon name="chevron" />
-          </label>
-          <Link className="budget-list-mobile-agenda" to="/agenda"><ListIcon name="agenda" />Ver agenda</Link>
-        </div>
       </div>
 
       {loading ? <p className="budget-list-feedback" role="status">Carregando orçamentos…</p> : null}
