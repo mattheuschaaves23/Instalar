@@ -7,11 +7,12 @@ import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import { formatCurrency, formatDateTime, formatStatusLabel } from '../../utils/formatters';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { installmentInfo, installmentAmountLabel, installmentConditionsLabel } from '../../../../shared/installmentTerms.mjs';
-import { BUDGET_FILTERS, canCompleteBudget, formatBudgetDate, getBudgetCounts, getVisibleBudgets } from './budgetListView';
+import { BUDGET_DATE_PERIODS, BUDGET_FILTERS, canCompleteBudget, formatBudgetDate, getBudgetCounts, getBudgetDateRange, getVisibleBudgets } from './budgetListView';
 import { planLinkLabel } from '../../utils/storePlanCopy';
 import './Budgets.css';
 
 const BUDGETS_PER_PAGE = 6;
+const DEFAULT_DATE_FILTER = { period: 'all', from: '', to: '' };
 
 function formatToDatetimeLocal(date) {
   const safe = date instanceof Date ? date : new Date(date);
@@ -139,6 +140,8 @@ export default function Budgets() {
   const [status, setStatus] = useState('all');
   const [query, setQuery] = useState(initialQuery);
   const [sort, setSort] = useState('newest');
+  const [dateFilter, setDateFilter] = useState(DEFAULT_DATE_FILTER);
+  const dateErrorId = useId();
   const [currentPage, setCurrentPage] = useState(1);
   const [approvalDraft, setApprovalDraft] = useState({ budgetId: null, scheduleDate: '' });
   const [mutatingBudgetId, setMutatingBudgetId] = useState(null);
@@ -164,6 +167,7 @@ export default function Budgets() {
     if (initialQuery) {
       setQuery(initialQuery);
       setStatus('all');
+      setDateFilter(DEFAULT_DATE_FILTER);
       setCurrentPage(1);
     }
   }, [initialQuery]);
@@ -249,7 +253,11 @@ export default function Budgets() {
 
   const counts = useMemo(() => getBudgetCounts(budgets), [budgets]);
   const exactId = initialQuery && query.trim() === initialQuery ? requestedBudget : null;
-  const visibleBudgets = useMemo(() => getVisibleBudgets(budgets, { status, query, sort, exactId }), [budgets, status, query, sort, exactId]);
+  const { from: dateFrom, to: dateTo, invalid: invalidDateRange } = getBudgetDateRange(dateFilter);
+  const visibleBudgets = useMemo(
+    () => getVisibleBudgets(budgets, { status, query, sort, exactId, dateFrom, dateTo }),
+    [budgets, status, query, sort, exactId, dateFrom, dateTo],
+  );
   const totalPages = Math.max(1, Math.ceil(visibleBudgets.length / BUDGETS_PER_PAGE));
   const normalizedPage = Math.min(currentPage, totalPages);
   const start = (normalizedPage - 1) * BUDGETS_PER_PAGE;
@@ -260,6 +268,17 @@ export default function Budgets() {
   const changeStatus = (value) => {
     setStatus(value);
     setCurrentPage(1);
+  };
+
+  const changeDateFilter = (change) => {
+    setDateFilter((current) => ({ ...current, ...change }));
+    setCurrentPage(1);
+  };
+
+  const clearFilters = () => {
+    setQuery('');
+    setDateFilter(DEFAULT_DATE_FILTER);
+    changeStatus('all');
   };
 
   return (
@@ -287,6 +306,15 @@ export default function Budgets() {
           <input placeholder="Buscar por cliente ou número" type="search" value={query}
             onChange={(event) => { setQuery(event.target.value); setCurrentPage(1); }} />
         </label>
+        <label className="budget-list-filter-field budget-list-period">
+          <span>Data de criação</span>
+          <span className="budget-list-select">
+            <select value={dateFilter.period} onChange={(event) => changeDateFilter({ period: event.target.value })}>
+              {BUDGET_DATE_PERIODS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+            </select>
+            <ListIcon name="chevron" />
+          </span>
+        </label>
         <label className="budget-list-select budget-list-sort">
           <span className="sr-only">Ordenar orçamentos</span>
           <select value={sort} onChange={(event) => { setSort(event.target.value); setCurrentPage(1); }}>
@@ -297,6 +325,21 @@ export default function Budgets() {
           </select>
           <ListIcon name="chevron" />
         </label>
+        {dateFilter.period === 'custom' ? (
+          <fieldset className="budget-list-date-range">
+            <legend className="sr-only">Período personalizado</legend>
+            <label className="budget-list-filter-field">
+              <span>De</span>
+              <input type="date" value={dateFilter.from} onChange={(event) => changeDateFilter({ from: event.target.value })} />
+            </label>
+            <label className="budget-list-filter-field">
+              <span>Até</span>
+              <input aria-describedby={invalidDateRange ? dateErrorId : undefined} aria-invalid={invalidDateRange}
+                type="date" value={dateFilter.to} onChange={(event) => changeDateFilter({ to: event.target.value })} />
+            </label>
+            {invalidDateRange ? <p id={dateErrorId} role="status">A data final não pode ser anterior à inicial.</p> : null}
+          </fieldset>
+        ) : null}
         <div className="budget-list-mobile-tools">
           <label className="budget-list-select">
             <span className="sr-only">Filtrar por status</span>
@@ -353,7 +396,7 @@ export default function Budgets() {
         <div className="budget-list-feedback">
           {budgets.length ? <>
             <p>Nenhum orçamento encontrado.</p>
-            <button className="budget-list-button" onClick={() => { setQuery(''); changeStatus('all'); }} type="button">Limpar filtros</button>
+            <button className="budget-list-button" onClick={clearFilters} type="button">Limpar filtros</button>
           </> : <p>Nenhum orçamento cadastrado ainda.</p>}
         </div>
       ) : null)}

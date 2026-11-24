@@ -158,9 +158,39 @@ html[data-site-theme] .dashboard-reference-layout .budget-list-footer a { color:
 
 .budget-list-tools {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(10rem, 13.2rem);
+  grid-template-columns: minmax(0, 1fr) minmax(10.5rem, 12rem) minmax(10rem, 13.2rem);
+  align-items: end;
   gap: 1rem;
   margin-block: 1.65rem;
+}
+
+.budget-list-filter-field {
+  display: grid;
+  min-width: 0;
+  gap: .3rem;
+  color: var(--bl-muted);
+  font-size: .85rem;
+  font-weight: 600;
+}
+
+.budget-list-date-range {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem .8rem;
+  width: 100%;
+  max-width: 26rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.budget-list-date-range p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--bl-rejected);
+  font-size: .88rem;
 }
 
 .budget-list-search,
@@ -175,7 +205,7 @@ html[data-site-theme] .dashboard-reference-layout .budget-list-footer a { color:
 .budget-list-search > svg { position: absolute; inset-inline-start: .85rem; pointer-events: none; }
 .budget-list-select > svg { position: absolute; inset-inline-end: .75rem; width: 1rem; pointer-events: none; }
 
-.budget-list :is(.budget-list-search input, .budget-list-select select) {
+.budget-list :is(.budget-list-search input, .budget-list-select select, .budget-list-date-range input) {
   width: 100%;
   min-width: 0;
   min-height: 2.85rem;
@@ -186,6 +216,14 @@ html[data-site-theme] .dashboard-reference-layout .budget-list-footer a { color:
   color: var(--bl-ink);
   box-shadow: none;
   font-size: 1rem;
+}
+
+html[data-site-theme='dark'] .budget-list :is(.budget-list-period select, .budget-list-date-range input) {
+  color-scheme: dark;
+}
+
+.budget-list .budget-list-date-range input[aria-invalid='true'] {
+  border-color: var(--bl-rejected);
 }
 
 .budget-list .budget-list-search input { padding-inline-start: 2.9rem; }
@@ -298,7 +336,7 @@ html[data-site-theme] .dashboard-reference-layout .budget-list-footer a { color:
   .budget-list-mobile-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1rem; }
   .budget-list-mobile-agenda { display: inline-flex; align-items: center; justify-content: center; min-height: 2.35rem; gap: .42rem; color: var(--bl-accent); white-space: nowrap; font-weight: 650; font-size: .84rem; }
   .budget-list-mobile-id { display: inline; }
-  .budget-list :is(.budget-list-search input, .budget-list-select select) { min-height: 2.35rem; padding-block: .34rem; font-size: 1rem; line-height: 1.3; }
+  .budget-list :is(.budget-list-search input, .budget-list-select select, .budget-list-date-range input) { min-height: 2.35rem; padding-block: .34rem; font-size: 1rem; line-height: 1.3; }
   .budget-list-surface { border-radius: 0; border-inline: 0; }
   .budget-list-table, .budget-list-table tbody { display: block; width: 100%; }
   .budget-list-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

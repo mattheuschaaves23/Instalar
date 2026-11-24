@@ -78,6 +78,55 @@ describe('lista de orçamentos', () => {
     expect(api.put).not.toHaveBeenCalled();
   });
 
+  it('filtra pelo mês passado e combina o período com busca e status', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 11, 5, 12));
+    try {
+      api.get.mockResolvedValueOnce({ data: [...records, {
+        ...records[1], id: 1045, client_name: 'Cliente de dezembro', created_at: new Date(2026, 11, 1, 0).toISOString(),
+      }] });
+      await open();
+      fireEvent.change(screen.getByRole('combobox', { name: 'Data de criação' }), { target: { value: 'last-month' } });
+      expect(table().getByText('Mariana Silva')).toBeTruthy();
+      expect(table().queryByText('Cliente de dezembro')).toBeNull();
+
+      fireEvent.change(screen.getByRole('combobox', { name: 'Filtrar por status' }), { target: { value: 'pending' } });
+      fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Rafael' } });
+      expect(table().getByText('Rafael Costa')).toBeTruthy();
+      expect(table().queryByText('Mariana Silva')).toBeNull();
+      expect(screen.getByText('1 orçamento')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('inclui o último dia do período, avisa quando as datas estão invertidas e limpa o filtro', async () => {
+    api.get.mockResolvedValueOnce({ data: [
+      { ...records[0], created_at: new Date(2026, 10, 19, 23, 59).toISOString() },
+      { ...records[1], created_at: new Date(2026, 10, 20, 0).toISOString() },
+    ] });
+    await open();
+    const period = screen.getByRole('combobox', { name: 'Data de criação' });
+    fireEvent.change(period, { target: { value: 'custom' } });
+    const start = screen.getByLabelText('De');
+    const end = screen.getByLabelText('Até');
+    fireEvent.change(start, { target: { value: '2026-11-19' } });
+    fireEvent.change(end, { target: { value: '2026-11-18' } });
+    expect(end.getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByText('A data final não pode ser anterior à inicial.')).toBeTruthy();
+    fireEvent.change(end, { target: { value: '2026-11-19' } });
+    expect(end.getAttribute('aria-invalid')).toBeNull();
+    expect(table().getByText('Mariana Silva')).toBeTruthy();
+    expect(table().queryByText('Rafael Costa')).toBeNull();
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: '#1041' } });
+    expect(screen.getByText('Nenhum orçamento encontrado.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }));
+    expect(period.value).toBe('all');
+    expect(screen.queryByLabelText('Até')).toBeNull();
+    expect(table().getByText('Rafael Costa')).toBeTruthy();
+  });
+
   it('mostra ações secundárias e devolve o foco ao fechar com Escape', async () => {
     await open();
     const trigger = screen.getByRole('button', { name: 'Mais ações do orçamento #1041' });
