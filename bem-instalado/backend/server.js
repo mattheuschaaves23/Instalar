@@ -61,7 +61,16 @@ const configuredOrigins = Array.from(
   )
 );
 const defaultDevOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
-const capacitorOrigins = ['https://localhost'];
+// WebView do Capacitor: Android (androidScheme https) e iOS (esquema próprio).
+// O app roda em app.instalarpro.com.br (server.hostname do capacitor.config.json)
+// para o widget Turnstile do site, que libera os subdomínios de instalarpro.com.br,
+// valer no app sem liberar localhost. localhost fica para o APK 1.0.35 já instalado.
+const capacitorOrigins = [
+  'https://app.instalarpro.com.br',
+  'capacitor://app.instalarpro.com.br',
+  'https://localhost',
+  'capacitor://localhost',
+];
 const allowedCorsOrigins = Array.from(
   new Set([
     ...configuredOrigins,

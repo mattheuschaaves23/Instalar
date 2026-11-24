@@ -8,6 +8,7 @@ import { formatCurrency, formatDateTime, formatStatusLabel } from '../../utils/f
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { installmentInfo, installmentAmountLabel, installmentConditionsLabel } from '../../../../shared/installmentTerms.mjs';
 import { BUDGET_FILTERS, canCompleteBudget, formatBudgetDate, getBudgetCounts, getVisibleBudgets } from './budgetListView';
+import { planLinkLabel } from '../../utils/storePlanCopy';
 import './Budgets.css';
 
 const BUDGETS_PER_PAGE = 6;
@@ -361,7 +362,7 @@ export default function Budgets() {
         <footer className="budget-list-footer">
           <p aria-live="polite">{visibleBudgets.length} {visibleBudgets.length === 1 ? 'orçamento' : 'orçamentos'}</p>
           {!isPro && budgetLimit != null ? (
-            <p>Plano Grátis: {budgetsUsed} de {budgetLimit} usados neste mês · <Link to="/subscription">Conhecer o Pro</Link></p>
+            <p>Plano Grátis: {budgetsUsed} de {budgetLimit} usados neste mês · <Link to="/subscription">{planLinkLabel('Conhecer o Pro')}</Link></p>
           ) : null}
         </footer>
       ) : null}

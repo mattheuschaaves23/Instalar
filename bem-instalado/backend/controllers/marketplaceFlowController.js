@@ -4,6 +4,7 @@ const { sendPushToUser } = require('../services/push');
 const { notifyOperationalAlert } = require('../services/operationalAlerts');
 const { logApplicationError } = require('../utils/errorMonitoring');
 const { clientFacingRequestStatus } = require('../utils/serviceRequestLifecycle');
+const { parseLocalDateTime } = require('../utils/appTimeZone');
 
 function text(value, max = 2000) {
   return String(value || '').trim().slice(0, max);
@@ -14,9 +15,9 @@ function amount(value) {
   return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1000000 ? Math.round(parsed * 100) / 100 : null;
 }
 
+// datetime-local do app/site chega sem fuso: e horario de Sao Paulo, nao do servidor.
 function date(value) {
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  return parseLocalDateTime(value);
 }
 
 function clientToken(req) {

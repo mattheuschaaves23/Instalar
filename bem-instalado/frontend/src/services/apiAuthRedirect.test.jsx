@@ -3,11 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../utils/safeStorage', () => ({
   clearAuthToken: vi.fn().mockResolvedValue(undefined),
   getAuthToken: vi.fn(() => null),
+  getAuthSessionVersion: vi.fn(() => 0),
 }));
+vi.mock('../utils/nativePlatform', () => ({ isNativeStoreApp: vi.fn(() => false) }));
 vi.mock('./sentry', () => ({ captureFrontendException: vi.fn() }));
 
 import api from './api';
-import { clearAuthToken, getAuthToken } from '../utils/safeStorage';
+import { clearAuthToken, getAuthSessionVersion, getAuthToken } from '../utils/safeStorage';
+import { isNativeStoreApp } from '../utils/nativePlatform';
 
 const originalWindow = globalThis.window;
 
@@ -19,12 +22,55 @@ function openPage(pathname) {
 
 async function rejectSession(code = 'AUTH_TOKEN_MISSING') {
   const error = { response: { status: 401, data: { code } } };
-  await expect(api.get('/users/profile', { adapter: async () => { throw error; } })).rejects.toBe(error);
+  await expect(api.get('/users/profile', {
+    adapter: async (config) => { throw Object.assign(error, { config }); },
+  })).rejects.toBe(error);
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   getAuthToken.mockReturnValue(null);
+  getAuthSessionVersion.mockReturnValue(0);
+  isNativeStoreApp.mockReturnValue(false);
+});
+
+describe('isolamento da sessão por requisição', () => {
+  it('não encerra uma sessão criada depois que uma requisição anterior começou', async () => {
+    const replace = openPage('/dashboard');
+    await expect(api.get('/notifications', {
+      adapter: async (config) => {
+        getAuthSessionVersion.mockReturnValue(1);
+        getAuthToken.mockReturnValue('new-session-test');
+        throw { config, response: { status: 401, data: { code: 'AUTH_TOKEN_MISSING' } } };
+      },
+    })).rejects.toMatchObject({ response: { status: 401 } });
+    expect(clearAuthToken).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('encerra a sessão quando o servidor revoga o token atual', async () => {
+    const replace = openPage('/dashboard');
+    getAuthToken.mockReturnValue('revoked-session-test');
+    await rejectSession('AUTH_SESSION_REVOKED');
+    expect(clearAuthToken).toHaveBeenCalledOnce();
+    expect(replace).toHaveBeenCalledWith('/instalador/entrar');
+  });
+
+  it('no Android, envia o token de sessão sem cookies e não derruba o painel por falha do push', async () => {
+    const replace = openPage('/dashboard');
+    isNativeStoreApp.mockReturnValue(true);
+    getAuthToken.mockReturnValue('native-session-test');
+    await expect(api.post('/notifications/devices', {}, {
+      handleSessionError: true,
+      adapter: async (config) => {
+        expect(config.withCredentials).toBe(false);
+        expect(config.headers.get('Authorization')).toBe('Bearer native-session-test');
+        throw { config, response: { status: 401, data: { code: 'AUTH_SESSION_REVOKED' } } };
+      },
+    })).rejects.toMatchObject({ response: { status: 401 } });
+    expect(clearAuthToken).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+  });
 });
 afterEach(() => {
   if (originalWindow === undefined) delete globalThis.window;

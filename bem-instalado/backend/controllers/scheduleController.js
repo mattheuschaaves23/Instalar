@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { parseLocalDateTime } = require('../utils/appTimeZone');
 
 function normalizeString(value) {
   return String(value || '').trim();
@@ -76,9 +77,12 @@ exports.getSchedules = async (req, res) => {
       WHERE s.user_id = $1
     `;
 
-    if (req.query.start && req.query.end) {
+    // start/end sem fuso sao horario de Sao Paulo (a coluna e TIMESTAMPTZ).
+    const rangeStart = parseLocalDateTime(req.query.start);
+    const rangeEnd = parseLocalDateTime(req.query.end);
+    if (rangeStart && rangeEnd) {
       query += ' AND s.date BETWEEN $2 AND $3';
-      params.push(req.query.start, req.query.end);
+      params.push(rangeStart, rangeEnd);
     }
 
     query += ' ORDER BY s.date ASC';
@@ -104,9 +108,9 @@ exports.getSchedules = async (req, res) => {
       WHERE sb.installer_id = $1
     `;
 
-    if (req.query.start && req.query.end) {
+    if (rangeStart && rangeEnd) {
       bookingQuery += ' AND sb.scheduled_start BETWEEN $2 AND $3';
-      bookingParams.push(req.query.start, req.query.end);
+      bookingParams.push(rangeStart, rangeEnd);
     }
 
     bookingQuery += ' ORDER BY sb.scheduled_start ASC';

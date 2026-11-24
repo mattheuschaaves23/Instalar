@@ -3,6 +3,7 @@ const pool = require('../config/database');
 const generateBudgetPDF = require('../utils/generatePDF');
 const generateWhatsAppLink = require('../utils/whatsapp');
 const { normalizeBrazilianWhatsApp } = require('../utils/installerEligibility');
+const { parseLocalDateTime } = require('../utils/appTimeZone');
 const {
   getInstallerPlanAccess,
   isLimitReached,
@@ -155,28 +156,22 @@ function isPositiveNumber(value) {
   return Number.isFinite(value) && value > 0;
 }
 
+// O app e o site mandam o horario do datetime-local sem fuso ("2026-11-19 09:00:00"),
+// que e horario de Sao Paulo. Grava o instante exato (coluna TIMESTAMPTZ).
 function parseScheduleDateTime(value) {
-  const raw = normalizeString(value).replace(' ', 'T');
-  if (!raw) {
+  const raw = normalizeString(value);
+  if (!/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(raw)) {
     return null;
   }
 
-  const match = raw.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(:\d{2})?$/);
-  if (!match) {
-    return null;
-  }
-
-  const datePart = match[1];
-  const timePart = `${match[2]}${match[3] || ':00'}`;
-  const parsed = new Date(`${datePart}T${timePart}`);
-
-  if (Number.isNaN(parsed.getTime())) {
+  const parsed = parseLocalDateTime(raw);
+  if (!parsed) {
     return null;
   }
 
   return {
     parsed,
-    dbTimestamp: `${datePart} ${timePart}`,
+    dbTimestamp: parsed,
   };
 }
 
@@ -553,7 +548,7 @@ exports.createBudget = async (req, res) => {
       if (cleanClientId === null) {
         return upgradeRequired(res, {
           code: 'FREE_CLIENT_LIMIT',
-          error: 'O limite de clientes do plano Grátis foi atingido. Libere espaço ou assine o Pro para concluir este rascunho.',
+          error: 'O limite de clientes do plano Grátis foi atingido. Libere espaço para concluir este rascunho; no Pro, o cadastro de clientes é ilimitado.',
           planAccess,
           feature: 'unlimited_clients',
         });

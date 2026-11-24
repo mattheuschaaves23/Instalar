@@ -3,6 +3,8 @@ import { Link } from 'react-router';
 import toast from 'react-hot-toast';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import api from '../../services/api';
+import { isNativeStoreApp } from '../../utils/nativePlatform';
+import { planLinkLabel } from '../../utils/storePlanCopy';
 import pdfDesign from '../../../../shared/pdfBranding.json';
 import { accentInk, tint } from '../../../../shared/pdfColors.mjs';
 import './PdfBranding.css';
@@ -245,7 +247,12 @@ export default function PdfBranding() {
       {loadError && <div className="quote-studio-notice" role="alert">{loadError}{' '}
         <button type="button" onClick={() => { setLoadError(''); setLoading(true); setRetry(current => current + 1); }}>Tentar novamente</button>
       </div>}
-      {!isPro && !planLoading && <div className="quote-studio-notice"><span>Seus orçamentos usam o modelo Gratuito. Você pode experimentar os outros três e baixar exemplos antes de assinar.</span><Link to="/subscription">Conhecer o Pro</Link></div>}
+      {!isPro && !planLoading && <div className="quote-studio-notice">
+        <span>{isNativeStoreApp()
+          ? 'Seus orçamentos usam o modelo Gratuito. Os outros três modelos estão disponíveis para experimentar e baixar como exemplo.'
+          : 'Seus orçamentos usam o modelo Gratuito. Você pode experimentar os outros três e baixar exemplos antes de assinar.'}</span>
+        <Link to="/subscription">{planLinkLabel('Conhecer o Pro')}</Link>
+      </div>}
       <div className="quote-studio-mobile-views" aria-label="Área de trabalho">
         <button type="button" aria-pressed={mobileView === 'edit'} onClick={() => setMobileView('edit')}>Personalizar</button>
         <button type="button" aria-pressed={mobileView === 'preview'} onClick={() => setMobileView('preview')}>Ver prévia</button>

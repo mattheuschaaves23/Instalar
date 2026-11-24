@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import { planLinkLabel } from '../../utils/storePlanCopy';
 import PaginationControls from '../Layout/PaginationControls';
 import ClientForm from './ClientForm';
 import './Clients.css';
@@ -359,7 +360,7 @@ export default function Clients() {
               {Number.isInteger(clientLimit) ? (
                 <div className="clients-directory-quota">
                   {clients.length} de {clientLimit} no plano Grátis
-                  <Link to="/subscription">Conhecer o Pro</Link>
+                  <Link to="/subscription">{planLinkLabel('Conhecer o Pro')}</Link>
                 </div>
               ) : null}
               <PaginationControls currentPage={page} onPageChange={setCurrentPage} totalPages={totalPages} />

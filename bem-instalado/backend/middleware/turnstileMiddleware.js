@@ -16,9 +16,18 @@ function getClientIp(req) {
 async function verifyTurnstile(req, res, next, requiredAction) {
   const secret = getSecret();
   if (!secret) {
-    return requiredAction
-      ? res.status(503).json({ error: 'A verificação de segurança está indisponível. Tente novamente mais tarde.', code: 'TURNSTILE_UNAVAILABLE' })
-      : next();
+    // Pedido direto ao instalador (acao obrigatoria): sem chave, recusa em qualquer ambiente (regra do main).
+    if (requiredAction) {
+      return res.status(503).json({ error: 'A verificação de segurança está indisponível. Tente novamente mais tarde.', code: 'TURNSTILE_UNAVAILABLE' });
+    }
+    // Fora de produção (desenvolvimento local e testes) a chave é opcional.
+    if (process.env.NODE_ENV !== 'production') return next();
+    // Em produção, sem chave, falha fechado: antes o anti-robô era pulado em silêncio.
+    console.error('Turnstile: TURNSTILE_SECRET_KEY ausente em produção; formulário protegido recusado.');
+    return res.status(503).json({
+      error: 'A verificação de segurança não está configurada no servidor. Tente novamente mais tarde ou fale com o suporte.',
+      code: 'TURNSTILE_NOT_CONFIGURED',
+    });
   }
 
   const token = String(req.body?.turnstile_token || '').trim();

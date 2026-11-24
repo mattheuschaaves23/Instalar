@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { startSocialLogin } from '../../services/auth';
 import { clearOAuthErrorFromUrl, getOAuthErrorMessage } from '../../utils/oauthMessages';
 import { getAuthRequestErrorMessage } from '../../utils/authErrorMessage';
-import { getNativeStorePlatform, isIosInstallerApp } from '../../utils/nativePlatform';
+import { getNativeStorePlatform, isIosInstallerApp, isNativeStoreApp } from '../../utils/nativePlatform';
 import useAuthCapabilities from '../../hooks/useAuthCapabilities';
 import BrandWordmark from '../Layout/BrandWordmark';
 
@@ -147,7 +147,7 @@ function GoogleIcon() {
   );
 }
 
-const installerBenefits = [
+const getInstallerBenefits = (storeApp) => [
   {
     icon: 'user',
     title: 'Pedidos da sua região',
@@ -166,7 +166,7 @@ const installerBenefits = [
   {
     icon: 'chart',
     title: 'Plano Grátis permanente',
-    copy: 'Comece sem cobrança e evolua para o Pro quando precisar',
+    copy: storeApp ? 'Comece sem cobrança, sem prazo para acabar' : 'Comece sem cobrança e evolua para o Pro quando precisar',
   },
 ];
 
@@ -288,9 +288,11 @@ export default function Login() {
 
   return (
     <main className={`installer-login-page${IS_INSTALLER_APP ? ' installer-app-login-page' : ' auth-web-login'}`}>
-      <Link className="auth-login-back" to={IS_INSTALLER_APP ? '/instalador/boas-vindas' : '/'}>
-        <span aria-hidden="true">←</span> Voltar
-      </Link>
+      {!IS_INSTALLER_APP && (
+        <Link className="auth-login-back" to="/">
+          <span aria-hidden="true">←</span> Voltar
+        </Link>
+      )}
       <section className={`installer-login-frame${IS_INSTALLER_APP ? ' installer-app-login-frame' : ''}`}>
         {!IS_INSTALLER_APP ? (
           <div className="installer-login-left">
@@ -313,7 +315,7 @@ export default function Login() {
             </p>
 
             <div className="installer-login-benefits">
-              {installerBenefits.map((item) => (
+              {getInstallerBenefits(isNativeStoreApp()).map((item) => (
                 <article key={item.title}>
                   <span className="installer-login-benefit-icon">
                     <InstallerLoginIcon name={item.icon} />
@@ -335,7 +337,7 @@ export default function Login() {
               <BrandWordmark className="installer-app-login-logo" size="md" />
               <Link to="/instalador/boas-vindas">
                 <span aria-hidden="true">←</span>
-                Apresentação
+                Voltar
               </Link>
             </div>
           ) : null}

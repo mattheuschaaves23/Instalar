@@ -1,6 +1,21 @@
-const { Pool } = require('pg');
+const pg = require('pg');
 require('dotenv').config();
 const { firstEnvValue } = require('./env');
+
+const { Pool } = pg;
+
+// Colunas TIMESTAMP sem fuso guardam o relogio UTC (NOW() do Neon roda em UTC).
+// O pg lia e gravava esses valores no fuso do processo Node: na Vercel (UTC) dava
+// certo, mas num servidor em America/Sao_Paulo o created_at aparecia 3 h adiantado
+// e o token de senha nascia vencido. Fixa UTC para nao depender do fuso do processo.
+const TIMESTAMP_WITHOUT_TIME_ZONE = 1114;
+const parseTimestampDefault = pg.types.getTypeParser(TIMESTAMP_WITHOUT_TIME_ZONE);
+pg.types.setTypeParser(TIMESTAMP_WITHOUT_TIME_ZONE, (value) => (
+  /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?$/.test(value)
+    ? new Date(`${value.replace(' ', 'T')}Z`)
+    : parseTimestampDefault(value)
+));
+pg.defaults.parseInputDatesAsUTC = true;
 
 function normalizeConnectionString(value) {
   if (!value) {

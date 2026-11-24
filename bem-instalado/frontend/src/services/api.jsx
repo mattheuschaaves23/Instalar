@@ -1,17 +1,12 @@
 import axios from 'axios';
-import { clearAuthToken, getAuthToken } from '../utils/safeStorage';
+import { clearAuthToken, getAuthSessionVersion, getAuthToken } from '../utils/safeStorage';
 import { getCsrfToken } from '../utils/csrfToken';
+import { isInvalidSession } from '../utils/authSession';
+import { isNativeStoreApp } from '../utils/nativePlatform';
 import { captureFrontendException } from './sentry';
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 const DEFAULT_API_TIMEOUT_MS = 20000;
-const INVALID_SESSION_CODES = new Set([
-  'AUTH_TOKEN_MISSING',
-  'AUTH_TOKEN_MALFORMED',
-  'AUTH_TOKEN_INVALID',
-  'AUTH_USER_NOT_FOUND',
-  'AUTH_SESSION_REVOKED',
-]);
 
 function isLocalHost(hostname) {
   return LOCAL_HOSTS.has(String(hostname || '').toLowerCase());
@@ -80,6 +75,7 @@ function isAuthEntryRoute(pathname) {
   return [
     '/instalador/entrar', '/cliente/entrar', '/login',
     '/instalador/recuperar-senha', '/cliente/recuperar-senha',
+    '/auth/social/callback', '/auth/mobile/callback', '/auth/confirmar-email',
   ].some((route) =>
     String(pathname || '') === route || String(pathname || '').startsWith(`${route}/`)
   );
@@ -108,14 +104,17 @@ function redirectTo(targetPath) {
 
 api.interceptors.request.use((config) => {
   const token = getAuthToken();
+  const nativeApp = isNativeStoreApp();
   const method = String(config.method || 'get').toUpperCase();
+  config.authSessionVersion = getAuthSessionVersion();
+  config.withCredentials = !nativeApp;
 
   if (token) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+  if (!nativeApp && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     const csrfToken = getCsrfToken();
     if (csrfToken) {
       config.headers = config.headers || {};
@@ -142,10 +141,12 @@ api.interceptors.response.use(
       });
     }
 
-    if (typeof window !== 'undefined') {
+    const config = error.config || error.response?.config;
+    if (typeof window !== 'undefined'
+      && config?.authSessionVersion === getAuthSessionVersion()
+      && !config.handleSessionError) {
       if (
-        status === 401 &&
-        INVALID_SESSION_CODES.has(code) &&
+        isInvalidSession(error) &&
         !isAuthEntryRoute(window.location.pathname) &&
         !(isPublicRoute(window.location.pathname) && !getAuthToken())
       ) {

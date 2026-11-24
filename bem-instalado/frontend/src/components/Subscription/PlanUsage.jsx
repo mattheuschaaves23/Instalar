@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import { planLinkLabel } from '../../utils/storePlanCopy';
 
 const LABELS = {
   monthly_interests: 'Interesses neste mês',
@@ -33,7 +34,7 @@ export default function PlanUsage({ usageKey, compact = false, className = '' })
           </p>
         </div>
         <Link className="ghost-button !min-h-0 !px-4 !py-2 text-xs" to="/subscription">
-          Conhecer o Pro
+          {planLinkLabel('Conhecer o Pro')}
         </Link>
       </div>
       <div className="plan-usage-track mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--line)]">
@@ -52,7 +53,7 @@ export function ProFeatureNotice({ children, title = 'Recurso do plano Pro', cla
       <p className="eyebrow">{title}</p>
       <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{children}</p>
       <Link className="ghost-button mt-4 w-full sm:w-auto" to="/subscription">
-        Ver plano Pro
+        {planLinkLabel('Ver plano Pro')}
       </Link>
     </div>
   );

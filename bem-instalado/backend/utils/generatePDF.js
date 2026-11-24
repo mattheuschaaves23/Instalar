@@ -6,6 +6,7 @@ const PDFDocument = require('pdfkit');
 const { decodeAssetKey, isObjectStorageConfigured } = require('../services/objectStorage');
 const { defaultScope } = require('../../shared/pdfBranding.json');
 const { resolvePdfBranding, normalizeText } = require('./pdfBranding');
+const { APP_TIME_ZONE } = require('./appTimeZone');
 
 const INK = '#10243C';
 const MUTED = '#45586D';
@@ -27,7 +28,7 @@ function formatDate(value) {
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value.split('-').reverse().join('/');
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short' }).format(date);
+  return new Intl.DateTimeFormat('pt-BR', { timeZone: APP_TIME_ZONE, dateStyle: 'short' }).format(date);
 }
 
 function validUntil(value, days) {
@@ -446,3 +447,5 @@ module.exports = async function generateBudgetPDF({
   await fs.writeFile(file, contents, { flag: 'wx' });
   return file;
 };
+
+module.exports.formatDate = formatDate;

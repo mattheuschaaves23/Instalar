@@ -9,6 +9,7 @@ import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import PlanUsage from '../Subscription/PlanUsage';
 import MarketplaceProposal from './MarketplaceProposal';
 import { formatOpportunityDate, getOpportunityArea, getOpportunityState, getOpportunityTitle, mergeOpportunityPage } from './opportunityView';
+import { planLinkLabel } from '../../utils/storePlanCopy';
 import './Opportunities.css';
 
 const NativeWhatsApp = registerPlugin('NativeWhatsApp');
@@ -118,7 +119,7 @@ export function OpportunityDetail({ item, eligibility, sending, onInterest, onCl
         ) : item.interest_whatsapp_url ? <WhatsAppAction href={item.interest_whatsapp_url} primary>Reabrir WhatsApp</WhatsAppAction>
           : item.interested_by_me ? null : eligibility.can_express_interest !== false
             ? <><button className="opp-primary" type="button" disabled={sending} onClick={() => onInterest(item)}><OpportunityIcon name={item.can_contact_on_interest ? 'whatsapp' : 'check'} size={21} />{sending ? 'Registrando interesse...' : 'Tenho interesse'}</button><p className="opp-action-note">{item.can_contact_on_interest ? 'Abre o WhatsApp. Você envia a mensagem.' : 'Seu interesse será apresentado ao cliente.'}<br />O cliente escolhe o profissional.</p></>
-            : <><Link className="opp-primary" to={readinessLink}>{readinessLink === '/subscription' ? 'Conhecer o Pro' : 'Revisar meu perfil'}</Link><p className="opp-action-note">{eligibility.message || 'Complete os dados essenciais para demonstrar interesse.'}</p></>}
+            : <><Link className="opp-primary" to={readinessLink}>{readinessLink === '/subscription' ? planLinkLabel('Conhecer o Pro') : 'Revisar meu perfil'}</Link><p className="opp-action-note">{eligibility.message || 'Complete os dados essenciais para demonstrar interesse.'}</p></>}
       </footer>
     </aside>
   );
@@ -248,7 +249,7 @@ export default function Opportunities() {
       </div>
       {showFilters ? <div className="opp-more-filters" id="opp-more-filters"><label>Local da instalação<select value={filters.place} onChange={(event) => changeFilter({ place: event.target.value })}><option value="">Todos os locais</option><option value="residential">Casa ou apartamento</option><option value="commercial">Empresa ou loja</option><option value="other">Outro local</option></select></label><label className="opp-checkbox"><input type="checkbox" checked={filters.photos} onChange={(event) => changeFilter({ photos: event.target.checked })} />Somente pedidos com fotos</label>{hasSearch ? <button type="button" className="opp-text-button" onClick={clearFilters}>Limpar filtros</button> : null}</div> : null}
       <PlanUsage compact className="opp-plan-usage" usageKey="monthly_interests" />
-      {result.eligibility.message ? <div className="opp-readiness"><p>{result.eligibility.message}</p><Link to={result.eligibility.requirement_code === 'FREE_INTEREST_LIMIT' ? '/subscription' : '/profile'}>{result.eligibility.requirement_code === 'FREE_INTEREST_LIMIT' ? 'Conhecer o Pro' : 'Revisar perfil'}</Link></div> : null}
+      {result.eligibility.message ? <div className="opp-readiness"><p>{result.eligibility.message}</p><Link to={result.eligibility.requirement_code === 'FREE_INTEREST_LIMIT' ? '/subscription' : '/profile'}>{result.eligibility.requirement_code === 'FREE_INTEREST_LIMIT' ? planLinkLabel('Conhecer o Pro') : 'Revisar perfil'}</Link></div> : null}
       </>}
       <section role={linkedId ? undefined : 'tabpanel'} id="opp-results" aria-label={linkedId ? 'Pedido da notificação' : undefined} aria-labelledby={linkedId ? undefined : 'opp-tab-' + filters.status} className="opp-results" aria-busy={result.loading}>
         <div className="opp-browser-list">
