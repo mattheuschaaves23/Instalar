@@ -65,16 +65,16 @@ function getContrastText(hex) {
 }
 
 function buildAccentTokens(accentColor, theme) {
-  const accent = normalizeHexColor(accentColor);
-  const { r, g, b } = hexToRgb(accent);
   const lightTheme = theme === 'light';
+  const accent = lightTheme ? normalizeHexColor(accentColor) : '#75b4ff';
+  const { r, g, b } = hexToRgb(accent);
   const isDefaultGold = accent === '#c48400';
-  const strong = lightTheme && isDefaultGold ? '#e6b23d' : mixColor(accent, '#ffffff', 0.24);
-  const deep = mixColor(accent, '#000000', 0.38);
-  const background = lightTheme ? '#e3e1dc' : '#000000';
-  const panel = lightTheme ? '#ffffff' : '#050505';
-  const panelSoft = lightTheme ? '#f0eee9' : '#0a0a0a';
-  const panelElevated = lightTheme ? '#d9d6cf' : '#101010';
+  const strong = lightTheme ? (isDefaultGold ? '#e6b23d' : mixColor(accent, '#ffffff', 0.24)) : '#a4ceff';
+  const deep = lightTheme ? mixColor(accent, '#000000', 0.38) : '#103f74';
+  const background = lightTheme ? '#e3e1dc' : '#0b0d10';
+  const panel = lightTheme ? '#ffffff' : '#11161d';
+  const panelSoft = lightTheme ? '#f0eee9' : '#161e28';
+  const panelElevated = lightTheme ? '#d9d6cf' : '#202c3a';
   const strongRgb = hexToRgb(strong);
   const deepRgb = hexToRgb(deep);
   const backgroundRgb = hexToRgb(background);
@@ -86,7 +86,7 @@ function buildAccentTokens(accentColor, theme) {
     accent,
     strong,
     deep,
-    contrast: lightTheme && isDefaultGold ? '#181613' : getContrastText(accent),
+    contrast: lightTheme ? (isDefaultGold ? '#181613' : getContrastText(accent)) : '#0b1728',
     rgb: `${r}, ${g}, ${b}`,
     strongRgb: `${strongRgb.r}, ${strongRgb.g}, ${strongRgb.b}`,
     deepRgb: `${deepRgb.r}, ${deepRgb.g}, ${deepRgb.b}`,
@@ -169,13 +169,13 @@ export function applySitePreferences(nextPreferences = readSitePreferences()) {
   root.style.setProperty('--gold', tokens.accent);
   root.style.setProperty('--gold-strong', tokens.strong);
   root.style.setProperty('--gold-soft', `rgba(${tokens.rgb}, ${lightTheme ? '0.16' : '0.14'})`);
-  root.style.setProperty('--line', lightTheme ? '#b9b5ad' : `rgba(${tokens.rgb}, 0.18)`);
-  root.style.setProperty('--text', lightTheme ? '#181613' : '#f6efdf');
-  root.style.setProperty('--muted', lightTheme ? '#59554e' : 'rgba(246, 239, 223, 0.64)');
+  root.style.setProperty('--line', lightTheme ? '#b9b5ad' : '#33465d');
+  root.style.setProperty('--text', lightTheme ? '#181613' : '#edf3fb');
+  root.style.setProperty('--muted', lightTheme ? '#59554e' : '#b5c3d6');
   root.style.setProperty('--shadow', lightTheme ? '0 14px 32px rgba(57, 45, 25, 0.11)' : '0 30px 80px rgba(0, 0, 0, 0.45)');
   root.style.setProperty('--ref-gold', tokens.accent);
   root.style.setProperty('--ref-gold-strong', tokens.strong);
-  root.style.setProperty('--ref-line', lightTheme ? '#b9b5ad' : `rgba(${tokens.rgb}, 0.17)`);
+  root.style.setProperty('--ref-line', lightTheme ? '#b9b5ad' : '#33465d');
   root.style.setProperty('--route-line-gold', `rgba(${tokens.rgb}, ${lightTheme ? '0.52' : '0.22'})`);
   root.dataset.siteTheme = preferences.theme;
   root.dataset.siteDensity = preferences.density;

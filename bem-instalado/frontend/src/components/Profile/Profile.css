@@ -15,11 +15,11 @@
 html[data-site-theme='dark'] :is(.profile-owner-page, .profile-editor-page) {
   --profile-surface: #111111;
   --profile-soft: #181818;
-  --profile-line: #373126;
-  --profile-ink: #f8f5ee;
-  --profile-muted: #b8b4aa;
-  --profile-accent: #f4c968;
-  --profile-accent-soft: #241c0c;
+  --profile-line: var(--dark-ui-line);
+  --profile-ink: var(--dark-ui-text);
+  --profile-muted: var(--dark-ui-muted);
+  --profile-accent: var(--dark-ui-accent);
+  --profile-accent-soft: var(--dark-ui-selected);
 }
 
 .profile-editor-page[hidden] { display: none !important; }

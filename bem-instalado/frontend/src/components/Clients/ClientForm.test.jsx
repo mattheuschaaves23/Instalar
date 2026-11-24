@@ -44,7 +44,7 @@ it('começa o cálculo sem pedir CPF, telefone ou endereço para um novo orçame
   fireEvent.click(screen.getByRole('button', { name: 'Salvar e continuar' }));
   expect(await screen.findByRole('button', { name: 'Voltar ao cliente' })).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'Voltar ao cliente' }));
-  expect(screen.getByRole('combobox', { name: 'Cliente' }).value).toBe('7');
+  expect(screen.getByRole('radio', { name: 'Cliente avulso' }).checked).toBe(true);
 });
 
 it('edita o e-mail de um contato sem exigir os demais dados', async () => {
@@ -55,4 +55,25 @@ it('edita o e-mail de um contato sem exigir os demais dados', async () => {
   await waitFor(() => expect(saved?.email).toBe('contato@example.test'));
   expect(saved?.document_id).toBeNull();
   expect(api.put.mock.calls[0][1]).not.toHaveProperty('phone');
+});
+
+it('salva os dados opcionais do cadastro pelo orçamento sem exigir CPF e endereço completo', async () => {
+  api.post.mockResolvedValueOnce({ data: { id: 8, name: 'Mariana Silva', email: 'mariana@example.test' } });
+  render(<MemoryRouter><BudgetForm /></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button', { name: 'Novo cliente' }));
+  fireEvent.click(screen.getByRole('button', { name: /Cadastrar cliente agora/ }));
+  fireEvent.change(screen.getByRole('textbox', { name: /Nome completo/ }), { target: { value: 'Mariana Silva' } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'E-mail' }), { target: { value: 'mariana@example.test' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar e continuar' }));
+  expect(await screen.findByRole('button', { name: 'Voltar ao cliente' })).toBeTruthy();
+  expect(api.post).toHaveBeenCalledWith('/clients', expect.objectContaining({ allow_incomplete: true, name: 'Mariana Silva', email: 'mariana@example.test' }));
+});
+
+it('exibe CPF inválido dentro do próprio modal, sem enviar o cadastro', () => {
+  render(<ClientForm allowIncomplete onClose={cleanup} />);
+  fireEvent.change(screen.getByRole('textbox', { name: /Nome completo/i }), { target: { value: 'Mariana Silva' } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'CPF' }), { target: { value: '11111111111' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar e continuar' }));
+  expect(screen.getByRole('alert').textContent).toMatch(/CPF válido/);
+  expect(api.post).not.toHaveBeenCalled();
 });

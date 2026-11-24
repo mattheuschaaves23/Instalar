@@ -8,13 +8,29 @@ import PlanUsage from '../Subscription/PlanUsage';
 import ClientForm from '../Clients/ClientForm';
 import BudgetClientChoice from './BudgetClientChoice';
 import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
-import { installmentInfo, installmentAmountLabel, installmentConditionsLabel, paymentOptionsLabel } from '../../../../shared/installmentTerms.mjs';
+import { installmentInfo, installmentConditionsLabel } from '../../../../shared/installmentTerms.mjs';
+import './BudgetWizard.css';
 
 const INSTALLMENT_OPTIONS = Array.from({ length: 11 }, (_, index) => index + 2);
 const INTEREST_FREE_INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1);
 const INSTALLMENT_INTEREST_OPTIONS = [0, 1, 1.5, 2, 2.5, 3, 4, 5];
 const MAX_REMOVAL_ROLLS = 1000;
 const REMOVAL_ROLLS_ERROR = 'Informe de 1 a 1000 rolos inteiros para a remoção.';
+const MEASURE = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const STEP_LABELS = ['Cliente', 'Cálculo', 'Resumo', 'Salvar'];
+
+function searchable(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function matchesClient(client, query) {
+  const text = searchable(query);
+  if (!text) return true;
+  if ([client.name, client.email, client.contact_name].some((value) => searchable(value).includes(text))) return true;
+  if (!/^[\d+().\s-]+$/.test(text)) return false;
+  const digits = text.replace(/\D/g, '');
+  return !!digits && [client.phone, client.whatsapp].some((value) => String(value || '').replace(/\D/g, '').includes(digits));
+}
 const UPFRONT_PAYMENT_METHODS = [
   { id: 'pix', label: 'Pix' },
   { id: 'boleto', label: 'Boleto' },
@@ -41,62 +57,16 @@ function BudgetIcon({ type }) {
   };
 
   switch (type) {
-    case 'back':
-      return (
-        <svg {...props}>
-          <path d="m14.5 5.5-6 6 6 6" />
-        </svg>
-      );
-    case 'save':
-      return (
-        <svg {...props}>
-          <path d="M5 4.5h10l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19V4.5Z" />
-          <path d="M8 4.5V9h6V4.5M8 20.5v-6h8v6" />
-        </svg>
-      );
-    case 'measure':
-      return (
-        <svg {...props}>
-          <path d="m4.5 15.5 11-11 4 4-11 11h-4Z" />
-          <path d="m13 7 4 4M6 17.5l.01.01" />
-        </svg>
-      );
-    case 'wallpaper':
-      return (
-        <svg {...props}>
-          <path d="M6 6.5a1.5 1.5 0 0 1 1.5-1.5H16a2 2 0 0 1 2 2v2.2H9a2 2 0 0 0-2 2V18" />
-          <path d="M9 18h4M13 18v2.5" />
-          <path d="M8 8h2M12 8h2M10 11h2M8 14h2M12 14h2" />
-        </svg>
-      );
-    case 'card':
-      return (
-        <svg {...props}>
-          <rect x="3.5" y="5.5" width="17" height="13" rx="2.5" />
-          <path d="M3.5 10h17M7 15h3.5" />
-        </svg>
-      );
-    case 'view':
-      return (
-        <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M2.8 12s3.2-5.3 9.2-5.3S21.2 12 21.2 12 18 17.3 12 17.3 2.8 12 2.8 12Z" />
-          <circle cx="12" cy="12" r="2.3" />
-        </svg>
-      );
-    case 'services':
-      return (
-        <svg {...props}>
-          <path d="m4.5 19.5 5.2-5.2M14 6l4 4" />
-          <path d="m8.5 5.5 10 10-2.3 2.3-10-10zM4.5 11.5l3 3" />
-        </svg>
-      );
-    case 'summary':
-      return (
-        <svg {...props}>
-          <path d="M6.5 5.5h11M6.5 10.5h11M6.5 15.5h7" />
-          <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
-        </svg>
-      );
+    case 'check':
+      return <svg {...props}><path d="m5 12 4 4L19 6" /></svg>;
+    case 'search':
+      return <svg {...props}><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>;
+    case 'user':
+      return <svg {...props}><circle cx="12" cy="8" r="3" /><path d="M5 20v-1a7 7 0 0 1 14 0v1" /></svg>;
+    case 'pin':
+      return <svg {...props}><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" /><circle cx="12" cy="10" r="2.3" /></svg>;
+    case 'phone':
+      return <svg {...props}><path d="m7 4 3 4-2 2c1 3 3 5 6 6l2-2 4 3v2c-1 3-8 0-12-4S1 4 4 4Z" /></svg>;
     case 'add':
       return (
         <svg {...props}>
@@ -118,12 +88,7 @@ function BudgetIcon({ type }) {
           <path d="M12 10v5M12 7.5h.01" />
         </svg>
       );
-    default:
-      return (
-        <svg {...props}>
-          <circle cx="12" cy="12" r="8" />
-        </svg>
-      );
+    default: return null;
   }
 }
 
@@ -154,18 +119,6 @@ function requestAddressLabel(draft) {
   const line = [street, number && `Nº ${number}`].filter(Boolean).join(', ');
   return [line, draft.neighborhood, draft.city, draft.state, draft.zip_code && `CEP ${draft.zip_code}`, draft.address_reference]
     .filter(Boolean).join(' • ');
-}
-
-function createStepState(isDone, isActive) {
-  if (isActive) {
-    return 'active';
-  }
-
-  if (isDone) {
-    return 'done';
-  }
-
-  return 'idle';
 }
 
 export default function BudgetForm() {
@@ -205,7 +158,7 @@ function DraftRequestDetails({ draft }) {
     return values.length ? `${room.name}: ${values.join(', ')}` : null;
   }).filter(Boolean).join(' · ') || [draft.wall_size, draft.roll_count].filter(Boolean).join(' · ');
   return (
-    <section aria-label="Dados do pedido original" className="budget-modern-calculation-block grid gap-2 break-words p-4">
+    <section aria-label="Dados do pedido original" className="quote-draft-details">
       <strong>Pedido #{draft.id} · {draft.service_label || 'Instalação de papel de parede'}</strong>
       <p>{draft.place_label || 'Local'}: {requestAddressLabel(draft) || 'A confirmar com o cliente'}</p>
       {draft.client_email ? <p>E-mail informado: {draft.client_email}</p> : null}
@@ -222,6 +175,8 @@ function BudgetEditor({ draft = null, draftId = null }) {
   const navigate = useNavigate();
   const { isPro, refreshSubscription } = useSubscription();
   const [clients, setClients] = useState([]);
+  const [clientStatus, setClientStatus] = useState('loading');
+  const [clientQuery, setClientQuery] = useState('');
   const [clientId, setClientId] = useState('');
   const [clientFormMode, setClientFormMode] = useState(null);
   const newClientTrigger = useRef(null);
@@ -230,6 +185,22 @@ function BudgetEditor({ draft = null, draftId = null }) {
     newClientTrigger.current?.focus({ preventScroll: true });
   };
   const [activeStep, setActiveStep] = useState(1);
+  const formRef = useRef(null);
+  const headingRef = useRef(null);
+  const paymentHeading = useRef(null);
+  const clientSearch = useRef(null);
+  const nextFocus = useRef(null);
+  const goToStep = (step, focus = 'heading') => {
+    nextFocus.current = focus;
+    setActiveStep(step);
+  };
+  useEffect(() => {
+    if (!nextFocus.current) return;
+    const target = nextFocus.current === 'payment' ? paymentHeading.current : headingRef.current;
+    nextFocus.current = null;
+    target?.focus();
+    target?.scrollIntoView?.({ block: 'nearest' });
+  }, [activeStep]);
   const [saving, setSaving] = useState(false);
   const [pricingMode, setPricingMode] = useState('roll');
   const [rollArea, setRollArea] = useState(4.5);
@@ -237,7 +208,6 @@ function BudgetEditor({ draft = null, draftId = null }) {
   const [pricePerSquareMeter, setPricePerSquareMeter] = useState(draft ? '' : 10);
   const [removalPricePerRoll, setRemovalPricePerRoll] = useState(0);
   const [removalRollsInput, setRemovalRollsInput] = useState('');
-  const [profileDefaults, setProfileDefaults] = useState({ rollPrice: 0, removalPricePerRoll: 0 });
   const [installmentEnabled, setInstallmentEnabled] = useState(false);
   const [installmentsCount, setInstallmentsCount] = useState(3);
   const [interestFreeInstallments, setInterestFreeInstallments] = useState(3);
@@ -247,21 +217,29 @@ function BudgetEditor({ draft = null, draftId = null }) {
 
   useEffect(() => {
     if (draft) return;
-    api.get('/clients').then((response) => setClients(response.data)).catch(() => null);
+    let cancelled = false;
+    api.get('/clients')
+      .then((response) => {
+        if (cancelled) return;
+        setClients((current) => {
+          const fetched = Array.isArray(response.data) ? response.data : [];
+          return [...current, ...fetched.filter((client) => !current.some((item) => Number(item.id) === Number(client.id)))];
+        });
+        setClientStatus('ready');
+      })
+      .catch(() => { if (!cancelled) setClientStatus('error'); });
 
     api.get('/users/profile')
       .then((response) => {
         const profileDefaultRollPrice = Number(response.data.default_price_per_roll || 0);
         const profileDefaultRemovalPrice = Number(response.data.default_removal_price || 0);
 
-        setProfileDefaults({
-          rollPrice: profileDefaultRollPrice,
-          removalPricePerRoll: profileDefaultRemovalPrice,
-        });
-        setPricePerRoll(profileDefaultRollPrice);
-        setRemovalPricePerRoll(profileDefaultRemovalPrice);
+        if (cancelled) return;
+        setPricePerRoll((current) => current === 0 ? profileDefaultRollPrice : current);
+        setRemovalPricePerRoll((current) => current === 0 ? profileDefaultRemovalPrice : current);
       })
       .catch(() => null);
+    return () => { cancelled = true; };
   }, [draft]);
 
   const updateEnvironment = (index, field, value) => {
@@ -413,19 +391,14 @@ function BudgetEditor({ draft = null, draftId = null }) {
   const canCalculate = totals.area > 0;
   const canSave = canCalculate && grandTotal > 0 && hasClient;
 
-  const steps = [
-    { number: 1, label: 'Cliente', state: createStepState(hasClient, activeStep === 1) },
-    { number: 2, label: 'Cálculo', state: createStepState(canCalculate && grandTotal > 0, activeStep === 2) },
-    { number: 3, label: 'Resumo', state: createStepState(canCalculate && grandTotal > 0 && activeStep > 3, activeStep === 3) },
-    { number: 4, label: 'Salvar', state: createStepState(false, activeStep === 4) },
-  ];
+  const visibleClients = clients.filter((client) => matchesClient(client, clientQuery));
 
   const continueFromClient = () => {
     if (!hasClient) {
       toast.error('Escolha o cliente antes de montar o orçamento.');
       return;
     }
-    setActiveStep(2);
+    goToStep(2);
   };
 
   const continueFromCalculation = () => {
@@ -437,23 +410,8 @@ function BudgetEditor({ draft = null, draftId = null }) {
       toast.error('Preencha as medidas e os valores para calcular o orçamento.');
       return;
     }
-    setActiveStep(3);
-  };
-
-  const handleClear = () => {
-    setClientId('');
-    setPricingMode('roll');
-    setRollArea(4.5);
-    setPricePerRoll(profileDefaults.rollPrice);
-    setPricePerSquareMeter(10);
-    setRemovalPricePerRoll(profileDefaults.removalPricePerRoll);
-    setRemovalRollsInput('');
-    setInstallmentEnabled(false);
-    setInstallmentsCount(3);
-    setInterestFreeInstallments(3);
-    setInstallmentInterestRate(0);
-    setUpfrontPaymentTerms(createUpfrontPaymentTerms());
-    setEnvironments([createEnvironment()]);
+    if (formRef.current && !formRef.current.reportValidity()) return;
+    goToStep(3);
   };
 
   const updateUpfrontPaymentTerm = (methodId, field, value) => {
@@ -476,7 +434,8 @@ function BudgetEditor({ draft = null, draftId = null }) {
       ...current.filter((item) => Number(item.id) !== Number(client.id)),
     ]);
     setClientId(String(client.id));
-    setActiveStep(2);
+    setClientQuery('');
+    goToStep(2);
     refreshSubscription().catch(() => null);
   };
 
@@ -613,7 +572,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
       if (draft) await api.put(`/budgets/${draftId}/draft`, payload);
       else await api.post('/budgets', payload);
 
-      await refreshSubscription();
+      Promise.resolve(refreshSubscription()).catch(() => null);
       notifyPanelBadgeCountsChanged();
       toast.success(draft ? 'Orçamento concluído. Nenhuma mensagem foi enviada.' : 'Orçamento criado.');
       navigate('/budgets');
@@ -624,761 +583,285 @@ function BudgetEditor({ draft = null, draftId = null }) {
     }
   };
 
+  const paymentText = [
+    selectedUpfrontPaymentTerms.length ? upfrontPaymentSummary : null,
+    installmentPreview.enabled
+      ? `${installmentPreview.count}x de ${formatCurrency(installmentPreview.installmentValue)}${installmentPreview.interestFreeCount === installmentPreview.count ? ' sem juros' : ' (valor base)'}`
+      : null,
+  ].filter(Boolean).join(' ou ') || 'Não informado';
+  const title = [
+    draft ? 'Confira o cliente e o pedido' : 'Escolha o cliente',
+    'Calcule o orçamento',
+    'Revise o orçamento',
+    'Confirme e salve',
+  ][activeStep - 1];
+  const hasContactPhone = Boolean(selectedClient?.whatsapp || selectedClient?.phone);
+
+  const payMethod = (method) => {
+    const options = upfrontPaymentTerms[method.id];
+    return (
+      <div className="quote-pay-method" key={method.id}>
+        <label className="quote-check">
+          <input checked={options.enabled} onChange={(event) => updateUpfrontPaymentTerm(method.id, 'enabled', event.target.checked)} type="checkbox" />
+          <span>{method.label}</span>
+        </label>
+        {options.enabled && (
+          <label className="quote-field">
+            <span>Desconto no {method.label} (%)</span>
+            <input inputMode="decimal" max="100" min="0" onChange={(event) => updateUpfrontPaymentTerm(method.id, 'discount', event.target.value)} step="0.01" type="number" value={options.discount} />
+          </label>
+        )}
+      </div>
+    );
+  };
+
+  function renderFinancial() {
+    const live = activeStep === 2;
+    const name = live ? 'Resumo do cálculo' : 'Resumo financeiro';
+    return (
+      <section aria-labelledby="quote-financial-heading" className="quote-card quote-financial">
+        <h2 id="quote-financial-heading">{name}</h2>
+        <dl>
+          <div><dt>{live ? 'Instalação' : pricingMode === 'roll' ? `Instalação (${totals.rolls} ${totals.rolls === 1 ? 'rolo' : 'rolos'})` : `Instalação (${MEASURE.format(totals.area)} m²)`}</dt><dd>{formatCurrency(totals.subtotal)}</dd></div>
+          <div><dt>{live ? 'Remoção' : `Remoção (${totals.removalRolls} ${totals.removalRolls === 1 ? 'rolo' : 'rolos'})`}</dt><dd>{formatCurrency(totals.removal)}</dd></div>
+        </dl>
+        <div className="quote-total">
+          <span>{live ? 'Total estimado' : 'Total do orçamento'}</span>
+          <output>{formatCurrency(grandTotal)}</output>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="budget-modern-shell">
-      <form className="budget-modern-form" id="budget-modern-form" onSubmit={handleSubmit}>
-        <header className="budget-modern-topbar fade-up">
-          <button aria-label="Voltar aos orçamentos" className="budget-modern-back-button" onClick={() => navigate('/budgets')} type="button">
-            <BudgetIcon type="back" />
-          </button>
-
-          <div className="budget-modern-topbar-copy">
-            <h1>{draft ? 'Completar orçamento' : 'Novo orçamento'}</h1>
-            <p>{draft ? (draft.is_direct ? 'Rascunho criado com os dados enviados pelo cliente pelo seu link.' : 'Rascunho criado automaticamente quando o cliente escolheu você.') : 'Cliente, cálculo, resumo e envio — uma etapa por vez.'}</p>
-          </div>
-
-          <span className="budget-modern-progress">Etapa {activeStep} de 4</span>
+    <section className="quote-wizard">
+      <form className="quote-wizard-form" onSubmit={handleSubmit} ref={formRef}>
+        <header className="quote-topbar">
+          <Link aria-label="InstalarPro: voltar aos orçamentos" className="quote-wordmark" to="/budgets">Instalar<span>Pro</span></Link>
+          <span className="quote-topbar-title">{draft ? 'Completar orçamento' : 'Novo orçamento'}</span>
         </header>
 
-        <PlanUsage className="fade-up" usageKey="monthly_budgets" />
+        <main className="quote-workspace" data-step={activeStep}>
+          <ol aria-label="Etapas do orçamento" className="quote-steps">
+            {STEP_LABELS.map((label, index) => {
+              const number = index + 1;
+              return (
+                <li aria-current={activeStep === number ? 'step' : undefined} className="quote-step" data-state={activeStep === number ? 'active' : activeStep > number ? 'done' : 'idle'} key={label}>
+                  <span aria-hidden="true" className="quote-step-dot">{activeStep > number ? <BudgetIcon type="check" /> : number}</span>
+                  <span>{label}</span>
+                </li>
+              );
+            })}
+          </ol>
+          <PlanUsage className="quote-plan-usage" compact usageKey="monthly_budgets" />
 
-        <section className="budget-modern-stepper fade-up" style={{ animationDelay: '0.04s' }}>
-          {steps.map((step, index) => (
-            <div className="budget-modern-step" key={step.number}>
-              <div className="budget-modern-step-bubble" data-state={step.state}>
-                {step.number}
-              </div>
-              {index < steps.length - 1 ? <span className="budget-modern-step-line" /> : null}
-              <span className="budget-modern-step-label" data-state={step.state}>
-                {step.label}
-              </span>
+          {activeStep !== 4 && (
+            <div className="quote-heading">
+              <h1 ref={headingRef} tabIndex={-1}>{title}</h1>
+              {activeStep === 1 && <p>{draft ? 'Confira os dados antes de calcular o orçamento.' : 'Selecione quem vai receber o orçamento.'}</p>}
+              {activeStep === 3 && <p>Confira os dados e os valores antes de salvar.</p>}
             </div>
-          ))}
-        </section>
+          )}
 
-        <div className={`budget-modern-layout${activeStep === 3 ? '' : ' budget-modern-layout--wide'}`}>
-          <main className="budget-modern-main">
-            <section className="budget-modern-calculator-card fade-up" style={{ animationDelay: '0.06s' }}>
-              <header className="budget-modern-card-head">
-                <div className="budget-modern-head-icon">
-                  <BudgetIcon type={activeStep === 1 ? 'summary' : activeStep === 4 ? 'save' : 'measure'} />
-                </div>
-                <div>
-                  <h2>{activeStep === 1 ? (draft ? 'Confira o cliente e o pedido' : 'Escolha o cliente') : activeStep === 2 ? 'Monte o orçamento' : activeStep === 4 ? 'Confirme os dados' : 'Revise o orçamento'}</h2>
-                  <p>{activeStep === 1 ? (draft ? 'Estes dados vieram do pedido que o cliente compartilhou com você.' : 'Defina para quem este orçamento será criado.') : activeStep === 2 ? 'Preencha os detalhes para montar o orçamento em uma única etapa.' : activeStep === 4 ? 'Confira os dados finais antes de salvar o orçamento.' : 'Confira os valores antes de salvar.'}</p>
-                </div>
-              </header>
-
-              {activeStep === 2 ? (
-                <>
-              {draft ? <DraftRequestDetails draft={draft} /> : null}
-              <div className="budget-modern-section budget-modern-calculation-section">
-                <div className="budget-modern-calculation-base budget-modern-calculation-block">
-                  <div className="budget-modern-calculation-base-head">
-                    <div>
-                      <span>01 · Material e cobrança</span>
-                      <strong>Defina o valor e o rendimento do material</strong>
-                    </div>
-                    <div aria-label="Unidade de cobrança" className="budget-modern-mode-switch" role="group">
-                      <button
-                        aria-pressed={pricingMode === 'roll'}
-                        className={pricingMode === 'roll' ? 'is-active' : ''}
-                        onClick={() => setPricingMode('roll')}
-                        type="button"
-                      >
-                        Por rolo
-                      </button>
-                      <button
-                        aria-pressed={pricingMode === 'square_meter'}
-                        className={pricingMode === 'square_meter' ? 'is-active' : ''}
-                        onClick={() => setPricingMode('square_meter')}
-                        type="button"
-                      >
-                        Por m²
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="budget-modern-field-grid budget-modern-material-grid budget-modern-material-grid--compact">
-                  {pricingMode === 'roll' ? (
-                    <label className="budget-modern-field">
-                      <span>Preço do rolo (R$)</span>
-                      <div className="budget-modern-currency-input">
-                        <i>R$</i>
-                        <input
-                          min="0.01"
-                          onChange={(event) => setPricePerRoll(event.target.value)}
-                          placeholder="0,00"
-                          required
-                          step="0.01"
-                          type="number"
-                          value={pricePerRoll}
-                        />
-                      </div>
-                    </label>
-                  ) : (
-                    <label className="budget-modern-field">
-                      <span>Valor por m²</span>
-                      <div className="budget-modern-currency-input">
-                        <i>R$</i>
-                        <input
-                          min="0.01"
-                          onChange={(event) => setPricePerSquareMeter(event.target.value)}
-                          placeholder="0,00"
-                          required
-                          step="0.01"
-                          type="number"
-                          value={pricePerSquareMeter}
-                        />
-                      </div>
-                    </label>
-                  )}
-
-                  <label className="budget-modern-field">
-                    <span>Rendimento do rolo</span>
-                    <div className="budget-modern-currency-input">
-                      <i>m²</i>
-                      <input
-                        inputMode="decimal"
-                        min="0.01"
-                        onChange={(event) => setRollArea(event.target.value)}
-                        placeholder="Ex.: 4,5"
-                        required
-                        step="0.01"
-                        type="number"
-                        value={rollArea}
-                      />
-                    </div>
-                  </label>
-                </div>
-                </div>
-
-                <div className="budget-modern-calculation-block budget-modern-environments-block">
-                <div className="budget-modern-calculation-group-head">
-                  <div>
-                    <span>02 · Ambientes</span>
-                    <strong>Informe as medidas de cada espaço</strong>
-                  </div>
-                  <div className="budget-modern-environment-actions">
-                    <button className="budget-modern-inline-button budget-modern-environment-add" onClick={addEnvironment} type="button">
-                      <BudgetIcon type="add" />
-                      <span>{isPro ? 'Adicionar ambiente' : 'Adicionar ambiente • Pro'}</span>
-                      <small>{environments.length} ambiente{environments.length === 1 ? '' : 's'}</small>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="budget-modern-environments">
-                  {environments.map((environment, index) => {
-                    const details = environmentBreakdown[index];
-
+          {activeStep === 1 && (draft ? (
+            <section className="quote-card quote-draft">
+              <h2>{selectedClient.name}</h2>
+              {[selectedClient.phone, selectedClient.email].filter(Boolean).length > 0 && <p>{[selectedClient.phone, selectedClient.email].filter(Boolean).join(' · ')}</p>}
+              <DraftRequestDetails draft={draft} />
+            </section>
+          ) : (
+            <section className="quote-card quote-client-picker">
+              <div aria-label="Seleção de cliente" className="quote-client-tabs" role="group">
+                <button aria-pressed="true" onClick={() => clientSearch.current?.focus()} type="button">Cliente existente</button>
+                <button aria-haspopup="dialog" onClick={() => setClientFormMode('choice')} ref={newClientTrigger} type="button">Novo cliente</button>
+              </div>
+              <label className="quote-field">
+                <span>Buscar cliente</span>
+                <span className="quote-search"><BudgetIcon type="search" /><input onChange={(event) => setClientQuery(event.target.value)} placeholder="Nome, telefone ou e-mail" ref={clientSearch} type="search" value={clientQuery} /></span>
+              </label>
+              {visibleClients.length ? (
+                <div aria-label="Clientes cadastrados" className="quote-client-list" role="radiogroup">
+                  {visibleClients.map((client) => {
+                    const initials = String(client.name || '').trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+                    const isCurrent = String(client.id) === clientId;
                     return (
-                      <article className="budget-modern-environment" key={`env-${index}`}>
-                        <div className="budget-modern-environment-head">
-                          <div>
-                            <strong>Ambiente {index + 1}</strong>
-                          </div>
-
-                          {environments.length > 1 ? (
-                            <button className="budget-modern-remove-button" onClick={() => removeEnvironment(index)} type="button">
-                              <BudgetIcon type="trash" />
-                            </button>
-                          ) : null}
-                        </div>
-
-                        <div className="budget-modern-environment-compact-grid">
-                          <label className="budget-modern-field budget-modern-environment-name">
-                            <span>Ambiente</span>
-                            <input
-                              onChange={(event) => updateEnvironment(index, 'name', event.target.value)}
-                              placeholder="Ex.: Sala"
-                              required
-                              value={environment.name}
-                            />
-                          </label>
-
-                          <label className="budget-modern-field">
-                            <span>Largura (m)</span>
-                            <input
-                              min="0.01"
-                              onChange={(event) => updateEnvironment(index, 'width', event.target.value)}
-                              placeholder="0,00"
-                              required
-                              step="0.01"
-                              type="number"
-                              value={environment.width}
-                            />
-                          </label>
-
-                          <label className="budget-modern-field">
-                            <span>Altura (m)</span>
-                            <input
-                              min="0.01"
-                              onChange={(event) => updateEnvironment(index, 'height', event.target.value)}
-                              placeholder="0,00"
-                              required
-                              step="0.01"
-                              type="number"
-                              value={environment.height}
-                            />
-                          </label>
-
-                          <div className="budget-modern-field budget-modern-environment-area" aria-label={`Área calculada automaticamente do ambiente ${index + 1}`}>
-                            <span>Área</span>
-                            <output title="Valor calculado automaticamente">{details.area.toFixed(2)} m²</output>
-                          </div>
-
-                          {pricingMode === 'roll' ? (
-                            <label className="budget-modern-field">
-                              <span>Rolos (opcional)</span>
-                              <input
-                                min="1"
-                                onChange={(event) => updateEnvironment(index, 'rolls_manual', event.target.value)}
-                                placeholder={`Auto: ${details.rollsAuto}`}
-                                step="1"
-                                type="number"
-                                value={environment.rolls_manual}
-                              />
-                            </label>
-                          ) : null}
-
-                          <label className="budget-modern-toggle budget-modern-environment-removal">
-                            <input
-                              checked={Boolean(environment.removal_included)}
-                              onChange={(event) => updateEnvironment(index, 'removal_included', event.target.checked)}
-                              type="checkbox"
-                            />
-                            <span>Remover papel</span>
-                          </label>
-                        </div>
-
-                      </article>
+                      <label className="quote-client-row" data-selected={isCurrent} key={client.id}>
+                        <span aria-hidden="true" className="quote-client-avatar">{initials}</span>
+                        <span className="quote-client-name">{client.name}</span>
+                        <input checked={isCurrent} name="budget-client" onChange={() => setClientId(String(client.id))} type="radio" value={client.id} />
+                      </label>
                     );
                   })}
                 </div>
-                </div>
-
-                <div className="budget-modern-payment-box budget-modern-removal-rate budget-modern-calculation-block">
-                  <label className="budget-modern-field">
-                    <span>03 · Remoção por rolo</span>
-                    <div className="budget-modern-currency-input">
-                      <i>R$</i>
-                      <input
-                        disabled={!removalIncluded}
-                        min="0"
-                        onChange={(event) => setRemovalPricePerRoll(event.target.value)}
-                        placeholder="0,00"
-                        step="0.01"
-                        type="number"
-                        value={removalPricePerRoll}
-                      />
-                    </div>
-                  </label>
-
-                  <label className="budget-modern-field">
-                    <span>Rolos a remover</span>
-                    <div className="budget-modern-currency-input">
-                      <input
-                        aria-describedby="budget-removal-rolls-help"
-                        aria-invalid={invalidRemovalRolls || undefined}
-                        disabled={!removalIncluded}
-                        inputMode="numeric"
-                        max={MAX_REMOVAL_ROLLS}
-                        min="1"
-                        onChange={(event) => setRemovalRollsInput(event.target.value)}
-                        placeholder={String(totals.automaticRemovalRolls || '')}
-                        step="1"
-                        type="number"
-                        value={removalRollsInput}
-                      />
-                    </div>
-                  </label>
-
-                  <div aria-live="polite" className="budget-modern-removal-summary">
-                    <span>Remoção selecionada</span>
-                    {invalidRemovalRolls
-                      ? <strong>Quantidade inválida</strong>
-                      : removalIncluded
-                        ? <strong>{totals.removalRolls} rolo{totals.removalRolls === 1 ? '' : 's'} • {formatCurrency(totals.removal)}</strong>
-                        : <strong>Nenhum ambiente marcado</strong>}
-                  </div>
-                  <p id="budget-removal-rolls-help" className="budget-modern-removal-help">
-                    {invalidRemovalRolls ? REMOVAL_ROLLS_ERROR : removalIncluded
-                      ? 'Deixe em branco para usar a quantidade calculada dos ambientes marcados.'
-                      : 'Marque “Remover papel” em um ambiente para informar a quantidade.'}
-                  </p>
-                </div>
-
-                <div className="budget-modern-payment-conditions budget-modern-calculation-block">
-                  <div className="budget-modern-payment-conditions-head">
-                    <div>
-                      <span>04 · Pagamento</span>
-                      <strong>Parcelamento e desconto à vista</strong>
-                    </div>
-                    <small>Marque apenas as opções que você aceita.</small>
-                  </div>
-
-                  <div className="budget-modern-payment-conditions-body">
-                    <div className="budget-modern-payment-box budget-modern-installment-control">
-                      <label className="budget-modern-toggle budget-modern-installment-switch">
-                        <input
-                          checked={installmentEnabled}
-                          onChange={(event) => setInstallmentEnabled(event.target.checked)}
-                          type="checkbox"
-                        />
-                        <span>Aceitar pagamento parcelado</span>
-                      </label>
-
-                      {installmentEnabled ? (
-                        <>
-                          <div className="budget-modern-credit-card-settings">
-                            <div className="budget-modern-credit-card-head">
-                              <BudgetIcon type="card" />
-                              <strong>Cartão de crédito</strong>
-                            </div>
-
-                            <div className="budget-modern-installment-fields">
-                              <label className="budget-modern-field">
-                                <span>Máximo de parcelas</span>
-                                <select
-                                  onChange={(event) => {
-                                    const nextCount = Number(event.target.value);
-                                    setInstallmentsCount(nextCount);
-                                    setInterestFreeInstallments((current) => Math.min(Number(current || nextCount), nextCount));
-                                  }}
-                                  value={installmentsCount}
-                                >
-                                  {INSTALLMENT_OPTIONS.map((option) => (
-                                    <option key={option} value={option}>{option}x</option>
-                                  ))}
-                                </select>
-                              </label>
-
-                              <label className="budget-modern-field">
-                                <span>Sem juros até</span>
-                                <select
-                                  onChange={(event) => setInterestFreeInstallments(Number(event.target.value))}
-                                  value={Math.min(interestFreeInstallments, installmentsCount)}
-                                >
-                                  {INTEREST_FREE_INSTALLMENT_OPTIONS.filter((option) => option <= installmentsCount).map((option) => (
-                                    <option key={option} value={option}>{option}x</option>
-                                  ))}
-                                </select>
-                              </label>
-
-                              <label className="budget-modern-field">
-                                <span>Juros após (a.m.)</span>
-                                <select
-                                  onChange={(event) => setInstallmentInterestRate(Number(event.target.value))}
-                                  value={installmentInterestRate}
-                                >
-                                  {INSTALLMENT_INTEREST_OPTIONS.map((option) => (
-                                    <option key={option} value={option}>{option.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</option>
-                                  ))}
-                                </select>
-                              </label>
-                            </div>
-                          </div>
-
-                          <div className="budget-modern-installment-preview">
-                            <div>
-                              <BudgetIcon type="view" />
-                              <strong>Prévia para o cliente</strong>
-                            </div>
-                            <span>
-                              {upfrontPaymentTerms.pix?.enabled
-                                ? `Pix: ${formatCurrency(pixPreviewValue)}${pixDiscountPercent > 0 ? ` com ${pixDiscountPercent}% de desconto` : ''}`
-                                : 'Pix: configure a opção à vista ao lado'}
-                            </span>
-                            <span>Cartão: até {installmentAmountLabel(installmentPreview)}</span>
-                            <small>{installmentConditionsLabel(installmentPreview)}</small>
-                          </div>
-                        </>
-                      ) : null}
-                    </div>
-
-                    <div className="budget-modern-payment-box budget-modern-upfront-payment-control">
-                      <div className="budget-modern-upfront-payment-head">
-                        <div>
-                          <span>À vista</span>
-                          <strong>Forma e desconto</strong>
-                        </div>
-                        <small>Desconto %</small>
-                      </div>
-
-                      <div className="budget-modern-upfront-payment-grid">
-                        {UPFRONT_PAYMENT_METHODS.map((method) => {
-                          const configuration = upfrontPaymentTerms[method.id];
-
-                          return (
-                            <label className="budget-modern-upfront-payment-method" key={method.id}>
-                              <span className="budget-modern-upfront-payment-method-name">
-                                <input
-                                  checked={Boolean(configuration?.enabled)}
-                                  onChange={(event) => updateUpfrontPaymentTerm(method.id, 'enabled', event.target.checked)}
-                                  type="checkbox"
-                                />
-                                <strong>{method.label}</strong>
-                              </span>
-                              <span className="budget-modern-upfront-payment-discount">
-                                <input
-                                  aria-label={`Desconto no ${method.label}`}
-                                  disabled={!configuration?.enabled}
-                                  max="100"
-                                  min="0"
-                                  onChange={(event) => updateUpfrontPaymentTerm(method.id, 'discount', event.target.value)}
-                                  step="0.01"
-                                  type="number"
-                                  value={configuration?.discount ?? 0}
-                                />
-                                <i>%</i>
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="budget-modern-stage-actions">
-                <button className="budget-modern-secondary-cta" onClick={() => setActiveStep(1)} type="button">
-                  Voltar ao cliente
-                </button>
-                <button className="budget-modern-primary-cta" onClick={continueFromCalculation} type="button">
-                  Revisar resumo
-                </button>
-              </div>
-                </>
-              ) : null}
-
-              {activeStep === 1 && draft ? (
-                <div className="budget-modern-section grid gap-4">
-                  <div className="grid gap-1 break-words">
-                    <strong>{selectedClient.name}</strong>
-                    <p>{[selectedClient.phone, selectedClient.email].filter(Boolean).join(' · ')}</p>
-                  </div>
-                  <DraftRequestDetails draft={draft} />
-                  <div className="budget-modern-actions-bar">
-                    <button className="budget-modern-primary-cta" onClick={continueFromClient} type="button">Continuar para o cálculo</button>
-                  </div>
-                </div>
-              ) : null}
-
-              {activeStep === 1 && !draft ? (
-              <div className="budget-modern-section">
-                <div className="budget-modern-section-title">
-                  <div>
-                    <BudgetIcon type="summary" />
-                    <span>1. Cliente</span>
-                  </div>
-                </div>
-
-                <div className="budget-modern-client-choice" role="group" aria-label="Seleção de cliente">
-                  <button
-                    aria-pressed="true"
-                    className="budget-modern-client-choice-button is-active"
-                    onClick={() => document.getElementById('budget-client-select')?.focus()}
-                    type="button"
-                  >
-                    Cliente existente
-                  </button>
-                  <button
-                    className="budget-modern-client-choice-button"
-                    aria-haspopup="dialog"
-                    onClick={() => setClientFormMode('choice')}
-                    ref={newClientTrigger}
-                    type="button"
-                  >
-                    Novo cliente
-                  </button>
-                </div>
-
-                <div className="budget-modern-field-grid">
-                  <label className="budget-modern-field budget-modern-field--full">
-                    <span>Cliente</span>
-                    <select id="budget-client-select" onChange={(event) => setClientId(event.target.value)} required value={clientId}>
-                      <option value="">
-                        {clients.length ? 'Selecione um cliente' : 'Ainda não há clientes cadastrados'}
-                      </option>
-                      {clients.map((client) => (
-                        <option key={client.id} value={client.id}>
-                          {client.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <div className="budget-modern-actions-bar">
-                  <button className="budget-modern-primary-cta" onClick={continueFromClient} type="button">
-                    Continuar para o cálculo
-                  </button>
-                  <button className="budget-modern-secondary-cta" onClick={handleClear} type="button">
-                    Limpar dados
-                  </button>
-                </div>
-              </div>
-
-              ) : null}
-
-              {activeStep === 4 ? (
-                <div className="budget-modern-section budget-modern-send-stage">
-                  <div className="budget-modern-section-title">
-                    <div>
-                      <BudgetIcon type="save" />
-                      <span>4. Salvar orçamento</span>
-                    </div>
-                  </div>
-
-                  <p className="budget-modern-send-copy">
-                    O orçamento será salvo como pendente. Você poderá baixar o PDF pela lista de orçamentos.
-                    {' '}{selectedClient?.whatsapp || selectedClient?.phone
-                      ? 'Também poderá enviar pelo WhatsApp.'
-                      : 'Para enviar pelo WhatsApp, adicione o telefone na página Clientes.'}
-                  </p>
-
-                  <div className="budget-modern-send-checks">
-                    <div><span>Cliente</span><strong>{selectedClient?.name}</strong></div>
-                    <div><span>Total</span><strong>{formatCurrency(grandTotal)}</strong></div>
-                    <div><span>Pagamento</span><strong>{paymentOptionsLabel({ enabled: installmentEnabled, count: normalizedInstallments }, selectedUpfrontPaymentTerms.length > 0)}</strong></div>
-                  </div>
-
-                  <div className="budget-modern-stage-actions">
-                    <button className="budget-modern-secondary-cta" onClick={() => setActiveStep(3)} type="button">
-                      Voltar ao resumo
-                    </button>
-                    <button className="budget-modern-primary-cta" disabled={!canSave || saving} type="submit">
-                      {saving ? 'Salvando…' : 'Salvar orçamento'}
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              {activeStep === 3 ? (
-                <div className="budget-modern-section budget-modern-review-stage">
-                  <div className="budget-modern-section-title">
-                    <div>
-                      <BudgetIcon type="summary" />
-                      <span>3. Revisão do orçamento</span>
-                    </div>
-                  </div>
-                  <p className="budget-modern-send-copy">
-                    Confira os dados abaixo antes de salvar. Você ainda pode voltar e alterar qualquer informação.
-                  </p>
-
-                  <div className="budget-modern-review-overview">
-                    <article>
-                      <span>Cliente</span>
-                      <strong>{selectedClient?.name || '—'}</strong>
-                      <small>{selectedClient?.phone || selectedClient?.email || 'Contato não informado'}</small>
-                    </article>
-                    <article>
-                      <span>Ambientes</span>
-                      <strong>{environments.length}</strong>
-                      <small>{totals.area.toFixed(2)} m² • {totals.rolls} rolos</small>
-                    </article>
-                    <article>
-                      <span>Valor total</span>
-                      <strong>{formatCurrency(grandTotal)}</strong>
-                      <small>{installmentEnabled ? `${normalizedInstallments}x no cartão` : 'Pagamento à vista'}</small>
-                    </article>
-                  </div>
-
-                  <div className="budget-modern-review-grid">
-                    <article className="budget-modern-review-card">
-                      <div className="budget-modern-review-card-head">
-                        <div>
-                          <BudgetIcon type="summary" />
-                          <div>
-                            <span>Cliente e local</span>
-                            <h3>Quem vai receber</h3>
-                          </div>
-                        </div>
-                        <button className="budget-modern-review-edit" onClick={() => setActiveStep(1)} type="button">
-                          Alterar
-                        </button>
-                      </div>
-                      <dl className="budget-modern-review-data">
-                        <div><dt>Nome</dt><dd>{selectedClient?.name || 'Não informado'}</dd></div>
-                        <div><dt>Contato</dt><dd>{selectedClient?.phone || selectedClient?.email || 'Não informado'}</dd></div>
-                        <div className="budget-modern-review-data--full"><dt>Local do serviço</dt><dd>{selectedClientAddress}</dd></div>
-                      </dl>
-                    </article>
-
-                    <article className="budget-modern-review-card">
-                      <div className="budget-modern-review-card-head">
-                        <div>
-                          <BudgetIcon type="measure" />
-                          <div>
-                            <span>Cálculo</span>
-                            <h3>Materiais e medidas</h3>
-                          </div>
-                        </div>
-                        <button className="budget-modern-review-edit" onClick={() => setActiveStep(2)} type="button">
-                          Alterar
-                        </button>
-                      </div>
-                      <dl className="budget-modern-review-data">
-                        <div><dt>Cobrança</dt><dd>{pricingMode === 'roll' ? 'Por rolo' : 'Por m²'}</dd></div>
-                        <div><dt>Área total</dt><dd>{totals.area.toFixed(2)} m²</dd></div>
-                        <div><dt>Rendimento do rolo</dt><dd>{effectiveRollArea.toFixed(2)} m²</dd></div>
-                        <div><dt>{pricingMode === 'roll' ? 'Preço por rolo' : 'Preço por m²'}</dt><dd>{formatCurrency(pricingMode === 'roll' ? pricePerRoll : pricePerSquareMeter)}</dd></div>
-                      </dl>
-                    </article>
-
-                    <article className="budget-modern-review-card budget-modern-review-card--full">
-                      <div className="budget-modern-review-card-head">
-                        <div>
-                          <BudgetIcon type="wallpaper" />
-                          <div>
-                            <span>Ambientes</span>
-                            <h3>Itens incluídos no serviço</h3>
-                          </div>
-                        </div>
-                        <button className="budget-modern-review-edit" onClick={() => setActiveStep(2)} type="button">
-                          Alterar
-                        </button>
-                      </div>
-                      <div className="budget-modern-review-environment-list">
-                        {environments.map((environment, index) => {
-                          const details = environmentBreakdown[index];
-
-                          return (
-                            <div className="budget-modern-review-environment" key={`review-${index}`}>
-                              <div>
-                                <strong>{environment.name || `Ambiente ${index + 1}`}</strong>
-                                <small>
-                                  {Number(environment.height || 0).toFixed(2)} m × {Number(environment.width || 0).toFixed(2)} m • {details.area.toFixed(2)} m² • {details.rollsForMode} rolo{details.rollsForMode === 1 ? '' : 's'}
-                                </small>
-                              </div>
-                              <div className="budget-modern-review-environment-value">
-                                <span>{details.removalIncluded ? 'Com remoção' : 'Sem remoção'}</span>
-                                <strong>{formatCurrency(details.total)}</strong>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </article>
-
-                    <article className="budget-modern-review-card budget-modern-review-card--full">
-                      <div className="budget-modern-review-card-head">
-                        <div>
-                          <BudgetIcon type="save" />
-                          <div>
-                            <span>Pagamento</span>
-                            <h3>Condições apresentadas ao cliente</h3>
-                          </div>
-                        </div>
-                        <button className="budget-modern-review-edit" onClick={() => setActiveStep(2)} type="button">
-                          Alterar
-                        </button>
-                      </div>
-                      <div className="budget-modern-review-payment-grid">
-                        <div className="budget-modern-review-payment-card">
-                          <span>Parcelado no cartão</span>
-                          <strong>{installmentEnabled ? installmentAmountLabel(installmentPreview) : 'Não oferecido'}</strong>
-                          <small>{installmentEnabled ? installmentConditionsLabel(installmentPreview) : 'Ative caso queira oferecer parcelamento.'}</small>
-                        </div>
-                        <div className="budget-modern-review-payment-card">
-                          <span>À vista</span>
-                          <strong>{selectedUpfrontPaymentTerms.length ? upfrontPaymentSummary : 'Não informado'}</strong>
-                          <small>{selectedUpfrontPaymentTerms.length ? 'As formas abaixo aparecem como opção para o cliente.' : 'Nenhuma forma à vista foi selecionada.'}</small>
-                        </div>
-                      </div>
-                      {selectedUpfrontPaymentTerms.length ? (
-                        <div className="budget-modern-review-discount-list">
-                          {selectedUpfrontPaymentTerms.map((term) => (
-                            <div key={`payment-${term.method}`}>
-                              <span>{term.label}</span>
-                              <small>{term.discount_percent > 0 ? `${term.discount_percent}% de desconto` : 'Sem desconto'}</small>
-                              <strong>{formatCurrency(grandTotal * (1 - term.discount_percent / 100))}</strong>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                    </article>
-
-                    <article className="budget-modern-review-ready-card budget-modern-review-card--full">
-                      <div>
-                        <span>Próximo passo</span>
-                        <strong>Pronto para salvar e enviar</strong>
-                        <p>O orçamento será criado como pendente. Depois, você poderá baixar o PDF e compartilhar no WhatsApp.</p>
-                      </div>
-                      <ul>
-                        <li>Cliente selecionado</li>
-                        <li>Medidas e valores revisados</li>
-                        <li>Condições de pagamento definidas</li>
-                      </ul>
-                    </article>
-                  </div>
-
-                  <div className="budget-modern-stage-actions">
-                    <button className="budget-modern-secondary-cta" onClick={() => setActiveStep(2)} type="button">
-                      Ajustar cálculo
-                    </button>
-                    <button className="budget-modern-primary-cta" disabled={!canSave} onClick={() => setActiveStep(4)} type="button">
-                      Continuar para salvar
-                    </button>
-                  </div>
-                </div>
-              ) : null}
+              ) : (
+                <p className="quote-empty" role="status">{clientStatus === 'loading' ? 'Carregando clientes…' : clientStatus === 'error' ? 'Não foi possível carregar os clientes. Atualize a página ou cadastre um novo cliente.' : clientQuery.trim() ? 'Nenhum cliente encontrado com essa busca.' : 'Nenhum cliente cadastrado. Use “Novo cliente” para começar.'}</p>
+              )}
+              <p className="quote-help">{selectedClient && !visibleClients.some((client) => String(client.id) === clientId) ? `Cliente selecionado: ${selectedClient.name}` : 'Só o nome é necessário para começar.'}</p>
             </section>
-          </main>
+          ))}
 
-          {activeStep === 3 ? (
-          <aside className="budget-modern-summary-panel fade-up" style={{ animationDelay: '0.1s' }}>
-            <div className="budget-modern-summary-head">
-              <p className="budget-modern-section-label">Resumo financeiro</p>
-              <h3>Total e condições</h3>
-            </div>
+          {activeStep === 2 && (
+            <>
+              {draft && <div className="quote-card quote-draft"><DraftRequestDetails draft={draft} /></div>}
+              <div className="quote-columns">
+                <div className="quote-card quote-sheet">
+                  <section className="quote-group">
+                    <h2>Material e cobrança</h2>
+                    <div className="quote-material">
+                      <div aria-label="Unidade de cobrança" className="quote-modes" role="radiogroup">
+                        <label className="quote-check"><input checked={pricingMode === 'roll'} name="pricing-mode" onChange={() => setPricingMode('roll')} type="radio" />Por rolo</label>
+                        <label className="quote-check"><input checked={pricingMode === 'square_meter'} name="pricing-mode" onChange={() => setPricingMode('square_meter')} type="radio" />Por m²</label>
+                      </div>
+                      <label className="quote-field">
+                        <span>{pricingMode === 'roll' ? 'Preço por rolo' : 'Preço por m²'}</span>
+                        <span className="quote-affix" data-side="before"><span aria-hidden="true">R$</span><input inputMode="decimal" min="0.01" onChange={(event) => (pricingMode === 'roll' ? setPricePerRoll : setPricePerSquareMeter)(event.target.value)} placeholder="0,00" required step="0.01" type="number" value={pricingMode === 'roll' ? pricePerRoll : pricePerSquareMeter} /></span>
+                      </label>
+                      <label className="quote-field">
+                        <span>Rendimento do rolo</span>
+                        <span className="quote-affix"><input inputMode="decimal" max="1000" min="0.01" onChange={(event) => setRollArea(event.target.value)} required step="0.01" type="number" value={rollArea} /><span aria-hidden="true">m²</span></span>
+                      </label>
+                    </div>
+                  </section>
 
-            <div className="budget-modern-summary-list">
-              <div className="budget-modern-summary-row">
-                <span>Materiais ({totals.rolls} rolos)</span>
-                <strong>{formatCurrency(totals.subtotal)}</strong>
-              </div>
-              <div className="budget-modern-summary-row">
-                <span>Remoção por rolo ({totals.removalRolls} rolo{totals.removalRolls === 1 ? '' : 's'})</span>
-                <strong>{formatCurrency(totals.removal)}</strong>
-              </div>
-              <div className="budget-modern-summary-row">
-                <span>Subtotal do serviço</span>
-                <strong>{formatCurrency(totals.subtotal)}</strong>
-              </div>
-              <div className="budget-modern-summary-row">
-                <span>Pagamento parcelado</span>
-                <strong>{installmentEnabled ? `${normalizedInstallments}x` : 'Não oferecido'}</strong>
-              </div>
-            </div>
+                  <section className="quote-group">
+                    <div className="quote-group-head">
+                      <h2>Ambientes</h2>
+                      <button className="quote-action-link" onClick={addEnvironment} type="button"><BudgetIcon type="add" />{isPro ? 'Adicionar ambiente' : 'Adicionar ambiente (Pro)'}</button>
+                    </div>
+                    {environments.map((environment, index) => {
+                      const details = environmentBreakdown[index];
+                      return (
+                        <fieldset className="quote-room" key={index}>
+                          <legend className={environments.length > 1 ? 'quote-room-title' : 'quote-sr-only'}>Ambiente {index + 1}</legend>
+                          {environments.length > 1 && <button aria-label={`Remover ambiente ${index + 1}`} className="quote-room-delete" onClick={() => removeEnvironment(index)} type="button"><BudgetIcon type="trash" /></button>}
+                          <div className="quote-room-fields" data-mode={pricingMode}>
+                            <label className="quote-field quote-room-name"><span>Ambiente</span><input onChange={(event) => updateEnvironment(index, 'name', event.target.value)} placeholder="Ex.: Sala" required value={environment.name} /></label>
+                            <label className="quote-field"><span>Largura (m)</span><input inputMode="decimal" min="0.01" onChange={(event) => updateEnvironment(index, 'width', event.target.value)} placeholder="0,00" required step="0.01" type="number" value={environment.width} /></label>
+                            <label className="quote-field"><span>Altura (m)</span><input inputMode="decimal" min="0.01" onChange={(event) => updateEnvironment(index, 'height', event.target.value)} placeholder="0,00" required step="0.01" type="number" value={environment.height} /></label>
+                            <div className="quote-field quote-room-area"><span>Área</span><span>{MEASURE.format(details.area)} m²</span></div>
+                            {pricingMode === 'roll' && <label className="quote-field"><span>Rolos<span className="quote-sr-only"> (opcional)</span></span><input inputMode="numeric" min="1" onChange={(event) => updateEnvironment(index, 'rolls_manual', event.target.value)} placeholder={details.rollsAuto ? String(details.rollsAuto) : 'Auto'} step="1" type="number" value={environment.rolls_manual} /></label>}
+                          </div>
+                          <label className="quote-check"><input checked={Boolean(environment.removal_included)} onChange={(event) => updateEnvironment(index, 'removal_included', event.target.checked)} type="checkbox" />Remover papel</label>
+                        </fieldset>
+                      );
+                    })}
+                    <div className="quote-removal" hidden={!removalIncluded}>
+                      <div className="quote-removal-fields">
+                        <label className="quote-field">
+                          <span>Rolos a remover</span>
+                          <input aria-describedby="quote-removal-help" aria-invalid={invalidRemovalRolls || undefined} disabled={!removalIncluded} inputMode="numeric" max={MAX_REMOVAL_ROLLS} min="1" onChange={(event) => setRemovalRollsInput(event.target.value)} placeholder={String(totals.automaticRemovalRolls || '')} step="1" type="number" value={removalRollsInput} />
+                        </label>
+                        <label className="quote-field">
+                          <span>Valor por rolo</span>
+                          <span className="quote-affix" data-side="before"><span aria-hidden="true">R$</span><input disabled={!removalIncluded} inputMode="decimal" min="0" onChange={(event) => setRemovalPricePerRoll(event.target.value)} placeholder="0,00" step="0.01" type="number" value={removalPricePerRoll} /></span>
+                        </label>
+                      </div>
+                      <p className="quote-help" id="quote-removal-help">{invalidRemovalRolls ? REMOVAL_ROLLS_ERROR : `${totals.removalRolls} ${totals.removalRolls === 1 ? 'rolo' : 'rolos'} • ${formatCurrency(totals.removal)}. Deixe a quantidade em branco para usar o cálculo automático.`}</p>
+                    </div>
+                  </section>
 
-            <div className="budget-modern-total-box">
-              <span>Total do orçamento</span>
-              <strong>{formatCurrency(grandTotal)}</strong>
-              <small>
-                Valor por m²: {totals.area > 0 ? formatCurrency(grandTotal / totals.area) : formatCurrency(0)}
-              </small>
-            </div>
+                  <section className="quote-group quote-payment">
+                    <h2 ref={paymentHeading} tabIndex={-1}>Pagamento</h2>
+                    <div className="quote-payment-top">
+                      <label className="quote-check"><input checked={upfrontPaymentTerms.pix.enabled} onChange={(event) => updateUpfrontPaymentTerm('pix', 'enabled', event.target.checked)} type="checkbox" />Pix</label>
+                      <label className="quote-check"><input checked={installmentEnabled} onChange={(event) => setInstallmentEnabled(event.target.checked)} type="checkbox" />Aceitar parcelamento</label>
+                      {installmentEnabled && <label className="quote-field"><span className="quote-sr-only">Máximo de parcelas</span><select onChange={(event) => {
+                        const count = Number(event.target.value);
+                        setInstallmentsCount(count);
+                        setInterestFreeInstallments((current) => current === installmentsCount ? count : Math.min(current, count));
+                      }} value={installmentsCount}>{INSTALLMENT_OPTIONS.map((option) => <option key={option} value={option}>{option}x{option === installmentsCount && normalizedInterestFreeInstallments === option ? ' sem juros' : ''}</option>)}</select></label>}
+                    </div>
+                    <details className="quote-payment-detail" onInvalidCapture={(event) => { event.currentTarget.open = true; }}>
+                      <summary>Mais opções de pagamento</summary>
+                      <div className="quote-pay-options">
+                        {upfrontPaymentTerms.pix.enabled && <label className="quote-field"><span>Desconto no Pix (%)</span><input aria-label="Desconto no Pix" inputMode="decimal" max="100" min="0" onChange={(event) => updateUpfrontPaymentTerm('pix', 'discount', event.target.value)} step="0.01" type="number" value={upfrontPaymentTerms.pix.discount} /></label>}
+                        {UPFRONT_PAYMENT_METHODS.filter((method) => method.id !== 'pix').map(payMethod)}
+                      </div>
+                      {installmentEnabled && (
+                        <div className="quote-removal-fields">
+                          <label className="quote-field"><span>Sem juros até</span><select onChange={(event) => setInterestFreeInstallments(Number(event.target.value))} value={normalizedInterestFreeInstallments}>{INTEREST_FREE_INSTALLMENT_OPTIONS.filter((option) => option <= installmentsCount).map((option) => <option key={option} value={option}>{option}x</option>)}</select></label>
+                          {normalizedInterestFreeInstallments < normalizedInstallments && <label className="quote-field"><span>Juros após (% a.m.)</span><select onChange={(event) => setInstallmentInterestRate(Number(event.target.value))} value={installmentInterestRate}>{INSTALLMENT_INTEREST_OPTIONS.map((option) => <option key={option} value={option}>{MEASURE.format(option)}%</option>)}</select></label>}
+                        </div>
+                      )}
+                      {installmentEnabled && <p className="quote-help">{installmentConditionsLabel(installmentPreview)}</p>}
+                      {upfrontPaymentTerms.pix.enabled && pixDiscountPercent > 0 && <p className="quote-help">Pix: {formatCurrency(pixPreviewValue)} com {pixDiscountPercent}% de desconto.</p>}
+                    </details>
+                  </section>
+                </div>
+                {renderFinancial()}
+              </div>
+            </>
+          )}
 
-            <div className="budget-modern-review-side-note">
-              <span>Conferência</span>
-              <strong>{environments.length} ambiente{environments.length === 1 ? '' : 's'} • {totals.area.toFixed(2)} m²</strong>
-              <small>{selectedUpfrontPaymentTerms.length ? `À vista: ${upfrontPaymentSummary}` : 'Nenhuma condição à vista selecionada.'}</small>
+          {activeStep === 3 && (
+            <div className="quote-columns quote-review">
+              <div className="quote-card quote-sheet">
+                <section className="quote-group">
+                  <div className="quote-group-head"><h2>Cliente e local</h2><button className="quote-action-link" onClick={() => goToStep(1)} type="button">{draft ? 'Ver cliente' : 'Editar cliente'}</button></div>
+                  <div className="quote-review-contact">
+                    <p><BudgetIcon type="user" /><strong>{selectedClient?.name || 'Não informado'}</strong></p>
+                    <p><BudgetIcon type="pin" />{selectedClientAddress}</p>
+                    <p><BudgetIcon type="phone" />{selectedClient?.phone || selectedClient?.whatsapp || selectedClient?.email || 'Telefone não informado'}</p>
+                  </div>
+                </section>
+                <section className="quote-group">
+                  <div className="quote-group-head"><h2>Ambientes</h2><button className="quote-action-link" onClick={() => goToStep(2)} type="button">Editar cálculo</button></div>
+                  <div className="quote-review-rooms">
+                    {environments.map((environment, index) => {
+                      const details = environmentBreakdown[index];
+                      return (
+                        <div key={index}>
+                          <strong>{environment.name || `Ambiente ${index + 1}`}</strong>
+                          <p>{MEASURE.format(Number(environment.width))} m × {MEASURE.format(Number(environment.height))} m · {MEASURE.format(details.area)} m²</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+                <section className="quote-group">
+                  <div className="quote-group-head"><h2>Pagamento</h2><button className="quote-action-link" onClick={() => goToStep(2, 'payment')} type="button">Editar pagamento</button></div>
+                  <p>{paymentText}</p>
+                  {installmentEnabled && installmentPreview.interestFreeCount < installmentPreview.count && <p className="quote-help">{installmentConditionsLabel(installmentPreview)}</p>}
+                  {selectedUpfrontPaymentTerms.some((term) => term.discount_percent > 0) && <ul className="quote-discounts">{selectedUpfrontPaymentTerms.filter((term) => term.discount_percent > 0).map((term) => <li key={term.method}>{term.label}: {formatCurrency(grandTotal * (1 - term.discount_percent / 100))} ({term.discount_percent}% de desconto)</li>)}</ul>}
+                </section>
+              </div>
+              {renderFinancial()}
             </div>
-          </aside>
-          ) : null}
-        </div>
+          )}
+
+          {activeStep === 4 && (
+            <section className="quote-card quote-confirmation">
+              <h1 ref={headingRef} tabIndex={-1}>{title}</h1>
+              <dl className="quote-confirm-rows">
+                <div><dt>Cliente</dt><dd>{selectedClient?.name}</dd></div>
+                <div><dt>Total do orçamento</dt><dd>{formatCurrency(grandTotal)}</dd></div>
+                <div><dt>Pagamento</dt><dd>{paymentText}</dd></div>
+              </dl>
+              <p className="quote-info"><BudgetIcon type="info" />O orçamento será salvo como pendente. O PDF ficará disponível em Orçamentos.</p>
+              {!hasContactPhone && <p className="quote-confirm-help">Para enviar pelo WhatsApp, adicione o telefone do cliente.</p>}
+              <div className="quote-footer quote-footer--inside">
+                <button className="quote-button" onClick={() => goToStep(3)} type="button">Voltar ao resumo</button>
+                <button className="quote-button quote-button--primary" disabled={!canSave || saving} type="submit">{saving ? 'Salvando…' : 'Salvar orçamento'}</button>
+              </div>
+            </section>
+          )}
+        </main>
+
+        {activeStep !== 4 && (
+          <footer className="quote-footer">
+            {activeStep === 1 ? <Link aria-label="Voltar aos orçamentos" className="quote-button" to="/budgets">Voltar</Link> : (
+              <button className="quote-action-link" onClick={() => goToStep(activeStep - 1)} type="button">{activeStep === 2 ? 'Voltar ao cliente' : 'Voltar ao cálculo'}</button>
+            )}
+            {activeStep === 1 && <button className="quote-button quote-button--primary" onClick={continueFromClient} type="button">Continuar para o cálculo</button>}
+            {activeStep === 2 && <button className="quote-button quote-button--primary" onClick={continueFromCalculation} type="button">Revisar orçamento</button>}
+            {activeStep === 3 && <button className="quote-button quote-button--primary" disabled={!canSave} onClick={() => goToStep(4)} type="button">Continuar para salvar</button>}
+          </footer>
+        )}
       </form>
-      {clientFormMode === 'choice' ? <BudgetClientChoice onClose={closeClientForm} onSelect={setClientFormMode} /> : null}
-      {clientFormMode === 'quick' || clientFormMode === 'full' ? (
-        <ClientForm
-          onClose={closeClientForm}
-          onSaved={handleClientCreated}
-          quickCreate={clientFormMode === 'quick'}
-        />
-      ) : null}
+      {clientFormMode === 'choice' && <BudgetClientChoice onClose={closeClientForm} onSelect={setClientFormMode} />}
+      {(clientFormMode === 'quick' || clientFormMode === 'full') && (
+        <ClientForm allowIncomplete onClose={closeClientForm} onSaved={handleClientCreated} quickCreate={clientFormMode === 'quick'} />
+      )}
     </section>
   );
 }
