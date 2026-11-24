@@ -83,16 +83,12 @@ it('controles da agenda e retorno do orçamento têm nomes acessíveis', () => {
   expect(render(<BudgetForm />)).toContain('aria-label="Voltar aos orçamentos"');
 });
 
-it('a prévia do PDF mantém texto claro sobre cabeçalho e rodapé escuros', () => {
-  const css = postcss.parse(readFileSync(new URL('../../index.css', import.meta.url), 'utf8'));
-  const colors = new Map();
+it('a prévia do PDF tem papel independente do tema do painel e cor de capa no Estúdio', () => {
+  const css = postcss.parse(readFileSync(new URL('../PdfBranding/PdfBranding.css', import.meta.url), 'utf8'));
+  const backgrounds = new Map();
   css.walkRules(rule => {
-    for (const selector of rule.selector.split(',').map(value => value.trim())) {
-      if (!selector.startsWith('.dashboard-reference-layout .pdf-branding-preview ')) continue;
-      rule.walkDecls('color', decl => { if (decl.important) colors.set(selector, decl.value); });
-    }
+    rule.walkDecls('background', decl => backgrounds.set(rule.selector, decl.value));
   });
-  expect(colors.get('.dashboard-reference-layout .pdf-branding-preview header .pdf-branding-preview-brand strong')).toBe('var(--pdf-accent)');
-  expect(colors.get('.dashboard-reference-layout .pdf-branding-preview header .pdf-branding-preview-brand small')).toBe('#f5f2ec');
-  expect(colors.get('.dashboard-reference-layout .pdf-branding-preview footer span')).toBe('#f5f2ec');
+  expect(backgrounds.get('.quote-studio .quote-paper')).toBe('var(--paper-background, #fff)');
+  expect(backgrounds.get(".quote-paper[data-template='studio'] .quote-paper-head")).toBe('var(--paper-accent-ink)');
 });

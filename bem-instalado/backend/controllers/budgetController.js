@@ -1079,15 +1079,17 @@ exports.generatePDF = async (req, res) => {
 
     const filePath = await generateBudgetPDF({
       budget,
-      client: clientResult.rows[0],
+      client: clientResult.rows[0] || {},
       environments: environmentsResult.rows,
-      user: userResult.rows[0],
+      user: userResult.rows[0] || {},
       isPro: planAccess.is_pro,
       branding: planAccess.features.custom_pdf_branding ? userResult.rows[0]?.pdf_branding : null,
     });
 
-    return res.download(filePath, `orcamento-${budget.id}.pdf`, async () => {
+    res.set('Cache-Control', 'private, no-store');
+    return res.download(filePath, `orcamento-${budget.id}.pdf`, async error => {
       await fs.unlink(filePath).catch(() => null);
+      if (error && !res.headersSent) res.status(500).json({ error: 'Não foi possível baixar o PDF.' });
     });
   } catch (error) {
     console.error('Falha ao gerar PDF do orçamento.', {

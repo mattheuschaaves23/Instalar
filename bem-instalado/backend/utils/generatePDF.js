@@ -1,736 +1,451 @@
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const crypto = require('crypto');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+const crypto = require('node:crypto');
 const PDFDocument = require('pdfkit');
+const { decodeAssetKey, isObjectStorageConfigured } = require('../services/objectStorage');
+const { defaultScope } = require('../../shared/pdfBranding.json');
+const { resolvePdfBranding, normalizeText } = require('./pdfBranding');
 const { APP_TIME_ZONE } = require('./appTimeZone');
 
-const COLORS = {
-  bg: '#0F0D09',
-  panel: '#18140D',
-  panelSoft: '#14110B',
-  border: '#3A2F1A',
-  line: '#2B2315',
-  gold: '#CDA349',
-  goldSoft: '#F0D28A',
-  text: '#F7F0E0',
-  muted: '#B8A983',
-  success: '#27B07D',
-  danger: '#D15454',
-  warning: '#D1A545',
-};
-
-const MARGIN = 40;
-const BOTTOM_SAFE_AREA = 72;
-const HEADER_HEIGHT = 124;
-
-function toNumber(value) {
-  return Number(value || 0);
-}
-
-function toText(value) {
-  return String(value || '').trim();
-}
-
-function formatCurrency(value) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(toNumber(value));
-}
+const INK = '#10243C';
+const MUTED = '#45586D';
+const RULE = '#D8E1EA';
+const PAPER = '#FFFFFF';
+const M = 42;
+const LIMIT_IMAGE = 4 * 1024 * 1024;
+const number = value => Number.isFinite(Number(value)) ? Number(value) : 0;
+const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const decimalFormatter = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money = value => currencyFormatter.format(number(value));
+const decimal = value => decimalFormatter.format(number(value));
+const clean = (value, limit = 260) => normalizeText(String(value ?? ''), limit);
+const methods = { pix: 'Pix', boleto: 'Boleto', debit_card: 'Cartão de débito', credit_card: 'Cartão à vista', cash: 'Dinheiro', bank_transfer: 'Transferência' };
 
 function formatDate(value) {
-  if (!value) {
-    return '-';
-  }
-
+  if (!value) return '';
+  // Dates chosen in the calendar have no time; do not shift the day for UTC midnight.
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value.split('-').reverse().join('/');
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '-';
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('pt-BR', { timeZone: APP_TIME_ZONE, dateStyle: 'short' }).format(date);
+}
+
+function validUntil(value, days) {
+  const issue = formatDate(value || new Date()) || formatDate(new Date());
+  const [day, month, year] = issue.split('/').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + days, 12));
+  return formatDate(date);
+}
+
+async function brandImage(value, userId, kind) {
+  if (typeof value !== 'string') return null;
+  const data = /^data:image\/(?:png|jpeg);base64,([\w+/=]+)$/i.exec(value);
+  if (data && data[1].length <= Math.ceil(LIMIT_IMAGE / 3) * 4) {
+    return Buffer.from(data[1], 'base64');
   }
-
-  return new Intl.DateTimeFormat('pt-BR', {
-    timeZone: APP_TIME_ZONE,
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(date);
-}
-
-function addDays(value, amount) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  date.setDate(date.getDate() + amount);
-  return date;
-}
-
-function statusLabel(status) {
-  const normalized = toText(status).toLowerCase();
-  if (normalized === 'approved') return 'Aprovado';
-  if (normalized === 'rejected') return 'Rejeitado';
-  if (normalized === 'pending') return 'Pendente';
-  if (normalized === 'completed') return 'Concluído';
-  return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : 'Pendente';
-}
-
-function statusColor(status) {
-  const normalized = toText(status).toLowerCase();
-  if (normalized === 'approved' || normalized === 'completed') return COLORS.success;
-  if (normalized === 'rejected' || normalized === 'canceled') return COLORS.danger;
-  return COLORS.warning;
-}
-
-function decodeImage(value) {
-  if (!value || typeof value !== 'string') {
-    return null;
-  }
-
-  if (value.startsWith('data:image/')) {
-    const base64 = value.split(',')[1];
-    if (!base64) {
+  const suffix = /^\/api\/public\/assets\/([\w-]+)$/.exec(value);
+  if (!suffix || !userId || !isObjectStorageConfigured()) return null;
+  const pathname = decodeAssetKey(suffix[1]);
+  if (!pathname.startsWith(`uploads/${userId}/${kind}/`)) return null;
+  try {
+    const { get } = require('@vercel/blob');
+    const asset = await get(pathname, { access: 'private', abortSignal: AbortSignal.timeout(3500) });
+    if (!asset?.stream) return null;
+    const type = asset.blob?.contentType || asset.headers?.get?.('content-type');
+    if (!['image/png', 'image/jpeg'].includes(type)) {
+      await asset.stream.cancel();
       return null;
     }
-    try {
-      return Buffer.from(base64, 'base64');
-    } catch (_error) {
-      return null;
+    const chunks = [];
+    let size = 0;
+    for await (const chunk of asset.stream) {
+      size += chunk.byteLength;
+      if (size > LIMIT_IMAGE) return null;
+      chunks.push(Buffer.from(chunk));
     }
+    return Buffer.concat(chunks);
+  } catch {
+    return null;
   }
-
-  if (fs.existsSync(value)) {
-    return value;
-  }
-
-  return null;
 }
 
-function cleanBrandingText(value, maxLength) {
-  return String(value || '')
-    .replace(/[\u0000-\u001F\u007F]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, maxLength);
+function upfrontTerms(value) {
+  let terms = value;
+  if (typeof value === 'string') {
+    try { terms = JSON.parse(value); } catch { return []; }
+  }
+  if (!Array.isArray(terms)) return [];
+  return terms.slice(0, 12).flatMap(term => {
+    const key = clean(term?.method).toLowerCase();
+    const percent = number(term?.discount_percent);
+    if (!Object.hasOwn(methods, key) || percent < 0 || percent > 100) return [];
+    return [percent > 0 ? `${methods[key]} (${percent.toLocaleString('pt-BR')}% de desconto)` : methods[key]];
+  });
 }
 
-function resolveBranding(branding, user, isPro) {
-  const source = isPro && branding && typeof branding === 'object' && !Array.isArray(branding)
-    ? branding
-    : {};
-  const accent = cleanBrandingText(source.accent_color, 7).toUpperCase();
+function render(doc, { budget, client, environments, user, branding, logo, photo, installment, example, colors }) {
+  const width = doc.page.width - 2 * M;
+  const right = M + width;
+  const basic = branding.template === 'basic';
+  const technical = branding.template === 'compact';
+  const classic = branding.template === 'classic';
+  const studio = branding.template === 'studio';
+  const compact = branding.density === 'dense' || (branding.density === 'auto' && (basic || technical));
+  const accent = branding.accent_color;
+  const accentText = colors.accentInk(accent);
+  const brand = basic ? 'InstalarPro' : branding.brand_name || clean(user.business_name, 80) || clean(user.name, 80) || 'InstalarPro';
+  const themeTint = basic ? '#F1F3F5' : colors.tint(accent, 0.09);
+  const background = branding.paper_tone === 'tinted' ? colors.tint(accent, 0.035) : classic && branding.paper_tone === 'auto' ? '#FCF9F3' : PAPER;
+  const headingFont = ({
+    sans: 'Helvetica-Bold', serif: 'Times-Bold', mono: 'Courier-Bold',
+  })[branding.heading_font] || (classic ? 'Times-Bold' : technical ? 'Courier-Bold' : 'Helvetica-Bold');
+  const issue = formatDate(budget.created_at || new Date());
+  const valid = validUntil(budget.created_at, branding.validity_days);
+  const id = clean(budget.id, 45);
+  const identifier = `Orçamento #${id}`;
+  const rawStatus = clean(budget.status, 24).toLowerCase();
+  const status = ({ approved: 'Aprovado', rejected: 'Rejeitado', pending: 'Pendente', completed: 'Concluído', canceled: 'Cancelado' })[rawStatus] || 'Pendente';
+  const total = money(budget.total_amount);
+  const pad = compact ? 10 : branding.density === 'spacious' ? 22 : 16;
+  let y = 0;
 
-  return {
-    brandName: cleanBrandingText(source.brand_name, 80) || cleanBrandingText(user?.business_name, 80) || 'InstalarPro',
-    documentTitle: cleanBrandingText(source.document_title, 100) || 'Proposta comercial de instalação',
-    introText: cleanBrandingText(source.intro_text, 320),
-    closingText: cleanBrandingText(source.closing_text, 320),
-    accentColor: /^#[0-9A-F]{6}$/.test(accent) ? accent : COLORS.goldSoft,
-    showLogo: source.show_logo === undefined ? true : Boolean(source.show_logo),
-    showInstallerPhoto: source.show_installer_photo === undefined ? true : Boolean(source.show_installer_photo),
-    showContact: source.show_contact === undefined ? true : Boolean(source.show_contact),
+  const style = (size, color = INK, bold = false, font) => doc.font(font || (bold ? 'Helvetica-Bold' : 'Helvetica')).fontSize(size).fillColor(color);
+  const measure = (value, w, size, bold = false, font) => style(size, INK, bold, font).heightOfString(value, { width: w, lineGap: 2 });
+  function write(value, x, top, w, { size = 10, color = INK, bold = false, align = 'left', font } = {}) {
+    style(size, color, bold, font).text(value, x, top, { width: w, align, lineGap: 2 });
+  }
+  function fixed(value, x, top, w, { size = 9, color = MUTED, bold = false, align = 'left', font } = {}) {
+    style(size, color, bold, font);
+    let output = value;
+    if (doc.widthOfString(output) > w) {
+      while (output.length && doc.widthOfString(output + '...') > w) output = output.slice(0, -1);
+      output += '...';
+    }
+    const remaining = w - doc.widthOfString(output);
+    doc.text(output, x + (align === 'right' ? remaining : align === 'center' ? remaining / 2 : 0), top, { width: 0, lineBreak: false });
+  }
+  const rule = (top, from = M, to = right) => doc.moveTo(from, top).lineTo(to, top).lineWidth(0.7).stroke(RULE);
+  const image = (data, x, top, w, h) => {
+    if (!data) return false;
+    try {
+      doc.image(data, x, top, { fit: [w, h], align: 'center', valign: 'center' });
+      return true;
+    } catch {
+      return false;
+    }
   };
-}
 
-const UPFRONT_PAYMENT_LABELS = {
-  pix: 'Pix',
-  boleto: 'Boleto',
-  debit_card: 'Cartão de débito',
-  credit_card: 'Cartão à vista',
-  cash: 'Dinheiro',
-  bank_transfer: 'Transferência',
-};
-
-function upfrontPaymentInfo(budget) {
-  let terms = budget?.payment_terms;
-
-  if (typeof terms === 'string') {
-    try {
-      terms = JSON.parse(terms);
-    } catch (_error) {
-      terms = [];
+  function header(continued = false) {
+    if (background !== PAPER) doc.rect(0, 0, doc.page.width, doc.page.height).fill(background);
+    if (continued) {
+      fixed(brand, M, 32, width / 2, { size: 12, font: headingFont, color: INK });
+      fixed(`${identifier} / Continuação`, M + width / 2, 34, width / 2, { align: 'right' });
+      rule(56);
+      y = 73;
+      return;
     }
-  }
-
-  if (!Array.isArray(terms)) {
-    return [];
-  }
-
-  return terms.reduce((result, term) => {
-    const method = toText(term?.method).toLowerCase();
-    const discountPercent = toNumber(term?.discount_percent);
-    const label = UPFRONT_PAYMENT_LABELS[method];
-
-    if (!label || !Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
-      return result;
-    }
-
-    return [...result, { label, discountPercent }];
-  }, []);
-}
-
-function buildClientAddress(client) {
-  const line1 = [toText(client?.street), toText(client?.house_number) && `Nº ${toText(client?.house_number)}`]
-    .filter(Boolean)
-    .join(', ');
-  const line2 = [toText(client?.neighborhood), [toText(client?.city), toText(client?.state)].filter(Boolean).join(' - ')]
-    .filter(Boolean)
-    .join(', ');
-  const line3 = toText(client?.zip_code) ? `CEP ${toText(client?.zip_code)}` : '';
-  const fallback = toText(client?.address);
-
-  return [line1, line2, line3].filter(Boolean).join(' • ') || fallback || '-';
-}
-
-function canFit(doc, y, heightNeeded) {
-  return y + heightNeeded <= doc.page.height - BOTTOM_SAFE_AREA;
-}
-
-function drawMainHeader(doc, budget, user, isPro, branding) {
-  const pageWidth = doc.page.width;
-  const logo = isPro && branding.showLogo ? decodeImage(user.logo) : null;
-  const photo = isPro && branding.showInstallerPhoto ? decodeImage(user.installer_photo) : null;
-
-  doc.save();
-  doc.rect(0, 0, pageWidth, HEADER_HEIGHT).fill(COLORS.bg);
-  doc.restore();
-
-  doc.save();
-  doc.moveTo(MARGIN, HEADER_HEIGHT - 1).lineTo(pageWidth - MARGIN, HEADER_HEIGHT - 1).lineWidth(1).stroke(COLORS.border);
-  doc.restore();
-
-  let leftX = MARGIN;
-  const rightBlockWidth = 170;
-  const rightX = pageWidth - MARGIN - rightBlockWidth - (photo ? 60 : 0);
-
-  if (logo) {
-    try {
-      doc.image(logo, MARGIN, 20, { fit: [74, 74], align: 'left', valign: 'center' });
-      leftX = MARGIN + 86;
-    } catch (_error) {
-      leftX = MARGIN;
-    }
-  }
-
-  const leftTextWidth = rightX - leftX - 16;
-  doc.fillColor(branding.accentColor).font('Helvetica-Bold').fontSize(19).text(branding.brandName, leftX, 28, {
-    width: leftTextWidth,
-    height: 24,
-    ellipsis: true,
-  });
-  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(13).text(branding.documentTitle, leftX, 52, {
-    width: leftTextWidth,
-    height: 18,
-    ellipsis: true,
-  });
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9).text('Documento profissional para apresentação e fechamento.', leftX, 76, {
-    width: leftTextWidth, height: 24, ellipsis: true,
-  });
-
-  const badgeText = statusLabel(budget.status);
-  const badgeWidth = 88;
-  const badgeX = rightX + rightBlockWidth - badgeWidth;
-  const badgeY = 20;
-
-  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(12).text(`ORÇAMENTO #${budget.id}`, rightX, 54, {
-    width: rightBlockWidth,
-    align: 'right',
-  });
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(10).text(`Emissão: ${formatDate(new Date())}`, rightX, 76, {
-    width: rightBlockWidth,
-    align: 'right',
-  });
-
-  doc.save();
-  doc.roundedRect(badgeX, badgeY, badgeWidth, 22, 11).fillAndStroke(COLORS.panel, statusColor(budget.status));
-  doc.restore();
-  doc.fillColor(branding.accentColor).font('Helvetica-Bold').fontSize(9).text(badgeText.toUpperCase(), badgeX, badgeY + 7, {
-    width: badgeWidth,
-    align: 'center',
-  });
-
-  if (photo) {
-    try {
-      const photoX = pageWidth - MARGIN - 48;
-      const photoY = 20;
-      doc.image(photo, photoX, photoY, { fit: [48, 48], align: 'center', valign: 'center' });
-      doc.roundedRect(photoX, photoY, 48, 48, 10).lineWidth(1).stroke(COLORS.border);
-    } catch (_error) {
-      // ignora falha de imagem
-    }
-  }
-}
-
-function drawSubHeader(doc, budget, branding) {
-  doc.save();
-  doc.rect(0, 0, doc.page.width, 56).fill(COLORS.bg);
-  doc.restore();
-
-  doc.fillColor(branding.accentColor).font('Helvetica-Bold').fontSize(13).text(`Orçamento #${budget.id}`, MARGIN, 20);
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9).text(`Continuação • ${formatDate(new Date())}`, MARGIN, 36);
-}
-
-function drawBrandMessage(doc, title, message, y, width, branding) {
-  if (!message) {
-    return 0;
-  }
-
-  const textWidth = width - 28;
-  doc.font('Helvetica').fontSize(10);
-  const textHeight = doc.heightOfString(message, { width: textWidth, lineGap: 2 });
-  const panelHeight = Math.max(62, textHeight + 42);
-
-  doc.save();
-  doc.roundedRect(MARGIN, y, width, panelHeight, 12).fillAndStroke(COLORS.panelSoft, branding.accentColor);
-  doc.restore();
-  doc.fillColor(branding.accentColor).font('Helvetica-Bold').fontSize(9).text(title.toUpperCase(), MARGIN + 14, y + 12);
-  doc.fillColor(COLORS.text).font('Helvetica').fontSize(10).text(message, MARGIN + 14, y + 29, {
-    width: textWidth,
-    lineGap: 2,
-  });
-
-  return panelHeight;
-}
-
-function drawSectionTitle(doc, title, y) {
-  doc.fillColor(COLORS.goldSoft).font('Helvetica-Bold').fontSize(10).text(title.toUpperCase(), MARGIN, y);
-  const lineY = y + 14;
-  doc.save();
-  doc.moveTo(MARGIN, lineY).lineTo(doc.page.width - MARGIN, lineY).lineWidth(1).stroke(COLORS.line);
-  doc.restore();
-  return lineY + 8;
-}
-
-function drawInfoBox(doc, title, lines, x, y, width) {
-  const contentTop = y + 28;
-  doc.font('Helvetica').fontSize(10);
-  const heights = lines.map((line) => Math.max(14, doc.heightOfString(line, { width: width - 24 }) + 3));
-  const boxHeight = 34 + heights.reduce((sum, height) => sum + height, 0) + 10;
-
-  doc.save();
-  doc.roundedRect(x, y, width, boxHeight, 10).fillAndStroke(COLORS.panel, COLORS.border);
-  doc.restore();
-
-  doc.fillColor(COLORS.goldSoft).font('Helvetica-Bold').fontSize(9).text(title.toUpperCase(), x + 12, y + 11, {
-    width: width - 24,
-  });
-
-  let lineY = contentTop;
-  lines.forEach((line, index) => {
-    doc.fillColor(COLORS.text).font('Helvetica').fontSize(10).text(line, x + 12, lineY, {
-      width: width - 24,
-      ellipsis: true,
-    });
-    lineY += heights[index];
-  });
-
-  return boxHeight;
-}
-
-function drawMetricCard(doc, label, value, x, y, width) {
-  const height = 62;
-
-  doc.save();
-  doc.roundedRect(x, y, width, height, 10).fillAndStroke(COLORS.panelSoft, COLORS.border);
-  doc.restore();
-
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(8.5).text(label.toUpperCase(), x + 12, y + 11, {
-    width: width - 24,
-  });
-  doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(12).text(value, x + 12, y + 31, {
-    width: width - 24,
-  });
-
-  return height;
-}
-
-function drawTableHeader(doc, y, widths) {
-  const headers = ['Ambiente', 'Medidas', 'Área', 'Rolos', 'Valor'];
-  const rowHeight = 24;
-  let x = MARGIN;
-
-  doc.save();
-  doc.roundedRect(MARGIN, y, doc.page.width - MARGIN * 2, rowHeight, 8).fillAndStroke(COLORS.panel, COLORS.border);
-  doc.restore();
-
-  headers.forEach((header, index) => {
-    const align = index >= 2 ? 'right' : 'left';
-    doc.fillColor(COLORS.goldSoft).font('Helvetica-Bold').fontSize(9).text(header, x + 8, y + 8, {
-      width: widths[index] - 14,
-      align,
-      ellipsis: true,
-    });
-    x += widths[index];
-  });
-
-  return y + rowHeight;
-}
-
-function drawEnvironmentRow(doc, environment, y, widths, isAlt) {
-  const rowHeight = 24;
-  const rolls = toNumber(environment.rolls_manual) > 0
-    ? toNumber(environment.rolls_manual)
-    : toNumber(environment.rolls_auto);
-
-  const values = [
-    toText(environment.name) || '-',
-    `${toNumber(environment.height).toFixed(2)}m x ${toNumber(environment.width).toFixed(2)}m`,
-    `${toNumber(environment.area).toFixed(2)}m²`,
-    `${rolls}`,
-    formatCurrency(toNumber(environment.total) - toNumber(environment.removal_total)),
-  ];
-
-  let x = MARGIN;
-  const background = isAlt ? '#15110C' : '#110E09';
-
-  doc.save();
-  doc.roundedRect(MARGIN, y, doc.page.width - MARGIN * 2, rowHeight, 0).fillAndStroke(background, COLORS.line);
-  doc.restore();
-
-  values.forEach((value, index) => {
-    const align = index >= 2 ? 'right' : 'left';
-    doc.fillColor(COLORS.text).font('Helvetica').fontSize(9).text(value, x + 8, y + 7, {
-      width: widths[index] - 14,
-      align,
-      ellipsis: true,
-    });
-    x += widths[index];
-  });
-
-  return y + rowHeight;
-}
-
-function drawTableHeaderWithRemoval(doc, y, widths) {
-  const headers = ['Ambiente', 'Medidas', 'Área', 'Rolos', 'Remoção', 'Valor'];
-  const rowHeight = 24;
-  let x = MARGIN;
-
-  doc.save();
-  doc.roundedRect(MARGIN, y, doc.page.width - MARGIN * 2, rowHeight, 8).fillAndStroke(COLORS.panel, COLORS.border);
-  doc.restore();
-
-  headers.forEach((header, index) => {
-    const align = index >= 2 ? 'right' : 'left';
-    doc.fillColor(COLORS.goldSoft).font('Helvetica-Bold').fontSize(9).text(header, x + 8, y + 8, {
-      width: widths[index] - 14,
-      align,
-      ellipsis: true,
-    });
-    x += widths[index];
-  });
-
-  return y + rowHeight;
-}
-
-function drawEnvironmentRowWithRemoval(doc, environment, y, widths, isAlt) {
-  const rowHeight = 24;
-  const rolls = toNumber(environment.rolls_manual) > 0
-    ? toNumber(environment.rolls_manual)
-    : toNumber(environment.rolls_auto);
-  const removalTotal = toNumber(environment.removal_total);
-
-  const values = [
-    toText(environment.name) || '-',
-    `${toNumber(environment.height).toFixed(2)}m x ${toNumber(environment.width).toFixed(2)}m`,
-    `${toNumber(environment.area).toFixed(2)}m²`,
-    `${rolls}`,
-    formatCurrency(removalTotal),
-    formatCurrency(environment.total),
-  ];
-
-  let x = MARGIN;
-  const background = isAlt ? '#15110C' : '#110E09';
-
-  doc.save();
-  doc.roundedRect(MARGIN, y, doc.page.width - MARGIN * 2, rowHeight, 0).fillAndStroke(background, COLORS.line);
-  doc.restore();
-
-  values.forEach((value, index) => {
-    const align = index >= 2 ? 'right' : 'left';
-    doc.fillColor(COLORS.text).font('Helvetica').fontSize(9).text(value, x + 8, y + 7, {
-      width: widths[index] - 14,
-      align,
-      ellipsis: true,
-    });
-    x += widths[index];
-  });
-
-  return y + rowHeight;
-}
-
-function drawTotalsPanel(doc, budget, installment, y, width) {
-  const total = formatCurrency(budget.total_amount);
-  const removalPricePerRoll = toNumber(budget.removal_price_per_roll);
-  const removalRolls = toNumber(budget.removal_rolls) || toNumber(budget.total_rolls);
-  const removalDescription = removalPricePerRoll > 0
-    ? `Remoção: ${removalRolls} rolos selecionados x ${formatCurrency(removalPricePerRoll)} = ${formatCurrency(budget.removal_cost)}`
-    : `Remoção: ${formatCurrency(budget.removal_cost)}`;
-  const upfrontTerms = upfrontPaymentInfo(budget);
-  const upfrontTermsDescription = upfrontTerms
-    .map((term) => `${term.label}${term.discountPercent > 0 ? ` (${term.discountPercent}% de desconto)` : ''}`)
-    .join(' • ');
-  const lines = [
-    `Subtotal do serviço: ${formatCurrency(budget.subtotal_rolls)}`,
-    removalDescription,
-    `Pagamento à vista: ${total}`,
-    upfrontTermsDescription ? `Formas à vista: ${upfrontTermsDescription}` : 'Formas à vista: não informadas',
-    installment.enabled
-      ? `Pagamento parcelado: ${installment.amountLabel}`
-      : 'Pagamento parcelado: não habilitado',
-    installment.enabled
-      ? installment.conditionsLabel
-      : '',
-  ];
-  const textWidth = width - 28;
-  doc.font('Helvetica').fontSize(10);
-  const linesHeight = lines.reduce(
-    (totalHeight, line) => totalHeight + doc.heightOfString(line, { width: textWidth, lineGap: 2 }) + 4,
-    0
-  );
-  const panelHeight = Math.max(136, 34 + linesHeight + 48);
-
-  doc.save();
-  doc.roundedRect(MARGIN, y, width, panelHeight, 12).fillAndStroke(COLORS.panel, COLORS.border);
-  doc.restore();
-
-  doc.fillColor(COLORS.goldSoft).font('Helvetica-Bold').fontSize(10).text('RESUMO FINANCEIRO', MARGIN + 14, y + 12);
-
-  let lineY = y + 34;
-  lines.forEach((line) => {
-    doc.fillColor(COLORS.text).font('Helvetica').fontSize(10).text(line, MARGIN + 14, lineY, {
-      width: textWidth,
-      lineGap: 2,
-    });
-    lineY += doc.heightOfString(line, { width: textWidth, lineGap: 2 }) + 4;
-  });
-
-  doc.save();
-  doc.roundedRect(MARGIN + 12, y + panelHeight - 40, width - 24, 26, 8).fillAndStroke('#1F1910', COLORS.border);
-  doc.restore();
-  doc.fillColor(COLORS.goldSoft).font('Helvetica-Bold').fontSize(12).text(`TOTAL GERAL: ${total}`, MARGIN + 18, y + panelHeight - 31);
-
-  return panelHeight;
-}
-
-function drawCommercialPanel(doc, budget, y, width) {
-  const validityDate = addDays(budget.created_at || new Date(), 30);
-  const lines = [
-    `Status atual: ${statusLabel(budget.status)}`,
-    `Aprovado em: ${formatDate(budget.approved_date)}`,
-    `Data sugerida para instalação: ${formatDate(budget.schedule_date)}`,
-    `Validade desta proposta: ${formatDate(validityDate)}`,
-  ];
-  const panelHeight = 110;
-
-  doc.save();
-  doc.roundedRect(MARGIN, y, width, panelHeight, 12).fillAndStroke(COLORS.panelSoft, COLORS.border);
-  doc.restore();
-
-  doc.fillColor(COLORS.goldSoft).font('Helvetica-Bold').fontSize(10).text('CONDIÇÕES COMERCIAIS', MARGIN + 14, y + 12);
-
-  lines.forEach((line, index) => {
-    doc.fillColor(COLORS.text).font('Helvetica').fontSize(10).text(line, MARGIN + 14, y + 34 + index * 16, {
-      width: width - 28,
-    });
-  });
-
-  return panelHeight;
-}
-
-function drawScopeAndSignature(doc, y, width, userName) {
-  const scopeHeight = 132;
-  doc.save();
-  doc.roundedRect(MARGIN, y, width, scopeHeight, 12).fillAndStroke(COLORS.panel, COLORS.border);
-  doc.restore();
-
-  doc.fillColor(COLORS.goldSoft).font('Helvetica-Bold').fontSize(10).text('ESCOPO E OBSERVAÇÕES', MARGIN + 14, y + 12);
-  doc.fillColor(COLORS.text).font('Helvetica').fontSize(10).text(
-    '• Instalação conforme medidas aprovadas e condições do ambiente.\n' +
-      '• Materiais, prazos e logística devem ser confirmados no fechamento.\n' +
-      '• Alterações após aprovação podem gerar atualização de valores.\n' +
-      '• Recomenda-se vistoria final conjunta ao término da instalação.',
-    MARGIN + 14,
-    y + 34,
-    { width: width - 28, lineGap: 2 }
-  );
-
-  const signatureY = y + scopeHeight + 14;
-  const gap = 34;
-  const each = (width - gap) / 2;
-  const lineY = signatureY + 24;
-
-  doc.fillColor(COLORS.goldSoft).font('Helvetica-Bold').fontSize(10).text('ASSINATURAS', MARGIN, signatureY);
-
-  doc.save();
-  doc.moveTo(MARGIN, lineY).lineTo(MARGIN + each, lineY).lineWidth(1).stroke(COLORS.border);
-  doc.moveTo(MARGIN + each + gap, lineY).lineTo(MARGIN + each + gap + each, lineY).lineWidth(1).stroke(COLORS.border);
-  doc.restore();
-
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(9).text('Cliente', MARGIN, lineY + 6, { width: each, align: 'center' });
-  doc.text(userName ? `Instalador • ${userName}` : 'Instalador', MARGIN + each + gap, lineY + 6, {
-    width: each,
-    align: 'center',
-  });
-
-  return scopeHeight + 58;
-}
-
-function drawFooter(doc, pageNumber, pageCount, budgetId, user, isPro, branding) {
-  const footerY = doc.page.height - 44;
-
-  doc.save();
-  doc.moveTo(MARGIN, footerY - 8).lineTo(doc.page.width - MARGIN, footerY - 8).lineWidth(1).stroke(COLORS.line);
-  doc.restore();
-
-  const leftText = `${isPro ? branding.brandName : 'InstalarPro'} • Orçamento #${budgetId}`;
-  const centerText = isPro
-    ? (branding.showContact && toText(user?.phone) ? `Contato: ${toText(user.phone)}` : 'Documento profissional')
-    : 'Criado gratuitamente com InstalarPro';
-  const rightText = `Página ${pageNumber} de ${pageCount}`;
-
-  // Footer is positioned outside the flowing content area. Never let text()
-  // paginate here: it would add three empty pages while numbering each page.
-  const contentWidth = doc.page.width - MARGIN * 2;
-  const widths = [165, contentWidth - 255, 90];
-  doc.font('Helvetica').fontSize(8.5);
-  const singleLine = (value, width) => {
-    let text = value;
-    while (text.length && doc.widthOfString(text) > width) text = text.slice(0, -1);
-    return text === value ? text : `${text.slice(0, -3)}...`;
-  };
-  const center = singleLine(centerText, widths[1]);
-  const fixedText = { width: 0, lineBreak: false };
-  doc.fillColor(COLORS.muted).text(singleLine(leftText, widths[0]), MARGIN, footerY, fixedText);
-  doc.text(center, MARGIN + widths[0] + (widths[1] - doc.widthOfString(center)) / 2, footerY, fixedText);
-  doc.text(rightText, doc.page.width - MARGIN - doc.widthOfString(rightText), footerY, fixedText);
-}
-
-module.exports = async function generateBudgetPDF({ budget, client, environments, user, isPro = false, branding = null }) {
-  // Vercel's runtime loader does not support require(ESM), even on recent Node.
-  const { installmentInfo, installmentAmountLabel, installmentConditionsLabel } = await import('../../shared/installmentTerms.mjs');
-  return new Promise((resolve, reject) => {
-    // Em ambientes serverless, como a Vercel, somente a pasta temporária do SO é gravável.
-    // O identificador aleatório evita que duas requisições do mesmo orçamento disputem o mesmo arquivo.
-    const tempDir = path.join(os.tmpdir(), 'instalapro-pdf');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-
-    const safeBudgetId = String(budget?.id || 'novo').replace(/[^a-zA-Z0-9_-]/g, '');
-    const fileName = `orcamento-${safeBudgetId || 'novo'}-${crypto.randomUUID()}.pdf`;
-    const filePath = path.join(tempDir, fileName);
-    const doc = new PDFDocument({ size: 'A4', margin: MARGIN, bufferPages: true });
-    const stream = fs.createWriteStream(filePath);
-
-    stream.on('error', reject);
-    doc.pipe(stream);
-
-    const resolvedBranding = resolveBranding(branding, user, isPro);
-    drawMainHeader(doc, budget, user, isPro, resolvedBranding);
-
-    const contentWidth = doc.page.width - MARGIN * 2;
-    const gap = 14;
-    const halfWidth = (contentWidth - gap) / 2;
-    let y = 142;
-
-    if (resolvedBranding.introText) {
-      y += drawBrandMessage(doc, 'Mensagem de apresentação', resolvedBranding.introText, y, contentWidth, resolvedBranding) + 14;
-    }
-
-    y = drawSectionTitle(doc, 'Dados do projeto', y);
-
-    const professionalLines = [
-      `Profissional: ${toText(user.name) || '-'}`,
-      `Telefone: ${toText(user.phone) || '-'}`,
-      `E-mail: ${toText(user.email) || '-'}`,
-    ];
-
-    const clientLines = [
-      `Cliente: ${toText(client.name) || '-'}`,
-      `Telefone: ${toText(client.phone) || '-'}`,
-      `E-mail: ${toText(client.email) || '-'}`,
-      `Endereço: ${buildClientAddress(client)}`,
-    ];
-
-    const leftHeight = drawInfoBox(doc, 'Instalador', professionalLines, MARGIN, y, halfWidth);
-    const rightHeight = drawInfoBox(doc, 'Cliente e local', clientLines, MARGIN + halfWidth + gap, y, halfWidth);
-    y += Math.max(leftHeight, rightHeight) + 16;
-
-    const terms = installmentInfo(budget);
-    const installment = { ...terms, amountLabel: installmentAmountLabel(terms), conditionsLabel: installmentConditionsLabel(terms) };
-    const metricWidth = (contentWidth - gap * 3) / 4;
-    drawMetricCard(doc, 'Rolos', `${toNumber(budget.total_rolls)} un`, MARGIN, y, metricWidth);
-    drawMetricCard(doc, 'Área total', `${toNumber(budget.total_area).toFixed(2)} m²`, MARGIN + metricWidth + gap, y, metricWidth);
-    drawMetricCard(doc, 'Valor total', formatCurrency(budget.total_amount), MARGIN + (metricWidth + gap) * 2, y, metricWidth);
-    drawMetricCard(
-      doc,
-      'Parcelamento',
-      installment.enabled ? `${installment.count}x • valor base` : 'À vista',
-      MARGIN + (metricWidth + gap) * 3,
-      y,
-      metricWidth
-    );
-    y += 76;
-
-    y = drawSectionTitle(doc, 'Detalhamento dos ambientes', y);
-    const tableWidths = [190, 120, 75, 60, contentWidth - (190 + 120 + 75 + 60)];
-    y = drawTableHeader(doc, y, tableWidths);
-
-    environments.forEach((environment, index) => {
-      if (!canFit(doc, y, 28)) {
-        doc.addPage();
-        drawSubHeader(doc, budget, resolvedBranding);
-        y = 72;
-        y = drawSectionTitle(doc, 'Detalhamento dos ambientes (continuação)', y);
-        y = drawTableHeader(doc, y, tableWidths);
+    const title = branding.document_title;
+    const subtitle = branding.document_subtitle;
+    const metadata = [identifier, `Emissão: ${issue || '-'}`, branding.show_status ? status : '', example ? 'Exemplo ilustrativo' : ''].filter(Boolean);
+    const titleOptions = { font: headingFont };
+    if (studio) {
+      const leftWidth = width - 156;
+      const titleTop = 84;
+      const titleHeight = measure(title, leftWidth, 28, true, headingFont);
+      const subHeight = subtitle ? measure(subtitle, leftWidth, 10) + 5 : 0;
+      const end = Math.max(190, titleTop + titleHeight + subHeight + pad + 4);
+      doc.rect(0, 0, doc.page.width, end).fill(accentText);
+      if (branding.show_pattern) {
+        doc.save().rect(0, 0, doc.page.width, end).clip().strokeOpacity(0.14).lineWidth(1);
+        for (let dx = -10; dx <= 55; dx += 13) doc.moveTo(doc.page.width - 145 + dx, end).lineTo(doc.page.width + dx, end - 80).stroke(PAPER);
+        doc.restore();
       }
-
-      y = drawEnvironmentRow(doc, environment, y, tableWidths, index % 2 === 1);
-    });
-
-    y += 14;
-
-    const closingMessageHeight = resolvedBranding.closingText ? 96 : 0;
-    if (!canFit(doc, y, 430 + closingMessageHeight)) {
-      doc.addPage();
-      drawSubHeader(doc, budget, resolvedBranding);
-      y = 72;
+      const hasLogo = image(logo, M, 26, 51, 32);
+      fixed(brand, M + (hasLogo ? 62 : 0), 42, leftWidth - (hasLogo ? 62 : 0), { size: 12, bold: true, color: PAPER });
+      write(title, M, titleTop, leftWidth, { ...titleOptions, size: 28, color: PAPER });
+      if (subtitle) write(subtitle, M, titleTop + titleHeight + 4, leftWidth, { size: 10, color: PAPER });
+      image(photo, right - 37, 25, 37, 37);
+      metadata.forEach((line, i) => fixed(line, right - 130, 77 + i * 13, 130, { align: 'right', color: PAPER }));
+      fixed('Total do orçamento', right - 135, end - 47, 135, { align: 'right', color: PAPER });
+      fixed(total, right - 142, end - 34, 142, { align: 'right', color: PAPER, size: 19, bold: true });
+      y = end + pad;
+      return;
     }
-
-    y = drawSectionTitle(doc, 'Resumo e fechamento', y);
-    y += drawTotalsPanel(doc, budget, installment, y, contentWidth) + 12;
-    if (resolvedBranding.closingText) {
-      doc.font('Helvetica').fontSize(10);
-      const closingHeight = Math.max(62, doc.heightOfString(resolvedBranding.closingText, { width: contentWidth - 28, lineGap: 2 }) + 42);
-      if (!canFit(doc, y, closingHeight)) {
-        doc.addPage();
-        drawSubHeader(doc, budget, resolvedBranding);
-        y = 72;
+    if (classic) {
+      const centered = { align: 'center' };
+      image(logo, M, 32, 44, 36);
+      image(photo, right - 38, 32, 38, 38);
+      fixed(brand, M + 55, 42, width - 110, { ...centered, size: 12, color: accentText, bold: true });
+      if (branding.show_pattern) {
+        rule(64, M + width / 2 - 42, M + width / 2 + 42);
+        doc.save().translate(M + width / 2, 64).rotate(45).rect(-2.5, -2.5, 5, 5).fill(accent).restore();
       }
-      y += drawBrandMessage(doc, 'Mensagem final', resolvedBranding.closingText, y, contentWidth, resolvedBranding) + 12;
+      const top = 77;
+      const h = measure(title, width - 32, 32, true, headingFont);
+      write(title, M + 16, top, width - 32, { ...centered, ...titleOptions, size: 32 });
+      if (subtitle) write(subtitle, M + 24, top + h + 1, width - 48, { ...centered, size: 10, color: MUTED });
+      const metaY = top + h + (subtitle ? measure(subtitle, width - 48, 10) + 9 : 9);
+      fixed(metadata.join('   /   '), M, metaY, width, { ...centered, size: 9 });
+      rule(metaY + 20);
+      y = metaY + 20 + pad;
+      return;
     }
-    if (!canFit(doc, y, 110)) {
-      doc.addPage();
-      drawSubHeader(doc, budget, resolvedBranding);
-      y = 72;
+    const top = 35;
+    const badge = technical ? 137 : 112;
+    const titleWidth = width - badge - 14;
+    const titleSize = basic ? 21 : 22;
+    const titleY = 56;
+    const titleH = measure(title, titleWidth, titleSize, true, headingFont);
+    const subtitleH = subtitle ? measure(subtitle, titleWidth, 10) + 3 : 0;
+    if (technical) {
+      doc.rect(M, 23, width, 3).fill(accent);
+      doc.rect(right - badge, top, badge, 62).lineWidth(0.7).stroke(accentText);
+      if (branding.show_pattern) {
+        for (let step = 0; step < 7; step += 1) doc.rect(M + step * 5, 27, 1, step % 2 ? 4 : 6).fill(accent);
+      }
+      image(photo, right - badge + 8, top + 20, 25, 25);
     }
-    y += drawCommercialPanel(doc, budget, y, contentWidth) + 12;
-    if (!canFit(doc, y, 190)) {
-      doc.addPage();
-      drawSubHeader(doc, budget, resolvedBranding);
-      y = 72;
-    }
-    drawScopeAndSignature(doc, y, contentWidth, toText(user.name));
+    const hasLogo = image(logo, M, top - 3, 34, 17);
+    fixed(brand, M + (hasLogo ? 39 : 0), top + 3, titleWidth - (hasLogo ? 39 : 0), { size: 10, bold: true, color: accentText });
+    write(title, M, titleY, titleWidth, { ...titleOptions, size: titleSize });
+    if (subtitle) write(subtitle, M, titleY + titleH + 2, titleWidth, { size: 10, color: MUTED });
+    const metaInset = technical && photo ? 32 : 0;
+    metadata.forEach((line, i) => fixed(line, right - badge + 5 + metaInset, top + 8 + i * 14, badge - (technical ? 13 : 5) - metaInset, { align: 'right', bold: i === 0 }));
+    const line = Math.max(technical ? 105 : 87, top + 8 + (metadata.length - 1) * 14 + 13, titleY + titleH + subtitleH + 8);
+    rule(line);
+    y = line + pad;
+  }
 
-    const pageRange = doc.bufferedPageRange();
-    for (let i = 0; i < pageRange.count; i += 1) {
-      doc.switchToPage(i);
-      drawFooter(doc, i + 1, pageRange.count, budget.id, user, isPro, resolvedBranding);
-    }
+  function room(height) {
+    if (y + height <= doc.page.height - 62) return false;
+    doc.addPage();
+    header(true);
+    return true;
+  }
+  function heading(title) {
+    write(title, M, y, width, { size: classic ? 16 : 13, font: headingFont });
+    y += 19;
+  }
+  function paragraph(title, content) {
+    if (!content) return;
+    const height = measure(content, width - 15, 10);
+    room(height + 32);
+    write(title, M + 12, y, width - 15, { size: 10, color: accentText, bold: true });
+    doc.rect(M, y, 2, height + 18).fill(accent);
+    write(content, M + 12, y + 15, width - 15);
+    y += height + 17 + pad;
+  }
 
+  header();
+  paragraph('Apresentação', branding.intro_text);
+
+  const address = [
+    [clean(client.street, 130), clean(client.house_number, 30), clean(client.complement, 80)].filter(Boolean).join(', '),
+    [clean(client.neighborhood, 80), [clean(client.city, 60), clean(client.state, 8)].filter(Boolean).join(' - ')].filter(Boolean).join(', '),
+    clean(client.zip_code, 14) && `CEP ${clean(client.zip_code, 14)}`,
+  ].filter(Boolean).join(' / ') || clean(client.address, 300);
+  const gutter = technical ? 28 : 20;
+  const half = (width - gutter) / 2;
+  const contact = (person, enabled) => enabled ? [clean(person.phone, 40), clean(person.email, 125)].filter(Boolean) : [];
+  const parties = [
+    { label: 'Preparado por', name: clean(user.name, 100) || brand, lines: contact(user, branding.show_contact) },
+    { label: 'Cliente e local', name: clean(client.name, 120) || 'Cliente', lines: [...contact(client, branding.show_client_contact), address].filter(Boolean) },
+  ];
+  if (studio || technical) parties.reverse();
+  const partyHeight = Math.max(...parties.map(({ name, lines }) =>
+    measure(name, half, 11, true) + lines.reduce((sum, line) => sum + measure(line, half, 9) + 2, 0)));
+  room(partyHeight + 29);
+  if (technical) doc.rect(M - 6, y - 5, width + 12, partyHeight + 26).fill(themeTint);
+  parties.forEach(({ label, name, lines }, index) => {
+    const x = M + index * (half + gutter);
+    write(label, x, y, half, { size: 9, color: MUTED });
+    write(name, x, y + 14, half, { size: 11, bold: true });
+    let lineY = y + 16 + measure(name, half, 11, true);
+    for (const line of lines) {
+      write(line, x, lineY, half, { size: 9, color: MUTED });
+      lineY += measure(line, half, 9) + 2;
+    }
+  });
+  y += partyHeight + 17 + pad;
+
+  const detail = branding.show_measurements;
+  const prices = branding.show_environment_prices;
+  const cols = [...(technical ? [['Nº', 34]] : []), ['Ambiente', 0],
+    ...(detail ? [['Medidas', 102], ['Área', 68], ['Rolos', 46]] : []), ...(prices ? [['Valor', 108]] : [])];
+  const nameIndex = technical ? 1 : 0;
+  const nameWidth = width - cols.reduce((sum, column) => sum + column[1], 0);
+  cols[nameIndex][1] = nameWidth;
+  const cardNameWidth = prices ? width - 177 : width - 65;
+  function tableHeader(continued = false) {
+    heading(continued ? 'Ambientes (continuação)' : 'Ambientes');
+    if (studio) {
+      y += 3;
+      return;
+    }
+    if (!classic) doc.rect(M, y, width, 24).fill(technical ? accentText : themeTint);
+    else rule(y);
+    let x = M;
+    cols.forEach(([label, colWidth], i) => {
+      fixed(label, x + 8, y + 7, colWidth - 16, { bold: true, color: technical ? PAPER : MUTED, align: i <= nameIndex ? 'left' : 'right' });
+      x += colWidth;
+    });
+    y += 24;
+    if (classic) rule(y);
+  }
+  const roomName = environment => clean(environment.name, 180) || 'Ambiente';
+  const rowSize = name => studio
+    ? Math.max(compact ? 29 : 35, measure(name, cardNameWidth, 11, true) + 14 + (detail ? 13 : 0))
+    : Math.max(compact ? 22 : 27, measure(name, nameWidth - 16, 10) + 10);
+  room(43 + (environments.length ? rowSize(roomName(environments[0])) : 27));
+  tableHeader();
+  if (!environments.length) {
+    write('Nenhum ambiente discriminado.', M + 8, y + 7, width - 16, { color: MUTED });
+    y += 27;
+    rule(y);
+  }
+  environments.forEach((environment, index) => {
+    const rolls = number(environment.rolls_manual) > 0 ? number(environment.rolls_manual) : number(environment.rolls_auto);
+    const name = roomName(environment);
+    const dimensions = `${decimal(environment.width)} x ${decimal(environment.height)} m`;
+    const area = `${decimal(environment.area)} m²`;
+    const value = money(number(environment.total) - number(environment.removal_total));
+    const rank = String(index + 1).padStart(2, '0');
+    const rowHeight = rowSize(name);
+    if (room(rowHeight + (studio ? 5 : 0))) tableHeader(true);
+    if (studio) {
+      doc.roundedRect(M, y, width, rowHeight, 5).fill(themeTint);
+      doc.circle(M + 19, y + 16, 10).fill(accentText);
+      fixed(rank, M + 9, y + 12, 20, { size: 7, color: PAPER, bold: true, align: 'center' });
+      write(name, M + 38, y + 7, cardNameWidth, { size: 11, bold: true });
+      if (detail) fixed(`${dimensions}  /  ${area}  /  ${rolls} ${rolls === 1 ? 'rolo' : 'rolos'}`, M + 38,
+        y + 7 + measure(name, cardNameWidth, 11, true), cardNameWidth, { size: 8 });
+      if (prices) fixed(value, right - 120, y + 11, 108, { align: 'right', color: accentText, size: 11, bold: true });
+      y += rowHeight + (compact ? 4 : 6);
+      return;
+    }
+    const values = [...(technical ? [rank] : []), name, ...(detail ? [dimensions, area, String(rolls)] : []), ...(prices ? [value] : [])];
+    if (technical && index % 2 === 0) doc.rect(M, y, width, rowHeight).fill(themeTint);
+    let x = M;
+    values.forEach((value, i) => {
+      const colWidth = cols[i][1];
+      if (i === nameIndex) write(value, x + 8, y + 6, colWidth - 16);
+      else fixed(value, x + 8, y + 7, colWidth - 16, { color: i === 0 ? accentText : INK, align: i === 0 ? 'left' : 'right', font: technical && i === 0 ? 'Courier-Bold' : undefined });
+      if (technical && i > 0) doc.moveTo(x, y).lineTo(x, y + rowHeight).lineWidth(0.5).stroke(RULE);
+      x += colWidth;
+    });
+    y += rowHeight;
+    rule(y);
+  });
+  y += pad;
+
+  const terms = upfrontTerms(budget.payment_terms);
+  const payment = [
+    terms.length ? `À vista: ${terms.join(' / ')}` : '',
+    installment.enabled ? `Cartão: ${installment.amountLabel}` : '',
+    installment.enabled ? installment.conditionsLabel : '',
+  ].filter(Boolean);
+  const removalCost = number(budget.removal_cost);
+  const removalRolls = number(budget.removal_rolls) || number(budget.total_rolls);
+  const totals = [['Subtotal do serviço', money(budget.subtotal_rolls)]];
+  if (removalCost > 0) totals.push([number(budget.removal_price_per_roll) > 0 ? `Remoção (${removalRolls} rolos x ${money(budget.removal_price_per_roll)})` : 'Remoção', money(removalCost)]);
+  if (detail) totals.unshift([`${decimal(budget.total_area)} m² / ${number(budget.total_rolls)} rolos`, '']);
+  const totalHeight = totals.length * 16 + (studio || classic ? 0 : compact ? 36 : 48);
+  room(totalHeight);
+  totals.forEach(([label, value]) => {
+    write(label, M + 8, y, width - 144, { size: 9, color: MUTED });
+    fixed(value, right - 135, y, 127, { color: INK, align: 'right' });
+    y += 16;
+  });
+  if (!studio && !classic) {
+    const totalBox = compact ? 35 : 45;
+    if (basic) rule(y);
+    else doc.rect(M, y, width, totalBox).fill(themeTint);
+    fixed('Total do orçamento', M + 10, y + totalBox / 2 - 5, width / 2, { size: 11, color: accentText, bold: true });
+    fixed(total, right - 200, y + totalBox / 2 - 9, 190, { size: compact ? 17 : 21, color: accentText, bold: true, align: 'right' });
+    y += totalBox;
+  }
+  y += pad;
+
+  const commercial = [
+    ...(payment.length ? payment : ['Formas de pagamento não informadas.']),
+    `Validade: ${valid} (${branding.validity_days} dias da emissão)`,
+    formatDate(budget.approved_date) && `Aprovado em: ${formatDate(budget.approved_date)}`,
+    formatDate(budget.schedule_date) && `Instalação: ${formatDate(budget.schedule_date)}`,
+  ].filter(Boolean);
+  const commercialWidth = classic ? width - 200 : width;
+  const termsHeight = 20 + commercial.reduce((sum, line) => sum + measure(line, commercialWidth, 9) + 2, 0);
+  room(classic ? Math.max(termsHeight, 70) : termsHeight);
+  const termsY = y;
+  heading('Pagamento e condições');
+  commercial.forEach(line => {
+    write(line, M, y, commercialWidth, { size: 9, color: MUTED });
+    y += measure(line, commercialWidth, 9) + 2;
+  });
+  if (classic) {
+    doc.rect(right - 171, termsY, 171, 63).lineWidth(0.8).stroke(accentText);
+    fixed('Total do orçamento', right - 162, termsY + 12, 153, { size: 10, align: 'center', color: accentText });
+    fixed(total, right - 162, termsY + 29, 153, { size: 22, align: 'center', color: accentText, font: headingFont });
+    y = Math.max(y, termsY + 63);
+  }
+  y += pad;
+  if (branding.show_scope) paragraph('Escopo e observações', branding.scope_text || defaultScope);
+  paragraph('Mensagem final', branding.closing_text);
+  if (branding.show_signature) {
+    room(40);
+    const each = (width - 26) / 2;
+    rule(y + 14, M, M + each);
+    rule(y + 14, right - each, right);
+    fixed('Assinatura do cliente', M, y + 21, each);
+    fixed('Assinatura do instalador', right - each, y + 21, each);
+  }
+
+  const pages = doc.bufferedPageRange();
+  for (let index = 0; index < pages.count; index += 1) {
+    doc.switchToPage(pages.start + index);
+    const bottom = doc.page.height - 42;
+    rule(bottom - 8);
+    fixed(basic ? 'Gerado com InstalarPro' : branding.footer_text || `${brand} / ${identifier}`, M, bottom, width * 0.48, { size: 8 });
+    if (branding.show_contact && user.phone) fixed(clean(user.phone, 40), M + width * 0.50, bottom, width * 0.30, { size: 8 });
+    fixed(`${index + 1} / ${pages.count}`, right - 60, bottom, 60, { size: 8, align: 'right' });
+  }
+}
+
+module.exports = async function generateBudgetPDF({
+  budget, client = {}, environments = [], user = {}, isPro = false, branding = null, example = false,
+}) {
+  const normalized = resolvePdfBranding(branding, isPro || example);
+  // Keep the same rendering path for a real quote and an unsaved example.
+  const [terms, colors, logo, photo] = await Promise.all([
+    import('../../shared/installmentTerms.mjs'),
+    import('../../shared/pdfColors.mjs'),
+    (isPro || example) && normalized.show_logo ? brandImage(user.logo, user.id, 'logo') : null,
+    (isPro || example) && normalized.show_installer_photo ? brandImage(user.installer_photo, user.id, 'installer-photo') : null,
+  ]);
+  const installment = terms.installmentInfo(budget);
+  const doc = new PDFDocument({ size: 'A4', margin: M, bufferPages: true, info: { Title: `Orçamento #${clean(budget.id, 45)}` } });
+  const chunks = [];
+  const pdf = new Promise((resolve, reject) => {
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('error', reject);
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+  });
+  try {
+    render(doc, {
+      budget, client, environments, user, branding: normalized, logo, photo, example, colors,
+      installment: { ...installment, amountLabel: terms.installmentAmountLabel(installment), conditionsLabel: terms.installmentConditionsLabel(installment) },
+    });
     doc.end();
-
-    stream.on('finish', () => resolve(filePath));
-  });
+  } catch (error) {
+    doc.destroy();
+    throw error;
+  }
+  const contents = await pdf;
+  const directory = path.join(os.tmpdir(), 'instalapro-pdf');
+  await fs.mkdir(directory, { recursive: true });
+  const file = path.join(directory, `orcamento-${crypto.randomUUID()}.pdf`);
+  await fs.writeFile(file, contents, { flag: 'wx' });
+  return file;
 };
+
 module.exports.formatDate = formatDate;

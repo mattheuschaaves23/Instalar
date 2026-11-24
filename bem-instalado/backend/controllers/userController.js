@@ -1,4 +1,7 @@
 const pool = require('../config/database');
+const fs = require('node:fs/promises');
+const { normalizePdfBranding } = require('../utils/pdfBranding');
+const { sample: pdfSample } = require('../../shared/pdfBranding.json');
 const {
   decodeAssetKey,
   deleteProfileAssetsForUser,
@@ -24,47 +27,6 @@ const { sendMarketplaceEmail } = require('../services/email');
 const { sendPushToUser } = require('../services/push');
 const { getInstallerReadiness, publicProfileSql } = require('../utils/installerEligibility');
 const { SQL_LOCAL_TODAY, localDateKey, sqlLocal } = require('../utils/appTimeZone');
-
-const PDF_BRANDING_DEFAULTS = Object.freeze({
-  brand_name: '',
-  document_title: 'Proposta comercial de instalação',
-  accent_color: '#CDA349',
-  intro_text: '',
-  closing_text: '',
-  show_logo: true,
-  show_installer_photo: true,
-  show_contact: true,
-});
-
-const PDF_ACCENT_COLORS = new Set([
-  '#CDA349', '#0F8798', '#2956A8', '#5B3FA3', '#2E8B57', '#B84372',
-]);
-
-function cleanPdfBrandingText(value, maxLength) {
-  return String(value || '')
-    .replace(/[\u0000-\u001F\u007F]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, maxLength);
-}
-
-function normalizePdfBranding(value) {
-  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-  const requestedColor = cleanPdfBrandingText(source.accent_color, 7).toUpperCase();
-
-  return {
-    brand_name: cleanPdfBrandingText(source.brand_name, 80),
-    document_title: cleanPdfBrandingText(source.document_title, 100) || PDF_BRANDING_DEFAULTS.document_title,
-    accent_color: PDF_ACCENT_COLORS.has(requestedColor) ? requestedColor : PDF_BRANDING_DEFAULTS.accent_color,
-    intro_text: cleanPdfBrandingText(source.intro_text, 320),
-    closing_text: cleanPdfBrandingText(source.closing_text, 320),
-    show_logo: source.show_logo === undefined ? PDF_BRANDING_DEFAULTS.show_logo : Boolean(source.show_logo),
-    show_installer_photo: source.show_installer_photo === undefined
-      ? PDF_BRANDING_DEFAULTS.show_installer_photo
-      : Boolean(source.show_installer_photo),
-    show_contact: source.show_contact === undefined ? PDF_BRANDING_DEFAULTS.show_contact : Boolean(source.show_contact),
-  };
-}
 
 function normalizeStringList(values, maxItems = 8) {
   if (!Array.isArray(values)) {
@@ -629,20 +591,43 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+async function getPdfBrandingOwner(userId, withBranding = false) {
+  const { rows } = await pool.query(
+    `SELECT id, name, business_name, phone, email, logo, installer_photo${withBranding ? ', pdf_branding' : ''}
+       FROM users WHERE id = $1`,
+    [userId]
+  );
+  return rows[0];
+}
+
 exports.getPdfBranding = async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      "SELECT COALESCE(pdf_branding, '{}'::jsonb) AS pdf_branding FROM users WHERE id = $1",
-      [req.userId]
-    );
-
-    if (!rows[0]) {
+    const owner = await getPdfBrandingOwner(req.userId, true);
+    if (!owner) {
       return res.status(404).json({ error: 'Usuário não encontrado.' });
     }
 
-    return res.json({ branding: normalizePdfBranding(rows[0].pdf_branding) });
+    const { id, pdf_branding, ...profile } = owner;
+    res.set('Cache-Control', 'private, no-store');
+    return res.json({ branding: normalizePdfBranding(pdf_branding), profile });
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao carregar a personalização do PDF.' });
+  }
+};
+
+exports.previewPdfBranding = async (req, res) => {
+  try {
+    const owner = await getPdfBrandingOwner(req.userId);
+    if (!owner) return res.status(404).json({ error: 'Usuário não encontrado.' });
+    const generateBudgetPDF = require('../utils/generatePDF');
+    const file = await generateBudgetPDF({ ...pdfSample, user: owner, branding: req.body, example: true });
+    res.set('Cache-Control', 'private, no-store');
+    return res.download(file, 'orcamento-exemplo.pdf', async error => {
+      await fs.unlink(file).catch(() => null);
+      if (error && !res.headersSent) res.status(500).json({ error: 'Não foi possível baixar o exemplo.' });
+    });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Não foi possível gerar o PDF de teste.' });
   }
 };
 

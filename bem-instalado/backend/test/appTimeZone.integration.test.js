@@ -7,6 +7,9 @@ process.env.TZ = 'UTC';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { readFileSync } = require('node:fs');
+const { randomUUID } = require('node:crypto');
+const path = require('node:path');
 
 const SAO_PAULO = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'America/Sao_Paulo',
@@ -18,6 +21,49 @@ const SAO_PAULO = new Intl.DateTimeFormat('pt-BR', {
 });
 const inSaoPaulo = (value) => SAO_PAULO.format(new Date(value));
 const response = () => ({ statusCode: 200, status(code) { this.statusCode = code; return this; }, json(value) { this.body = value; return this; } });
+
+async function verifyLegacyTimeMigration(pool) {
+  const db = await pool.connect();
+  const schema = 'timezone_legacy_' + randomUUID().replace(/-/g, '');
+  try {
+    await db.query('BEGIN');
+    await db.query(`CREATE SCHEMA ${schema}`);
+    await db.query(`SET LOCAL search_path TO ${schema}, public`);
+    await db.query(`
+      CREATE TABLE schedules (date TIMESTAMP);
+      CREATE TABLE budgets (schedule_date TIMESTAMP);
+      CREATE TABLE service_proposals (scheduled_start TIMESTAMP, scheduled_end TIMESTAMP);
+      CREATE TABLE service_bookings (installer_id INT, status TEXT, scheduled_start TIMESTAMP, scheduled_end TIMESTAMP);
+      ALTER TABLE service_bookings ADD CONSTRAINT service_bookings_installer_time_no_overlap
+        EXCLUDE USING gist (installer_id WITH =, tsrange(scheduled_start, scheduled_end, '[)') WITH &&)
+        WHERE (status IN ('scheduled', 'in_progress'));
+      INSERT INTO schedules VALUES ('2030-01-11 22:00');
+      INSERT INTO budgets VALUES ('2030-01-11 22:00');
+      INSERT INTO service_proposals VALUES ('2030-01-11 22:00', '2030-01-12 00:00');
+      INSERT INTO service_bookings VALUES (1, 'scheduled', '2030-01-11 22:00', '2030-01-12 00:00');
+    `);
+    const sql = readFileSync(path.join(__dirname, '../db/migrations/025_wall_clock_timestamptz.sql'), 'utf8');
+    await db.query(sql);
+    const migrated = await db.query(`
+      SELECT schedules.date, budgets.schedule_date,
+             service_proposals.scheduled_start AS proposal_start, service_bookings.scheduled_start AS booking_start,
+             service_bookings.scheduled_end AS booking_end
+      FROM schedules, budgets, service_proposals, service_bookings
+    `);
+    const row = migrated.rows[0];
+    for (const key of ['date', 'schedule_date', 'proposal_start', 'booking_start']) {
+      assert.equal(row[key].toISOString(), '2030-01-12T01:00:00.000Z');
+      assert.equal(inSaoPaulo(row[key]), '11/01/2030, 22:00');
+    }
+    assert.equal(row.booking_end.toISOString(), '2030-01-12T03:00:00.000Z');
+    await assert.rejects(db.query(`
+      INSERT INTO service_bookings VALUES (1, 'scheduled', '2030-01-12T02:30:00Z', '2030-01-12T04:00:00Z')
+    `), { code: '23P01' });
+  } finally {
+    await db.query('ROLLBACK').catch(() => null);
+    db.release();
+  }
+}
 
 test('PostgreSQL isolado: horario digitado em Sao Paulo volta igual com o servidor em UTC', { skip: !process.env.TEST_DATABASE_URL }, async () => {
   const target = new URL(process.env.TEST_DATABASE_URL);
@@ -36,6 +82,7 @@ test('PostgreSQL isolado: horario digitado em Sao Paulo volta igual com o servid
 
   let userId;
   try {
+    await verifyLegacyTimeMigration(pool);
     const user = await pool.query("INSERT INTO users (name, email, password) VALUES ('Instalador fuso ficticio', $1, 'not-a-login-password') RETURNING id", [`fuso-qa-${Date.now()}@example.test`]);
     userId = user.rows[0].id;
     const client = await pool.query("INSERT INTO clients (user_id, name, phone) VALUES ($1, 'Cliente fuso ficticio', '48999990000') RETURNING id", [userId]);

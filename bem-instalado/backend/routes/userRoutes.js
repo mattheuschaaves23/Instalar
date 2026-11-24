@@ -5,10 +5,18 @@ const linkContract = require('../../shared/installerClientLink.json');
 const auth = require('../middleware/authMiddleware');
 const requireAccountType = require('../middleware/accountTypeMiddleware');
 const requireVerifiedEmail = require('../middleware/verifiedEmailMiddleware');
+const { createRateLimiter } = require('../middleware/rateLimit');
 const profileUpload = require('../middleware/profileUpload');
 
 const router = express.Router();
 const requireInstaller = requireAccountType('installer');
+const pdfPreviewLimiter = createRateLimiter({
+  bucket: 'pdf-preview',
+  windowMs: 60 * 1000,
+  max: 12,
+  keyGenerator: req => req.userId,
+  message: 'Muitos PDFs de teste em sequência. Aguarde um minuto e tente novamente.',
+});
 const uploadSingleProfileAsset = (req, res, next) => {
   profileUpload.single('file')(req, res, (error) => {
     if (!error) return next();
@@ -22,6 +30,7 @@ const uploadSingleProfileAsset = (req, res, next) => {
 router.get('/profile', auth, controller.getProfile);
 router.get(linkContract.ownerPath.slice('/users'.length), auth, requireInstaller, getOwnClientLink);
 router.get('/pdf-branding', auth, requireInstaller, requireVerifiedEmail, controller.getPdfBranding);
+router.post('/pdf-branding/preview', auth, requireInstaller, requireVerifiedEmail, pdfPreviewLimiter, controller.previewPdfBranding);
 router.get('/data-export', auth, controller.exportOwnData);
 router.delete('/account', auth, controller.deleteOwnAccount);
 router.get('/dashboard', auth, requireInstaller, requireVerifiedEmail, controller.getDashboard);
