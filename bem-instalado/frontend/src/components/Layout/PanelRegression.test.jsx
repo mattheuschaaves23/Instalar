@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { readFileSync } from 'node:fs';
 import postcss from 'postcss';
 
@@ -9,9 +9,11 @@ vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ logout: vi.fn()
 vi.mock('../../contexts/SubscriptionContext', () => ({ useSubscription: () => fixtures.subscription }));
 vi.mock('../../services/api', () => ({ default: { get: vi.fn(async () => ({ data: [] })) } }));
 vi.mock('./panelBadgeCounts', () => ({ formatPanelBadgeCount: String, getPanelBadgeValue: () => null, usePanelBadgeCounts: () => ({}), notifyPanelBadgeCountsChanged: vi.fn() }));
-vi.mock('../Subscription/PlanUsage', () => ({ default: () => null }));
+vi.mock('../Subscription/PlanUsage', () => ({ default: () => null, ProFeatureNotice: () => null }));
 
 import { SidebarContent } from './InstallerPanelShell';
+import Layout from './Layout';
+import Dashboard from '../Dashboard/Dashboard';
 import Clients from '../Clients/Clients';
 import Agenda from '../Agenda/Agenda';
 import BudgetForm from '../Budgets/BudgetForm';
@@ -20,6 +22,24 @@ beforeEach(() => {
   fixtures.subscription = { isPro: false, loading: false, subscription: { plan: 'free' }, planAccess: { limits: {} }, refreshSubscription: vi.fn(async () => null) };
 });
 const render = (element, path = '/') => renderToStaticMarkup(<MemoryRouter initialEntries={[path]}>{element}</MemoryRouter>);
+
+it('mantém uma única barra inferior quando o Início abre dentro do painel', () => {
+  const markup = render(
+    <Routes>
+      <Route element={<Layout />}>
+        <Route element={<Dashboard />} path="/dashboard" />
+      </Route>
+    </Routes>,
+    '/dashboard',
+  );
+  const mobileBars = markup.match(/<nav aria-label="(?:Navegação mobile|Atalhos do dashboard)"[^>]*>.*?<\/nav>/g) || [];
+  expect(mobileBars).toHaveLength(1);
+  expect(mobileBars[0]).toMatch(/^<nav aria-label="Navegação mobile"/);
+  for (const href of ['/dashboard', '/opportunities', '/agenda', '/budgets', '/clients']) {
+    expect(mobileBars[0]).toContain(`href="${href}"`);
+  }
+  expect(mobileBars[0]).toContain('aria-current="page"');
+});
 
 it('centro do gráfico usa superfície legível no tema claro', () => {
   const root = postcss.parse(readFileSync(new URL('../../index.css', import.meta.url), 'utf8'));

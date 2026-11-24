@@ -100,95 +100,6 @@ function DashboardIcon({ tone = 'blue', type = 'revenue' }) {
   );
 }
 
-function DashboardDockIcon({ type }) {
-  const sharedProps = {
-    width: 20,
-    height: 20,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.8,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    'aria-hidden': 'true',
-  };
-
-  switch (type) {
-    case 'home':
-      return (
-        <svg {...sharedProps}>
-          <path d="M4 11.5 12 5l8 6.5" />
-          <path d="M6.5 10.5V19h11v-8.5" />
-        </svg>
-      );
-    case 'budgets':
-      return (
-        <svg {...sharedProps}>
-          <path d="M7 3.8h7l3 3V20H7z" />
-          <path d="M14 3.8V7h3" />
-          <path d="M9.5 11h5M9.5 15h4" />
-        </svg>
-      );
-    case 'opportunities':
-      return (
-        <svg {...sharedProps}>
-          <path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1" />
-          <rect height="14" rx="2.4" width="16" x="4" y="6" />
-          <path d="M4 12h16M9 15.5h6" />
-        </svg>
-      );
-    case 'clients':
-      return (
-        <svg {...sharedProps}>
-          <circle cx="9" cy="10" r="2.5" />
-          <circle cx="16.5" cy="9" r="2" />
-          <path d="M4.8 17.2c.9-2.5 2.8-3.8 5.1-3.8 2.3 0 4.2 1.3 5.1 3.8" />
-          <path d="M14 14.1c1.5.2 2.8 1.1 3.5 3.1" />
-        </svg>
-      );
-    case 'reviews':
-      return (
-        <svg {...sharedProps}>
-          <path d="m12 3.8 2.45 4.95 5.47.8-3.96 3.86.94 5.45L12 16.28l-4.9 2.58.94-5.45-3.96-3.86 5.47-.8z" />
-        </svg>
-      );
-    case 'agenda':
-      return (
-        <svg {...sharedProps}>
-          <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
-          <path d="M8 3v4M16 3v4M3.5 10h17" />
-          <path d="M8 13h3M8 16h6" />
-        </svg>
-      );
-    case 'profile':
-      return (
-        <svg {...sharedProps}>
-          <circle cx="12" cy="8" r="3.2" />
-          <path d="M5.5 19c1.6-3 4.2-4.5 6.5-4.5S16.9 16 18.5 19" />
-        </svg>
-      );
-    case 'admin':
-      return (
-        <svg {...sharedProps}>
-          <path d="M12 3.8 18.6 7v5c0 4.1-2.7 6.9-6.6 8.2-3.9-1.3-6.6-4.1-6.6-8.2V7L12 3.8Z" />
-          <path d="M9.8 11.8 11.3 13.3 14.8 9.8" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-}
-
-const MOBILE_DOCK_ITEMS = [
-  { to: '/dashboard', label: 'Início', icon: 'home' },
-  { to: '/opportunities', label: 'Oportunidades', icon: 'opportunities' },
-  { to: '/agenda', label: 'Agenda', icon: 'agenda' },
-  { to: '/budgets', label: 'Orçamentos', icon: 'budgets' },
-  { to: '/clients', label: 'Clientes', icon: 'clients' },
-];
-
-const ADMIN_MOBILE_DOCK_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
-
 const PANEL_NAV_ITEMS = [
   { to: '/dashboard', label: 'Início', icon: 'grid', section: 'VISÃO GERAL' },
   { to: '/opportunities', label: 'Oportunidades', icon: 'opportunities', badgeKey: 'opportunities' },
@@ -659,11 +570,6 @@ export default function Dashboard() {
     const visibleItems = PANEL_NAV_ITEMS.filter((item) => !item.webOnly || !IS_INSTALLER_APP);
     return canSeeAdmin ? [...visibleItems, ADMIN_NAV_ITEM] : visibleItems;
   }, [canSeeAdmin]);
-  const mobileDockItems = useMemo(
-    () => (canSeeAdmin ? [...MOBILE_DOCK_ITEMS.slice(0, 4), ADMIN_MOBILE_DOCK_ITEM] : MOBILE_DOCK_ITEMS),
-    [canSeeAdmin]
-  );
-
   const loadDashboardData = useCallback(async ({ silent = false } = {}) => {
     try {
       const [dashboardResponse, budgetsResponse, clientsResponse] = await Promise.all([
@@ -1342,15 +1248,6 @@ export default function Dashboard() {
             </article> : null}
           </section>
         </main>
-
-        <nav aria-label="Navegação mobile" className="ref-panel-bottom-nav">
-          {mobileDockItems.map((item) => (
-            <NavLink className={({ isActive }) => `ref-panel-bottom-tab ${isActive ? 'is-active' : ''}`} key={item.to} to={item.to}>
-              <DashboardDockIcon type={item.icon} />
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
       </div>
     </section>
     );
@@ -1688,19 +1585,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
-      <nav aria-label="Atalhos do dashboard" className="dashboard-neo-mobile-dock">
-        {MOBILE_DOCK_ITEMS.map((item) => (
-          <NavLink
-            className={({ isActive }) => `dashboard-neo-mobile-tab ${isActive ? 'is-active' : ''}`}
-            key={item.to}
-            to={item.to}
-          >
-            <DashboardDockIcon type={item.icon} />
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
     </section>
   );
 }
