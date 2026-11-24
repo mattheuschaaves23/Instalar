@@ -21,6 +21,8 @@ const SESSION_COOKIE_NAME = 'instalapro_session';
 const SESSION_COOKIE_MAX_AGE_MS = Number(process.env.SESSION_COOKIE_MAX_AGE_MS || 7 * 24 * 60 * 60 * 1000);
 const OAUTH_ALLOWED_ROLES = new Set(['installer', 'client']);
 const OAUTH_ALLOWED_PLATFORMS = new Set(['web', 'android', 'ios']);
+const ANDROID_LEGACY_APP_LINK_ORIGIN = 'https://instalar-sigma.vercel.app';
+const OFFICIAL_FRONTEND_ORIGINS = new Set(['https://instalarpro.com.br', 'https://www.instalarpro.com.br']);
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 const OAUTH_REDIRECT_ERROR_CODES = new Set([
   'account_type_mismatch',
@@ -295,6 +297,12 @@ function redirectOAuthResult(req, res, { token, next, role, platform, error, pas
   const frontendUrl = getFrontendBaseUrl(req);
   const targetPlatform = normalizeOAuthPlatform(platform);
   const isNativeMobile = isNativeMobilePlatform(targetPlatform);
+  // This is the return to the app, not the Google callback. Android 1.0.36
+  // and older builds already in use only register the legacy HTTPS App Link.
+  const mobileReturnOrigin = targetPlatform === 'android' && OFFICIAL_FRONTEND_ORIGINS.has(frontendUrl)
+    ? ANDROID_LEGACY_APP_LINK_ORIGIN
+    : frontendUrl;
+  const mobileCallbackUrl = `${mobileReturnOrigin}/auth/mobile/callback`;
 
   if (token) {
     if (!isNativeMobile) {
@@ -311,8 +319,7 @@ function redirectOAuthResult(req, res, { token, next, role, platform, error, pas
     });
     if (passwordRevoked) hash.set('password_revoked', '1');
 
-    const callbackPath = '/auth/mobile/callback';
-    return res.redirect(`${frontendUrl}${callbackPath}#${hash.toString()}`);
+    return res.redirect(`${mobileCallbackUrl}#${hash.toString()}`);
   }
 
   if (isNativeMobile) {
@@ -321,7 +328,7 @@ function redirectOAuthResult(req, res, { token, next, role, platform, error, pas
       platform: targetPlatform,
     });
 
-    return res.redirect(`${frontendUrl}/auth/mobile/callback#${hash.toString()}`);
+    return res.redirect(`${mobileCallbackUrl}#${hash.toString()}`);
   }
 
   const loginPath = role === 'client' ? '/cliente/entrar' : '/instalador/entrar';
