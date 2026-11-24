@@ -83,12 +83,12 @@ it('controles da agenda e retorno do orçamento têm nomes acessíveis', () => {
   expect(render(<BudgetForm />)).toContain('aria-label="Voltar aos orçamentos"');
 });
 
-it('a prévia do PDF preserva papel branco e o contraste do modelo Clássico', () => {
+it('a prévia do PDF tem papel independente do tema do painel e cor de capa no Estúdio', () => {
   const css = postcss.parse(readFileSync(new URL('../PdfBranding/PdfBranding.css', import.meta.url), 'utf8'));
   const backgrounds = new Map();
   css.walkRules(rule => {
     rule.walkDecls('background', decl => backgrounds.set(rule.selector, decl.value));
   });
-  expect(backgrounds.get('.quote-studio .quote-paper')).toBe('#fff');
-  expect(backgrounds.get(".quote-paper[data-template='classic'] .quote-paper-head")).toBe('var(--paper-ink)');
+  expect(backgrounds.get('.quote-studio .quote-paper')).toBe('var(--paper-background, #fff)');
+  expect(backgrounds.get(".quote-paper[data-template='studio'] .quote-paper-head")).toBe('var(--paper-accent-ink)');
 });
