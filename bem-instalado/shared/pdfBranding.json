@@ -1,0 +1,43 @@
+{
+  "defaults": {
+    "template": "studio",
+    "brand_name": "",
+    "document_title": "Proposta comercial de instalação",
+    "accent_color": "#175DAA",
+    "intro_text": "",
+    "closing_text": "",
+    "scope_text": "",
+    "validity_days": 30,
+    "show_logo": true,
+    "show_installer_photo": true,
+    "show_contact": true,
+    "show_client_contact": true,
+    "show_measurements": true,
+    "show_scope": true,
+    "show_signature": true
+  },
+  "templates": [
+    { "id": "studio", "label": "Estúdio", "description": "Faixa de cor e destaque no total." },
+    { "id": "classic", "label": "Clássico", "description": "Cabeçalho escuro e elegante." },
+    { "id": "compact", "label": "Essencial", "description": "Enxuto, com menos altura e tinta." }
+  ],
+  "limits": { "brand_name": 80, "document_title": 100, "intro_text": 320, "closing_text": 320, "scope_text": 480 },
+  "validityOptions": [7, 15, 30, 45, 60, 90],
+  "accentOptions": [
+    { "value": "#175DAA", "label": "Azul" },
+    { "value": "#0F7184", "label": "Petróleo" },
+    { "value": "#2E7659", "label": "Verde" },
+    { "value": "#86545F", "label": "Vinho" },
+    { "value": "#CDA349", "label": "Dourado" },
+    { "value": "#424D60", "label": "Grafite" }
+  ],
+  "defaultScope": "Instalação conforme as medidas aprovadas e as condições do ambiente. Materiais, prazos e logística devem ser confirmados no fechamento. Alterações após aprovação podem mudar os valores.",
+  "sample": {
+    "budget": { "id": 1042, "status": "pending", "total_amount": 1280, "subtotal_rolls": 1280, "total_rolls": 4, "total_area": 15, "created_at": "2026-11-23T12:00:00-03:00", "payment_terms": [{ "method": "pix", "discount_percent": 0 }] },
+    "client": { "name": "Mariana Silva", "phone": "(48) 99999-0123", "city": "São José", "state": "SC" },
+    "environments": [
+      { "name": "Sala de estar", "width": 4, "height": 2.5, "area": 10, "rolls_auto": 3, "total": 960 },
+      { "name": "Quarto", "width": 2, "height": 2.5, "area": 5, "rolls_auto": 1, "total": 320 }
+    ]
+  }
+}
