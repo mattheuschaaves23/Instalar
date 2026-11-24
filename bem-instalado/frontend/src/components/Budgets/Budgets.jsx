@@ -115,6 +115,7 @@ function BudgetActions({ budget, busy, onApprove, onReject, onDownload, onWhatsA
           <details className="budget-list-row-details">
             <summary>Ver detalhes</summary>
             <div>
+              <p className="budget-list-detail-client">{budget.client_name || 'Cliente não informado'}</p>
               <p>Criado em {formatDateTime(budget.created_at)}</p>
               {budget.source_service_request_id ? <p>Pedido da InstalaPro #{budget.source_service_request_id}</p> : null}
               <p>{installmentAmountLabel(installmentInfo(budget))}</p>
