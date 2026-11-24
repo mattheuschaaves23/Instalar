@@ -2,10 +2,10 @@ const APP_SCHEME = 'instalapro:';
 const APP_SCHEME_HOST = 'auth';
 const APP_CALLBACK_PATH = '/callback';
 const WEB_CALLBACK_PATH = '/auth/mobile/callback';
-const DEFAULT_PUBLIC_HOST = 'instalar-sigma.vercel.app';
+const PUBLIC_CALLBACK_HOSTS = ['instalar-sigma.vercel.app', 'instalarpro.com.br'];
 
 function getAllowedWebHosts() {
-  const hosts = new Set([DEFAULT_PUBLIC_HOST]);
+  const hosts = new Set(PUBLIC_CALLBACK_HOSTS);
 
   try {
     const configuredApi = new URL(
@@ -17,7 +17,7 @@ function getAllowedWebHosts() {
       hosts.add(configuredApi.hostname.toLowerCase());
     }
   } catch (_error) {
-    // The production host above remains the only trusted web callback.
+    // Keep the production hosts above if no valid API origin is configured.
   }
 
   return hosts;

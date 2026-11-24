@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { buildNativeOAuthFallbackUrl, getNativeOAuthRoute } from './nativeOAuth';
 
 describe('retorno OAuth do aplicativo Android', () => {
-  it('aceita o App Link oficial e preserva o fragmento de autenticação', () => {
+  const publicHosts = ['instalar-sigma.vercel.app', 'instalarpro.com.br'];
+
+  it.each(publicHosts)('aceita o App Link de %s e preserva o fragmento de autenticação', (host) => {
     const route = getNativeOAuthRoute(
-      'https://instalar-sigma.vercel.app/auth/mobile/callback#token=abc&next=%2Fdashboard'
+      `https://${host}/auth/mobile/callback#token=abc&next=%2Fdashboard`
     );
 
     expect(route).toBe('/auth/social/callback#token=abc&next=%2Fdashboard');
@@ -18,14 +20,16 @@ describe('retorno OAuth do aplicativo Android', () => {
 
   it('rejeita domínios, protocolos e caminhos que não pertencem ao login', () => {
     expect(getNativeOAuthRoute('https://example.com/auth/mobile/callback#token=abc')).toBe('');
+    expect(getNativeOAuthRoute('http://instalarpro.com.br/auth/mobile/callback#token=abc')).toBe('');
+    expect(getNativeOAuthRoute('https://instalarpro.com.br/auth/mobile/callback/outro#token=abc')).toBe('');
     expect(getNativeOAuthRoute('instalapro://profile/callback#token=abc')).toBe('');
     expect(getNativeOAuthRoute('javascript:alert(1)')).toBe('');
   });
 
-  it('cria o retorno de contingência sem mover o token para a query string', () => {
+  it.each(publicHosts)('cria a contingência de %s sem mover o token para a query string', (host) => {
     expect(
       buildNativeOAuthFallbackUrl(
-        'https://instalar-sigma.vercel.app/auth/mobile/callback#token=abc&next=%2Fdashboard'
+        `https://${host}/auth/mobile/callback#token=abc&next=%2Fdashboard`
       )
     ).toBe('instalapro://auth/callback#token=abc&next=%2Fdashboard');
   });

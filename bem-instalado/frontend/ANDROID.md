@@ -72,11 +72,13 @@ As versões novas são entregues pelo próprio Google Play, com Play App Signing
 ## Login com Google
 
 O aplicativo abre o consentimento do Google no navegador seguro do sistema.
-Depois da autenticação, o backend retorna para
-`https://instalar-sigma.vercel.app/auth/mobile/callback` e o Android reabre o
-aplicativo por um App Link verificado. O arquivo público
-`public/.well-known/assetlinks.json` associa o domínio ao certificado da versão
-de produção.
+O retorno do Google ao backend é independente do link que reabre o app.
+Em produção, o backend devolve o Android a
+`https://instalar-sigma.vercel.app/auth/mobile/callback` para manter a
+compatibilidade com a versão 1.0.36. Builds com o filtro novo também
+reconhecem `https://instalarpro.com.br/auth/mobile/callback`. Os dois hosts
+precisam servir o arquivo público `/.well-known/assetlinks.json` com o
+certificado da versão de produção.
 
 Se o domínio ainda não tiver sido verificado pelo aparelho, a página de retorno
 oferece a contingência `instalapro://auth/callback`. Os plugins oficiais

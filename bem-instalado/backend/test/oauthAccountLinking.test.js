@@ -92,13 +92,13 @@ function mockGoogle(t) {
   });
 }
 
-function withGoogleEnv(t) {
+function withGoogleEnv(t, frontendUrl = 'https://instalar-sigma.vercel.app') {
   const previous = {
     FRONTEND_URL: process.env.FRONTEND_URL,
     GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID,
     GOOGLE_OAUTH_CLIENT_SECRET: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
   };
-  process.env.FRONTEND_URL = 'https://instalar-sigma.vercel.app';
+  process.env.FRONTEND_URL = frontendUrl;
   process.env.GOOGLE_OAUTH_CLIENT_ID = GOOGLE_CLIENT_ID;
   process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'google-client-secret-test';
   t.after(() => {
@@ -176,6 +176,24 @@ function baseUser(overrides) {
     ...overrides,
   };
 }
+
+test('login Google no Android com o site oficial retorna pelo App Link da versão 1.0.36', async (t) => {
+  withGoogleEnv(t, 'https://instalarpro.com.br');
+  mockGoogle(t);
+  const row = baseUser({ email_verified_at: new Date() });
+  mockUsersTable(t, row);
+
+  const redirect = await googleCallbackRedirect();
+  assert.equal(redirect.origin, 'https://instalar-sigma.vercel.app');
+  assert.equal(redirect.pathname, '/auth/mobile/callback');
+  assert.equal(redirect.search, '');
+  const hash = new URLSearchParams(redirect.hash.slice(1));
+  assert.equal(hash.get('oauth_error'), null);
+  assert.equal(hash.get('next'), '/dashboard');
+  assert.equal(hash.get('platform'), 'android');
+  assert.ok(hash.get('token'));
+  assert.equal(await sessionStatus(hash.get('token')), 200);
+});
 
 test('login Google em conta de senha nunca confirmada derruba a senha e as sessões anteriores', async (t) => {
   withGoogleEnv(t);
