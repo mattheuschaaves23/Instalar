@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -10,9 +10,9 @@ import PlanUsage from '../Subscription/PlanUsage';
 import MarketplaceProposal from './MarketplaceProposal';
 import { formatOpportunityDate, getOpportunityArea, getOpportunityState, getOpportunityTitle, mergeOpportunityPage } from './opportunityView';
 import { planLinkLabel } from '../../utils/storePlanCopy';
+import { NativeWhatsApp } from '../../utils/budgetWhatsApp';
 import './Opportunities.css';
 
-const NativeWhatsApp = registerPlugin('NativeWhatsApp');
 const TABS = [
   { value: 'open', label: 'Novas', heading: 'Pedidos na sua região', empty: 'Nenhuma nova oportunidade por enquanto.', hint: 'Quando clientes da sua região publicarem pedidos, eles aparecem aqui.' },
   { value: 'interested', label: 'Meus interesses', heading: 'Pedidos com seu interesse', empty: 'Você ainda não demonstrou interesse em um pedido.', hint: 'Explore as novas oportunidades e toque em “Tenho interesse” no pedido que quiser atender.' },

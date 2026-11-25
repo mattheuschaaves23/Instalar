@@ -43,6 +43,19 @@ test('orçamento curto cabe em uma página e o rodapé não cria páginas vazias
   assert.match(text, /1 \/ 1/);
 });
 
+test('PDF do valor fechado mostra o total sem imprimir medidas ou rolos zerados', async () => {
+  const { text } = await inspectPdf({
+    ...sample,
+    isPro: true,
+    budget: { id: 42, status: 'pending', pricing_mode: 'fixed', total_amount: 450.50, subtotal_rolls: 450.50 },
+    branding: { show_measurements: true },
+    environments: [],
+  });
+  assert.match(text, /Serviço a valor fechado/);
+  assert.match(text, /450,50/);
+  assert.doesNotMatch(text, /0 rolos|Nenhum ambiente discriminado|Dimensões/);
+});
+
 test('preserva configurações antigas e valida cor, modelo e texto personalizados', () => {
   const result = normalizePdfBranding({
     brand_name: '  Marca  antiga ', accent_color: '#cda349', intro_text: 'Primeiro parágrafo\r\n\nSegundo',

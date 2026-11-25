@@ -63,6 +63,7 @@ function normalizeString(value) {
 
 function normalizePricingMode(value) {
   const normalized = normalizeString(value).toLowerCase();
+  if (normalized === 'fixed') return 'fixed';
   if (normalized === 'square_meter' || normalized === 'm2') {
     return 'square_meter';
   }
@@ -260,8 +261,9 @@ exports.createBudget = async (req, res) => {
     db = await pool.connect();
     const {
       client_id,
-      environments,
+      environments: requestedEnvironments,
       pricing_mode,
+      fixed_price,
       roll_area,
       price_per_roll,
       price_per_square_meter,
@@ -278,7 +280,13 @@ exports.createBudget = async (req, res) => {
     let cleanClientId = Number(client_id);
     const draftId = req.params?.id === undefined ? null : Number(req.params.id);
     const cleanPricingMode = normalizePricingMode(pricing_mode);
-    const cleanRollArea = roll_area === null || roll_area === undefined || String(roll_area).trim() === ''
+    const fixed = cleanPricingMode === 'fixed';
+    const fixedCents = typeof fixed_price === 'number' ? Math.round(fixed_price * 100) : NaN;
+    if (fixed && (!Number.isSafeInteger(fixedCents) || fixedCents < 1 || fixed_price > MAX_BUDGET_AMOUNT || fixedCents / 100 !== fixed_price)) {
+      return res.status(400).json({ error: 'Informe um valor fechado positivo, com até duas casas decimais, dentro do limite suportado.' });
+    }
+    const environments = fixed ? [] : requestedEnvironments;
+    const cleanRollArea = fixed || roll_area === null || roll_area === undefined || String(roll_area).trim() === ''
       ? DEFAULT_ROLL_AREA
       : Number(roll_area);
     const cleanPricePerRoll = normalizeNumber(price_per_roll);
@@ -295,8 +303,8 @@ exports.createBudget = async (req, res) => {
     const interestFreeInstallments = installmentsEnabled ? requestedInterestFreeInstallments : 1;
     const installmentInterestRate = installmentsEnabled ? requestedInstallmentInterestRate : 0;
     const upfrontPaymentTerms = normalizeUpfrontPaymentTerms(upfront_payment_terms);
-    const usesRemovalPerRoll = Object.prototype.hasOwnProperty.call(req.body || {}, 'removal_price_per_roll');
-    const hasManualRemovalRolls = removal_rolls !== undefined && removal_rolls !== null;
+    const usesRemovalPerRoll = !fixed && Object.prototype.hasOwnProperty.call(req.body || {}, 'removal_price_per_roll');
+    const hasManualRemovalRolls = !fixed && removal_rolls !== undefined && removal_rolls !== null;
     const manualRemovalRolls = typeof removal_rolls === 'number' ? removal_rolls : NaN;
     if (hasManualRemovalRolls && (
       !usesRemovalPerRoll ||
@@ -310,7 +318,7 @@ exports.createBudget = async (req, res) => {
       : Number(removal_price_per_roll);
     const removalUnitCents = Math.round(rawRemovalPricePerRoll * 100);
     const removalPricePerRoll = hasManualRemovalRolls && rawRemovalPricePerRoll >= 0 ? removalUnitCents / 100 : rawRemovalPricePerRoll;
-    const legacyRemovalIncluded = normalizeBoolean(removal_included);
+    const legacyRemovalIncluded = !fixed && normalizeBoolean(removal_included);
     const legacyRemovalPrice = removal_price === null || removal_price === undefined || String(removal_price).trim() === ''
       ? 0
       : Number(removal_price);
@@ -323,7 +331,7 @@ exports.createBudget = async (req, res) => {
       return res.status(400).json({ error: 'Cliente inválido.' });
     }
 
-    if (!Array.isArray(environments) || environments.length === 0) {
+    if (!fixed && (!Array.isArray(environments) || environments.length === 0)) {
       return res.status(400).json({ error: 'Cliente e ambientes são obrigatórios.' });
     }
 
@@ -419,7 +427,7 @@ exports.createBudget = async (req, res) => {
 
     let totalArea = 0;
     let totalRolls = 0;
-    let subtotal = 0;
+    let subtotal = fixed ? fixedCents / 100 : 0;
     let totalRemovalByEnvironment = 0;
     let totalRemovalRolls = 0;
 

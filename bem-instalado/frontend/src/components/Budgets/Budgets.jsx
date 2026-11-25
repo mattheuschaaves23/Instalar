@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
+import { Capacitor } from '@capacitor/core';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import PaginationControls from '../Layout/PaginationControls';
@@ -9,6 +10,9 @@ import { useSubscription } from '../../contexts/SubscriptionContext';
 import { installmentInfo, installmentAmountLabel, installmentConditionsLabel } from '../../../../shared/installmentTerms.mjs';
 import { BUDGET_DATE_PERIODS, BUDGET_FILTERS, canCompleteBudget, formatBudgetDate, getBudgetCounts, getBudgetDateRange, getVisibleBudgets } from './budgetListView';
 import { planLinkLabel } from '../../utils/storePlanCopy';
+import { exportErrorMessage, exportFile } from '../../utils/exportFile';
+import { openBudgetWhatsApp } from '../../utils/budgetWhatsApp';
+import { isNativeStoreApp } from '../../utils/nativePlatform';
 import './Budgets.css';
 
 const BUDGETS_PER_PAGE = 6;
@@ -146,6 +150,7 @@ export default function Budgets() {
   const [currentPage, setCurrentPage] = useState(1);
   const [approvalDraft, setApprovalDraft] = useState({ budgetId: null, scheduleDate: '' });
   const [mutatingBudgetId, setMutatingBudgetId] = useState(null);
+  const pdfExporting = useRef(false);
   const { isPro, planAccess } = useSubscription();
 
   const loadBudgets = async () => {
@@ -228,27 +233,28 @@ export default function Budgets() {
   };
 
   const openWhatsapp = async (budgetId) => {
+    const tab = Capacitor.isNativePlatform() ? null : window.open('about:blank', '_blank');
+    if (tab) tab.opener = null;
     try {
       const response = await api.get(`/budgets/${budgetId}/whatsapp`);
-      window.open(response.data.link, '_blank', 'noopener,noreferrer');
+      await openBudgetWhatsApp(response.data.link, tab);
     } catch (error) {
+      tab?.close();
       toast.error(error.response?.data?.error || 'Não foi possível abrir o WhatsApp.');
     }
   };
 
   const downloadPdf = async (budgetId) => {
+    if (pdfExporting.current) return;
+    pdfExporting.current = true;
     try {
       const response = await api.get(`/budgets/${budgetId}/pdf`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `orcamento-${budgetId}.pdf`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.URL.revokeObjectURL(url);
+      const { saved } = await exportFile(response.data, `orcamento-${budgetId}.pdf`, 'application/pdf');
+      if (saved && isNativeStoreApp()) toast.success('PDF salvo no local escolhido.');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Não foi possível gerar o PDF.');
+      toast.error(await exportErrorMessage(error, 'Não foi possível baixar o PDF. Tente novamente.'));
+    } finally {
+      pdfExporting.current = false;
     }
   };
 

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import api from '../../services/api';
 import { isNativeStoreApp } from '../../utils/nativePlatform';
+import { exportErrorMessage, exportFile } from '../../utils/exportFile';
 import { planLinkLabel } from '../../utils/storePlanCopy';
 import pdfDesign from '../../../../shared/pdfBranding.json';
 import { accentInk, tint } from '../../../../shared/pdfColors.mjs';
@@ -221,18 +222,12 @@ export default function PdfBranding() {
     setExportError('');
     try {
       const { data } = await api.post('/users/pdf-branding/preview', preview, { responseType: 'blob' });
-      const url = URL.createObjectURL(data);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'orcamento-exemplo.pdf';
-      document.body.append(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      const { saved } = await exportFile(data, 'orcamento-exemplo.pdf', 'application/pdf');
+      if (saved && isNativeStoreApp()) toast.success('PDF de teste salvo no local escolhido.');
     } catch (error) {
       setExportError(error.response?.status === 429
         ? 'Aguarde um minuto antes de baixar outro exemplo.'
-        : 'Não foi possível baixar o exemplo. Tente novamente.');
+        : await exportErrorMessage(error, 'Não foi possível baixar o exemplo. Tente novamente.'));
     } finally {
       setExporting(false);
     }

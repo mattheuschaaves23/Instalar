@@ -170,6 +170,7 @@
 .quote-group + .quote-group { border-top: 1px solid var(--quote-border); }
 .quote-group-head { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 0.45rem 1rem; }
 .quote-material { display: grid; grid-template-columns: auto repeat(2, minmax(0, 1fr)); align-items: end; gap: clamp(0.7rem, 1.4vw, 1.5rem); }
+.quote-material[data-mode="fixed"] { grid-template-columns: auto minmax(0, 1fr); }
 .quote-modes { display: grid; gap: 0.45rem; min-width: clamp(5rem, 13vw, 13rem); }
 .quote-check { display: inline-flex; align-items: center; gap: 0.55rem; min-height: 1.65rem; cursor: pointer; }
 .quote-affix { position: relative; display: block; }
@@ -277,6 +278,7 @@
 }
 @media (max-width: 540px) {
   .quote-material { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .quote-material[data-mode="fixed"] { grid-template-columns: minmax(0, 1fr); }
   .quote-modes { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; }
   .quote-room-fields, .quote-room-fields[data-mode='square_meter'] { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
   .quote-room-name { grid-column: 1 / -1; }

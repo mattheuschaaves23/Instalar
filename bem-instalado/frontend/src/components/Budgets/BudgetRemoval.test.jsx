@@ -29,6 +29,23 @@ afterEach(cleanup);
 const change = (name, value) => fireEvent.change(screen.getByLabelText(name, { exact: true }), { target: { value } });
 const click = (name) => fireEvent.click(screen.getByRole('button', { name, exact: true }));
 
+it('salva um orçamento com valor fechado sem informar medidas nem ambientes', async () => {
+  api.post.mockResolvedValue({ data: { id: 55 } });
+  render(<MemoryRouter><BudgetForm /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('radio', { name: 'Cliente QA' }));
+  click('Continuar para o cálculo');
+  fireEvent.click(screen.getByRole('radio', { name: 'Valor fechado (sem medidas)' }));
+  expect(screen.queryByLabelText('Largura (m)')).toBeNull();
+  change('Valor do serviço', '450.50');
+  click('Revisar orçamento');
+  expect(screen.getByText('Valor fechado', { exact: true })).toBeTruthy();
+  click('Continuar para salvar');
+  click('Salvar orçamento');
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith('/budgets', expect.objectContaining({
+    client_id: 7, pricing_mode: 'fixed', fixed_price: 450.50, environments: [],
+  })));
+});
+
 it('encontra clientes sem acentos e por telefone formatado', async () => {
   render(<MemoryRouter><BudgetForm /></MemoryRouter>);
   await screen.findByRole('radio', { name: 'João Silva' });

@@ -57,6 +57,18 @@ test('orçamento manual com nome apenas: salva e permite adicionar o WhatsApp de
     const withPhone = await invoke(budgets.sendWhatsApp, request);
     assert.equal(withPhone.statusCode, 200);
     assert.equal(new URL(withPhone.body.link).pathname, '/5548999990000');
+
+    const fixed = await invoke(budgets.createBudget, { userId, body: {
+      client_id: client.body.id, pricing_mode: 'fixed', fixed_price: 450.50,
+      installment_enabled: true, installments_count: 3, interest_free_installments: 3,
+    } });
+    assert.equal(fixed.statusCode, 201, JSON.stringify(fixed.body));
+    const persisted = await invoke(budgets.getBudget, { userId, params: { id: fixed.body.id } });
+    assert.equal(persisted.statusCode, 200);
+    assert.equal(persisted.body.pricing_mode, 'fixed');
+    assert.equal(Number(persisted.body.total_amount), 450.50);
+    assert.equal(persisted.body.installments_count, 3);
+    assert.deepEqual(persisted.body.environments, []);
   } finally {
     if (userId) await pool.query('DELETE FROM users WHERE id = $1', [userId]);
     await pool.end();
