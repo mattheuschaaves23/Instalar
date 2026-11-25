@@ -192,6 +192,10 @@
 .ip-admin-message small { display: block; color: var(--adm-muted); margin: 3px 3px 0; }
 .ip-admin-chat-compose { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: end; border-top: 1px solid var(--adm-line); padding-top: 12px; }
 .ip-admin-chat-compose textarea { resize: vertical; }
+:root[data-site-density="compact"] .ip-admin-nav a { min-height: 40px; padding-block: 5px; }
+:root[data-site-density="compact"] .ip-admin-table :is(th, td) { padding-block: 6px; }
+:root[data-site-density="compact"] .ip-admin-queue button { padding-block: 6px; }
+:root[data-site-density="compact"] .ip-admin-facts > div { padding-block: 6px; }
 @media (max-width: 1050px) {
   .ip-admin { grid-template-columns: 183px minmax(0, 1fr); }
   .ip-admin-nav a { padding-left: 12px; }

@@ -24942,18 +24942,18 @@ html[data-site-theme='light'] .auth-scene {
   color: var(--text);
 }
 
-html[data-site-theme='light'] :is(input, select, textarea) {
+html[data-site-theme='light'] :is(input, select, textarea):not(:where(.settings-v2 *)) {
   border-color: #aaa69e;
   background-color: #ffffff;
   color: var(--text);
   box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(57, 45, 25, 0.05);
 }
 
-html[data-site-theme='light'] :is(input, select, textarea)::placeholder {
+html[data-site-theme='light'] :is(input, select, textarea):not(:where(.settings-v2 *))::placeholder {
   color: #68645d;
 }
 
-html[data-site-theme='light'] :is(input, select, textarea):focus {
+html[data-site-theme='light'] :is(input, select, textarea):not(:where(.settings-v2 *)):focus {
   border-color: var(--site-accent) !important;
   box-shadow: 0 0 0 3px rgba(var(--site-accent-rgb), 0.16) !important;
 }
@@ -25062,7 +25062,7 @@ html[data-site-theme='light'] :is(
   [class*='support-'],
   [class*='profile'],
   [class*='settings-']
-) {
+):not(:where(.settings-v2, .settings-v2 *)) {
   color: var(--text);
 }
 
@@ -25087,7 +25087,7 @@ html[data-site-theme='light'] :is(
   [class*='support-'],
   [class*='profile'],
   [class*='settings-']
-) :is(h1, h2, h3, h4, h5, h6, p, small, strong, span, label, legend, dt, dd, th, td, li, a, button) {
+) :is(h1, h2, h3, h4, h5, h6, p, small, strong, span, label, legend, dt, dd, th, td, li, a, button):not(:where(.settings-v2 *)) {
   color: var(--text) !important;
 }
 
