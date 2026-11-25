@@ -5,6 +5,9 @@ import Header from './Header';
 import InstallerPanelShell from './InstallerPanelShell';
 import { EmailVerificationNotice } from '../Auth/EmailVerification';
 import DecoratingWallLoader from './DecoratingWallLoader';
+import { useAuth } from '../../contexts/AuthContext';
+import { hasAdminAccess } from '../../utils/adminAccess';
+import { AdminWorkspace } from '../Admin/AdminWorkspace';
 
 function PageOutlet() {
   return (
@@ -33,6 +36,7 @@ const PANEL_ROUTE_PREFIXES = [
 
 export default function Layout() {
   const location = useLocation();
+  const user = useAuth()?.user;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isInstallerPanelRoute = PANEL_ROUTE_PREFIXES.some((route) =>
     location.pathname === route || location.pathname.startsWith(`${route}/`)
@@ -41,6 +45,10 @@ export default function Layout() {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  if (hasAdminAccess(user) && /^\/(admin|support)\/?$/.test(location.pathname)) {
+    return <AdminWorkspace><EmailVerificationNotice /><PageOutlet /></AdminWorkspace>;
+  }
 
   if (/^\/budgets\/(?:new|[^/]+\/complete)\/?$/.test(location.pathname)) {
     return (

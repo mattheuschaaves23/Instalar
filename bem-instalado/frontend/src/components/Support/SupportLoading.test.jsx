@@ -15,8 +15,8 @@ describe('primeira renderização do suporte', () => {
   it.each([false, true])('mostra o conteúdo antes de buscar os dados (administrador: %s)', (isAdmin) => {
     fixture.isAdmin = isAdmin;
     const markup = renderToStaticMarkup(<MemoryRouter><SupportChat /></MemoryRouter>);
-    expect(markup).toContain(isAdmin ? 'Central de atendimento e melhorias' : 'Suporte direto com o administrador');
-    expect(markup).toContain('support-compose');
+    expect(markup).toContain(isAdmin ? 'Responda às conversas e acompanhe sugestões.' : 'Suporte direto com o administrador');
+    expect(markup).toContain(isAdmin ? 'ip-admin-chat-compose' : 'support-compose');
     expect(markup).not.toContain('wall-loader');
     expect(markup).not.toContain('A transformação já começou');
     expect(markup).not.toContain('Ainda não há mensagens.');

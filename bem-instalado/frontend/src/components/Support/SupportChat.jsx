@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useSearchParams } from 'react-router';
+import AdminSupportView from './AdminSupportView';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
@@ -86,10 +88,14 @@ export default function SupportChat() {
   const { user } = useAuth();
   const confirm = useConfirm();
   const isAdmin = Boolean(user?.is_admin);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const adminTab = searchParams.get('tab') === 'ideas' ? 'ideas' : 'chat';
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [loadingIdeas, setLoadingIdeas] = useState(true);
   const [conversationError, setConversationError] = useState('');
+  const [messageError, setMessageError] = useState('');
+  const [messageAttempt, setMessageAttempt] = useState(0);
   const [ideasError, setIdeasError] = useState('');
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [sending, setSending] = useState(false);
@@ -102,33 +108,28 @@ export default function SupportChat() {
   const [messages, setMessages] = useState([]);
   const [ideas, setIdeas] = useState([]);
   const [ideaForm, setIdeaForm] = useState({ title: '', category: 'feature', description: '' });
-  const [ideaFilter, setIdeaFilter] = useState('all');
-  const [ideaSearch, setIdeaSearch] = useState('');
+  const [ideaFilters, setIdeaFilters] = useState({ status: 'all', q: '' });
+  const [activeIdeaFilters, setActiveIdeaFilters] = useState({ status: 'all', q: '' });
   const [savingIdeaId, setSavingIdeaId] = useState(null);
   const lastSeenMessageIdRef = useRef(0);
   const pollTickRef = useRef(0);
   const messagesEndRef = useRef(null);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages]);
-
-  const unreadTotal = conversations.reduce((total, item) => total + Number(item.unread_count || 0), 0);
-  const openConversations = conversations.filter((item) => item.status === 'open').length;
+  const latestMessageId = messages.at(-1)?.id;
+  useEffect(() => {
+    if (isAdmin) {
+      const thread = messagesEndRef.current?.parentElement;
+      if (thread) thread.scrollTop = thread.scrollHeight;
+    } else {
+      messagesEndRef.current?.scrollIntoView?.({ block: 'end' });
+    }
+  }, [latestMessageId, selectedConversationId, adminTab, isAdmin]);
   const pendingIdeas = useMemo(
     () => ideas.filter((item) => ['new', 'reviewing'].includes(item.status)).length,
     [ideas]
   );
-  const canSend = Boolean(selectedConversationId) && !loading && !loadingMessages && !conversationError;
-
-  async function fetchAdminIdeas(params = {}) {
-    const response = await api.get('/support/admin/ideas', {
-      params: {
-        limit: 180,
-        status: params.status ?? ideaFilter,
-        q: params.q ?? ideaSearch.trim(),
-      },
-    });
-    return sortIdeas(response.data?.ideas || []);
-  }
+  const canSend = Boolean(selectedConversationId) && !loading && !loadingMessages && !conversationError
+    && (!isAdmin || (!messageError && conversation?.id === selectedConversationId));
 
   async function fetchInstallerIdeas() {
     const response = await api.get('/support/ideas/me', { params: { limit: 120 } });
@@ -180,16 +181,16 @@ export default function SupportChat() {
     setLoadingIdeas(true);
     setIdeasError('');
     const endpoint = isAdmin ? '/support/admin/ideas' : '/support/ideas/me';
-    const params = isAdmin ? { limit: 180, status: 'all', q: '' } : { limit: 120 };
+    const params = isAdmin ? { limit: 180, ...activeIdeaFilters } : { limit: 120 };
     api.get(endpoint, { params, signal: controller.signal })
       .then(({ data }) => { if (isMounted) setIdeas(sortIdeas(data?.ideas || [])); })
       .catch((error) => { if (isMounted) setIdeasError(error.response?.data?.error || 'Não foi possível carregar as sugestões.'); })
       .finally(() => { if (isMounted) setLoadingIdeas(false); });
     return () => { isMounted = false; controller.abort(); };
-  }, [isAdmin, user?.id]);
+  }, [isAdmin, user?.id, activeIdeaFilters]);
 
   useEffect(() => {
-    if (!isAdmin || !selectedConversationId) {
+    if (!isAdmin || adminTab !== 'chat' || !selectedConversationId) {
       if (isAdmin && !selectedConversationId) {
         setConversation(null);
         setMessages([]);
@@ -197,8 +198,10 @@ export default function SupportChat() {
       return;
     }
     let isMounted = true;
+    const controller = new AbortController();
     setLoadingMessages(true);
-    api.get(`/support/admin/conversations/${selectedConversationId}/messages`, { params: { limit: 220 } })
+    setMessageError('');
+    api.get(`/support/admin/conversations/${selectedConversationId}/messages`, { params: { limit: 220 }, signal: controller.signal })
       .then((response) => {
         if (!isMounted) return;
         const nextConversation = response.data?.conversation || null;
@@ -216,13 +219,13 @@ export default function SupportChat() {
           .catch(() => null);
       })
       .catch((error) => {
-        if (isMounted) toast.error(error.response?.data?.error || 'Não foi possível carregar as mensagens.');
+        if (isMounted) setMessageError(error.response?.data?.error || 'Não foi possível carregar as mensagens.');
       })
       .finally(() => {
         if (isMounted) setLoadingMessages(false);
       });
-    return () => { isMounted = false; };
-  }, [isAdmin, selectedConversationId]);
+    return () => { isMounted = false; controller.abort(); };
+  }, [isAdmin, selectedConversationId, messageAttempt, adminTab]);
 
   useEffect(() => {
     if (!user?.id) return undefined;
@@ -251,31 +254,34 @@ export default function SupportChat() {
         if (isAdmin) {
           const requests = [api.get('/support/admin/conversations', { params: { limit: 120 } })];
 
-          if (selectedConversationId) {
+          const refreshMessages = adminTab === 'chat' && selectedConversationId;
+          if (refreshMessages) {
             requests.push(api.get(`/support/admin/conversations/${selectedConversationId}/messages`, { params: { limit: 220 } }));
           }
-
           if (pollTickRef.current % 4 === 0) {
-            requests.push(api.get('/support/admin/ideas', { params: { limit: 180, status: 'all', q: '' } }));
+            requests.push(api.get('/support/admin/ideas', { params: { limit: 180, ...activeIdeaFilters } }));
           }
 
-          const responses = await Promise.all(requests);
+          const responses = (await Promise.allSettled(requests)).map((result) => result.status === 'fulfilled' ? result.value : null);
           if (!isMounted) return;
 
-          const nextConversations = sortConversations(responses[0].data?.conversations || []);
-          setConversations(nextConversations);
-          setConversationError('');
+          if (responses[0]) {
+            const nextConversations = sortConversations(responses[0].data?.conversations || []);
+            setConversations(nextConversations);
+            setConversationError('');
+          }
 
-          if (selectedConversationId && responses[1]) {
+          if (refreshMessages && responses[1]) {
             const nextConversation = responses[1].data?.conversation || null;
             const nextMessages = responses[1].data?.messages || [];
+            setMessageError('');
             notifyAboutNewMessages(nextMessages);
             setConversation(nextConversation);
             setMessages(nextMessages);
             api.post(`/support/admin/conversations/${selectedConversationId}/read`).catch(() => null);
           }
 
-          const ideasResponse = responses.find((response) => Array.isArray(response.data?.ideas));
+          const ideasResponse = responses.find((response) => Array.isArray(response?.data?.ideas));
           if (ideasResponse) setIdeas(sortIdeas(ideasResponse.data.ideas));
           return;
         }
@@ -308,7 +314,7 @@ export default function SupportChat() {
       window.clearInterval(interval);
       window.removeEventListener('focus', pollSupport);
     };
-  }, [isAdmin, selectedConversationId, user?.id]);
+  }, [isAdmin, selectedConversationId, user?.id, adminTab, activeIdeaFilters]);
 
   const handleSendMessage = async (event) => {
     event.preventDefault();
@@ -401,7 +407,7 @@ export default function SupportChat() {
     setLoadingIdeas(true);
     setIdeasError('');
     try {
-      const nextIdeas = isAdmin ? await fetchAdminIdeas() : await fetchInstallerIdeas();
+      const nextIdeas = await fetchInstallerIdeas();
       setIdeas(nextIdeas);
     } catch (error) {
       setIdeasError(error.response?.data?.error || 'Não foi possível atualizar as ideias.');
@@ -411,247 +417,68 @@ export default function SupportChat() {
     }
   };
 
-  const handleAdminIdeaStatus = async (ideaId, status) => {
+  const saveAdminIdea = async (ideaId, payload) => {
     setSavingIdeaId(ideaId);
     try {
-      const response = await api.patch(`/support/admin/ideas/${ideaId}`, { status });
-      const updatedIdea = response.data?.idea || null;
-      if (updatedIdea) setIdeas((current) => upsertIdea(current, updatedIdea));
-      toast.success('Status da ideia atualizado.');
+      const response = await api.patch(`/support/admin/ideas/${ideaId}`, payload);
+      const updatedIdea = response.data?.idea;
+      if (updatedIdea) setIdeas((current) => {
+        const matches = activeIdeaFilters.status === 'all' || updatedIdea.status === activeIdeaFilters.status;
+        return matches ? upsertIdea(current, updatedIdea) : current.filter((item) => item.id !== ideaId);
+      });
+      toast.success('Sugestão atualizada.');
+      return true;
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível atualizar a ideia.');
+      return false;
     } finally {
       setSavingIdeaId(null);
     }
   };
 
+  if (isAdmin) return <AdminSupportView tab={adminTab} changeTab={(tab) => setSearchParams(tab === 'ideas' ? { tab } : {})}
+    chat={{
+      conversations, conversation, selectedId: selectedConversationId, loading, error: conversationError,
+      onRetry: () => setLoadAttempt((attempt) => attempt + 1), loadingMessages, messageError,
+      onRetryMessages: () => setMessageAttempt((attempt) => attempt + 1),
+      changeConversation: (id) => {
+        if (id === selectedConversationId) return;
+        setDraft('');
+        setConversation(null);
+        setMessages([]);
+        setLoadingMessages(true);
+        setSelectedConversationId(id);
+        lastSeenMessageIdRef.current = 0;
+      },
+      messages, messagesEndRef, draft, setDraft, send: handleSendMessage, sending, canSend, savingStatus,
+      toggleStatus: handleToggleConversationStatus,
+    }}
+    ideas={{
+      items: ideas, options: Object.entries(IDEA_STATUS_LABEL), categoryLabels: IDEA_CATEGORY_LABEL,
+      tone: ideaTone, filters: ideaFilters, onChange: (event) => {
+        const { name, value } = event.target;
+        setIdeaFilters((filters) => ({ ...filters, [name]: value }));
+      },
+      onSubmit: (event) => { event.preventDefault(); setActiveIdeaFilters({ ...ideaFilters, q: ideaFilters.q.trim() }); },
+      onRetry: () => setActiveIdeaFilters((current) => ({ ...current })),
+      busy: loadingIdeas, error: ideasError, savingId: savingIdeaId, save: saveAdminIdea,
+    }}
+  />;
+
   return (
     <section className="page-shell space-y-7">
       <PageIntro
-        eyebrow={isAdmin ? 'Suporte administrativo' : 'Suporte para instaladores'}
-        title={isAdmin ? 'Central de atendimento e melhorias' : 'Suporte direto com o administrador'}
-        description={
-          isAdmin
-            ? 'Atenda instaladores em tempo real e acompanhe ideias de melhoria no mesmo fluxo.'
-            : 'Abra chamados no chat e envie ideias para melhorar o site. Nós acompanhamos tudo por aqui.'
-        }
-        stats={
-          isAdmin
-            ? [
-                { label: 'Conversas abertas', value: loading || conversationError ? '—' : `${openConversations}`, detail: `${conversations.length} no total.` },
-                { label: 'Ideias pendentes', value: loadingIdeas || ideasError ? '—' : `${pendingIdeas}`, detail: `${ideas.length} ideias enviadas.` },
-              ]
-            : [
-                { label: 'Mensagens', value: loading || conversationError ? '—' : `${messages.length}`, detail: 'Histórico do seu atendimento.' },
-                { label: 'Ideias enviadas', value: loadingIdeas || ideasError ? '—' : `${ideas.length}`, detail: `${pendingIdeas} em análise.` },
-              ]
-        }
+        eyebrow="Suporte para instaladores"
+        title="Suporte direto com o administrador"
+        description="Abra chamados no chat e envie ideias para melhorar o site. Nós acompanhamos tudo por aqui."
+        stats={[
+          { label: 'Mensagens', value: loading || conversationError ? '—' : `${messages.length}`, detail: 'Histórico do seu atendimento.' },
+          { label: 'Ideias enviadas', value: loadingIdeas || ideasError ? '—' : `${ideas.length}`, detail: `${pendingIdeas} em análise.` },
+        ]}
       />
 
       {conversationError ? <div className="lux-panel p-4" role="alert"><p>{conversationError}</p><button className="ghost-button mt-3" onClick={() => setLoadAttempt((attempt) => attempt + 1)} type="button">Tentar carregar conversa novamente</button></div> : null}
 
-      {isAdmin ? (
-        <div className="support-shell">
-          <aside className="lux-panel support-list-panel p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-3">
-              <p className="eyebrow">Conversas</p>
-              <span className="status-pill" data-tone={unreadTotal > 0 ? 'pending' : 'success'}>
-                {unreadTotal > 0 ? `${unreadTotal} não lidas` : 'Em dia'}
-              </span>
-            </div>
-
-            <div className="support-conversation-list mt-4">
-              {loading ? <DecoratingWallLoader embedded phrase="Carregando conversas" /> : !conversationError && conversations.length === 0 ? <div className="empty-state !p-6">Sem conversas no momento.</div> : null}
-              {conversations.map((item) => (
-                <button
-                  className={`support-conversation-item ${selectedConversationId === item.id ? 'support-conversation-item-active' : ''}`}
-                  key={item.id}
-                  onClick={() => setSelectedConversationId(item.id)}
-                  type="button"
-                >
-                  <div className="flex min-w-0 items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[var(--text)]">{item.installer_name}</p>
-                      <p className="truncate text-xs text-[var(--muted)]">{item.installer_email}</p>
-                    </div>
-                    <span className="status-pill shrink-0" data-tone={item.status}>
-                      {formatStatusLabel(item.status)}
-                    </span>
-                  </div>
-                  <p className="support-conversation-last mt-3 text-left text-xs text-[var(--muted)]">
-                    {item.last_message || 'Sem mensagens ainda.'}
-                  </p>
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <p className="text-xs text-[var(--muted)]">
-                      {item.last_message_at ? formatDateTime(item.last_message_at) : 'Agora'}
-                    </p>
-                    {item.unread_count > 0 ? <span className="support-unread-pill">{item.unread_count}</span> : null}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </aside>
-
-          <div className="support-admin-stack">
-            <article className="lux-panel support-chat-panel p-4 sm:p-6">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--line)] pb-4">
-                <div>
-                  <p className="eyebrow">Conversa selecionada</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-[var(--text)]">
-                    {conversation?.installer_name || 'Selecione uma conversa'}
-                  </h2>
-                  <p className="mt-1 text-sm text-[var(--muted)]">
-                    {conversation?.installer_email || 'Sem conversa selecionada.'}
-                  </p>
-                </div>
-                {conversation ? (
-                  <button className="ghost-button" disabled={savingStatus} onClick={handleToggleConversationStatus} type="button">
-                    {savingStatus ? 'Salvando...' : conversation.status === 'open' ? 'Encerrar conversa' : 'Reabrir conversa'}
-                  </button>
-                ) : null}
-              </div>
-
-              <div className="support-message-list mt-4">
-                {loadingMessages ? <div className="empty-state !p-6">Carregando mensagens...</div> : null}
-                {!loading && !loadingMessages && !conversationError && messages.length === 0 ? <div className="empty-state !p-6">Ainda não há mensagens.</div> : null}
-                {!loadingMessages
-                  ? messages.map((message) => (
-                      <article className={`support-message ${message.is_from_admin ? 'support-message-admin' : 'support-message-installer'}`} key={message.id}>
-                        <p className="support-message-name">{message.sender_name || (message.is_from_admin ? 'Administrador' : 'Instalador')}</p>
-                        <p className="support-message-body">{message.body}</p>
-                        <p className="support-message-time">{formatDateTime(message.created_at)}</p>
-                      </article>
-                    ))
-                  : null}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <form className="support-compose mt-4" onSubmit={handleSendMessage}>
-                <textarea
-                  className="field-textarea"
-                  onChange={(event) => setDraft(event.target.value)}
-                  placeholder={canSend ? 'Digite a resposta para o instalador...' : 'Selecione uma conversa para responder.'}
-                  rows={3}
-                  value={draft}
-                />
-                <div className="support-compose-actions">
-                  <button className="gold-button" disabled={sending || !canSend} type="submit">
-                    {sending ? 'Enviando...' : 'Responder agora'}
-                  </button>
-                </div>
-              </form>
-            </article>
-
-            <article className="lux-panel support-ideas-panel p-4 sm:p-6">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--line)] pb-4">
-                <div>
-                  <p className="eyebrow">Ideias de melhoria</p>
-                  <h3 className="mt-2 text-xl font-semibold text-[var(--text)]">Inbox de sugestões</h3>
-                  <p className="mt-2 text-sm text-[var(--muted)]">
-                    Acompanhe as ideias dos instaladores e atualize o status com um clique.
-                  </p>
-                </div>
-                <button className="ghost-button" disabled={loadingIdeas} onClick={handleRefreshIdeas} type="button">
-                  {loadingIdeas ? 'Atualizando...' : 'Atualizar'}
-                </button>
-              </div>
-
-              <div className="grid gap-3 pt-4 sm:grid-cols-2">
-                <div>
-                  <label className="field-label">Filtro por status</label>
-                  <select className="field-select" onChange={(event) => setIdeaFilter(event.target.value)} value={ideaFilter}>
-                    <option value="all">Todos</option>
-                    <option value="new">Nova</option>
-                    <option value="reviewing">Em análise</option>
-                    <option value="planned">Planejada</option>
-                    <option value="done">Concluída</option>
-                    <option value="rejected">Não aprovada</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="field-label">Busca</label>
-                  <input
-                    className="field-input"
-                    onChange={(event) => setIdeaSearch(event.target.value)}
-                    placeholder="Título, descrição, nome ou e-mail"
-                    type="text"
-                    value={ideaSearch}
-                  />
-                </div>
-              </div>
-
-              <div className="support-compose-actions !justify-start pt-3">
-                <button className="gold-button" onClick={handleRefreshIdeas} type="button">
-                  Aplicar filtros
-                </button>
-              </div>
-
-              <div className="support-idea-list mt-4">
-                {loadingIdeas ? <DecoratingWallLoader embedded phrase="Carregando sugestões" /> : ideasError ? <p role="alert">{ideasError} Use Atualizar para tentar novamente.</p> : ideas.length === 0 ? <div className="empty-state !p-6">Sem ideias para os filtros atuais.</div> : null}
-                {ideas.map((idea) => (
-                  <article className="support-idea-card" key={idea.id}>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[var(--text)]">{idea.title}</p>
-                        <p className="mt-1 text-xs text-[var(--muted)]">
-                          {idea.installer_name} • {idea.installer_email}
-                        </p>
-                      </div>
-                      <span className="status-pill" data-tone={ideaTone(idea.status)}>
-                        {IDEA_STATUS_LABEL[idea.status] || idea.status}
-                      </span>
-                    </div>
-
-                    <p className="mt-3 text-sm leading-7 text-[var(--text)]">{idea.description}</p>
-
-                    <div className="support-idea-meta mt-3">
-                      <span className="status-pill" data-tone="info">
-                        {IDEA_CATEGORY_LABEL[idea.category] || idea.category}
-                      </span>
-                      <span className="text-xs text-[var(--muted)]">Enviada em {formatDateTime(idea.created_at)}</span>
-                    </div>
-
-                    <div className="support-idea-actions mt-4">
-                      <button
-                        className="ghost-button !min-h-0 !px-3 !py-2 text-xs"
-                        disabled={savingIdeaId === idea.id}
-                        onClick={() => handleAdminIdeaStatus(idea.id, 'reviewing')}
-                        type="button"
-                      >
-                        Em análise
-                      </button>
-                      <button
-                        className="ghost-button !min-h-0 !px-3 !py-2 text-xs"
-                        disabled={savingIdeaId === idea.id}
-                        onClick={() => handleAdminIdeaStatus(idea.id, 'planned')}
-                        type="button"
-                      >
-                        Planejar
-                      </button>
-                      <button
-                        className="gold-button !min-h-0 !px-3 !py-2 text-xs"
-                        disabled={savingIdeaId === idea.id}
-                        onClick={() => handleAdminIdeaStatus(idea.id, 'done')}
-                        type="button"
-                      >
-                        Concluir
-                      </button>
-                      <button
-                        className="danger-button !min-h-0 !px-3 !py-2 text-xs"
-                        disabled={savingIdeaId === idea.id}
-                        onClick={() => handleAdminIdeaStatus(idea.id, 'rejected')}
-                        type="button"
-                      >
-                        Não aprovar
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </article>
-          </div>
-        </div>
-      ) : (
         <div className="support-installer-shell">
           <article className="lux-panel support-chat-panel p-4 sm:p-6">
             <div className="border-b border-[var(--line)] pb-4">
@@ -777,7 +604,6 @@ export default function SupportChat() {
             </div>
           </aside>
         </div>
-      )}
     </section>
   );
 }

@@ -15,6 +15,7 @@ router.get('/users', controller.listUsers);
 router.get('/installer-verifications', controller.listInstallerVerifications);
 router.get('/payments', controller.listPayments);
 router.get('/service-requests', controller.listServiceRequests);
+router.get('/service-requests/:id/interests', controller.listServiceRequestInterests);
 router.get('/recommended-stores', controller.listRecommendedStores);
 router.get('/dashboard-ads', controller.listDashboardAds);
 router.get('/system/errors', controller.listApplicationErrors);
