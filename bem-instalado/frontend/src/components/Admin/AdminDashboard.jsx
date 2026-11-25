@@ -3,14 +3,11 @@ import { useSearchParams } from 'react-router';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useConfirm } from '../../contexts/ConfirmContext';
-import DecoratingWallLoader from '../Layout/DecoratingWallLoader';
-import PaginationControls from '../Layout/PaginationControls';
+import { formatStatusLabel } from '../../utils/formatters';
+import { AdminHeading, getAdminSection } from './AdminWorkspace';
 import {
-  formatCurrency,
-  formatDateTime,
-  formatShortDate,
-  formatStatusLabel,
-} from '../../utils/formatters';
+  AdminAdvertising, AdminAnnouncements, AdminMonitoring, AdminOverview, AdminPayments, AdminRequests, AdminUsers, AdminVerifications,
+} from './AdminViews';
 
 const initialOverview = {
   metrics: {},
@@ -47,76 +44,33 @@ const initialDashboardAdForm = {
   is_active: true,
 };
 
-const dashboardAdTypeLabels = {
-  image: 'Imagem',
-  video: 'Vídeo',
-  text: 'Texto',
-};
-
 const USERS_PER_PAGE = 6;
 const PAYMENTS_PER_PAGE = 6;
 const REQUESTS_PER_PAGE = 8;
 const initialUserFilters = { q: '', status: 'all', account_type: 'all' };
-const initialPaymentFilters = { q: '', status: 'all' };
-const initialRequestFilters = { q: '', status: 'all' };
+const initialPaymentFilters = { q: '', status: 'all', period: 'all' };
+const initialRequestFilters = { q: '', status: 'all', origin: 'all' };
 const initialPagination = { page: 1, limit: 1, total: 0, total_pages: 1 };
-
-function AdminPanelIcon({ type }) {
-  const sharedProps = {
-    width: 20,
-    height: 20,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    strokeWidth: 1.8,
-    'aria-hidden': 'true',
-  };
-
-  const icons = {
-    overview: <><rect x="4" y="4" width="6" height="6" rx="1.2" /><rect x="14" y="4" width="6" height="6" rx="1.2" /><rect x="4" y="14" width="6" height="6" rx="1.2" /><rect x="14" y="14" width="6" height="6" rx="1.2" /></>,
-    users: <><circle cx="9" cy="9" r="3" /><circle cx="17" cy="10" r="2.2" /><path d="M3.8 19c.9-3.1 2.8-4.7 5.2-4.7s4.3 1.6 5.2 4.7" /><path d="M14.8 15c1.9.4 3.3 1.7 4 4" /></>,
-    payments: <><circle cx="12" cy="12" r="8.5" /><path d="M14.8 9.4c0-1.2-1-2.1-2.6-2.1-1.6 0-2.7.8-2.7 2.1 0 2.7 5.5 1.6 5.5 4.2 0 1.2-1 2.1-2.8 2.1-1.7 0-2.8-.9-2.9-2.2" /><path d="M12 6v12" /></>,
-    requests: <><path d="M6 4h12v16H6z" /><path d="M9 8h6M9 12h6M9 16h3" /></>,
-    stores: <><path d="M5 9.2 6.2 4h11.6L19 9.2" /><path d="M5 9.2h14v9.3a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 18.5Z" /><path d="M8.4 13h7.2" /></>,
-    advertising: <><rect x="3.8" y="5" width="16.4" height="14" rx="2" /><path d="m7.2 15 3.2-3.2 2.5 2.5 2.1-2.1 2.2 2.2" /><circle cx="15.8" cy="9.1" r="1.25" /></>,
-    announcements: <><path d="M5 10.5v3a2 2 0 0 0 2 2h2.2l4.8 3.2v-13L9.2 8H7a2 2 0 0 0-2 2.5Z" /><path d="M17 9.2c.8.6 1.3 1.5 1.3 2.6s-.5 2-1.3 2.6" /></>,
-  };
-
-  return <svg {...sharedProps}>{icons[type] || icons.overview}</svg>;
-}
-
-function PageIntro({ title, description, stats = [] }) {
-  return (
-    <section className="admin-modern-hero">
-      <div className="admin-modern-hero-copy">
-        <p>Administração</p>
-        <h1>{title || 'Painel ADM'}</h1>
-        <small>{description}</small>
-      </div>
-
-      <div className="admin-modern-hero-metrics" aria-label="Resumo administrativo">
-        {stats.map((stat) => (
-          <article key={stat.label}>
-            <span>{stat.label}</span>
-            <strong>{stat.value}</strong>
-            {stat.detail ? <small>{stat.detail}</small> : null}
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 export default function AdminDashboard() {
   const confirm = useConfirm();
-  const storeFormRef = useRef(null);
-  const dashboardAdFormRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const section = getAdminSection(searchParams);
+  const adTab = searchParams.get('tab') === 'ads' ? 'ads' : 'stores';
+  const pendingPaymentShortcut = section === 'payments' && searchParams.get('status') === 'pending';
+  const [failures, setFailures] = useState({});
+  const [verificationStatus, setVerificationStatus] = useState('pending');
+  const [verificationSearch, setVerificationSearch] = useState('');
+  const [verificationRows, setVerificationRows] = useState({});
+  const [loadingVerifications, setLoadingVerifications] = useState({});
+  const [loadingErrors, setLoadingErrors] = useState(true);
+  const [errorsUpdatedAt, setErrorsUpdatedAt] = useState(null);
+  const [resolvingErrorId, setResolvingErrorId] = useState(null);
+  const [savingRequestId, setSavingRequestId] = useState(null);
+  const rejectionResolveRef = useRef(null);
+  const [rejecting, setRejecting] = useState(null);
   const [overview, setOverview] = useState(initialOverview);
   const [users, setUsers] = useState([]);
-  const [pendingVerifications, setPendingVerifications] = useState([]);
   const [payments, setPayments] = useState([]);
   const [serviceRequests, setServiceRequests] = useState([]);
   const [recommendedStores, setRecommendedStores] = useState([]);
@@ -130,6 +84,8 @@ export default function AdminDashboard() {
   const [dashboardAdForm, setDashboardAdForm] = useState(initialDashboardAdForm);
   const [editingStoreId, setEditingStoreId] = useState(null);
   const [editingDashboardAdId, setEditingDashboardAdId] = useState(null);
+  const [storeMode, setStoreMode] = useState(null);
+  const [adMode, setAdMode] = useState(null);
   const [usersPage, setUsersPage] = useState(1);
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [requestsPage, setRequestsPage] = useState(1);
@@ -149,16 +105,32 @@ export default function AdminDashboard() {
   const [loadingDashboardAds, setLoadingDashboardAds] = useState(false);
   const [savingDashboardAd, setSavingDashboardAd] = useState(false);
 
-  const loadOverview = useCallback(async () => {
-    const response = await api.get('/admin/overview');
-    setOverview(response.data || initialOverview);
+  const fetchAdmin = useCallback(async (key, endpoint, config) => {
+    try {
+      const response = await api.get(endpoint, config);
+      setFailures((current) => current[key] ? { ...current, [key]: '' } : current);
+      return response;
+    } catch (error) {
+      setFailures((current) => ({ ...current, [key]: error.response?.data?.error || 'Não foi possível carregar. Tente novamente.' }));
+      throw error;
+    }
   }, []);
+
+  const loadOverview = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetchAdmin('overview', '/admin/overview');
+      setOverview(response.data || initialOverview);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchAdmin]);
 
   const loadUsers = useCallback(async (nextFilters = initialUserFilters, page = 1) => {
     setLoadingUsers(true);
 
     try {
-      const response = await api.get('/admin/users', {
+      const response = await fetchAdmin('users', '/admin/users', {
         params: {
           q: nextFilters.q,
           status: nextFilters.status,
@@ -170,27 +142,33 @@ export default function AdminDashboard() {
 
       setUsers(response.data?.users || []);
       setUsersPagination(response.data?.pagination || initialPagination);
-      setUsersPage(page);
+      setUsersPage(Math.min(page, response.data?.pagination?.total_pages || 1));
     } finally {
       setLoadingUsers(false);
     }
-  }, []);
+  }, [fetchAdmin]);
 
-  const loadVerifications = useCallback(async () => {
-    const response = await api.get('/admin/installer-verifications', {
-      params: { status: 'pending', limit: 50 },
-    });
-    setPendingVerifications(response.data?.verifications || []);
-  }, []);
+  const loadVerifications = useCallback(async (status = 'pending') => {
+    setLoadingVerifications((current) => ({ ...current, [status]: true }));
+    try {
+      const response = await fetchAdmin(`verifications-${status}`, '/admin/installer-verifications', {
+        params: { status, limit: 50 },
+      });
+      setVerificationRows((current) => ({ ...current, [status]: response.data?.verifications || [] }));
+    } finally {
+      setLoadingVerifications((current) => ({ ...current, [status]: false }));
+    }
+  }, [fetchAdmin]);
 
   const loadPayments = useCallback(async (nextFilters = initialPaymentFilters, page = 1) => {
     setLoadingPayments(true);
 
     try {
-      const response = await api.get('/admin/payments', {
+      const response = await fetchAdmin('payments', '/admin/payments', {
         params: {
           q: nextFilters.q,
           status: nextFilters.status,
+          period: nextFilters.period,
           page,
           limit: PAYMENTS_PER_PAGE,
         },
@@ -198,70 +176,91 @@ export default function AdminDashboard() {
 
       setPayments(response.data?.payments || []);
       setPaymentsPagination(response.data?.pagination || initialPagination);
-      setPaymentsPage(page);
+      setPaymentsPage(Math.min(page, response.data?.pagination?.total_pages || 1));
     } finally {
       setLoadingPayments(false);
     }
-  }, []);
+  }, [fetchAdmin]);
 
   const loadRecommendedStores = useCallback(async () => {
     setLoadingStores(true);
 
     try {
-      const response = await api.get('/admin/recommended-stores');
+      const response = await fetchAdmin('stores', '/admin/recommended-stores');
       setRecommendedStores(response.data?.stores || []);
     } finally {
       setLoadingStores(false);
     }
-  }, []);
+  }, [fetchAdmin]);
 
   const loadDashboardAds = useCallback(async () => {
     setLoadingDashboardAds(true);
 
     try {
-      const response = await api.get('/admin/dashboard-ads');
+      const response = await fetchAdmin('ads', '/admin/dashboard-ads');
       setDashboardAds(response.data?.ads || []);
     } finally {
       setLoadingDashboardAds(false);
     }
-  }, []);
+  }, [fetchAdmin]);
 
   const loadServiceRequests = useCallback(async (nextFilters = initialRequestFilters, page = 1) => {
     setLoadingRequests(true);
     try {
-      const response = await api.get('/admin/service-requests', {
+      const response = await fetchAdmin('requests', '/admin/service-requests', {
         params: { ...nextFilters, page, limit: REQUESTS_PER_PAGE },
       });
       setServiceRequests(response.data?.requests || []);
       setRequestsPagination(response.data?.pagination || initialPagination);
-      setRequestsPage(page);
+      setRequestsPage(Math.min(page, response.data?.pagination?.total_pages || 1));
     } finally {
       setLoadingRequests(false);
     }
-  }, []);
+  }, [fetchAdmin]);
 
   const loadApplicationErrors = useCallback(async () => {
-    const response = await api.get('/admin/system/errors', { params: { limit: 30 } });
-    setApplicationErrors(response.data?.errors || []);
-  }, []);
+    setLoadingErrors(true);
+    try {
+      const response = await fetchAdmin('monitoring', '/admin/system/errors', { params: { limit: 30 } });
+      setApplicationErrors(response.data?.errors || []);
+      setErrorsUpdatedAt(new Date());
+    } finally {
+      setLoadingErrors(false);
+    }
+  }, [fetchAdmin]);
 
   useEffect(() => {
-    setLoading(true);
+    void Promise.allSettled([loadOverview(), loadUsers(), loadVerifications(), loadServiceRequests(), loadRecommendedStores(), loadDashboardAds(), loadApplicationErrors()]);
+  }, [loadApplicationErrors, loadDashboardAds, loadOverview, loadRecommendedStores, loadServiceRequests, loadUsers, loadVerifications]);
 
-    Promise.all([loadOverview(), loadUsers(), loadVerifications(), loadPayments(), loadServiceRequests(), loadRecommendedStores(), loadDashboardAds(), loadApplicationErrors()])
-      .catch((error) => {
-        toast.error(error.response?.data?.error || 'Não foi possível carregar o painel administrativo.');
-      })
-      .finally(() => setLoading(false));
-  }, [loadApplicationErrors, loadDashboardAds, loadOverview, loadPayments, loadRecommendedStores, loadServiceRequests, loadUsers, loadVerifications]);
+  useEffect(() => {
+    const filters = { ...initialPaymentFilters, status: pendingPaymentShortcut ? 'pending' : 'all' };
+    setPaymentFilters(filters);
+    void loadPayments(filters).catch(() => {});
+  }, [loadPayments, pendingPaymentShortcut]);
+
+  useEffect(() => () => {
+    rejectionResolveRef.current?.('');
+    rejectionResolveRef.current = null;
+  }, []);
+
+  const finishRejection = (value) => {
+    const close = rejectionResolveRef.current;
+    rejectionResolveRef.current = null;
+    setRejecting(null);
+    close?.(value);
+  };
 
   const resolveApplicationError = async (errorId) => {
+    setResolvingErrorId(errorId);
     try {
       await api.patch(`/admin/system/errors/${errorId}/resolve`);
       setApplicationErrors((current) => current.filter((item) => item.id !== errorId));
       toast.success('Erro marcado como resolvido.');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível atualizar o erro.');
+    } finally {
+      setResolvingErrorId(null);
     }
   };
 
@@ -308,7 +307,7 @@ export default function AdminDashboard() {
       });
 
       toast.success('Perfil público atualizado.');
-      await Promise.all([loadUsers(userFilters), loadOverview()]);
+      await Promise.all([loadUsers(userFilters, usersPage), loadOverview()]);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível atualizar o perfil público.');
     } finally {
@@ -325,7 +324,7 @@ export default function AdminDashboard() {
       });
 
       toast.success('Assinatura atualizada.');
-      await Promise.all([loadUsers(userFilters), loadOverview()]);
+      await Promise.all([loadUsers(userFilters, usersPage), loadOverview()]);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível atualizar a assinatura.');
     } finally {
@@ -342,7 +341,7 @@ export default function AdminDashboard() {
       });
 
       toast.success(nextIsAdmin ? 'Usuário promovido para admin.' : 'Permissão de admin removida.');
-      await Promise.all([loadUsers(userFilters), loadOverview()]);
+      await Promise.all([loadUsers(userFilters, usersPage), loadOverview()]);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível alterar permissão administrativa.');
     } finally {
@@ -356,7 +355,7 @@ export default function AdminDashboard() {
     try {
       await api.patch(`/admin/users/${targetUserId}/trust`, payload);
       toast.success('Selo de confiança atualizado.');
-      await Promise.all([loadUsers(userFilters), loadOverview()]);
+      await Promise.all([loadUsers(userFilters, usersPage), loadOverview()]);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível atualizar o selo de confiança.');
     } finally {
@@ -375,38 +374,19 @@ export default function AdminDashboard() {
     }
   };
 
-  const updateServiceRequestStatus = async (requestId, status) => {
+  const updateServiceRequestStatus = async (item, status) => {
+    const action = status === 'open' ? 'reabrir' : 'fechar';
+    if (!(await confirm(`Confirma ${action} o pedido #${item.id}?`))) return;
+    const requestId = item.id;
+    setSavingRequestId(requestId);
     try {
       await api.patch(`/admin/service-requests/${requestId}/status`, { status });
       toast.success('Status do pedido atualizado.');
       await Promise.all([loadServiceRequests(requestFilters, requestsPage), loadOverview()]);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível atualizar o pedido.');
-    }
-  };
-
-  const openInstallerCertificate = async (targetUser) => {
-    if (!targetUser.certificate_file) return;
-    if (!targetUser.certificate_file.startsWith('/api/')) {
-      try {
-        const certificateUrl = new URL(targetUser.certificate_file);
-        if (!['http:', 'https:'].includes(certificateUrl.protocol)) throw new Error('invalid_protocol');
-        window.open(certificateUrl.toString(), '_blank', 'noopener,noreferrer');
-      } catch (_error) {
-        toast.error('O endereço deste certificado é inválido. Peça um novo envio ao instalador.');
-      }
-      return;
-    }
-
-    const viewer = window.open('', '_blank', 'noopener,noreferrer');
-    try {
-      const response = await api.get(targetUser.certificate_file.replace(/^\/api/, ''), { responseType: 'blob' });
-      const objectUrl = URL.createObjectURL(response.data);
-      if (viewer) viewer.location = objectUrl;
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
-    } catch (error) {
-      viewer?.close();
-      toast.error(error.response?.data?.error || 'Não foi possível abrir o certificado.');
+    } finally {
+      setSavingRequestId(null);
     }
   };
 
@@ -488,7 +468,7 @@ export default function AdminDashboard() {
     try {
       await api.post(`/admin/installer-verifications/${targetUser.id}/decision`, { decision: 'approve', publish });
       toast.success(publish ? 'Certificado aprovado e perfil publicado na vitrine.' : 'Certificado aprovado.');
-      await Promise.all([loadUsers(userFilters), loadVerifications(), loadOverview()]);
+      await Promise.all([loadUsers(userFilters, usersPage), loadVerifications(), loadOverview()]);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível aprovar o certificado.');
     } finally {
@@ -498,13 +478,17 @@ export default function AdminDashboard() {
 
   const rejectCertificationAction = async (targetUser) => {
     if (!targetUser.has_certificate) return;
-    const reason = window.prompt(`Informe o motivo da recusa para ${targetUser.name}:`);
+    if (rejectionResolveRef.current) return;
+    const reason = await new Promise((resolve) => {
+      rejectionResolveRef.current = resolve;
+      setRejecting(targetUser);
+    });
     if (!reason?.trim()) return;
     setSavingUserId(targetUser.id);
     try {
       await api.post(`/admin/installer-verifications/${targetUser.id}/decision`, { decision: 'reject', reason: reason.trim() });
       toast.success('Certificado recusado e instalador avisado.');
-      await Promise.all([loadUsers(userFilters), loadVerifications(), loadOverview()]);
+      await Promise.all([loadUsers(userFilters, usersPage), loadVerifications(), loadOverview()]);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível recusar o certificado.');
     } finally {
@@ -526,7 +510,7 @@ export default function AdminDashboard() {
     try {
       await api.delete(`/admin/users/${targetUser.id}`);
       toast.success('Usuário arquivado com sucesso.');
-      await Promise.all([loadUsers(userFilters), loadOverview(), loadPayments(paymentFilters)]);
+      await Promise.all([loadUsers(userFilters, usersPage), loadOverview(), loadPayments(paymentFilters, paymentsPage)]);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível excluir o usuário.');
     } finally {
@@ -541,7 +525,7 @@ export default function AdminDashboard() {
     try {
       await api.patch(`/admin/users/${targetUser.id}/restore`);
       toast.success('Usuário restaurado. A verificação e a vitrine continuam desativadas por segurança.');
-      await Promise.all([loadUsers(userFilters), loadOverview()]);
+      await Promise.all([loadUsers(userFilters, usersPage), loadOverview()]);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível restaurar o usuário.');
     } finally {
@@ -555,7 +539,7 @@ export default function AdminDashboard() {
     try {
       await api.patch(`/admin/payments/${paymentId}/status`, { status });
       toast.success(`Pagamento marcado como ${formatStatusLabel(status).toLowerCase()}.`);
-      await Promise.all([loadPayments(paymentFilters), loadOverview(), loadUsers(userFilters)]);
+      await Promise.all([loadPayments(paymentFilters, paymentsPage), loadOverview(), loadUsers(userFilters, usersPage)]);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível atualizar o pagamento.');
     } finally {
@@ -587,14 +571,16 @@ export default function AdminDashboard() {
       return;
     }
 
-    setSendingAnnouncement(true);
+    const payload = { title: announcement.title.trim(), message: announcement.message.trim(), type: announcement.type };
+    if (!(await confirm({
+      title: 'Revisar comunicado',
+      message: `“${payload.title}” será enviado para todos os usuários. Confirma o envio?`,
+      confirmText: 'Enviar para todos',
+    }))) return;
 
+    setSendingAnnouncement(true);
     try {
-      const response = await api.post('/admin/announcements', {
-        title: announcement.title.trim(),
-        message: announcement.message.trim(),
-        type: announcement.type,
-      });
+      const response = await api.post('/admin/announcements', payload);
 
       const delivered = response.data?.delivered_count || 0;
       toast.success(`Comunicado enviado para ${delivered} usuários.`);
@@ -623,10 +609,12 @@ export default function AdminDashboard() {
   const resetStoreForm = () => {
     setStoreForm(initialStoreForm);
     setEditingStoreId(null);
+    setStoreMode(null);
   };
 
   const startStoreEdit = (store) => {
     setEditingStoreId(store.id);
+    setStoreMode('edit');
     setStoreForm({
       name: store.name || '',
       description: store.description || '',
@@ -637,11 +625,6 @@ export default function AdminDashboard() {
       is_active: Boolean(store.is_active),
     });
 
-    window.requestAnimationFrame(() => {
-      storeFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-
-    toast.success(`Editando loja: ${store.name}`);
   };
 
   const handleStoreSubmit = async (event) => {
@@ -741,10 +724,12 @@ export default function AdminDashboard() {
   const resetDashboardAdForm = () => {
     setDashboardAdForm(initialDashboardAdForm);
     setEditingDashboardAdId(null);
+    setAdMode(null);
   };
 
   const startDashboardAdEdit = (ad) => {
     setEditingDashboardAdId(ad.id);
+    setAdMode('edit');
     setDashboardAdForm({
       title: ad.title || '',
       description: ad.description || '',
@@ -756,11 +741,6 @@ export default function AdminDashboard() {
       is_active: Boolean(ad.is_active),
     });
 
-    window.requestAnimationFrame(() => {
-      dashboardAdFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-
-    toast.success(`Editando propaganda: ${ad.title}`);
   };
 
   const handleDashboardAdSubmit = async (event) => {
@@ -854,1066 +834,82 @@ export default function AdminDashboard() {
     }
   };
 
-  const metrics = overview.metrics || {};
-  const totalUsersPages = usersPagination.total_pages || 1;
-  const normalizedUsersPage = Math.min(usersPage, totalUsersPages);
-  const paginatedUsers = users;
-
-  const totalPaymentsPages = paymentsPagination.total_pages || 1;
-  const normalizedPaymentsPage = Math.min(paymentsPage, totalPaymentsPages);
-  const paginatedPayments = payments;
-  const requestedAdminSection = searchParams.get('section') || 'overview';
-  const adminSection = requestedAdminSection === 'stores' ? 'advertising' : requestedAdminSection;
-  const adminSections = [
-    { key: 'overview', label: 'Visão geral', detail: 'Métricas e atividade recente' },
-    { key: 'requests', label: 'Pedidos', detail: 'Solicitações e interessados' },
-    { key: 'verifications', label: 'Aprovações', detail: 'Certificados aguardando revisão e publicação' },
-    { key: 'users', label: 'Usuários', detail: 'Perfis, permissões e confiança' },
-    { key: 'payments', label: 'Pagamentos', detail: 'Cobrança, pendências e status' },
-    { key: 'advertising', label: 'Propaganda', detail: 'Landing page e anúncios quadrados do dashboard' },
-    { key: 'announcements', label: 'Comunicados', detail: 'Mensagens globais da plataforma' },
-    { key: 'monitoring', label: 'Monitoramento', detail: 'Erros reais do site e da API' },
-  ];
-  const activeAdminSection = adminSections.find((item) => item.key === adminSection) || adminSections[0];
-
-  if (loading) {
-    return (
-      <DecoratingWallLoader
-        embedded
-        phrase="Organizando os dados da operação."
-      />
-    );
-  }
-
-  return (
-    <section className="admin-modern-shell">
-      <PageIntro
-        description="Acompanhe pedidos, usuários, pagamentos e o funcionamento do InstalarPro em um só lugar."
-        eyebrow="Administrador"
-        stats={[
-          {
-            label: 'Pedidos abertos',
-            value: `${metrics.open_service_requests || 0}`,
-            detail: `${metrics.total_service_requests || 0} pedidos no total`,
-          },
-          {
-            label: 'Instaladores aptos',
-            value: `${metrics.public_installers || 0}`,
-            detail: 'Verificados e visíveis para clientes',
-          },
-          {
-            label: 'Receita do mês',
-            value: formatCurrency(metrics.monthly_revenue || 0),
-            detail: `${metrics.paid_this_month_count || 0} pagamentos confirmados`,
-          },
-        ]}
-        title="Painel administrativo"
-      />
-
-      <nav aria-label="Áreas administrativas" className="admin-section-nav fade-up" style={{ animationDelay: '0.05s' }}>
-        {adminSections.map((section) => (
-          <button
-            aria-current={activeAdminSection.key === section.key ? 'page' : undefined}
-            aria-label={`${section.label}: ${section.detail}`}
-            className={`admin-section-tab ${activeAdminSection.key === section.key ? 'is-active' : ''}`}
-            key={section.key}
-            onClick={() => setSearchParams({ section: section.key })}
-            title={section.detail}
-            type="button"
-          >
-            <span className="admin-section-tab-icon"><AdminPanelIcon type={section.key} /></span>
-            <span className="admin-section-tab-label">{section.label}</span>
-          </button>
-        ))}
-      </nav>
-
-      <header className="admin-current-section fade-up" style={{ animationDelay: '0.07s' }}>
-        <p>{activeAdminSection.label}</p>
-        <span>{activeAdminSection.detail}</span>
-      </header>
-
-      <div className="admin-modern-body">
-        <section className={`admin-content-section ${['overview', 'requests', 'payments'].includes(activeAdminSection.key) ? 'grid gap-6' : 'hidden'}`}>
-          {activeAdminSection.key === 'overview' ? (
-          <article className="admin-content-panel lux-panel fade-up p-6">
-            <p className="eyebrow">Indicadores da plataforma</p>
-
-            <div className="summary-strip mt-5">
-              <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Usuários cadastrados</p>
-                <p className="metric-value admin-metric-value mt-2">{metrics.total_users || 0}</p>
-              </article>
-
-              <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Contas de cliente</p>
-                <p className="metric-value admin-metric-value mt-2">{metrics.total_clients || 0}</p>
-              </article>
-
-              <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Pagamentos pendentes</p>
-                <p className="metric-value admin-metric-value mt-2">{metrics.pending_payments || 0}</p>
-              </article>
-
-              <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Certificados verificados</p>
-                <p className="metric-value admin-metric-value mt-2">{metrics.certified_installers || 0}</p>
-              </article>
-
-              <article className="summary-strip-item">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Suporte aberto</p>
-                <p className="metric-value admin-metric-value mt-2">{metrics.support_open_conversations || 0}</p>
-              </article>
-            </div>
-          </article>
-          ) : null}
-
-          {activeAdminSection.key === 'overview' ? (
-          <article className="admin-content-panel lux-panel fade-up p-6" style={{ animationDelay: '0.06s' }}>
-            <p className="eyebrow">Atividade recente</p>
-
-            <div className="admin-activity-grid mt-5 md:grid-cols-3">
-              <section className="admin-activity-column">
-                <p className="text-sm font-semibold text-[var(--text)]">Novos usuários</p>
-
-                <div className="admin-activity-list mt-3">
-                  {(overview.recent_users || []).map((item) => (
-                    <div className="admin-activity-entry" key={item.id}>
-                      <p className="text-sm text-[var(--text)]">{item.name}</p>
-                      <p className="text-xs text-[var(--muted)]">{item.email}</p>
-                      <p className="text-xs text-[var(--muted)]">{formatDateTime(item.created_at)}</p>
-                    </div>
-                  ))}
-                  {(overview.recent_users || []).length === 0 ? (
-                    <p className="admin-activity-empty">Nenhum cadastro recente.</p>
-                  ) : null}
-                </div>
-              </section>
-
-              <section className="admin-activity-column">
-                <p className="text-sm font-semibold text-[var(--text)]">Pagamentos</p>
-
-                <div className="admin-activity-list mt-3">
-                  {(overview.recent_payments || []).map((item) => (
-                    <div className="admin-activity-entry" key={item.id}>
-                      <p className="text-sm text-[var(--text)]">{item.user_name}</p>
-                      <p className="text-xs text-[var(--muted)]">
-                        {formatCurrency(item.amount)} • {formatStatusLabel(item.status)}
-                      </p>
-                      <p className="text-xs text-[var(--muted)]">{formatDateTime(item.created_at)}</p>
-                    </div>
-                  ))}
-                  {(overview.recent_payments || []).length === 0 ? (
-                    <p className="admin-activity-empty">Nenhum pagamento recente.</p>
-                  ) : null}
-                </div>
-              </section>
-
-              <section className="admin-activity-column">
-                <p className="text-sm font-semibold text-[var(--text)]">Pedidos de clientes</p>
-
-                <div className="admin-activity-list mt-3">
-                  {(overview.recent_service_requests || []).map((item) => (
-                    <div className="admin-activity-entry" key={item.id}>
-                      <p className="text-sm text-[var(--text)]">
-                        #{item.id} • {item.service_label || 'Serviço'}
-                      </p>
-                      <p className="text-xs text-[var(--muted)]">
-                        {item.client_name} • {formatStatusLabel(item.status)}
-                      </p>
-                      <p className="text-xs text-[var(--muted)]">
-                        {[item.city, item.state].filter(Boolean).join(' - ')} • {item.interests_count || 0} {Number(item.interests_count || 0) === 1 ? 'interessado' : 'interessados'}
-                      </p>
-                    </div>
-                  ))}
-                  {(overview.recent_service_requests || []).length === 0 ? (
-                    <p className="admin-activity-empty">Nenhum pedido recente.</p>
-                  ) : null}
-                </div>
-              </section>
-            </div>
-          </article>
-          ) : null}
-
-          {activeAdminSection.key === 'requests' ? (
-          <article className="admin-content-panel lux-panel fade-up p-6">
-            <p className="eyebrow">Pedidos de clientes</p>
-
-            <form className="admin-filter-bar mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_200px_auto]" onSubmit={handleRequestFilterSubmit}>
-              <input
-                className="field-input"
-                name="q"
-                onChange={handleRequestFilterChange}
-                placeholder="Buscar cliente, serviço, cidade ou telefone"
-                value={requestFilters.q}
-              />
-              <select className="field-select" name="status" onChange={handleRequestFilterChange} value={requestFilters.status}>
-                <option value="all">Todos os status</option>
-                <option value="open">Abertos</option>
-                <option value="expired">Vencidos</option>
-                <option value="selected">Instalador escolhido</option>
-                <option value="closed">Fechados</option>
-                <option value="canceled">Cancelados</option>
-              </select>
-              <button className="ghost-button" type="submit">Filtrar</button>
-            </form>
-
-            <div className="mt-5 grid gap-3">
-              {loadingRequests ? <div className="empty-state">Atualizando pedidos...</div> : null}
-              {!loadingRequests && serviceRequests.length === 0 ? (
-                <div className="empty-state">Nenhum pedido encontrado com esse filtro.</div>
-              ) : null}
-              {!loadingRequests && serviceRequests.length > 0 ? (
-                <div className="list-surface">
-                  {serviceRequests.map((item) => (
-                    <article className="list-row" key={item.id}>
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0 grid gap-3">
-                          <div>
-                            <p className="font-semibold text-[var(--text)]">#{item.id} • {item.service_label || item.service || 'Serviço'}</p>
-                            <p className="text-xs text-[var(--muted)]">{item.client_name} • {item.client_email || item.client_phone}</p>
-                            <p className="text-xs text-[var(--muted)]">{formatDateTime(item.created_at)}</p>
-                          </div>
-                          <div className="admin-data-grid">
-                            <p>Região: {[item.neighborhood, item.city, item.state].filter(Boolean).join(' - ') || '-'}</p>
-                            <p>Interessados: {item.interests_count || 0}</p>
-                            <p>Conta vinculada: {item.account_email || 'Pedido anônimo'}</p>
-                            <p>Escolhido: {item.selected_installer_name || 'Ainda não'}</p>
-                          </div>
-                        </div>
-                        <div className="action-cluster grid gap-2 lg:w-48">
-                          <span className="status-pill" data-tone={item.status}>{formatStatusLabel(item.status)}</span>
-                          {item.status === 'open' ? (
-                            <button className="ghost-button !min-h-0 !px-3 !py-2 text-xs" onClick={() => updateServiceRequestStatus(item.id, 'closed')} type="button">
-                              Fechar pedido
-                            </button>
-                          ) : item.status !== 'selected' ? (
-                            <button className="ghost-button !min-h-0 !px-3 !py-2 text-xs" onClick={() => updateServiceRequestStatus(item.id, 'open')} type="button">
-                              Reabrir pedido
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-              {serviceRequests.length > 0 ? (
-                <PaginationControls
-                  currentPage={requestsPage}
-                  onPageChange={(page) => loadServiceRequests(requestFilters, page)}
-                  totalPages={requestsPagination.total_pages || 1}
-                />
-              ) : null}
-            </div>
-          </article>
-          ) : null}
-
-          {activeAdminSection.key === 'payments' ? (
-          <article className="admin-content-panel lux-panel fade-up p-6" style={{ animationDelay: '0.08s' }}>
-            <p className="eyebrow">Gestão de pagamentos</p>
-
-            <form className="admin-filter-bar mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_200px_auto]" onSubmit={handlePaymentFilterSubmit}>
-              <input
-                className="field-input"
-                name="q"
-                onChange={handlePaymentFilterChange}
-                placeholder="Buscar por nome, email ou ID externo"
-                value={paymentFilters.q}
-              />
-
-              <select
-                className="field-select"
-                name="status"
-                onChange={handlePaymentFilterChange}
-                value={paymentFilters.status}
-              >
-                <option value="all">Todos os status</option>
-                <option value="pending">Pendentes</option>
-                <option value="paid">Pagos</option>
-                <option value="failed">Falhos</option>
-                <option value="canceled">Cancelados</option>
-              </select>
-
-              <button className="ghost-button" type="submit">
-                Filtrar
-              </button>
-            </form>
-
-            <div className="mt-5 grid gap-3">
-              {loadingPayments ? <div className="empty-state">Atualizando pagamentos...</div> : null}
-
-              {!loadingPayments && payments.length === 0 ? (
-                <div className="empty-state">Nenhum pagamento encontrado com esse filtro.</div>
-              ) : null}
-
-              {!loadingPayments && paginatedPayments.length > 0 ? (
-                <div className="list-surface">
-                  {paginatedPayments.map((item) => (
-                    <article className="list-row" key={item.id}>
-                      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0 grid gap-3">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold text-[var(--text)]">{item.user_name}</p>
-                              <p className="truncate text-xs text-[var(--muted)]">{item.user_email}</p>
-                              <p className="text-xs text-[var(--muted)]">{formatDateTime(item.created_at)}</p>
-                            </div>
-
-                            <span className="status-pill" data-tone={item.status}>
-                              {formatStatusLabel(item.status)}
-                            </span>
-                          </div>
-
-                          <div className="admin-data-grid">
-                            <p>Valor: {formatCurrency(item.amount)}</p>
-                            <p>Método: {item.method || '-'}</p>
-                            <p>Provedor: {item.provider || '-'}</p>
-                            <p>ID externo: {item.external_id || '-'}</p>
-                          </div>
-                        </div>
-
-                        <details className="admin-row-actions lg:w-48">
-                          <summary>Alterar status</summary>
-                          <div className="action-cluster mt-2 grid gap-2">
-                            <button
-                              className="gold-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                              disabled={savingPaymentId === item.id}
-                              onClick={() => confirmPaymentStatus(item.id, 'paid')}
-                              type="button"
-                            >
-                              Marcar pago
-                            </button>
-
-                            <button
-                              className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                              disabled={savingPaymentId === item.id}
-                              onClick={() => confirmPaymentStatus(item.id, 'pending')}
-                              type="button"
-                            >
-                              Voltar pendente
-                            </button>
-
-                            <button
-                              className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                              disabled={savingPaymentId === item.id}
-                              onClick={() => confirmPaymentStatus(item.id, 'failed')}
-                              type="button"
-                            >
-                              Marcar falha
-                            </button>
-
-                            <button
-                              className="danger-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                              disabled={savingPaymentId === item.id}
-                              onClick={() => confirmPaymentStatus(item.id, 'canceled')}
-                              type="button"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        </details>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-
-              {payments.length > 0 ? (
-                <PaginationControls
-                  currentPage={normalizedPaymentsPage}
-                  onPageChange={(page) => loadPayments(paymentFilters, page)}
-                  totalPages={totalPaymentsPages}
-                />
-              ) : null}
-            </div>
-          </article>
-          ) : null}
-        </section>
-
-        <aside className={`${['users', 'verifications', 'advertising', 'announcements', 'monitoring'].includes(activeAdminSection.key) ? 'grid gap-6' : 'hidden'}`}>
-          {activeAdminSection.key === 'verifications' ? (
-          <section className="admin-content-panel lux-panel fade-up p-6" style={{ animationDelay: '0.1s' }}>
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="eyebrow">Fila de aprovação</p>
-                <h2 className="mt-2 text-xl font-semibold text-[var(--text)]">Instaladores aguardando revisão</h2>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  Esta fila é para o selo de verificado. Para publicar sem certificado, use “Mostrar na vitrine”, em Usuários.
-                </p>
-              </div>
-              <button className="ghost-button !min-h-0 !px-3 !py-2 text-xs" onClick={loadVerifications} type="button">
-                Atualizar fila
-              </button>
-            </div>
-
-            <div className="mt-5 grid gap-3">
-              {pendingVerifications.length === 0 ? (
-                <div className="empty-state">Nenhum certificado aguardando análise agora.</div>
-              ) : pendingVerifications.map((item) => (
-                <article className="list-row" key={item.id}>
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-[var(--text)]">{item.business_name || item.name}</p>
-                      <p className="text-xs text-[var(--muted)]">{item.email}</p>
-                      <p className="mt-2 text-xs text-[var(--muted)]">
-                        {item.city || 'Cidade não informada'}{item.state ? ` - ${item.state}` : ''} · enviado {formatDateTime(item.certificate_submitted_at)}
-                      </p>
-                    </div>
-                    <span className="status-pill" data-tone="pending">AGUARDANDO</span>
-                  </div>
-                  <div className="action-cluster mt-4 grid gap-2 sm:grid-cols-3">
-                    <button className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs" onClick={() => openInstallerCertificate(item)} type="button">
-                      Abrir certificado
-                    </button>
-                    <button
-                      className="gold-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingUserId === item.id}
-                      onClick={() => confirmCertificationAction({ ...item, certification_verified: false, has_certificate: true }, { publish: true })}
-                      type="button"
-                    >
-                      Aprovar e publicar
-                    </button>
-                    <button
-                      className="danger-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingUserId === item.id}
-                      onClick={() => rejectCertificationAction({ ...item, has_certificate: true })}
-                      type="button"
-                    >
-                      Recusar com motivo
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-          ) : null}
-
-          {activeAdminSection.key === 'users' ? (
-          <section className="admin-content-panel lux-panel fade-up p-6" style={{ animationDelay: '0.1s' }}>
-            <p className="eyebrow">Gestão de usuários</p>
-
-            <form className="admin-filter-bar admin-user-filters mt-5 grid gap-3" onSubmit={handleUserFilterSubmit}>
-              <input
-                className="field-input"
-                name="q"
-                onChange={handleUserFilterChange}
-                placeholder="Buscar por nome ou email"
-                value={userFilters.q}
-              />
-
-              <select
-                className="field-select"
-                name="status"
-                onChange={handleUserFilterChange}
-                value={userFilters.status}
-              >
-                <option value="all">Todos os status</option>
-                <option value="active">Assinatura ativa</option>
-                <option value="inactive">Assinatura inativa</option>
-                <option value="canceled">Assinatura cancelada</option>
-              </select>
-
-              <select
-                className="field-select"
-                name="account_type"
-                onChange={handleUserFilterChange}
-                value={userFilters.account_type}
-              >
-                <option value="all">Todos os tipos de conta</option>
-                <option value="installer">Instaladores</option>
-                <option value="client">Clientes</option>
-              </select>
-
-              <button className="ghost-button w-full" type="submit">
-                Aplicar filtros
-              </button>
-            </form>
-
-            <div className="mt-5 grid gap-3">
-              {loadingUsers ? <div className="empty-state">Atualizando usuários...</div> : null}
-
-              {!loadingUsers && users.length === 0 ? (
-                <div className="empty-state">Nenhum usuário encontrado com esse filtro.</div>
-              ) : null}
-
-              {!loadingUsers && paginatedUsers.length > 0 ? (
-                <div className="list-surface">
-                  {paginatedUsers.map((item) => (
-                    <article className="list-row" key={item.id}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-[var(--text)]">{item.name}</p>
-                      <p className="truncate text-xs text-[var(--muted)]">{item.email}</p>
-                    <p className="mt-1 text-xs font-semibold text-[var(--muted)]">
-                      {item.account_type === 'client' ? 'Cliente' : 'Instalador'}
-                    </p>
-                    <p className="mt-1 text-xs text-[var(--muted)]">Criado em {formatShortDate(item.created_at)}</p>
-                    {item.deleted_at ? <p className="mt-1 text-xs font-semibold text-[var(--danger)]">Arquivado em {formatShortDate(item.deleted_at)}</p> : null}
-                  </div>
-
-                    <span className="status-pill" data-tone={item.subscription_status}>
-                      {item.subscription_status === 'active' ? 'PRO' : 'GRÁTIS'}
-                    </span>
-                  </div>
-
-                  <div className="admin-data-grid mt-3">
-                    <p>Orçamentos: {item.budgets_count} · {item.approved_count} aprovados</p>
-                    <p>Vitrine: {item.public_profile ? 'Perfil público' : 'Perfil oculto'}</p>
-                    <p>Certificado: {item.certification_verified ? 'Verificado' : item.has_certificate ? 'Aguardando análise' : 'Não enviado'}</p>
-                    <p>Acesso: {item.is_admin ? 'Administrador' : 'Usuário comum'}</p>
-                  </div>
-
-                  <details className="admin-row-actions mt-4">
-                    <summary>Gerenciar usuário</summary>
-                    <div className="action-cluster mt-3 grid gap-2 sm:grid-cols-2">
-                    {item.account_type === 'installer' && item.has_certificate ? (
-                      <button
-                        className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                        onClick={() => openInstallerCertificate(item)}
-                        type="button"
-                      >
-                        Abrir certificado
-                      </button>
-                    ) : null}
-                    {item.account_type === 'installer' ? <button
-                      className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingUserId === item.id || Boolean(item.deleted_at)}
-                      onClick={() => confirmPublicProfileAction(item)}
-                      type="button"
-                    >
-                      {item.public_profile ? 'Ocultar vitrine' : 'Mostrar na vitrine'}
-                    </button> : null}
-
-                    {item.account_type === 'installer' ? <button
-                      className="gold-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingUserId === item.id || Boolean(item.deleted_at)}
-                      onClick={() => confirmSubscriptionAction(item)}
-                      type="button"
-                    >
-                      {item.subscription_status === 'active' ? 'Voltar para o Grátis' : 'Ativar plano Pro'}
-                    </button> : null}
-
-                    {item.account_type === 'installer' ? <button
-                      className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingUserId === item.id || Boolean(item.deleted_at)}
-                      onClick={() => confirmFeaturedInstallerAction(item)}
-                      type="button"
-                    >
-                      {item.featured_installer ? 'Remover destaque' : 'Destacar instalador'}
-                    </button> : null}
-
-                    {item.account_type === 'installer' ? <button
-                      className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingUserId === item.id || Boolean(item.deleted_at) || (!item.has_certificate && !item.certification_verified)}
-                      onClick={() => confirmCertificationAction(item)}
-                      type="button"
-                    >
-                      {item.certification_verified ? 'Remover selo certificado' : 'Validar certificado'}
-                    </button> : null}
-
-                    {item.account_type === 'installer' && item.has_certificate && !item.certification_verified ? <button
-                      className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingUserId === item.id || Boolean(item.deleted_at)}
-                      onClick={() => rejectCertificationAction(item)}
-                      type="button"
-                    >
-                      Recusar certificado
-                    </button> : null}
-
-                    <button
-                      className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingUserId === item.id || Boolean(item.deleted_at)}
-                      onClick={() => confirmAdminRoleAction(item)}
-                      type="button"
-                    >
-                      {item.is_admin ? 'Remover admin' : 'Tornar admin'}
-                    </button>
-
-                    {item.deleted_at ? (
-                      <button
-                        className="gold-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                        disabled={savingUserId === item.id}
-                        onClick={() => restoreUser(item)}
-                        type="button"
-                      >
-                        Restaurar usuário
-                      </button>
-                    ) : (
-                      <button
-                        className="danger-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                        disabled={savingUserId === item.id}
-                        onClick={() => deleteUser(item)}
-                        type="button"
-                      >
-                        Arquivar usuário
-                      </button>
-                    )}
-                    </div>
-                  </details>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-
-              {users.length > 0 ? (
-                <PaginationControls
-                  currentPage={normalizedUsersPage}
-                  onPageChange={(page) => loadUsers(userFilters, page)}
-                  totalPages={totalUsersPages}
-                />
-              ) : null}
-            </div>
-          </section>
-          ) : null}
-
-          {activeAdminSection.key === 'advertising' ? (
-          <section className="admin-content-panel admin-store-panel lux-panel fade-up p-6" style={{ animationDelay: '0.12s' }}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="eyebrow">Landing page</p>
-                <h2 className="mt-2 text-xl font-semibold text-[var(--text)]">Lojas recomendadas</h2>
-              </div>
-              {editingStoreId ? (
-                <button className="ghost-button !min-h-0 !px-3 !py-2 text-xs" onClick={resetStoreForm} type="button">
-                  Cancelar edição
-                </button>
-              ) : null}
-            </div>
-
-            <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
-              Esta vitrine é exclusiva da landing page. Somente lojas ativas aparecem no carrossel público, seguindo a ordem definida abaixo.
-            </p>
-
-            <form className="admin-form-surface mt-5 grid gap-3" onSubmit={handleStoreSubmit} ref={storeFormRef}>
-              <input
-                autoFocus={Boolean(editingStoreId)}
-                className="field-input"
-                name="name"
-                onChange={handleStoreFormChange}
-                placeholder="Nome da loja"
-                value={storeForm.name}
-              />
-
-              <textarea
-                className="field-textarea"
-                name="description"
-                onChange={handleStoreFormChange}
-                placeholder="Descrição curta para aparecer no carrossel"
-                rows={3}
-                value={storeForm.description}
-              />
-
-              <input
-                className="field-input"
-                name="image_url"
-                onChange={handleStoreFormChange}
-                placeholder="URL da imagem"
-                value={storeForm.image_url}
-              />
-
-              <input
-                className="field-input"
-                name="link_url"
-                onChange={handleStoreFormChange}
-                placeholder="URL de destino da loja"
-                value={storeForm.link_url}
-              />
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  className="field-input"
-                  name="cta_label"
-                  onChange={handleStoreFormChange}
-                  placeholder="Texto do botão (ex: Visitar loja)"
-                  value={storeForm.cta_label}
-                />
-
-                <input
-                  className="field-input"
-                  min={-99}
-                  name="sort_order"
-                  onChange={handleStoreFormChange}
-                  placeholder="Ordem de exibição"
-                  type="number"
-                  value={storeForm.sort_order}
-                />
-              </div>
-
-              <label className="flex items-center gap-2 text-sm text-[var(--muted)]">
-                <input
-                  checked={storeForm.is_active}
-                  name="is_active"
-                  onChange={handleStoreFormChange}
-                  type="checkbox"
-                />
-                Mostrar no carrossel público
-              </label>
-
-              <button className="gold-button w-full" disabled={savingStore} type="submit">
-                {savingStore
-                  ? 'Salvando...'
-                  : editingStoreId
-                    ? 'Atualizar loja recomendada'
-                    : 'Adicionar loja recomendada'}
-              </button>
-            </form>
-
-            <div className="mt-5 grid gap-3">
-              {loadingStores ? <div className="empty-state">Carregando lojas recomendadas...</div> : null}
-
-              {!loadingStores && recommendedStores.length === 0 ? (
-                <div className="empty-state">Nenhuma loja recomendada cadastrada ainda.</div>
-              ) : null}
-
-              {!loadingStores && recommendedStores.length > 0 ? (
-                <div className="list-surface admin-store-surface">
-                  {recommendedStores.map((store) => (
-                    <article
-                      className={`admin-store-card list-row admin-store-row ${
-                    editingStoreId === store.id ? 'admin-store-card-editing' : ''
-                      }`}
-                      key={store.id}
-                    >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-[var(--text)]">{store.name}</p>
-                      <p className="text-xs text-[var(--muted)]">Ordem: {store.sort_order}</p>
-                    </div>
-
-                    <span className="status-pill" data-tone={store.is_active ? 'paid' : 'canceled'}>
-                      {store.is_active ? 'Ativa' : 'Inativa'}
-                    </span>
-                  </div>
-
-                  {editingStoreId === store.id ? (
-                    <p className="admin-store-editing-note mt-2">Modo edição ativo</p>
-                  ) : null}
-
-                  {store.image_url ? (
-                    <div className="admin-store-preview mt-3">
-                      <img alt={`Preview da loja ${store.name}`} loading="lazy" src={store.image_url} />
-                    </div>
-                  ) : null}
-
-                  {store.description ? (
-                    <p className="admin-store-description mt-3 text-sm text-[var(--muted)]">{store.description}</p>
-                  ) : null}
-
-                  <div className="admin-store-meta mt-3 grid gap-1 text-xs text-[var(--muted)]">
-                    <p>Imagem: {store.image_url || '-'}</p>
-                    <p>Link: {store.link_url || '-'}</p>
-                    <p>CTA: {store.cta_label || 'Ir ao site'}</p>
-                  </div>
-
-                  <div className="admin-store-actions mt-4 grid gap-2 sm:grid-cols-3">
-                    <button
-                      className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingStore}
-                      onClick={() => startStoreEdit(store)}
-                      type="button"
-                    >
-                      Editar
-                    </button>
-
-                    <button
-                      className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingStore}
-                      onClick={() => handleToggleStoreStatus(store)}
-                      type="button"
-                    >
-                      {store.is_active ? 'Desativar' : 'Ativar'}
-                    </button>
-
-                    <button
-                      className="danger-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                      disabled={savingStore}
-                      onClick={() => handleDeleteStore(store)}
-                      type="button"
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </section>
-          ) : null}
-
-          {activeAdminSection.key === 'advertising' ? (
-          <section className="admin-content-panel admin-store-panel lux-panel fade-up p-6" style={{ animationDelay: '0.14s' }}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="eyebrow">Dashboard do instalador</p>
-                <h2 className="mt-2 text-xl font-semibold text-[var(--text)]">Propagandas quadradas</h2>
-              </div>
-              {editingDashboardAdId ? (
-                <button className="ghost-button !min-h-0 !px-3 !py-2 text-xs" onClick={resetDashboardAdForm} type="button">
-                  Cancelar edição
-                </button>
-              ) : null}
-            </div>
-
-            <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
-              Esta área é separada da landing page. Cadastre imagem, vídeo ou texto para o quadrado patrocinado do dashboard. Anúncios ativos alternam pela ordem definida abaixo.
-            </p>
-
-            <form className="admin-form-surface mt-5 grid gap-3" onSubmit={handleDashboardAdSubmit} ref={dashboardAdFormRef}>
-              <input
-                autoFocus={Boolean(editingDashboardAdId)}
-                className="field-input"
-                name="title"
-                onChange={handleDashboardAdFormChange}
-                placeholder="Título da propaganda"
-                value={dashboardAdForm.title}
-              />
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <select
-                  className="field-select"
-                  name="media_type"
-                  onChange={handleDashboardAdFormChange}
-                  value={dashboardAdForm.media_type}
-                >
-                  <option value="image">Imagem</option>
-                  <option value="video">Vídeo</option>
-                  <option value="text">Somente texto</option>
-                </select>
-
-                <input
-                  className="field-input"
-                  name="media_url"
-                  onChange={handleDashboardAdFormChange}
-                  placeholder={dashboardAdForm.media_type === 'video' ? 'URL direta do vídeo MP4/WebM' : dashboardAdForm.media_type === 'image' ? 'URL da imagem' : 'Mídia opcional para texto'}
-                  value={dashboardAdForm.media_url}
-                />
-              </div>
-
-              {dashboardAdForm.media_type === 'video' ? (
-                <p className="-mt-1 text-xs text-[var(--muted)]">Use uma URL direta de arquivo MP4 ou WebM. Links de páginas do YouTube não são arquivos de vídeo.</p>
-              ) : null}
-
-              <textarea
-                className="field-textarea"
-                name="description"
-                onChange={handleDashboardAdFormChange}
-                placeholder="Mensagem curta (opcional)"
-                rows={3}
-                value={dashboardAdForm.description}
-              />
-
-              <input
-                className="field-input"
-                name="link_url"
-                onChange={handleDashboardAdFormChange}
-                placeholder="URL de destino ao clicar (opcional)"
-                value={dashboardAdForm.link_url}
-              />
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  className="field-input"
-                  name="cta_label"
-                  onChange={handleDashboardAdFormChange}
-                  placeholder="Texto do link (ex: Conhecer)"
-                  value={dashboardAdForm.cta_label}
-                />
-
-                <input
-                  className="field-input"
-                  min={-99}
-                  name="sort_order"
-                  onChange={handleDashboardAdFormChange}
-                  placeholder="Ordem do rodízio"
-                  type="number"
-                  value={dashboardAdForm.sort_order}
-                />
-              </div>
-
-              <label className="flex items-center gap-2 text-sm text-[var(--muted)]">
-                <input
-                  checked={dashboardAdForm.is_active}
-                  name="is_active"
-                  onChange={handleDashboardAdFormChange}
-                  type="checkbox"
-                />
-                Mostrar no quadrado do dashboard
-              </label>
-
-              <button className="gold-button w-full" disabled={savingDashboardAd} type="submit">
-                {savingDashboardAd
-                  ? 'Salvando...'
-                  : editingDashboardAdId
-                    ? 'Atualizar propaganda'
-                    : 'Adicionar propaganda'}
-              </button>
-            </form>
-
-            <div className="mt-5 grid gap-3">
-              {loadingDashboardAds ? <div className="empty-state">Carregando propagandas...</div> : null}
-
-              {!loadingDashboardAds && dashboardAds.length === 0 ? (
-                <div className="empty-state">Nenhuma propaganda do dashboard cadastrada ainda.</div>
-              ) : null}
-
-              {!loadingDashboardAds && dashboardAds.length > 0 ? (
-                <div className="list-surface admin-store-surface">
-                  {dashboardAds.map((ad) => (
-                    <article
-                      className={`admin-store-card list-row admin-store-row ${
-                        editingDashboardAdId === ad.id ? 'admin-store-card-editing' : ''
-                      }`}
-                      key={ad.id}
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-semibold text-[var(--text)]">{ad.title}</p>
-                          <p className="text-xs text-[var(--muted)]">
-                            Tipo: {dashboardAdTypeLabels[ad.media_type] || ad.media_type} · Ordem do rodízio: {ad.sort_order}
-                          </p>
-                        </div>
-
-                        <span className="status-pill" data-tone={ad.is_active ? 'paid' : 'canceled'}>
-                          {ad.is_active ? 'Ativa' : 'Inativa'}
-                        </span>
-                      </div>
-
-                      {editingDashboardAdId === ad.id ? (
-                        <p className="admin-store-editing-note mt-2">Modo edição ativo</p>
-                      ) : null}
-
-                      {ad.media_url ? (
-                        <div className="admin-store-preview admin-dashboard-ad-preview mt-3">
-                          {ad.media_type === 'video' ? (
-                            <video controls preload="metadata" src={ad.media_url} />
-                          ) : (
-                            <img alt={`Preview da propaganda ${ad.title}`} loading="lazy" src={ad.media_url} />
-                          )}
-                        </div>
-                      ) : null}
-
-                      {ad.description ? (
-                        <p className="admin-store-description mt-3 text-sm text-[var(--muted)]">{ad.description}</p>
-                      ) : null}
-
-                      <div className="admin-store-meta mt-3 grid gap-1 text-xs text-[var(--muted)]">
-                        <p>Mídia: {ad.media_url || 'Somente texto'}</p>
-                        <p>Link: {ad.link_url || 'Sem link'}</p>
-                        <p>CTA: {ad.cta_label || 'Conhecer'}</p>
-                      </div>
-
-                      <div className="admin-store-actions mt-4 grid gap-2 sm:grid-cols-3">
-                        <button
-                          className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                          disabled={savingDashboardAd}
-                          onClick={() => startDashboardAdEdit(ad)}
-                          type="button"
-                        >
-                          Editar
-                        </button>
-
-                        <button
-                          className="ghost-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                          disabled={savingDashboardAd}
-                          onClick={() => handleToggleDashboardAdStatus(ad)}
-                          type="button"
-                        >
-                          {ad.is_active ? 'Desativar' : 'Ativar'}
-                        </button>
-
-                        <button
-                          className="danger-button w-full !min-h-0 !px-3 !py-2 text-xs"
-                          disabled={savingDashboardAd}
-                          onClick={() => handleDeleteDashboardAd(ad)}
-                          type="button"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </section>
-          ) : null}
-
-          {activeAdminSection.key === 'announcements' ? (
-          <section className="admin-content-panel admin-announcement-panel lux-panel fade-up p-6" style={{ animationDelay: '0.14s' }}>
-            <p className="eyebrow">Comunicado global</p>
-
-            <form className="admin-form-surface mt-5 grid gap-3" onSubmit={handleAnnouncementSubmit}>
-              <input
-                className="field-input"
-                name="title"
-                onChange={handleAnnouncementChange}
-                placeholder="Título do comunicado"
-                value={announcement.title}
-              />
-
-              <select
-                className="field-select"
-                name="type"
-                onChange={handleAnnouncementChange}
-                value={announcement.type}
-              >
-                <option value="info">Informação</option>
-                <option value="success">Sucesso</option>
-                <option value="warning">Aviso</option>
-              </select>
-
-              <textarea
-                className="field-textarea"
-                name="message"
-                onChange={handleAnnouncementChange}
-                placeholder="Mensagem que será enviada para todos os usuários"
-                rows={4}
-                value={announcement.message}
-              />
-
-              <button className="gold-button w-full" disabled={sendingAnnouncement} type="submit">
-                {sendingAnnouncement ? 'Enviando...' : 'Enviar para todos'}
-              </button>
-            </form>
-          </section>
-          ) : null}
-
-          {activeAdminSection.key === 'monitoring' ? (
-          <section className="admin-content-panel lux-panel fade-up p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="eyebrow">Erros não resolvidos</p>
-                <p className="mt-2 text-sm text-[var(--muted)]">Falhas do navegador e da API aparecem aqui sem senhas, tokens ou dados de contato.</p>
-              </div>
-              <button className="ghost-button !min-h-0 !px-3 !py-2 text-xs" onClick={loadApplicationErrors} type="button">
-                Atualizar
-              </button>
-            </div>
-
-            <div className="mt-5 grid gap-3">
-              {applicationErrors.length === 0 ? <div className="empty-state">Nenhum erro pendente.</div> : null}
-              {applicationErrors.map((item) => (
-                <article className="list-row" key={item.id}>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-[var(--text)]">{item.message}</p>
-                      <p className="mt-1 text-xs text-[var(--muted)]">
-                        {item.source} · {item.method || 'CLIENT'} {item.route || ''} · {formatDateTime(item.created_at)}
-                      </p>
-                    </div>
-                    <span className="status-pill" data-tone="failed">{item.status_code || 'JS'}</span>
-                  </div>
-                  <button className="ghost-button mt-4 !min-h-0 !px-3 !py-2 text-xs" onClick={() => resolveApplicationError(item.id)} type="button">
-                    Marcar como resolvido
-                  </button>
-                </article>
-              ))}
-            </div>
-          </section>
-          ) : null}
-        </aside>
+  const retry = (action) => (...args) => { void action(...args).catch(() => {}); };
+  const pending = verificationRows.pending || [];
+  const store = {
+    items: recommendedStores, loading: loadingStores, error: failures.stores, retry: retry(loadRecommendedStores),
+    saving: savingStore, mode: storeMode, startNew: () => { resetStoreForm(); setStoreMode('new'); },
+    startEdit: startStoreEdit, closeEditor: resetStoreForm, values: storeForm, onChange: handleStoreFormChange,
+    submit: handleStoreSubmit, toggle: handleToggleStoreStatus, remove: handleDeleteStore,
+  };
+  const ad = {
+    items: dashboardAds, loading: loadingDashboardAds, error: failures.ads, retry: retry(loadDashboardAds),
+    saving: savingDashboardAd, mode: adMode, startNew: () => { resetDashboardAdForm(); setAdMode('new'); },
+    startEdit: startDashboardAdEdit, closeEditor: resetDashboardAdForm, values: dashboardAdForm, onChange: handleDashboardAdFormChange,
+    submit: handleDashboardAdSubmit, toggle: handleToggleDashboardAdStatus, remove: handleDeleteDashboardAd,
+  };
+  const changeAdTab = (tab) => {
+    if (savingStore || savingDashboardAd) return;
+    setSearchParams({ section: 'advertising', ...(tab === 'ads' ? { tab } : {}) });
+  };
+
+  return <section className="ip-admin-page">
+    <AdminHeading section={section} />
+    {section === 'overview' ? <AdminOverview overview={overview} pending={pending} errors={applicationErrors}
+      failures={{ ...failures, verifications: failures['verifications-pending'] }}
+      loading={loading} onRetry={retry(loadOverview)} /> : null}
+    {section === 'requests' ? <AdminRequests items={serviceRequests} loading={loadingRequests} error={failures.requests}
+      onRetry={() => retry(loadServiceRequests)(requestFilters, requestsPage)} onPage={(page) => retry(loadServiceRequests)(requestFilters, page)}
+      page={requestsPage} pagination={requestsPagination} filters={requestFilters} onChange={handleRequestFilterChange}
+      onSubmit={handleRequestFilterSubmit} onStatus={updateServiceRequestStatus} busyId={savingRequestId} /> : null}
+    {section === 'verifications' ? <AdminVerifications items={verificationRows[verificationStatus] || []}
+      loading={loadingVerifications[verificationStatus]} error={failures['verifications-' + verificationStatus]}
+      onRetry={() => retry(loadVerifications)(verificationStatus)} status={verificationStatus}
+      onStatus={(status) => { setVerificationStatus(status); setVerificationSearch(''); retry(loadVerifications)(status); }}
+      search={verificationSearch} onSearch={setVerificationSearch} savingId={savingUserId} pendingCount={pending.length}
+      onApprove={(item, options) => confirmCertificationAction({ ...item, has_certificate: Boolean(item.certificate_file) }, options)}
+      onReject={(item) => rejectCertificationAction({ ...item, has_certificate: Boolean(item.certificate_file) })} /> : null}
+    {section === 'users' ? <AdminUsers items={users} loading={loadingUsers} error={failures.users}
+      onRetry={() => retry(loadUsers)(userFilters, usersPage)} onPage={(page) => retry(loadUsers)(userFilters, page)}
+      page={usersPage} pagination={usersPagination} filters={userFilters} onChange={handleUserFilterChange}
+      onSubmit={handleUserFilterSubmit} savingId={savingUserId} actions={{
+        profile: confirmPublicProfileAction, plan: confirmSubscriptionAction, feature: confirmFeaturedInstallerAction,
+        certify: confirmCertificationAction, reject: rejectCertificationAction, role: confirmAdminRoleAction, restore: restoreUser, archive: deleteUser,
+      }} /> : null}
+    {section === 'payments' ? <AdminPayments items={payments} loading={loadingPayments} error={failures.payments}
+      onRetry={() => retry(loadPayments)(paymentFilters, paymentsPage)} onPage={(page) => retry(loadPayments)(paymentFilters, page)}
+      page={paymentsPage} pagination={paymentsPagination} filters={paymentFilters} onChange={handlePaymentFilterChange}
+      onSubmit={handlePaymentFilterSubmit} onStatus={confirmPaymentStatus} savingId={savingPaymentId} metrics={overview.metrics || {}} /> : null}
+    {section === 'advertising' ? <AdminAdvertising key={adTab} tab={adTab} changeTab={changeAdTab} store={store} ad={ad} /> : null}
+    {section === 'announcements' ? <AdminAnnouncements values={announcement} onChange={handleAnnouncementChange}
+      onSubmit={handleAnnouncementSubmit} sending={sendingAnnouncement} /> : null}
+    {section === 'monitoring' ? <AdminMonitoring items={applicationErrors} loading={loadingErrors} error={failures.monitoring}
+      refresh={retry(loadApplicationErrors)} updated={errorsUpdatedAt} resolve={resolveApplicationError} resolvingId={resolvingErrorId} /> : null}
+    {rejecting ? <RejectionDialog target={rejecting} finish={finishRejection} /> : null}
+  </section>;
+}
+
+function RejectionDialog({ target, finish }) {
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    dialog?.showModal?.();
+    return () => dialog?.close?.();
+  }, []);
+  return <dialog className="ip-admin-dialog" ref={dialogRef} aria-labelledby="admin-rejection-title"
+    onCancel={(event) => { event.preventDefault(); finish(''); }}>
+    <form className="ip-admin-form" onSubmit={(event) => {
+      event.preventDefault();
+      const reason = new FormData(event.currentTarget).get('reason')?.trim();
+      if (reason) finish(reason);
+    }}>
+      <h2 id="admin-rejection-title">Recusar certificado</h2>
+      <p>Explique o motivo da recusa para {target.name}.</p>
+      <label className="ip-admin-field">Motivo da recusa<textarea name="reason" rows={4} required minLength={8} maxLength={1000} /></label>
+      <div className="ip-admin-actions">
+        <button className="ip-admin-btn" type="button" onClick={() => finish('')}>Cancelar</button>
+        <button className="ip-admin-btn is-danger" type="submit">Confirmar recusa</button>
       </div>
-    </section>
-  );
+    </form>
+  </dialog>;
 }

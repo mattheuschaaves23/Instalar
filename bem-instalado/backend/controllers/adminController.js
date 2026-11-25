@@ -5,6 +5,10 @@ const { sendPushToUser } = require('../services/push');
 const { publicProfileSql } = require('../utils/installerEligibility');
 const ADMIN_MUTATION_LOCK_ID = 19772402;
 const DASHBOARD_AD_TYPES = new Set(['image', 'video', 'text']);
+// Payment timestamps use UTC wall-clock storage. The ADM reports Brazilian calendar months.
+const BILLING_LOCAL_MONTH = "DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')";
+const BILLING_MONTH_START = `((${BILLING_LOCAL_MONTH} AT TIME ZONE 'America/Sao_Paulo') AT TIME ZONE 'UTC')`;
+const BILLING_NEXT_MONTH = `(((${BILLING_LOCAL_MONTH} + INTERVAL '1 month') AT TIME ZONE 'America/Sao_Paulo') AT TIME ZONE 'UTC')`;
 
 function parseLimit(value, fallback = 20) {
   const parsed = Number(value);
@@ -252,13 +256,13 @@ exports.getOverview = async (_req, res) => {
             SELECT COUNT(*)::int
             FROM payments
             WHERE status = 'paid'
-              AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+              AND created_at >= ${BILLING_MONTH_START} AND created_at < ${BILLING_NEXT_MONTH}
           ) AS paid_this_month_count,
           (
             SELECT COALESCE(SUM(amount), 0)
             FROM payments
             WHERE status = 'paid'
-              AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+              AND created_at >= ${BILLING_MONTH_START} AND created_at < ${BILLING_NEXT_MONTH}
           ) AS paid_this_month_total,
           (
             SELECT COUNT(*)::int
@@ -484,11 +488,12 @@ exports.listUsers = async (req, res) => {
 exports.listPayments = async (req, res) => {
   try {
     const search = String(req.query.q || '').trim();
+    const period = req.query.period === 'month' ? 'month' : 'all';
     const status = String(req.query.status || 'all').trim().toLowerCase();
     const page = parsePage(req.query.page);
     const limit = parseLimit(req.query.limit, 20);
     const offset = (page - 1) * limit;
-    const allowedStatuses = new Set(['all', 'pending', 'paid', 'failed', 'canceled']);
+    const allowedStatuses = new Set(['all', 'pending', 'paid', 'failed', 'canceled', 'refunded']);
     const safeStatus = allowedStatuses.has(status) ? status : 'all';
 
     const { rows } = await pool.query(
@@ -511,12 +516,14 @@ exports.listPayments = async (req, res) => {
         FROM payments p
         JOIN users u ON u.id = p.user_id
         WHERE
-          ($1 = '' OR u.name ILIKE ('%' || $1 || '%') OR u.email ILIKE ('%' || $1 || '%') OR COALESCE(p.external_id, '') ILIKE ('%' || $1 || '%'))
+          ($1 = '' OR u.name ILIKE ('%' || $1 || '%') OR u.email ILIKE ('%' || $1 || '%')
+            OR COALESCE(p.external_id, '') ILIKE ('%' || $1 || '%') OR p.id::text = LTRIM($1, '#'))
           AND ($2 = 'all' OR p.status = $2)
+          AND ($5 = 'all' OR (p.created_at >= ${BILLING_MONTH_START} AND p.created_at < ${BILLING_NEXT_MONTH}))
         ORDER BY p.created_at DESC
         LIMIT $3 OFFSET $4
       `,
-      [search, safeStatus, limit, offset]
+      [search, safeStatus, limit, offset, period]
     );
 
     const total = Number(rows[0]?.total_count || 0);
@@ -534,6 +541,7 @@ exports.listServiceRequests = async (req, res) => {
     await expireOpenServiceRequests();
     const search = String(req.query.q || '').trim();
     const status = String(req.query.status || 'all').trim().toLowerCase();
+    const origin = ['marketplace', 'direct'].includes(req.query.origin) ? req.query.origin : 'all';
     const page = parsePage(req.query.page);
     const limit = parseLimit(req.query.limit, 20);
     const offset = (page - 1) * limit;
@@ -558,6 +566,7 @@ exports.listServiceRequests = async (req, res) => {
           sr.status,
           sr.created_at,
           sr.updated_at,
+          (sr.direct_installer_id IS NOT NULL) AS is_direct,
           sr.selected_installer_id,
           owner.email AS account_email,
           COALESCE(NULLIF(selected.business_name, ''), selected.name) AS selected_installer_name,
@@ -569,8 +578,11 @@ exports.listServiceRequests = async (req, res) => {
         LEFT JOIN service_request_interests sri ON sri.request_id = sr.id
         WHERE
           ($1 = 'all' OR sr.status = $1 OR ($1 = 'open' AND sr.status = 'direct_pending'))
+          AND ($5 = 'all' OR ($5 = 'direct' AND sr.direct_installer_id IS NOT NULL)
+            OR ($5 = 'marketplace' AND sr.direct_installer_id IS NULL))
           AND (
             $2 = ''
+            OR sr.id::text = LTRIM($2, '#')
             OR sr.client_name ILIKE ('%' || $2 || '%')
             OR COALESCE(sr.client_email, '') ILIKE ('%' || $2 || '%')
             OR COALESCE(sr.client_phone, '') ILIKE ('%' || $2 || '%')
@@ -581,7 +593,7 @@ exports.listServiceRequests = async (req, res) => {
         ORDER BY sr.created_at DESC
         LIMIT $3 OFFSET $4
       `,
-      [safeStatus, search, limit, offset]
+      [safeStatus, search, limit, offset, origin]
     );
 
     const total = Number(rows[0]?.total_count || 0);
@@ -591,6 +603,29 @@ exports.listServiceRequests = async (req, res) => {
     });
   } catch (_error) {
     return res.status(500).json({ error: 'Erro ao listar pedidos de clientes.' });
+  }
+};
+
+exports.listServiceRequestInterests = async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0 || id > 2147483647) {
+    return res.status(400).json({ error: 'Pedido inválido.' });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT i.id, i.status, i.created_at,
+         COALESCE(NULLIF(u.business_name, ''), u.name) AS installer_name
+       FROM service_request_interests i
+       JOIN users u ON u.id = i.installer_id
+       WHERE i.request_id = $1
+       ORDER BY i.created_at DESC, i.id DESC
+       LIMIT 50`,
+      [id]
+    );
+    return res.json({ interests: rows });
+  } catch (_error) {
+    return res.status(500).json({ error: 'Erro ao carregar interessados neste pedido.' });
   }
 };
 
