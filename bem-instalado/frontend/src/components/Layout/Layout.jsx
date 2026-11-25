@@ -46,7 +46,7 @@ export default function Layout() {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  if (hasAdminAccess(user) && /^\/(admin|support)\/?$/.test(location.pathname)) {
+  if (hasAdminAccess(user) && /^\/(admin|support|settings)\/?$/.test(location.pathname)) {
     return <AdminWorkspace><EmailVerificationNotice /><PageOutlet /></AdminWorkspace>;
   }
 

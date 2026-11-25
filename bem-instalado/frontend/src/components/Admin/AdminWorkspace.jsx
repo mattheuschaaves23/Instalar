@@ -13,15 +13,17 @@ export const adminSections = [
   ['announcements', 'Comunicados', 'Envie avisos para todos os usuários.'],
   ['monitoring', 'Monitoramento', 'Veja os erros recentes do site e da API.'],
   ['support', 'Suporte', 'Responda às conversas e acompanhe sugestões.'],
+  ['settings', 'Configurações', 'Preferências do dispositivo e dados da sua conta.'],
 ];
 
 export function getAdminSection(search) {
   const key = search.get('section');
   return key === 'stores' ? 'advertising'
-    : key !== 'support' && adminSections.some(([entry]) => entry === key) ? key : 'overview';
+    : !['support', 'settings'].includes(key) && adminSections.some(([entry]) => entry === key) ? key : 'overview';
 }
 
-export const adminHref = (key) => key === 'support' ? '/support' : key === 'overview' ? '/admin' : `/admin?section=${key}`;
+export const adminHref = (key) => ['support', 'settings'].includes(key) ? `/${key}`
+  : key === 'overview' ? '/admin' : `/admin?section=${key}`;
 
 export function AdminIcon({ name, size = 20 }) {
   const icons = {
@@ -34,6 +36,7 @@ export function AdminIcon({ name, size = 20 }) {
     announcements: <path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-8l-6 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />,
     monitoring: <><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M12 17v4m-4 0h8" /></>,
     support: <><path d="M3 14v-2a9 9 0 1 1 18 0v2m0 2v1a4 4 0 0 1-4 4h-3" /><rect x="3" y="12" width="4" height="6" rx="1" /><rect x="17" y="12" width="4" height="6" rx="1" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19.2 13.4a7.9 7.9 0 0 0 0-2.8l2-1.55-2-3.46-2.43.98a7.25 7.25 0 0 0-2.4-1.39L14 2.6h-4l-.37 2.58a7.25 7.25 0 0 0-2.4 1.39L4.8 5.59l-2 3.46 2 1.55a7.9 7.9 0 0 0 0 2.8l-2 1.55 2 3.46 2.43-.98a7.25 7.25 0 0 0 2.4 1.39L10 21.4h4l.37-2.58a7.25 7.25 0 0 0 2.4-1.39l2.43.98 2-3.46z" /></>,
     back: <path d="m11 5-7 7 7 7M4 12h16" />,
     search: <><circle cx="10.5" cy="10.5" r="6" /><path d="m15 15 5 5" /></>,
     right: <path d="m9 5 7 7-7 7" />,
@@ -50,7 +53,7 @@ export function AdminWorkspace({ children }) {
   const location = useLocation();
   const menuRef = useRef(null);
   const search = new URLSearchParams(location.search);
-  const active = /^\/support\/?$/.test(location.pathname) ? 'support' : getAdminSection(search);
+  const active = location.pathname.match(/^\/(support|settings)\/?$/)?.[1] || getAdminSection(search);
   useEffect(() => {
     const nav = menuRef.current;
     const link = nav?.querySelector('[aria-current="page"]');
