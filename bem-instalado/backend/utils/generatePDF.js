@@ -270,6 +270,7 @@ function render(doc, { budget, client, environments, user, branding, logo, photo
   y += partyHeight + 17 + pad;
 
   const detail = branding.show_measurements;
+  const fixedPrice = budget.pricing_mode === 'fixed';
   const prices = branding.show_environment_prices;
   const cols = [...(technical ? [['Nº', 34]] : []), ['Ambiente', 0],
     ...(detail ? [['Medidas', 102], ['Área', 68], ['Rolos', 46]] : []), ...(prices ? [['Valor', 108]] : [])];
@@ -298,8 +299,15 @@ function render(doc, { budget, client, environments, user, branding, logo, photo
     ? Math.max(compact ? 29 : 35, measure(name, cardNameWidth, 11, true) + 14 + (detail ? 13 : 0))
     : Math.max(compact ? 22 : 27, measure(name, nameWidth - 16, 10) + 10);
   room(43 + (environments.length ? rowSize(roomName(environments[0])) : 27));
-  tableHeader();
-  if (!environments.length) {
+  if (fixedPrice) {
+    heading('Serviço a valor fechado');
+    write('Instalação combinada sem detalhamento de medidas.', M + 8, y + 6, width - 16, { color: MUTED });
+    y += 26;
+    rule(y);
+  } else {
+    tableHeader();
+  }
+  if (!fixedPrice && !environments.length) {
     write('Nenhum ambiente discriminado.', M + 8, y + 7, width - 16, { color: MUTED });
     y += 27;
     rule(y);
@@ -349,7 +357,7 @@ function render(doc, { budget, client, environments, user, branding, logo, photo
   const removalRolls = number(budget.removal_rolls) || number(budget.total_rolls);
   const totals = [['Subtotal do serviço', money(budget.subtotal_rolls)]];
   if (removalCost > 0) totals.push([number(budget.removal_price_per_roll) > 0 ? `Remoção (${removalRolls} rolos x ${money(budget.removal_price_per_roll)})` : 'Remoção', money(removalCost)]);
-  if (detail) totals.unshift([`${decimal(budget.total_area)} m² / ${number(budget.total_rolls)} rolos`, '']);
+  if (detail && !fixedPrice) totals.unshift([`${decimal(budget.total_area)} m² / ${number(budget.total_rolls)} rolos`, '']);
   const totalHeight = totals.length * 16 + (studio || classic ? 0 : compact ? 36 : 48);
   room(totalHeight);
   totals.forEach(([label, value]) => {

@@ -12,6 +12,8 @@ function setup(t) {
       if (/INSERT INTO budgets/.test(sql)) {
         return { rows: [{ id: 1, pricing_mode: args[2], total_amount: args[13] }] };
       }
+      if (/FROM users/.test(sql)) return { rows: [{ is_admin: false, portfolio_photos: 0 }] };
+      if (/FROM subscriptions/.test(sql)) return { rows: [{ plan: 'free', status: 'active' }] };
       if (/SELECT id FROM clients/.test(sql)) return { rowCount: 1, rows: [{ id: 5 }] };
       return { rows: [] };
     },

@@ -19,3 +19,10 @@ it('não confirma uma gravação cancelada no seletor nativo', async () => {
   bridge.save.mockResolvedValue({ saved: false });
   await expect(exportFile(new Blob(['{}']), 'meus-dados.json', 'application/json')).resolves.toEqual({ saved: false });
 });
+
+it('recusa páginas de erro HTML em vez de salvá-las como PDF', async () => {
+  bridge.platform.mockReturnValue('android');
+  bridge.save.mockClear();
+  await expect(exportFile(new Blob(['Falha'], { type: 'text/html' }), 'orcamento.pdf', 'application/pdf')).rejects.toThrow('Formato inesperado');
+  expect(bridge.save).not.toHaveBeenCalled();
+});

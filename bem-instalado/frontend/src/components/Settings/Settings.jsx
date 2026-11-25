@@ -7,6 +7,8 @@ import { useSubscription } from '../../contexts/SubscriptionContext';
 import api from '../../services/api';
 import { readSitePreferences, resetSitePreferences, saveSitePreferences } from '../../utils/sitePreferences';
 import { planLinkLabel } from '../../utils/storePlanCopy';
+import { exportErrorMessage, exportFile } from '../../utils/exportFile';
+import { isNativeStoreApp } from '../../utils/nativePlatform';
 import './Settings.css';
 
 const sections = [
@@ -275,20 +277,11 @@ export default function Settings() {
     try {
       setIsExportingData(true);
       const response = await api.get('/users/data-export', { responseType: 'blob' });
-      const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/json' }));
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = 'instalapro-meus-dados-' + new Date().toISOString().slice(0, 10) + '.json';
-      document.body.appendChild(link);
-      try {
-        link.click();
-      } finally {
-        link.remove();
-        window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 30000);
-      }
-      toast.success('Download dos seus dados iniciado.');
+      const name = 'instalapro-meus-dados-' + new Date().toISOString().slice(0, 10) + '.json';
+      const { saved } = await exportFile(response.data, name, 'application/json');
+      if (saved) toast.success(isNativeStoreApp() ? 'Cópia dos seus dados salva no local escolhido.' : 'Download dos seus dados iniciado.');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Não foi possível preparar a cópia agora.');
+      toast.error(await exportErrorMessage(error, 'Não foi possível preparar a cópia agora.'));
     } finally {
       setIsExportingData(false);
     }
