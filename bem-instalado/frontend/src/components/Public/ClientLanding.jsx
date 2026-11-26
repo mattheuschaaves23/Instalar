@@ -51,7 +51,7 @@ function Header() {
   return (
     <header className={`lp6-header${scrolled ? ' is-scrolled' : ''}`}>
       <Link aria-label="InstalarPro — página inicial" className="lp6-brand" to="/">
-        <BrandImage fetchPriority="high" surface={scrolled ? 'auto' : 'dark'} variant="wordmark" />
+        <BrandImage fetchPriority="high" surface="dark" variant="wordmark" />
       </Link>
 
       <nav aria-label="Navegação principal" className="lp6-nav">
@@ -314,7 +314,7 @@ function Process() {
       </div>
 
       <footer className="lp6-footer" data-reveal="rise">
-        <BrandImage variant="wordmark" />
+        <BrandImage surface="dark" variant="wordmark" />
         <p>Conecta quem precisa com quem sabe instalar.</p>
         <nav aria-label="Links institucionais">
           <Link to="/privacidade">Privacidade</Link>
