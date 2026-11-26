@@ -138,19 +138,24 @@ function DashboardAds() {
   }, [ads.length]);
   const ad = ads[index];
   if (!ad) return null;
-  const details = (
-    <div>
-      <span>Patrocinado</span>
-      <strong>{ad.title}</strong>
-      {ad.description && <p>{ad.description}</p>}
-    </div>
-  );
+  const hasMedia = ad.media_url && (ad.media_type === 'image' || ad.media_type === 'video');
   return (
     <aside className="do-card do-sponsor" aria-label="Patrocinado">
-      {ad.media_type === 'image' && ad.media_url && <img alt="" loading="lazy" src={ad.media_url} />}
-      {ad.media_type === 'video' && ad.media_url && <video aria-label={ad.title} key={ad.media_url} controls playsInline preload="none" src={ad.media_url} />}
-      {details}
-      {ad.link_url && <a className="do-button" href={ad.link_url} rel="noopener noreferrer" target="_blank">{ad.cta_label || 'Conhecer'}</a>}
+      {hasMedia && (
+        <div className="do-sponsor-media">
+          {ad.media_type === 'image'
+            ? <img alt="" decoding="async" src={ad.media_url} />
+            : <video aria-label={ad.title} key={ad.media_url} controls playsInline preload="none" src={ad.media_url} />}
+        </div>
+      )}
+      <div className="do-sponsor-caption">
+        <div className="do-sponsor-copy">
+          <span>Patrocinado</span>
+          <strong>{ad.title}</strong>
+          {ad.description && <p>{ad.description}</p>}
+        </div>
+        {ad.link_url && <a className="do-button" href={ad.link_url} rel="noopener noreferrer" target="_blank">{ad.cta_label || 'Conhecer'}</a>}
+      </div>
     </aside>
   );
 }
@@ -292,6 +297,7 @@ function DashboardContent() {
           <Link className="do-button is-primary" to="/budgets/new"><Icon name="plus" /> Novo orçamento</Link>
         </div>
       </header>
+      <DashboardAds />
       {overviewFailed && <p role="status" className="do-alert">
         {overview ? 'Não foi possível atualizar o painel. Mostrando os últimos dados disponíveis.' : 'Não foi possível carregar os indicadores e a agenda.'}{' '}
         <button className="do-retry" onClick={() => window.dispatchEvent(new Event(PANEL_BADGE_REFRESH_EVENT))} type="button">Tentar de novo</button>
@@ -357,7 +363,6 @@ function DashboardContent() {
           <Link className="do-button" to="/opportunities">Ver oportunidades <Icon name="arrow" /></Link>
         </section>
       </div>
-      <DashboardAds />
     </section>
   );
 }
