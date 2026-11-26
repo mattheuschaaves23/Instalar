@@ -4,6 +4,7 @@ import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { formatCurrency } from '../../utils/formatters';
+import { resolveDashboardAdMedia } from '../../utils/dashboardAdMedia';
 import { PANEL_BADGE_REFRESH_EVENT } from '../Layout/panelBadgeCounts';
 import PlanUsage, { ProFeatureNotice } from '../Subscription/PlanUsage';
 import './Dashboard.css';
@@ -138,14 +139,15 @@ function DashboardAds() {
   }, [ads.length]);
   const ad = ads[index];
   if (!ad) return null;
-  const hasMedia = ad.media_url && (ad.media_type === 'image' || ad.media_type === 'video');
+  const mediaUrl = resolveDashboardAdMedia(ad.media_url, api.defaults?.baseURL);
+  const hasMedia = mediaUrl && (ad.media_type === 'image' || ad.media_type === 'video');
   return (
     <aside className="do-card do-sponsor" aria-label="Patrocinado">
       {hasMedia && (
-        <div className="do-sponsor-media">
+        <div className={ad.media_type === 'video' ? 'do-sponsor-media is-video' : 'do-sponsor-media'}>
           {ad.media_type === 'image'
-            ? <img alt="" decoding="async" src={ad.media_url} />
-            : <video aria-label={ad.title} key={ad.media_url} controls playsInline preload="none" src={ad.media_url} />}
+            ? <img alt="" decoding="async" src={mediaUrl} />
+            : <video aria-label={ad.title} key={mediaUrl} controls playsInline preload="none" src={mediaUrl} />}
         </div>
       )}
       <div className="do-sponsor-caption">

@@ -3,8 +3,11 @@ const { clientFacingRequestStatus, expireOpenServiceRequests } = require('../uti
 const { sendMarketplaceEmail } = require('../services/email');
 const { sendPushToUser } = require('../services/push');
 const { publicProfileSql } = require('../utils/installerEligibility');
+const { validateAdMedia } = require('../utils/dashboardAdMedia');
+const { DashboardAdUploadError, writeAdWithUpload } = require('../services/dashboardAdUploads');
 const ADMIN_MUTATION_LOCK_ID = 19772402;
 const DASHBOARD_AD_TYPES = new Set(['image', 'video', 'text']);
+const DASHBOARD_AD_COLUMNS = 'id, title, description, media_type, media_url, link_url, cta_label, is_active, sort_order, created_at, updated_at';
 // Payment timestamps use UTC wall-clock storage. The ADM reports Brazilian calendar months.
 const BILLING_LOCAL_MONTH = "DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')";
 const BILLING_MONTH_START = `((${BILLING_LOCAL_MONTH} AT TIME ZONE 'America/Sao_Paulo') AT TIME ZONE 'UTC')`;
@@ -1425,18 +1428,7 @@ exports.listDashboardAds = async (_req, res) => {
   try {
     const { rows } = await pool.query(
       `
-        SELECT
-          id,
-          title,
-          description,
-          media_type,
-          media_url,
-          link_url,
-          cta_label,
-          is_active,
-          sort_order,
-          created_at,
-          updated_at
+        SELECT ${DASHBOARD_AD_COLUMNS}
         FROM dashboard_ads
         ORDER BY sort_order ASC, updated_at DESC, created_at DESC
       `
@@ -1450,16 +1442,15 @@ exports.listDashboardAds = async (_req, res) => {
 
 exports.createDashboardAd = async (req, res) => {
   try {
-    const title = String(req.body.title || '').trim().slice(0, 160);
-    const description = String(req.body.description || '').trim().slice(0, 500) || null;
-    const mediaType = String(req.body.media_type || 'image').trim().toLowerCase();
-    const rawMediaUrl = String(req.body.media_url || '').trim();
-    const rawLinkUrl = String(req.body.link_url || '').trim();
-    const mediaUrl = normalizeHttpUrl(rawMediaUrl) || null;
+    const body = req.body || {};
+    const title = String(body.title || '').trim().slice(0, 160);
+    const description = String(body.description || '').trim().slice(0, 500) || null;
+    const mediaType = String(body.media_type || 'image').trim().toLowerCase();
+    const rawLinkUrl = String(body.link_url || '').trim();
     const linkUrl = normalizeHttpUrl(rawLinkUrl) || null;
-    const ctaLabel = String(req.body.cta_label || '').trim().slice(0, 80) || 'Conhecer';
-    const sortOrder = parseInteger(req.body.sort_order, 0);
-    const parsedIsActive = req.body.is_active === undefined ? true : parseBoolean(req.body.is_active);
+    const ctaLabel = String(body.cta_label || '').trim().slice(0, 80) || 'Conhecer';
+    const sortOrder = parseInteger(body.sort_order, 0);
+    const parsedIsActive = body.is_active === undefined ? true : parseBoolean(body.is_active);
 
     if (!title) {
       return res.status(400).json({ error: 'Informe o título da propaganda.' });
@@ -1469,50 +1460,39 @@ exports.createDashboardAd = async (req, res) => {
       return res.status(400).json({ error: 'Tipo de propaganda inválido.' });
     }
 
-    if ((rawMediaUrl && !mediaUrl) || (rawLinkUrl && !linkUrl)) {
-      return res.status(400).json({ error: 'Use apenas URLs válidas com http ou https.' });
+    if (rawLinkUrl && !linkUrl) {
+      return res.status(400).json({ error: 'Informe um link de destino válido com http ou https.' });
     }
 
-    if (mediaType !== 'text' && !mediaUrl) {
-      return res.status(400).json({ error: 'Informe a URL da imagem ou do vídeo.' });
+    const uploadId = body.upload_id;
+    if (mediaType === 'text' && (req.file || uploadId)) {
+      return res.status(400).json({ error: 'Anúncios de texto não recebem arquivo.' });
     }
+    if (req.file && uploadId) return res.status(400).json({ error: 'Envie somente um arquivo para a propaganda.' });
+    const media = mediaType === 'text' || uploadId ? {} : validateAdMedia(req.file, mediaType);
+    if (media.error) return res.status(400).json({ error: media.error });
 
     if (parsedIsActive === null) {
       return res.status(400).json({ error: 'Informe is_active como true ou false.' });
     }
 
-    const { rows } = await pool.query(
-      `
-        INSERT INTO dashboard_ads (
-          title,
-          description,
-          media_type,
-          media_url,
-          link_url,
-          cta_label,
-          is_active,
-          sort_order,
-          updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-        RETURNING
-          id,
-          title,
-          description,
-          media_type,
-          media_url,
-          link_url,
-          cta_label,
-          is_active,
-          sort_order,
-          created_at,
-          updated_at
-      `,
-      [title, description, mediaType, mediaUrl, linkUrl, ctaLabel, parsedIsActive, sortOrder]
-    );
+    const ad = await writeAdWithUpload(pool, { id: uploadId, ownerId: req.userId, kind: mediaType }, async (db, staged) => {
+      const selected = staged || media;
+      const { rows } = await db.query(
+        `INSERT INTO dashboard_ads (
+          title, description, media_type, media_url, media_bytes, media_content_type,
+          link_url, cta_label, is_active, sort_order, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+        RETURNING ${DASHBOARD_AD_COLUMNS}`,
+        [title, description, mediaType, selected.path || null, selected.buffer || null, selected.contentType || null,
+          linkUrl, ctaLabel, parsedIsActive, sortOrder]
+      );
+      return rows[0];
+    });
 
-    return res.status(201).json({ ad: rows[0] });
-  } catch (_error) {
+    return res.status(201).json({ ad });
+  } catch (error) {
+    if (error instanceof DashboardAdUploadError) return res.status(error.status).json({ error: error.message });
     return res.status(500).json({ error: 'Erro ao criar propaganda do dashboard.' });
   }
 };
@@ -1520,6 +1500,7 @@ exports.createDashboardAd = async (req, res) => {
 exports.updateDashboardAd = async (req, res) => {
   try {
     const adId = Number(req.params.id);
+    const body = req.body || {};
 
     if (!Number.isInteger(adId) || adId <= 0) {
       return res.status(400).json({ error: 'Propaganda inválida.' });
@@ -1539,10 +1520,9 @@ exports.updateDashboardAd = async (req, res) => {
     const values = [];
     let index = 1;
     let nextMediaType = currentAd.media_type;
-    let nextMediaUrl = currentAd.media_url;
 
-    if (req.body.title !== undefined) {
-      const title = String(req.body.title || '').trim().slice(0, 160);
+    if (body.title !== undefined) {
+      const title = String(body.title || '').trim().slice(0, 160);
       if (!title) {
         return res.status(400).json({ error: 'Informe um título válido para a propaganda.' });
       }
@@ -1551,14 +1531,14 @@ exports.updateDashboardAd = async (req, res) => {
       index += 1;
     }
 
-    if (req.body.description !== undefined) {
+    if (body.description !== undefined) {
       updates.push(`description = $${index}`);
-      values.push(String(req.body.description || '').trim().slice(0, 500) || null);
+      values.push(String(body.description || '').trim().slice(0, 500) || null);
       index += 1;
     }
 
-    if (req.body.media_type !== undefined) {
-      const mediaType = String(req.body.media_type || '').trim().toLowerCase();
+    if (body.media_type !== undefined) {
+      const mediaType = String(body.media_type || '').trim().toLowerCase();
       if (!DASHBOARD_AD_TYPES.has(mediaType)) {
         return res.status(400).json({ error: 'Tipo de propaganda inválido.' });
       }
@@ -1568,24 +1548,27 @@ exports.updateDashboardAd = async (req, res) => {
       index += 1;
     }
 
-    if (req.body.media_url !== undefined) {
-      const rawMediaUrl = String(req.body.media_url || '').trim();
-      const mediaUrl = normalizeHttpUrl(rawMediaUrl);
-      if (rawMediaUrl && !mediaUrl) {
-        return res.status(400).json({ error: 'Informe uma URL de mídia válida com http ou https.' });
-      }
-      nextMediaUrl = mediaUrl || null;
-      updates.push(`media_url = $${index}`);
-      values.push(nextMediaUrl);
-      index += 1;
+    const uploadId = body.upload_id;
+    if ((req.file || uploadId) && nextMediaType === 'text') {
+      return res.status(400).json({ error: 'Anúncios de texto não recebem arquivo.' });
+    }
+    if (req.file && uploadId) return res.status(400).json({ error: 'Envie somente um arquivo para a propaganda.' });
+    let replacement = null;
+    let clearMedia = false;
+    if (req.file) {
+      replacement = validateAdMedia(req.file, nextMediaType);
+      if (replacement.error) return res.status(400).json({ error: replacement.error });
+    } else if (nextMediaType === 'text' && (currentAd.media_type !== 'text' || currentAd.media_url)) {
+      clearMedia = true;
+      updates.push('media_url = NULL', 'media_bytes = NULL', 'media_content_type = NULL');
+    } else if (!uploadId && nextMediaType !== 'text'
+      && (currentAd.media_type !== nextMediaType || !currentAd.media_url
+        || (body.media_url != null && String(body.media_url).trim() !== currentAd.media_url))) {
+      return res.status(400).json({ error: 'Selecione um arquivo para alterar a mídia da propaganda.' });
     }
 
-    if (nextMediaType !== 'text' && !nextMediaUrl) {
-      return res.status(400).json({ error: 'Imagem e vídeo precisam de uma URL de mídia.' });
-    }
-
-    if (req.body.link_url !== undefined) {
-      const rawLinkUrl = String(req.body.link_url || '').trim();
+    if (body.link_url !== undefined) {
+      const rawLinkUrl = String(body.link_url || '').trim();
       const linkUrl = normalizeHttpUrl(rawLinkUrl);
       if (rawLinkUrl && !linkUrl) {
         return res.status(400).json({ error: 'Informe uma URL de destino válida com http ou https.' });
@@ -1595,20 +1578,20 @@ exports.updateDashboardAd = async (req, res) => {
       index += 1;
     }
 
-    if (req.body.cta_label !== undefined) {
+    if (body.cta_label !== undefined) {
       updates.push(`cta_label = $${index}`);
-      values.push(String(req.body.cta_label || '').trim().slice(0, 80) || 'Conhecer');
+      values.push(String(body.cta_label || '').trim().slice(0, 80) || 'Conhecer');
       index += 1;
     }
 
-    if (req.body.sort_order !== undefined) {
+    if (body.sort_order !== undefined) {
       updates.push(`sort_order = $${index}`);
-      values.push(parseInteger(req.body.sort_order, 0));
+      values.push(parseInteger(body.sort_order, 0));
       index += 1;
     }
 
-    if (req.body.is_active !== undefined) {
-      const parsedIsActive = parseBoolean(req.body.is_active);
+    if (body.is_active !== undefined) {
+      const parsedIsActive = parseBoolean(body.is_active);
       if (parsedIsActive === null) {
         return res.status(400).json({ error: 'Informe is_active como true ou false.' });
       }
@@ -1617,36 +1600,34 @@ exports.updateDashboardAd = async (req, res) => {
       index += 1;
     }
 
-    if (updates.length === 0) {
+    if (updates.length === 0 && !replacement && !uploadId) {
       return res.status(400).json({ error: 'Nenhum campo válido foi enviado para atualização.' });
     }
 
-    updates.push('updated_at = NOW()');
-    values.push(adId);
+    const ad = await writeAdWithUpload(pool, {
+      id: uploadId, ownerId: req.userId, kind: nextMediaType, adId, replacing: Boolean(uploadId || replacement || clearMedia),
+    }, async (db, staged) => {
+      const selected = staged || replacement;
+      if (selected) {
+        updates.push(`media_url = $${index++}`, `media_bytes = $${index++}`, `media_content_type = $${index++}`);
+        values.push(selected.path, selected.buffer, selected.contentType);
+      }
+      updates.push('updated_at = NOW()');
+      const adIdIndex = index++;
+      values.push(adId, currentAd.media_type, currentAd.media_url);
+      const { rows } = await db.query(
+        `UPDATE dashboard_ads SET ${updates.join(', ')}
+         WHERE id = $${adIdIndex} AND media_type = $${index} AND media_url IS NOT DISTINCT FROM $${index + 1}
+         RETURNING ${DASHBOARD_AD_COLUMNS}`,
+        values
+      );
+      return rows[0];
+    });
 
-    const { rows } = await pool.query(
-      `
-        UPDATE dashboard_ads
-        SET ${updates.join(', ')}
-        WHERE id = $${index}
-        RETURNING
-          id,
-          title,
-          description,
-          media_type,
-          media_url,
-          link_url,
-          cta_label,
-          is_active,
-          sort_order,
-          created_at,
-          updated_at
-      `,
-      values
-    );
-
-    return res.json({ ad: rows[0] });
-  } catch (_error) {
+    if (!ad) return res.status(409).json({ error: 'O anúncio foi alterado. Reabra a edição e tente novamente.' });
+    return res.json({ ad });
+  } catch (error) {
+    if (error instanceof DashboardAdUploadError) return res.status(error.status).json({ error: error.message });
     return res.status(500).json({ error: 'Erro ao atualizar propaganda do dashboard.' });
   }
 };

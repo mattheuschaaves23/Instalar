@@ -172,7 +172,23 @@
   background: var(--adm-bg); overflow: hidden; padding: 12px; color: var(--adm-muted);
 }
 .ip-admin-media :is(img, video) { display: block; max-width: 100%; max-height: 285px; object-fit: contain; }
-.ip-admin-media.is-square :is(img,video) { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; max-height: 310px; }
+.ip-admin-media.is-ad-banner { display: block; min-height: 0; padding: 0; }
+.ip-admin-media.is-ad-banner :is(img,video) { width: 100%; aspect-ratio: 6 / 1; }
+.ip-admin-media.is-ad-banner video { min-height: 62px; }
+.ip-admin-media.is-ad-banner img { object-fit: cover; }
+.ip-admin-ad-file { display: grid; min-width: 0; gap: 6px; }
+.ip-admin-ad-file input[type='file'] { width: 100%; }
+.ip-admin-ad-file [role='alert'] { color: var(--adm-danger); }
+.ip-admin-ad-file-chosen { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; overflow-wrap: anywhere; }
+.ip-admin-ad-size { font-variant-numeric: tabular-nums; }
+.ip-admin-ad-recommendation {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  padding: 10px 13px; border: 1px solid var(--adm-line); border-radius: 8px;
+  background: var(--adm-paper); color: var(--adm-muted); font-size: .875rem;
+}
+.ip-admin-ad-recommendation strong { color: var(--adm-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ip-admin-ad-progress { display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.ip-admin-ad-progress progress { width: 100%; accent-color: var(--adm-link); }
 .ip-admin-preview { display: grid; gap: 7px; padding: 13px; border: 1px solid var(--adm-line); background: var(--adm-bg); border-radius: 8px; white-space: pre-wrap; }
 .ip-admin-queue { list-style: none; padding: 8px; }
 .ip-admin-queue li + li { border-top: 1px solid var(--adm-line); }

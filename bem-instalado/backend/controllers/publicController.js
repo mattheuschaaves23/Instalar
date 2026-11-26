@@ -8,6 +8,8 @@ const { normalizeSearchText } = require('../utils/textSearch');
 const { logApplicationError } = require('../utils/errorMonitoring');
 const { publicProfileSql } = require('../utils/installerEligibility');
 const { getLinkInstaller, hasLinkTokenShape, mayUseClientLink, readInstallerLinkToken } = require('../services/installerClientLink');
+const { isAdMediaPath } = require('../utils/dashboardAdMedia');
+const { publicOrigin } = require('../../shared/legalDocuments.json');
 
 function reportLocationError(error, req) {
   void logApplicationError({
@@ -167,7 +169,9 @@ async function getDashboardAds(limit = 12) {
 
   return rows.map((ad) => ({
     ...ad,
-    media_url: normalizeExternalUrl(ad.media_url),
+    media_url: isAdMediaPath(ad.media_url)
+      ? (process.env.VERCEL_ENV === 'production' ? new URL(ad.media_url, publicOrigin).href : ad.media_url)
+      : normalizeExternalUrl(ad.media_url),
     link_url: normalizeExternalUrl(ad.link_url),
   }));
 }
