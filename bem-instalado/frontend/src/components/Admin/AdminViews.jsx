@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import api from '../../services/api';
 import { formatCurrency, formatDateTime, formatStatusLabel } from '../../utils/formatters';
+import { AD_BANNER_HEIGHT, AD_BANNER_WIDTH, AD_FILE_ACCEPT, adFileMaximumMb, resolveDashboardAdMedia } from '../../utils/dashboardAdMedia';
 import PaginationControls from '../Layout/PaginationControls';
 import {
   AdminBadge, AdminButton, AdminDetail, AdminEmpty, AdminFacts, AdminIcon, AdminSearch,
@@ -305,12 +306,40 @@ export function AdminPayments({ filters, onChange, onSubmit, onStatus, savingId,
   </>;
 }
 
-function AdPreview({ isAd, values }) {
-  const media = externalHttp(isAd ? values?.media_url : values?.image_url);
+function AdDimensions({ size, video }) {
+  if (!size) return null;
+  const { width, height } = size;
+  return <small className="ip-admin-muted ip-admin-ad-size" role="status">
+    Resolução do arquivo: {width} × {height} px.
+    {width < AD_BANNER_WIDTH ? ' Pode perder nitidez em telas maiores.' : ''}
+    {!video && Math.abs(width / height - AD_BANNER_WIDTH / AD_BANNER_HEIGHT) > .15 ? ' A imagem pode ser cortada para preencher a faixa.' : ''}
+  </small>;
+}
+
+function AdPreview({ isAd, values, localMedia, onFileLoad, onFileError }) {
+  const [dimensions, setDimensions] = useState(null);
+  const saved = isAd ? resolveDashboardAdMedia(values?.media_url, api.defaults?.baseURL, { admin: true }) : values?.image_url;
+  const media = localMedia || (saved?.startsWith('/api/admin/dashboard-ads/media/') ? saved : externalHttp(saved));
+  const video = isAd && values?.media_type === 'video';
+  const size = dimensions?.media === media ? dimensions : null;
+  const readSize = (event) => {
+    if (!isAd) return;
+    const width = video ? event.currentTarget.videoWidth : event.currentTarget.naturalWidth;
+    const height = video ? event.currentTarget.videoHeight : event.currentTarget.naturalHeight;
+    if (!width || !height) {
+      if (localMedia) onFileError?.();
+      return;
+    }
+    setDimensions({ media, width, height });
+    if (localMedia) onFileLoad?.({ width, height });
+  };
+  const reportFileError = () => { if (localMedia) onFileError?.(); };
   return <div className="ip-admin-preview">
-    {media && (!isAd || values?.media_type !== 'text') ? <div className={'ip-admin-media' + (isAd ? ' is-square' : '')}>
-      {isAd && values?.media_type === 'video' ? <video aria-label="Prévia do vídeo" src={media} controls preload="metadata" /> : <img alt={isAd ? 'Prévia da imagem do anúncio' : 'Prévia da imagem da loja'} src={media} loading="lazy" />}
+    {media && (!isAd || values?.media_type !== 'text') ? <div className={'ip-admin-media' + (isAd ? ' is-ad-banner' : '')}>
+      {video ? <video aria-label="Prévia do vídeo" key={media} src={media} controls playsInline preload="metadata" onLoadedMetadata={readSize} onError={reportFileError} />
+        : <img alt={isAd ? 'Prévia da imagem do anúncio' : 'Prévia da imagem da loja'} key={media} src={media} loading={localMedia ? 'eager' : 'lazy'} onLoad={readSize} onError={reportFileError} />}
     </div> : null}
+    {!localMedia && values?.media_type !== 'text' && <AdDimensions size={size} video={video} />}
     {isAd ? <small className="ip-admin-muted">Patrocinado</small> : null}
     <h3>{(isAd ? values?.title : values?.name) || (isAd ? 'Título do anúncio' : 'Nome da loja')}</h3>
     <p className="ip-admin-muted">{values?.description || 'A descrição aparece aqui.'}</p>
@@ -322,6 +351,21 @@ export function AdminAdvertising({ tab, changeTab, store, ad }) {
   const isAd = tab === 'ads';
   const model = isAd ? ad : store;
   const { items, loading, error, retry, saving, mode, startNew, startEdit, closeEditor, values, onChange, submit, toggle, remove } = model;
+  const uploadHelpId = useId();
+  const uploadErrorId = useId();
+  const file = isAd && mode !== null ? model.file : null;
+  const fileInput = useRef(null);
+  const [preview, setPreview] = useState(null);
+  useEffect(() => {
+    if (!file) {
+      if (fileInput.current) fileInput.current.value = '';
+      return undefined;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview({ file, url });
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+  const localMedia = file && preview?.file === file ? preview.url : '';
   const [item, choose] = useSelected(items, 'admin-ad-detail');
   const title = isAd ? 'Anúncio' : 'Loja';
   const titleKey = isAd ? 'title' : 'name';
@@ -332,6 +376,11 @@ export function AdminAdvertising({ tab, changeTab, store, ad }) {
       <AdminTabs label="Local da propaganda" options={ [['stores','Lojas recomendadas'],['ads','Anúncios do painel']] } value={tab} onChange={changeTab} />
       <AdminButton tone="primary" disabled={saving} onClick={() => { startNew(); scrollAdminDetail('admin-ad-editor'); }}><AdminIcon name="add" size={17} />{isAd ? 'Novo anúncio' : 'Nova loja'}</AdminButton>
     </div>
+    {isAd ? <p className="ip-admin-ad-recommendation">
+      <span>Resolução recomendada para a faixa do Dashboard</span>
+      <strong>{AD_BANNER_WIDTH} × {AD_BANNER_HEIGHT} px</strong>
+      <span>Formato horizontal (6:1)</span>
+    </p> : null}
     <div className="ip-admin-layout">
       <AdminTable label={isAd ? 'Anúncios do painel' : 'Lojas recomendadas'} columns={[title, ...(isAd ? ['Formato'] : []), 'Posição', 'Status', 'Ações']}
         rows={items.map((entry) => ({ id: entry.id, cells: [
@@ -342,21 +391,45 @@ export function AdminAdvertising({ tab, changeTab, store, ad }) {
         selected={item?.id} onSelect={selectRow} loading={loading} error={error} onRetry={retry} />
       <div className="ip-admin-stack">
         {mode !== null ? <AdminDetail id="admin-ad-editor" title={(mode === 'new' ? (isAd ? 'Novo anúncio' : 'Nova loja') : 'Editar ' + title.toLowerCase())} onClose={saving ? undefined : closeEditor}>
-          <form className="ip-admin-form" onSubmit={submit}>
+          <form onSubmit={submit}>
+          <fieldset className="ip-admin-form" disabled={saving}>
             <AdminField label={isAd ? 'Título' : 'Nome da loja'}><input name={titleKey} value={values[titleKey]} onChange={onChange} required /></AdminField>
             <AdminField label="Descrição"><textarea name="description" rows={3} value={values.description} onChange={onChange} /></AdminField>
             {isAd ? <AdminField label="Formato"><AdminSelect name="media_type" label="Formato" options={ [['image','Imagem'],['video','Vídeo'],['text','Texto']] } value={values.media_type} onChange={onChange} /></AdminField> : null}
-            {!isAd || values.media_type !== 'text' ? <AdminField label={isAd && values.media_type === 'video' ? 'URL do vídeo' : 'URL da imagem'}><input type="url" name={isAd ? 'media_url' : 'image_url'} value={isAd ? values.media_url : values.image_url} onChange={onChange} required={isAd} /></AdminField> : null}
+            {!isAd ? <AdminField label="URL da imagem"><input type="url" name="image_url" value={values.image_url} onChange={onChange} /></AdminField> : null}
+            {isAd && values.media_type !== 'text' ? <div className="ip-admin-ad-file">
+              <AdminField label={values.media_type === 'video' ? 'Arquivo do vídeo' : 'Arquivo da imagem'}>
+                <input ref={fileInput} type="file" name="file" accept={AD_FILE_ACCEPT[values.media_type]} disabled={saving} onChange={model.onFile}
+                  aria-invalid={Boolean(model.fileState.error)}
+                  aria-describedby={model.fileState.error ? `${uploadHelpId} ${uploadErrorId}` : uploadHelpId} />
+              </AdminField>
+              <small className="ip-admin-muted" id={uploadHelpId}>
+                Recomendado: {AD_BANNER_WIDTH} × {AD_BANNER_HEIGHT} px (6:1). {values.media_type === 'video' ? 'MP4' : 'JPG, PNG ou WebP'} até {adFileMaximumMb(values.media_type)} MB.
+                {' '}Deixe textos e logotipos no centro da arte.
+              </small>
+              {file ? <div className="ip-admin-ad-file-chosen">
+                {!model.fileState.error && !model.fileState.ready && <small role="status">Conferindo arquivo…</small>}
+                <AdminButton disabled={saving} onClick={model.clearFile}>Remover arquivo selecionado</AdminButton>
+              </div> : model.canKeepMedia ? <small className="ip-admin-muted">A mídia atual será mantida se você não escolher outro arquivo.</small> : null}
+              <AdDimensions size={model.fileState.size} video={values.media_type === 'video'} />
+              {model.progress !== null ? <div className="ip-admin-ad-progress">
+                <progress aria-label="Envio do arquivo" max={100} value={model.progress} />
+                <small>{model.progress === 100 ? 'Arquivo enviado. Finalizando…' : `Enviando arquivo: ${model.progress}%`}</small>
+              </div> : null}
+              {model.fileState.error ? <small role="alert" id={uploadErrorId}>{model.fileState.error}</small> : null}
+            </div> : null}
             <AdminField label="Link de destino"><input type="url" name="link_url" value={values.link_url} onChange={onChange} /></AdminField>
             <AdminField label="Texto do botão"><input name="cta_label" value={values.cta_label} onChange={onChange} /></AdminField>
             <AdminField label="Posição"><input type="number" name="sort_order" value={values.sort_order} onChange={onChange} /></AdminField>
             <label className="ip-admin-check"><input type="checkbox" name="is_active" checked={values.is_active} onChange={onChange} />Exibir {title.toLowerCase()}</label>
-            <div className="ip-admin-actions"><AdminButton tone="primary" disabled={saving} type="submit">{saving ? 'Salvando…' : 'Salvar'}</AdminButton><AdminButton disabled={saving} onClick={closeEditor}>Cancelar</AdminButton></div>
+            <div className="ip-admin-actions"><AdminButton tone="primary" disabled={saving || (file && !model.fileState.ready)} type="submit">{saving ? 'Salvando…' : 'Salvar'}</AdminButton><AdminButton disabled={saving} onClick={closeEditor}>Cancelar</AdminButton></div>
+          </fieldset>
           </form>
         </AdminDetail> : null}
         <AdminDetail id="admin-ad-detail" title={isAd ? 'Prévia no painel' : 'Onde aparece'}>
           {!isAd ? <p className="ip-admin-muted">Página inicial do site</p> : null}
-          {mode !== null || item ? <AdPreview isAd={isAd} values={mode !== null ? values : item} /> : <AdminEmpty>Selecione um item para ver a prévia.</AdminEmpty>}
+          {mode !== null || item ? <AdPreview isAd={isAd} localMedia={localMedia} onFileLoad={model.onFileLoad} onFileError={model.onFileError}
+            values={mode !== null ? (isAd && !model.canKeepMedia ? { ...values, media_url: '' } : values) : item} /> : <AdminEmpty>Selecione um item para ver a prévia.</AdminEmpty>}
           {item && mode === null && !loading && !error ? <div className="ip-admin-actions">
             <AdminButton disabled={saving} onClick={() => toggle(item)}>{item.is_active ? 'Desativar' : 'Ativar'}</AdminButton>
             <AdminButton disabled={saving} tone="danger" onClick={() => remove(item)}>Excluir</AdminButton>

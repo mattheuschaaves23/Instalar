@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { formatStatusLabel } from '../../utils/formatters';
+import { AD_INLINE_LIMIT, adMediaFileError, removePendingDashboardAdUpload, sendDashboardAdInParts } from '../../utils/dashboardAdMedia';
 import { AdminHeading, getAdminSection } from './AdminWorkspace';
 import {
   AdminAdvertising, AdminAnnouncements, AdminMonitoring, AdminOverview, AdminPayments, AdminRequests, AdminUsers, AdminVerifications,
@@ -82,6 +83,9 @@ export default function AdminDashboard() {
   const [announcement, setAnnouncement] = useState(initialAnnouncement);
   const [storeForm, setStoreForm] = useState(initialStoreForm);
   const [dashboardAdForm, setDashboardAdForm] = useState(initialDashboardAdForm);
+  const [dashboardAdFile, setDashboardAdFile] = useState(null);
+  const [dashboardAdFileState, setDashboardAdFileState] = useState({ ready: false, error: '' });
+  const [dashboardAdProgress, setDashboardAdProgress] = useState(null);
   const [editingStoreId, setEditingStoreId] = useState(null);
   const [editingDashboardAdId, setEditingDashboardAdId] = useState(null);
   const [storeMode, setStoreMode] = useState(null);
@@ -714,6 +718,10 @@ export default function AdminDashboard() {
 
   const handleDashboardAdFormChange = (event) => {
     const { name, value, type, checked } = event.target;
+    if (name === 'media_type') {
+      setDashboardAdFile(null);
+      setDashboardAdFileState({ ready: false, error: '' });
+    }
 
     setDashboardAdForm((current) => ({
       ...current,
@@ -721,8 +729,19 @@ export default function AdminDashboard() {
     }));
   };
 
+  const handleDashboardAdFile = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const error = adMediaFileError(file, dashboardAdForm.media_type);
+    if (error) event.target.value = '';
+    setDashboardAdFile(error ? null : file);
+    setDashboardAdFileState({ ready: false, error });
+  };
+
   const resetDashboardAdForm = () => {
     setDashboardAdForm(initialDashboardAdForm);
+    setDashboardAdFile(null);
+    setDashboardAdFileState({ ready: false, error: '' });
     setEditingDashboardAdId(null);
     setAdMode(null);
   };
@@ -730,6 +749,8 @@ export default function AdminDashboard() {
   const startDashboardAdEdit = (ad) => {
     setEditingDashboardAdId(ad.id);
     setAdMode('edit');
+    setDashboardAdFile(null);
+    setDashboardAdFileState({ ready: false, error: '' });
     setDashboardAdForm({
       title: ad.title || '',
       description: ad.description || '',
@@ -751,38 +772,57 @@ export default function AdminDashboard() {
       return;
     }
 
-    if (dashboardAdForm.media_type !== 'text' && !dashboardAdForm.media_url.trim()) {
-      toast.error('Informe a URL da imagem ou do vídeo.');
-      return;
+    if (dashboardAdForm.media_type !== 'text') {
+      const previous = dashboardAds.find((item) => item.id === editingDashboardAdId);
+      const canKeepMedia = previous?.media_url && previous.media_type === dashboardAdForm.media_type;
+      if (dashboardAdFileState.error || (dashboardAdFile && !dashboardAdFileState.ready)) return;
+      if (!dashboardAdFile && !canKeepMedia) {
+        setDashboardAdFileState({ ready: false, error: 'Selecione um arquivo para a propaganda.' });
+        return;
+      }
     }
 
     setSavingDashboardAd(true);
+    let pendingUpload;
 
     try {
       const payload = {
         title: dashboardAdForm.title.trim(),
         description: dashboardAdForm.description.trim(),
         media_type: dashboardAdForm.media_type,
-        media_url: dashboardAdForm.media_url.trim(),
         link_url: dashboardAdForm.link_url.trim(),
         cta_label: dashboardAdForm.cta_label.trim() || 'Conhecer',
         sort_order: Number(dashboardAdForm.sort_order || 0),
         is_active: Boolean(dashboardAdForm.is_active),
       };
+      let body = payload;
+      if (dashboardAdFile?.size > AD_INLINE_LIMIT) {
+        setDashboardAdProgress(0);
+        pendingUpload = await sendDashboardAdInParts(api, dashboardAdFile, payload.media_type, setDashboardAdProgress);
+        body = { ...payload, upload_id: pendingUpload };
+        setDashboardAdProgress(100);
+      } else if (dashboardAdFile) {
+        body = new FormData();
+        for (const [key, value] of Object.entries(payload)) body.append(key, String(value));
+        body.append('file', dashboardAdFile);
+      }
 
       if (editingDashboardAdId) {
-        await api.patch(`/admin/dashboard-ads/${editingDashboardAdId}`, payload);
+        await api.patch(`/admin/dashboard-ads/${editingDashboardAdId}`, body);
         toast.success('Propaganda atualizada.');
       } else {
-        await api.post('/admin/dashboard-ads', payload);
+        await api.post('/admin/dashboard-ads', body);
         toast.success('Propaganda criada.');
       }
+      pendingUpload = null;
 
       await loadDashboardAds();
       resetDashboardAdForm();
     } catch (error) {
+      if (pendingUpload) await removePendingDashboardAdUpload(api, pendingUpload);
       toast.error(error.response?.data?.error || 'Não foi possível salvar a propaganda.');
     } finally {
+      setDashboardAdProgress(null);
       setSavingDashboardAd(false);
     }
   };
@@ -846,6 +886,11 @@ export default function AdminDashboard() {
     items: dashboardAds, loading: loadingDashboardAds, error: failures.ads, retry: retry(loadDashboardAds),
     saving: savingDashboardAd, mode: adMode, startNew: () => { resetDashboardAdForm(); setAdMode('new'); },
     startEdit: startDashboardAdEdit, closeEditor: resetDashboardAdForm, values: dashboardAdForm, onChange: handleDashboardAdFormChange,
+    file: dashboardAdFile, fileState: dashboardAdFileState, progress: dashboardAdProgress, onFile: handleDashboardAdFile,
+    onFileLoad: (size) => setDashboardAdFileState({ ready: true, error: '', size }),
+    onFileError: () => setDashboardAdFileState({ ready: false, error: 'Não foi possível abrir o arquivo. Escolha outro arquivo válido.' }),
+    clearFile: () => { setDashboardAdFile(null); setDashboardAdFileState({ ready: false, error: '' }); },
+    canKeepMedia: dashboardAds.some((item) => item.id === editingDashboardAdId && item.media_url && item.media_type === dashboardAdForm.media_type),
     submit: handleDashboardAdSubmit, toggle: handleToggleDashboardAdStatus, remove: handleDeleteDashboardAd,
   };
   const changeAdTab = (tab) => {

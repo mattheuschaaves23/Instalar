@@ -11,6 +11,8 @@ const monitoringController = require('../controllers/monitoringController');
 const profileUpload = require('../middleware/profileUpload');
 const assetController = require('../controllers/assetController');
 const installerAppReleaseController = require('../controllers/installerAppReleaseController');
+const pool = require('../config/database');
+const { dashboardAdMediaHandler } = require('../utils/dashboardAdMedia');
 
 const router = express.Router();
 
@@ -54,6 +56,7 @@ router.post('/client-errors', clientErrorLimiter, optionalAuthMiddleware, monito
 router.post('/service-request-uploads', serviceRequestLimiter, publicUploadSingle, serviceRequestController.uploadPublicRequestPhoto);
 router.get('/recommended-stores', publicSearchLimiter, controller.getRecommendedStores);
 router.get('/dashboard-ads', publicSearchLimiter, controller.getDashboardAds);
+router.get('/dashboard-ads/media/:key', publicSearchLimiter, dashboardAdMediaHandler(pool));
 router.get('/location/reverse', publicSearchLimiter, controller.reverseLocation);
 router.get('/location/search', publicSearchLimiter, controller.searchLocation);
 router.get('/installers/:id', publicSearchLimiter, optionalAuthMiddleware, controller.getInstallerProfile);
