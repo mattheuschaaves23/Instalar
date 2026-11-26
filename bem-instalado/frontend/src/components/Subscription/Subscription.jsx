@@ -6,6 +6,7 @@ import { useConfirm } from '../../contexts/ConfirmContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { formatCurrency, formatDateTime, formatStatusLabel } from '../../utils/formatters';
 import { isNativeStoreApp } from '../../utils/nativePlatform';
+import SubscriptionOfferPreview from './SubscriptionOfferPreview';
 import './Subscription.css';
 
 const FREE_ITEMS = [
@@ -103,6 +104,7 @@ export default function Subscription() {
   const [isCanceling, setIsCanceling] = useState(false);
   const [paymentNeedsProfile, setPaymentNeedsProfile] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const offerPreview = isStoreApp ? null : subscription?.offer_preview;
 
   const loadSubscription = useCallback(async () => {
     const response = await api.get('/subscriptions');
@@ -165,7 +167,7 @@ export default function Subscription() {
   }, [isStoreApp, payment, syncPaymentStatus]);
 
   const handlePay = async () => {
-    if (isStoreApp || isPro) return;
+    if (isStoreApp || isPro || offerPreview) return;
 
     if (payment?.ticketUrl && payment?.payment?.status === 'pending') {
       window.location.assign(payment.ticketUrl);
@@ -246,8 +248,17 @@ export default function Subscription() {
   const currentPaymentIsPending = payment?.payment?.status === 'pending';
 
   return (
-    <section className="page-shell subscription-v3">
-      <section className="subscription-v3-hero">
+    <section className={offerPreview ? 'page-shell subscription-v3 subscription-v3--preview' : 'page-shell subscription-v3'}>
+      {offerPreview ? (
+        <SubscriptionOfferPreview
+          offer={offerPreview}
+          isPro={isPro}
+          features={PRO_ITEMS}
+          canCancel={subscription?.access_mode === 'pro'}
+          isCanceling={isCanceling}
+          onCancel={handleCancel}
+        />
+      ) : <section className="subscription-v3-hero">
         <div aria-hidden="true" className="subscription-v3-orbit subscription-v3-orbit-one" />
         <div aria-hidden="true" className="subscription-v3-orbit subscription-v3-orbit-two" />
         <div className="subscription-v3-hero-copy">
@@ -282,9 +293,9 @@ export default function Subscription() {
           <p>{isPro ? 'Todos os recursos liberados' : 'Acesso permanente, sem cobrança'}</p>
           <i aria-hidden="true" />
         </div>
-      </section>
+      </section>}
 
-      <section className="subscription-v3-plans" aria-label="Comparação de planos">
+      {!offerPreview && <section className="subscription-v3-plans" aria-label="Comparação de planos">
         <article className={`subscription-v3-plan subscription-v3-plan-free ${!isPro ? 'is-current' : ''}`}>
           <div className="subscription-v3-plan-head">
             <div>
@@ -370,7 +381,7 @@ export default function Subscription() {
             ) : null}
           </div>
         </article>
-      </section>
+      </section>}
 
       {!isPro ? (
         <section className="subscription-v3-usage">
@@ -405,7 +416,7 @@ export default function Subscription() {
           >
             <span>
               <i aria-hidden="true" />
-              Existe um pagamento em andamento
+              {offerPreview ? 'Pagamento anterior em andamento' : 'Existe um pagamento em andamento'}
             </span>
             <strong>{showPaymentDetails ? 'Ocultar' : 'Ver detalhes'}</strong>
           </button>
@@ -425,7 +436,7 @@ export default function Subscription() {
                 <strong>{payment.expirationDate ? formatDateTime(payment.expirationDate) : 'No ambiente de pagamento'}</strong>
               </div>
               <div className="subscription-v3-pending-actions">
-                {payment.ticketUrl ? (
+                {payment.ticketUrl && !offerPreview ? (
                   <a href={payment.ticketUrl} rel="noreferrer" target="_blank">
                     Continuar pagamento
                   </a>
@@ -439,11 +450,11 @@ export default function Subscription() {
         </section>
       ) : null}
 
-      {!isStoreApp && subscription?.provider_error ? (
+      {!isStoreApp && !offerPreview && subscription?.provider_error ? (
         <div className="subscription-v3-provider-error">{subscription.provider_error}</div>
       ) : null}
 
-      {isStoreApp ? null : (
+      {isStoreApp || offerPreview ? null : (
         <footer className="subscription-v3-footer">
           <span>Pagamento protegido</span>
           <span>Ativação automática</span>
