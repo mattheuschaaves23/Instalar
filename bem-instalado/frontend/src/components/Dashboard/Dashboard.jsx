@@ -1,1590 +1,368 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, NavLink } from 'react-router';
-import toast from 'react-hot-toast';
+import { useEffect, useId, useState } from 'react';
+import { Link } from 'react-router';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import {
-  PANEL_BADGE_REFRESH_EVENT,
-  formatPanelBadgeCount,
-  getPanelBadgeValue,
-  usePanelBadgeCounts,
-} from '../Layout/panelBadgeCounts';
-import { SidebarContent } from '../Layout/InstallerPanelShell';
-import { hasAdminAccess } from '../../utils/adminAccess';
-import { formatStarRating, installerRating } from '../../utils/installerRating';
-import BrandMark from '../Layout/BrandMark';
-import BrandWordmark from '../Layout/BrandWordmark';
-import {
-  formatCurrency,
-  formatDateTime,
-  formatShortDate,
-  formatStatusLabel,
-} from '../../utils/formatters';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import { formatCurrency } from '../../utils/formatters';
+import { PANEL_BADGE_REFRESH_EVENT } from '../Layout/panelBadgeCounts';
 import PlanUsage, { ProFeatureNotice } from '../Subscription/PlanUsage';
+import './Dashboard.css';
 
-const IS_INSTALLER_APP = process.env.REACT_APP_INSTALLER_APP === 'true';
+const REFRESH_INTERVAL = 30_000;
+const TIME_ZONE = 'America/Sao_Paulo';
+const monthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const shortMonthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'short', timeZone: 'UTC' });
+const calendarDayFormatter = new Intl.DateTimeFormat('en-CA', { dateStyle: 'short', timeZone: TIME_ZONE });
+const scheduleDayFormatter = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', timeZone: TIME_ZONE });
+const clockFormatter = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TIME_ZONE });
+const compactMoney = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 });
+const percentFormatter = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 1 });
 
-const CHART_WIDTH = 820;
-const CHART_HEIGHT = 280;
-const CHART_PADDING_X = 18;
-const CHART_PADDING_Y = 24;
-const DASHBOARD_REFRESH_INTERVAL = 30000;
-const CHART_VIEWS = ['weekly', 'monthly', 'yearly'];
-const CHART_VIEW_LABELS = {
-  weekly: 'Semanal',
-  monthly: 'Mensal',
-  yearly: 'Anual',
+const ICONS = {
+  plus: 'M12 5v14M5 12h14',
+  chevron: 'm6 9 6 6 6-6',
+  arrow: 'm9 18 6-6-6-6',
+  calendar: 'M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z',
+  revenue: 'M10 12c0 1.7 2.7 3 6 3s6-1.3 6-3V5m-12 7V5m0 7v4c0 1.7 2.7 3 6 3s6-1.3 6-3v-4M22 5c0 1.7-2.7 3-6 3s-6-1.3-6-3 2.7-3 6-3 6 1.3 6 3ZM10 11c-4-1-8 .4-8 2s2.2 3 5 3c1.1 0 2.1-.2 3-.5M2 13v4c0 1.7 2.2 3 5 3 1.8 0 3.4-.6 4.3-1.4',
+  file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6M8 13h8m-8 4h6',
+  check: 'M21.6 12a9.6 9.6 0 1 1-19.2 0 9.6 9.6 0 0 1 19.2 0ZM8 12l2.5 2.5L16 9',
+  target: 'M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0ZM12 2v5m0 10v5M2 12h5m10 0h5m-10 0h.01',
 };
-const MONTH_OPTIONS = [
-  { value: 0, label: 'Janeiro' },
-  { value: 1, label: 'Fevereiro' },
-  { value: 2, label: 'Março' },
-  { value: 3, label: 'Abril' },
-  { value: 4, label: 'Maio' },
-  { value: 5, label: 'Junho' },
-  { value: 6, label: 'Julho' },
-  { value: 7, label: 'Agosto' },
-  { value: 8, label: 'Setembro' },
-  { value: 9, label: 'Outubro' },
-  { value: 10, label: 'Novembro' },
-  { value: 11, label: 'Dezembro' },
-];
-const fullMonthFormatter = new Intl.DateTimeFormat('pt-BR', {
-  month: 'long',
-  year: 'numeric',
-});
-const shortMonthFormatter = new Intl.DateTimeFormat('pt-BR', {
-  month: 'short',
-});
 
-function DashboardIcon({ tone = 'blue', type = 'revenue' }) {
-  const paths = {
-    revenue: (
-      <>
-        <circle cx="12" cy="12" r="8.5" />
-        <path d="M14.8 9.4c0-1.2-1-2.1-2.6-2.1-1.6 0-2.7.8-2.7 2.1 0 2.7 5.5 1.6 5.5 4.2 0 1.2-1 2.1-2.8 2.1-1.7 0-2.8-.9-2.9-2.2" />
-        <path d="M12 6v12" />
-      </>
-    ),
-    budgets: (
-      <>
-        <path d="M4 7h2l1.8 8.2a1 1 0 0 0 1 .8h7.7a1 1 0 0 0 1-.8L19 9H8.2" />
-        <circle cx="10" cy="19" r="1.3" />
-        <circle cx="17" cy="19" r="1.3" />
-      </>
-    ),
-    clients: (
-      <>
-        <circle cx="9" cy="10" r="2.5" />
-        <circle cx="16.5" cy="9" r="2" />
-        <path d="M4.8 17.2c.9-2.5 2.8-3.8 5.1-3.8 2.3 0 4.2 1.3 5.1 3.8" />
-        <path d="M14 14.1c1.5.2 2.8 1.1 3.5 3.1" />
-      </>
-    ),
-    ticket: (
-      <>
-        <path d="M7.3 5.8h9.4a1.5 1.5 0 0 1 1.5 1.5v2.1a2.4 2.4 0 0 0 0 5.2v2.1a1.5 1.5 0 0 1-1.5 1.5H7.3a1.5 1.5 0 0 1-1.5-1.5v-2.1a2.4 2.4 0 0 0 0-5.2V7.3a1.5 1.5 0 0 1 1.5-1.5Z" />
-        <path d="M12 8.7v6.6" />
-        <path d="M10.2 10.4h3.6" />
-      </>
-    ),
-  };
+function Icon({ name }) {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[name]} /></svg>;
+}
+
+function monthDate(month) {
+  return new Date(`${month}-01T12:00:00Z`);
+}
+
+const capitalize = (label) => label.charAt(0).toUpperCase() + label.slice(1);
+
+function appointmentLabel(value) {
+  const date = new Date(value);
+  const today = new Date();
+  const tomorrow = new Date(today.getTime() + 86_400_000);
+  const dayKey = calendarDayFormatter.format(date);
+  const label = dayKey === calendarDayFormatter.format(today) ? 'Hoje'
+    : dayKey === calendarDayFormatter.format(tomorrow) ? 'Amanhã'
+      : scheduleDayFormatter.format(date).replace('.', '');
+  return `${label}, ${clockFormatter.format(date)}`;
+}
+
+function useLiveOverview() {
+  const [overview, setOverview] = useState(null);
+  const [opportunities, setOpportunities] = useState(null);
+  const [overviewFailed, setOverviewFailed] = useState(false);
+  const [opportunitiesFailed, setOpportunitiesFailed] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let running = false;
+    let queued = false;
+    let lastRefresh = 0;
+    const signal = controller.signal;
+    async function refresh(force = false) {
+      if (signal.aborted) return;
+      if (running) {
+        if (force) queued = true;
+        return;
+      }
+      running = true;
+      lastRefresh = Date.now();
+      const overviewRequest = api.get('/users/dashboard-overview', { signal })
+        .then(({ data }) => {
+          if (!data?.month || !Array.isArray(data.months) || !Array.isArray(data.upcoming)) throw new Error('Invalid dashboard data');
+          if (!signal.aborted) {
+            setOverview(data);
+            setOverviewFailed(false);
+          }
+        })
+        .catch(() => { if (!signal.aborted) setOverviewFailed(true); });
+      const opportunitiesRequest = api.get('/opportunities', { params: { status: 'open', limit: 1 }, signal })
+        .then(({ data }) => {
+          if (!Number.isInteger(data?.stats?.open) || !Number.isInteger(data?.stats?.selected)) throw new Error('Invalid opportunity counts');
+          if (!signal.aborted) {
+            setOpportunities(data.stats);
+            setOpportunitiesFailed(false);
+          }
+        })
+        .catch(() => { if (!signal.aborted) setOpportunitiesFailed(true); });
+      await Promise.all([overviewRequest, opportunitiesRequest]);
+      running = false;
+      if (queued) {
+        queued = false;
+        void refresh();
+      }
+    }
+    const refreshOnReturn = () => {
+      if (!document.hidden && Date.now() - lastRefresh >= 3_000) void refresh();
+    };
+    const refreshOnChange = () => { void refresh(true); };
+    void refresh();
+    const interval = window.setInterval(() => { if (!document.hidden) void refresh(); }, REFRESH_INTERVAL);
+    window.addEventListener('focus', refreshOnReturn);
+    document.addEventListener('visibilitychange', refreshOnReturn);
+    window.addEventListener(PANEL_BADGE_REFRESH_EVENT, refreshOnChange);
+    return () => {
+      controller.abort();
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshOnReturn);
+      document.removeEventListener('visibilitychange', refreshOnReturn);
+      window.removeEventListener(PANEL_BADGE_REFRESH_EVENT, refreshOnChange);
+    };
+  }, []);
+
+  return { overview, opportunities, overviewFailed, opportunitiesFailed };
+}
+
+function DashboardAds() {
+  const [ads, setAds] = useState([]);
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    api.get('/public/dashboard-ads', { signal: controller.signal })
+      .then(({ data }) => {
+        if (controller.signal.aborted || !Array.isArray(data?.ads)) return;
+        setAds(data.ads.filter((ad) => ad?.title && ['image', 'video', 'text'].includes(ad.media_type)));
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+  useEffect(() => {
+    if (ads.length < 2 || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const timer = window.setInterval(() => {
+      if (!document.hidden) setIndex((value) => (value + 1) % ads.length);
+    }, 10_000);
+    return () => window.clearInterval(timer);
+  }, [ads.length]);
+  const ad = ads[index];
+  if (!ad) return null;
+  const details = (
+    <div>
+      <span>Patrocinado</span>
+      <strong>{ad.title}</strong>
+      {ad.description && <p>{ad.description}</p>}
+    </div>
+  );
+  return (
+    <aside className="do-card do-sponsor" aria-label="Patrocinado">
+      {ad.media_type === 'image' && ad.media_url && <img alt="" loading="lazy" src={ad.media_url} />}
+      {ad.media_type === 'video' && ad.media_url && <video aria-label={ad.title} key={ad.media_url} controls playsInline preload="none" src={ad.media_url} />}
+      {details}
+      {ad.link_url && <a className="do-button" href={ad.link_url} rel="noopener noreferrer" target="_blank">{ad.cta_label || 'Conhecer'}</a>}
+    </aside>
+  );
+}
+
+function SalesChart({ series }) {
+  const areaId = useId();
+  const maximum = Math.max(1, ...series.map((point) => Number(point.revenue)));
+  const magnitude = 10 ** Math.floor(Math.log10(maximum / 2));
+  const step = [1, 2, 2.5, 5, 10].map((unit) => unit * magnitude).find((unit) => unit >= maximum / 2);
+  const cap = step * 2;
+  const points = series.map((point, index) => ({
+    ...point,
+    x: 500 * index / Math.max(1, series.length - 1),
+    y: 164 - (Number(point.revenue) / cap) * 160,
+  }));
+  const line = points.map(({ x, y }) => `${x},${y}`).join(' ');
+  const label = (point) => `${monthFormatter.format(monthDate(point.month))}: ${formatCurrency(point.revenue)}`;
+  return (
+    <figure className="do-sales-chart" role="img" aria-label={`Valores aprovados por mês. ${points.map(label).join('; ')}`}>
+      <div className="do-chart-axis" aria-hidden="true">
+        {[cap, step, 0].map((value) => <span key={value}>R$ {compactMoney.format(value)}</span>)}
+      </div>
+      <div className="do-chart-inner" aria-hidden="true">
+        <div className="do-chart-plot">
+          <div className="do-chart-grid" />
+          <strong className="do-chart-value">{formatCurrency(points.at(-1).revenue)}</strong>
+          <svg viewBox="-6 0 512 168" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id={areaId} x1="0" x2="0" y1="0" y2="1" gradientUnits="objectBoundingBox">
+                <stop offset="0%" stopColor="currentColor" stopOpacity=".34" />
+                <stop offset="100%" stopColor="currentColor" stopOpacity=".09" />
+              </linearGradient>
+            </defs>
+            <polygon points={`0,164 ${line} 500,164`} fill={`url(#${areaId})`} />
+            <polyline points={line} fill="none" stroke="currentColor" strokeWidth="2.6" vectorEffect="non-scaling-stroke" />
+          </svg>
+          {points.map((point) => (
+            <span className="do-chart-point" title={label(point)} key={point.month}
+              style={{ left: `${((point.x + 6) / 512) * 100}%`, top: `${point.y / 168 * 100}%` }} />
+          ))}
+        </div>
+        <div className="do-chart-months">
+          {points.map((point, index) => (
+            <span className={index % 2 === 1 && index < points.length - 1 && points.length > 6 ? 'do-chart-skip' : undefined} key={point.month}>
+              {capitalize(shortMonthFormatter.format(monthDate(point.month)).replace('.', ''))}
+            </span>
+          ))}
+        </div>
+      </div>
+    </figure>
+  );
+}
+
+const PROPOSAL_STATES = [
+  { key: 'approved', name: 'Aprovadas' },
+  { key: 'pending', name: 'Pendentes' },
+  { key: 'rejected', name: 'Rejeitadas' },
+];
+const proposalTotal = (data) => data.approved + data.pending + data.rejected;
+
+function ProposalChart({ data }) {
+  const total = proposalTotal(data);
+  let weight = 0;
+  const segments = PROPOSAL_STATES.map(({ key, name }) => {
+    const count = data[key];
+    const share = total ? count / total : 0;
+    const start = weight;
+    weight += share;
+    const theta = (start + share / 2) * 2 * Math.PI;
+    return { key, name, count, share, start, end: weight, theta };
+  });
+  const activeSegments = segments.filter((segment) => segment.count > 0);
+  const fill = activeSegments.length > 1 ? `conic-gradient(${activeSegments.map((s) =>
+    `var(--do-${s.key}) ${s.start * 100}% ${s.end * 100}%`).join(', ')})` : undefined;
+  const solid = activeSegments.length === 1 ? `var(--do-${activeSegments[0].key})` : undefined;
+  return (
+    <div className="do-proposals">
+      <div className="do-proposal-donut" aria-hidden="true" style={{ backgroundImage: fill, backgroundColor: solid }}>
+        <div className="do-donut-center"><strong>{total}</strong><span>{total === 1 ? 'proposta' : 'propostas'}</span></div>
+        {segments.filter((s) => s.share >= 0.14).map((s) => (
+          <span key={s.key} className={`do-donut-label is-${s.key}`}
+            style={{ left: `${50 + Math.sin(s.theta) * 40}%`, top: `${50 - Math.cos(s.theta) * 40}%` }}>
+            {percentFormatter.format(s.share)}
+          </span>
+        ))}
+      </div>
+      {total > 0 && <div className="do-proposal-bar" aria-hidden="true">
+        {segments.filter((s) => s.count > 0).map((s) => (
+          <span key={s.key} className={`is-${s.key}`} style={{ flexBasis: `${s.share * 100}%` }}>
+            {s.share >= 0.16 ? percentFormatter.format(s.share) : ''}
+          </span>
+        ))}
+      </div>}
+      <ul className="do-proposal-legend" aria-label="Propostas por situação">
+        {segments.map((s) => (
+          <li key={s.key}><i className={`is-${s.key}`} aria-hidden="true" /><span>{s.name}</span>
+            <strong title={percentFormatter.format(s.share)}>{s.count}<span className="sr-only"> ({percentFormatter.format(s.share)})</span></strong>
+          </li>
+        ))}
+      </ul>
+      {!total && <p className="do-note">Nenhuma proposta neste mês.</p>}
+    </div>
+  );
+}
+
+function DashboardContent() {
+  const { isPro } = useSubscription();
+  const { overview, opportunities, overviewFailed, opportunitiesFailed } = useLiveOverview();
+  const [monthChoice, setMonthChoice] = useState('');
+  const [chartLength, setChartLength] = useState(6);
+  const months = overview?.months ?? [];
+  const month = months.slice(-12).some((item) => item.month === monthChoice) ? monthChoice : overview?.month;
+  const monthIndex = months.findIndex((item) => item.month === month);
+  const current = months[monthIndex];
+  const series = current ? months.slice(Math.max(0, monthIndex + 1 - chartLength), monthIndex + 1) : [];
+  const total = current ? proposalTotal(current) : 0;
+  const metrics = [
+    { label: 'Receita aprovada', icon: 'revenue', value: current && formatCurrency(current.revenue), tip: 'Soma dos valores aprovados neste mês, não dos pagamentos recebidos.' },
+    { label: 'Propostas aprovadas', icon: 'file', value: current && `${current.approved} de ${total}`, tip: 'Orçamentos criados neste mês, sem contar rascunhos.' },
+    { label: 'Taxa de aprovação', icon: 'check', value: current && (total ? percentFormatter.format(current.approved / total) : '—'), tip: 'Propostas aprovadas divididas pelas propostas criadas no mês, sem os rascunhos.' },
+    { label: 'Instalações agendadas', icon: 'calendar', value: current?.installations, tip: 'Instalações da agenda neste mês, sem incluir cancelamentos.' },
+  ];
+  const monthOptions = months.slice(-12).reverse();
 
   return (
-    <span className={`dashboard-neo-icon dashboard-neo-icon--${tone}`}>
-      <svg aria-hidden="true" fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="24">
-        {paths[type] || paths.revenue}
-      </svg>
-    </span>
-  );
-}
-
-const PANEL_NAV_ITEMS = [
-  { to: '/dashboard', label: 'Início', icon: 'grid', section: 'VISÃO GERAL' },
-  { to: '/opportunities', label: 'Oportunidades', icon: 'opportunities', badgeKey: 'opportunities' },
-  { to: '/reviews', label: 'Avaliações', icon: 'star', badgeKey: 'reviews' },
-  { to: '/agenda', label: 'Agenda', icon: 'agenda', section: 'OPERAÇÃO', badgeKey: 'agenda' },
-  { to: '/budgets', label: 'Orçamentos', icon: 'file' },
-  { to: '/clients', label: 'Clientes', icon: 'clients' },
-  { to: '/profile', label: 'Perfil', icon: 'profile', section: 'CONTA' },
-  { to: '/subscription', label: 'Assinatura', icon: 'card' },
-  { to: '/notifications', label: 'Notificações', icon: 'bell', badgeKey: 'notifications' },
-  { to: '/settings', label: 'Configurações', icon: 'settings' },
-  { to: '/support', label: 'Suporte', icon: 'help' },
-  { to: '/download-app', label: 'Aplicativos', icon: 'download', section: 'APLICATIVO', webOnly: true },
-];
-
-const ADMIN_NAV_ITEM = { to: '/admin', label: 'Painel ADM', icon: 'admin', section: 'SISTEMA' };
-
-function PanelIcon({ type, size = 20 }) {
-  const sharedProps = {
-    width: size,
-    height: size,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.8,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    'aria-hidden': 'true',
-  };
-
-  const icons = {
-    grid: <><rect x="4" y="4" width="6" height="6" rx="1.2" /><rect x="14" y="4" width="6" height="6" rx="1.2" /><rect x="4" y="14" width="6" height="6" rx="1.2" /><rect x="14" y="14" width="6" height="6" rx="1.2" /></>,
-    trend: <><path d="M4 16.5 9 11l4 3 6-7" /><path d="M15 7h4v4" /></>,
-    agenda: <><rect x="4" y="5" width="16" height="15" rx="2.4" /><path d="M8 3v4M16 3v4M4 10h16" /></>,
-    file: <><path d="M7 3.8h7l3 3V20H7z" /><path d="M14 3.8V7h3" /><path d="M9.5 11h5M9.5 15h4" /></>,
-    clients: <><circle cx="9" cy="9" r="3" /><circle cx="17" cy="10" r="2.2" /><path d="M3.8 19c.9-3.1 2.8-4.7 5.2-4.7s4.3 1.6 5.2 4.7" /><path d="M14.8 15c1.9.4 3.3 1.7 4 4" /></>,
-    star: <><path d="m12 3.8 2.45 4.95 5.47.8-3.96 3.86.94 5.45L12 16.28l-4.9 2.58.94-5.45-3.96-3.86 5.47-.8z" /></>,
-    opportunities: <><path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1" /><rect x="4" y="6" width="16" height="14" rx="2.4" /><path d="M4 12h16" /><path d="M9 15.5h6" /></>,
-    profile: <><circle cx="12" cy="8" r="3.2" /><path d="M5.4 19c1.5-3 4-4.5 6.6-4.5s5.1 1.5 6.6 4.5" /></>,
-    card: <><rect x="4" y="6.5" width="16" height="11" rx="2" /><path d="M4 10h16" /></>,
-    download: <><path d="M12 3.5v11" /><path d="m7.5 10.8 4.5 4.5 4.5-4.5" /><path d="M5 20.5h14" /></>,
-    bell: <><path d="M18 10.8a6 6 0 0 0-12 0c0 5-2 5.7-2 5.7h16s-2-.7-2-5.7" /><path d="M10 20a2.4 2.4 0 0 0 4 0" /></>,
-    settings: <><path d="M12 8.4a3.6 3.6 0 1 1 0 7.2 3.6 3.6 0 0 1 0-7.2Z" /><path d="M19.2 13.4a7.9 7.9 0 0 0 0-2.8l2-1.55-2-3.46-2.43.98a7.25 7.25 0 0 0-2.4-1.39L14 2.6h-4l-.37 2.58a7.25 7.25 0 0 0-2.4 1.39L4.8 5.59l-2 3.46 2 1.55a7.9 7.9 0 0 0 0 2.8l-2 1.55 2 3.46 2.43-.98a7.25 7.25 0 0 0 2.4 1.39L10 21.4h4l.37-2.58a7.25 7.25 0 0 0 2.4-1.39l2.43.98 2-3.46z" /></>,
-    help: <><circle cx="12" cy="12" r="8.5" /><path d="M9.8 9.4a2.4 2.4 0 1 1 3.6 2.1c-.9.5-1.4 1.1-1.4 2.2" /><path d="M12 17.2h.01" /></>,
-    admin: <><path d="M12 3.8 18.6 7v5c0 4.1-2.7 6.9-6.6 8.2-3.9-1.3-6.6-4.1-6.6-8.2V7L12 3.8Z" /><path d="M9.8 11.8 11.3 13.3 14.8 9.8" /></>,
-    search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></>,
-    dollar: <><circle cx="12" cy="12" r="8.5" /><path d="M14.8 9.4c0-1.2-1-2.1-2.6-2.1-1.6 0-2.7.8-2.7 2.1 0 2.7 5.5 1.6 5.5 4.2 0 1.2-1 2.1-2.8 2.1-1.7 0-2.8-.9-2.9-2.2" /><path d="M12 6v12" /></>,
-    arrow: <><path d="M7 17 17 7" /><path d="M9 7h8v8" /></>,
-    clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.6V12l3 1.8" /></>,
-    pin: <><path d="M19 10.2c0 5-7 10-7 10s-7-5-7-10a7 7 0 1 1 14 0Z" /><circle cx="12" cy="10.2" r="2.2" /></>,
-    plus: <><path d="M12 5v14M5 12h14" /></>,
-    chevron: <><path d="m9 6 6 6-6 6" /></>,
-    menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
-    logout: <><path d="M10 6H6.5A1.5 1.5 0 0 0 5 7.5v9A1.5 1.5 0 0 0 6.5 18H10" /><path d="M14 8l4 4-4 4M18 12H9" /></>,
-  };
-
-  return <svg {...sharedProps}>{icons[type] || icons.grid}</svg>;
-}
-
-function compactCurrency(value) {
-  const amount = Number(value || 0);
-
-  if (amount >= 1000) {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    }).format(amount);
-  }
-
-  return formatCurrency(amount);
-}
-
-function formatCurrencyWhole(value) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 0,
-  }).format(Number(value || 0));
-}
-
-function formatReferenceDate(date) {
-  return new Intl.DateTimeFormat('pt-BR', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-  }).format(date);
-}
-
-function startOfMonth(date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function endOfMonth(date) {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-}
-
-function endOfDay(date) {
-  const next = new Date(date);
-  next.setHours(23, 59, 59, 999);
-  return next;
-}
-
-function startOfWeek(date) {
-  const next = new Date(date);
-  next.setHours(0, 0, 0, 0);
-  const day = next.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  next.setDate(next.getDate() + diff);
-  return next;
-}
-
-function endOfWeek(date) {
-  const next = startOfWeek(date);
-  next.setDate(next.getDate() + 6);
-  next.setHours(23, 59, 59, 999);
-  return next;
-}
-
-function startOfYear(date) {
-  return new Date(date.getFullYear(), 0, 1);
-}
-
-function endOfYear(date) {
-  return new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
-}
-
-function addDays(date, days) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-function addWeeks(date, weeks) {
-  return addDays(date, weeks * 7);
-}
-
-function addMonths(date, months) {
-  return new Date(date.getFullYear(), date.getMonth() + months, 1);
-}
-
-function addYears(date, years) {
-  return new Date(date.getFullYear() + years, date.getMonth(), 1);
-}
-
-function getIsoWeekInfo(date) {
-  const target = new Date(date);
-  target.setHours(0, 0, 0, 0);
-  target.setDate(target.getDate() + 4 - (target.getDay() || 7));
-  const yearStart = new Date(target.getFullYear(), 0, 1);
-  const weekNumber = Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
-  return {
-    year: target.getFullYear(),
-    week: weekNumber,
-  };
-}
-
-function getWeekKey(date) {
-  const { year, week } = getIsoWeekInfo(date);
-  return `${year}-W${String(week).padStart(2, '0')}`;
-}
-
-function parseWeekKey(value) {
-  const match = /^(\d{4})-W(\d{2})$/.exec(value || '');
-  if (!match) {
-    return new Date();
-  }
-
-  const year = Number(match[1]);
-  const week = Number(match[2]);
-  const jan4 = new Date(year, 0, 4);
-  const firstWeekStart = startOfWeek(jan4);
-  return addWeeks(firstWeekStart, week - 1);
-}
-
-function getWeekRangeLabel(date) {
-  const start = startOfWeek(date);
-  const end = endOfWeek(date);
-  return `${formatShortDate(start)} - ${formatShortDate(end)}`;
-}
-
-function getChartPeriodStart(view, date) {
-  if (view === 'weekly') return startOfWeek(date);
-  if (view === 'yearly') return startOfYear(date);
-  return startOfMonth(date);
-}
-
-function shiftChartDate(view, date, amount) {
-  if (view === 'weekly') return addWeeks(date, amount);
-  if (view === 'yearly') return addYears(date, amount);
-  return addMonths(date, amount);
-}
-
-function buildChartSeries(budgets, view, anchorDate) {
-  const parsedBudgets = budgets
-    .map((budget) => ({
-      ...budget,
-      _date: new Date(budget.created_at || budget.updated_at || Date.now()),
-    }))
-    .filter((budget) => !Number.isNaN(budget._date.getTime()));
-
-  if (view === 'weekly') {
-    const weekStart = startOfWeek(anchorDate);
-    const weekEnd = endOfWeek(anchorDate);
-    const series = Array.from({ length: 7 }, (_, index) => {
-      const dayStart = addDays(weekStart, index);
-      const dayEnd = endOfDay(dayStart);
-      const value = parsedBudgets.reduce((total, budget) => {
-        if (budget._date >= dayStart && budget._date <= dayEnd) {
-          return total + Number(budget.total_amount || 0);
-        }
-        return total;
-      }, 0);
-
-      return {
-        label: formatShortDate(dayStart),
-        value,
-      };
-    });
-
-    return {
-      series,
-      description: 'Evolução diária da semana selecionada.',
-      periodLabel: getWeekRangeLabel(anchorDate),
-      periodStart: weekStart,
-      periodEnd: weekEnd,
-    };
-  }
-
-  if (view === 'yearly') {
-    const yearStart = startOfYear(anchorDate);
-    const yearEnd = endOfYear(anchorDate);
-    const series = Array.from({ length: 12 }, (_, index) => {
-      const monthStart = new Date(anchorDate.getFullYear(), index, 1);
-      const monthEnd = endOfMonth(monthStart);
-      const value = parsedBudgets.reduce((total, budget) => {
-        if (budget._date >= monthStart && budget._date <= monthEnd) {
-          return total + Number(budget.total_amount || 0);
-        }
-        return total;
-      }, 0);
-
-      return {
-        label: shortMonthFormatter.format(monthStart).replace('.', ''),
-        value,
-      };
-    });
-
-    return {
-      series,
-      description: 'Evolução mensal ao longo do ano selecionado.',
-      periodLabel: `${anchorDate.getFullYear()}`,
-      periodStart: yearStart,
-      periodEnd: yearEnd,
-    };
-  }
-
-  const monthStart = startOfMonth(anchorDate);
-  const monthEnd = endOfMonth(anchorDate);
-  const series = [];
-
-  for (let cursor = new Date(monthStart); cursor <= monthEnd; cursor = addWeeks(cursor, 1)) {
-    const bucketStart = new Date(cursor);
-    const bucketEnd = endOfWeek(bucketStart);
-    const safeEnd = bucketEnd > monthEnd ? monthEnd : bucketEnd;
-
-    const value = parsedBudgets.reduce((total, budget) => {
-      if (budget._date >= bucketStart && budget._date <= safeEnd) {
-        return total + Number(budget.total_amount || 0);
-      }
-      return total;
-    }, 0);
-
-    series.push({
-      label: formatShortDate(bucketStart),
-      value,
-    });
-  }
-
-  return {
-    series,
-    description: 'Evolução semanal do mês selecionado.',
-    periodLabel: fullMonthFormatter.format(anchorDate),
-    periodStart: monthStart,
-    periodEnd: monthEnd,
-  };
-}
-
-function buildLineGeometry(series) {
-  const values = series.map((item) => Number(item.value || 0));
-  const hasValues = values.some((value) => value > 0);
-  const maxValue = hasValues ? Math.max(...values, 1) : 1;
-  const innerWidth = CHART_WIDTH - CHART_PADDING_X * 2;
-  const innerHeight = CHART_HEIGHT - CHART_PADDING_Y * 2;
-
-  const points = series.map((item, index) => {
-    const x = CHART_PADDING_X + (innerWidth / Math.max(series.length - 1, 1)) * index;
-    const y = hasValues
-      ? CHART_PADDING_Y + innerHeight - (innerHeight * Number(item.value || 0)) / maxValue
-      : CHART_HEIGHT - CHART_PADDING_Y;
-    return {
-      ...item,
-      x,
-      y,
-    };
-  });
-
-  const linePath = points
-    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
-    .join(' ');
-
-  const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${(CHART_HEIGHT - CHART_PADDING_Y).toFixed(2)} L ${points[0].x.toFixed(2)} ${(CHART_HEIGHT - CHART_PADDING_Y).toFixed(2)} Z`;
-
-  const ticks = Array.from({ length: 5 }, (_, index) => {
-    const ratio = 1 - index / 4;
-    const y = CHART_PADDING_Y + innerHeight * index / 4;
-    const value = hasValues ? maxValue * ratio : 0;
-    return {
-      y,
-      label: compactCurrency(value),
-    };
-  });
-
-  return { points, linePath, areaPath, ticks, hasValues };
-}
-
-function buildStatusSegments(budgets) {
-  const baseSegments = [
-    { key: 'approved', label: 'Aprovados', color: 'var(--site-accent-strong)' },
-    { key: 'pending', label: 'Pendentes', color: 'var(--site-accent)' },
-    { key: 'scheduled', label: 'Agendados', color: 'var(--site-accent-deep)' },
-    { key: 'other', label: 'Outros', color: 'rgba(var(--site-accent-rgb), 0.38)' },
-  ];
-
-  const values = baseSegments.map((segment) => {
-    const amount = budgets.reduce((total, budget) => {
-      const status = String(budget.status || '').toLowerCase();
-      const matches =
-        segment.key === 'other'
-          ? !['approved', 'pending', 'scheduled'].includes(status)
-          : status === segment.key;
-
-      return matches ? total + Number(budget.total_amount || 0) : total;
-    }, 0);
-
-    return {
-      ...segment,
-      value: amount,
-    };
-  });
-
-  const total = values.reduce((sum, item) => sum + item.value, 0);
-
-  if (total <= 0) {
-    return {
-      total: 0,
-      items: baseSegments.map((segment) => ({ ...segment, value: 0, percentage: 0 })),
-      gradient: 'conic-gradient(rgba(var(--site-accent-rgb), 0.12) 0deg 360deg)',
-    };
-  }
-
-  let cursor = 0;
-  const items = values.map((segment) => {
-    const percentage = (segment.value / total) * 100;
-    const start = cursor;
-    const end = cursor + percentage * 3.6;
-    cursor = end;
-    return {
-      ...segment,
-      percentage,
-      start,
-      end,
-    };
-  });
-
-  const gradient = `conic-gradient(${items
-    .map((item) => `${item.color} ${item.start}deg ${item.end}deg`)
-    .join(', ')})`;
-
-  return { total, items, gradient };
-}
-
-function DashboardSponsor({ ad }) {
-  const hasVideo = ad.media_type === 'video' && ad.media_url;
-  const hasImage = ad.media_type === 'image' && ad.media_url;
-  const hasMedia = Boolean(hasVideo || hasImage);
-  const className = `dashboard-neo-sponsor${hasMedia ? ' has-media' : ''}`;
-  const content = (
-    <>
-      {hasMedia ? (
-        <div className="dashboard-neo-sponsor-media" aria-hidden="true">
-          {hasVideo ? (
-            <video autoPlay loop muted playsInline preload="metadata" src={ad.media_url} />
-          ) : (
-            <img alt="" loading="lazy" src={ad.media_url} />
-          )}
+    <section className="dashboard-overview">
+      <header className="do-header">
+        <h1>Dashboard</h1>
+        <div className="do-controls">
+          <label className="do-picker do-month">
+            <Icon name="calendar" />
+            <select aria-label="Mês dos indicadores" value={month ?? ''} disabled={!monthOptions.length}
+              onChange={(event) => setMonthChoice(event.target.value === overview?.month ? '' : event.target.value)}>
+              {!monthOptions.length && <option value="">Mês dos indicadores</option>}
+              {monthOptions.map((item) => <option key={item.month} value={item.month}>{capitalize(monthFormatter.format(monthDate(item.month)))}</option>)}
+            </select>
+            <Icon name="chevron" />
+          </label>
+          <Link className="do-button is-primary" to="/budgets/new"><Icon name="plus" /> Novo orçamento</Link>
         </div>
-      ) : (
-        <div className="dashboard-neo-sponsor-brand" aria-hidden="true">
-          <span className="dashboard-neo-sponsor-monogram">
-            {ad.title?.slice(0, 1)?.toUpperCase() || 'I'}
-          </span>
-        </div>
-      )}
+      </header>
+      {overviewFailed && <p role="status" className="do-alert">
+        {overview ? 'Não foi possível atualizar o painel. Mostrando os últimos dados disponíveis.' : 'Não foi possível carregar os indicadores e a agenda.'}{' '}
+        <button className="do-retry" onClick={() => window.dispatchEvent(new Event(PANEL_BADGE_REFRESH_EVENT))} type="button">Tentar de novo</button>
+      </p>}
+      <section className="do-indicators" aria-label="Indicadores do mês" aria-busy={!overview && !overviewFailed}>
+        {metrics.map(({ label, icon, value, tip }) => (
+          <div className={`do-card do-kpi is-${icon}`} key={label} title={tip}>
+            <Icon name={icon} />
+            <div><span>{label}</span><strong>{value ?? '—'}</strong></div>
+          </div>
+        ))}
+      </section>
+      <PlanUsage usageKey="monthly_budgets" compact />
 
-      <span className="dashboard-neo-sponsor-label">Patrocinado</span>
-      <div className="dashboard-neo-sponsor-content">
-        <strong>{ad.title}</strong>
-        {ad.description ? <p>{ad.description}</p> : null}
-        {ad.link_url ? (
-          <span className="dashboard-neo-sponsor-cta">
-            {ad.cta_label || 'Conhecer'} <span aria-hidden="true">→</span>
-          </span>
-        ) : null}
+      {isPro ? (
+        <div className="do-charts">
+          <section className="do-card do-sales">
+            <header className="do-card-heading">
+              <div><h2>Evolução das vendas</h2><p>Valores aprovados por mês</p></div>
+              <label className="do-picker">
+                <select aria-label="Período do gráfico" value={chartLength} onChange={(event) => setChartLength(Number(event.target.value))}>
+                  {[3, 6, 12].map((value) => <option key={value} value={value}>Últimos {value} meses</option>)}
+                </select>
+                <Icon name="chevron" />
+              </label>
+            </header>
+            {series.length ? <SalesChart series={series} /> : <p className="do-note do-chart-placeholder">{overviewFailed ? 'Histórico indisponível.' : 'Carregando histórico de vendas…'}</p>}
+          </section>
+          <section className="do-card do-distribution">
+            <header className="do-card-heading"><h2>Situação das propostas</h2></header>
+            {current ? <ProposalChart data={current} /> : <p className="do-note do-chart-placeholder">{overviewFailed ? 'Propostas indisponíveis.' : 'Carregando propostas…'}</p>}
+          </section>
+        </div>
+      ) : <ProFeatureNotice title="Gráficos no plano Pro">Veja a evolução das vendas e a situação das suas propostas em gráficos.</ProFeatureNotice>}
+
+      <div className="do-operations">
+        <section className="do-card do-operation">
+          <Icon name="calendar" />
+          <div>
+            <h2>Próximas instalações</h2>
+            {overview?.upcoming.length ? (
+              <ul>
+                {overview.upcoming.map((item) => (
+                  <li key={item.id}><time dateTime={item.date}>{appointmentLabel(item.date)}</time> — {item.client_name || 'Cliente não informado'}</li>
+                ))}
+              </ul>
+            ) : <p>{overview ? 'Nenhuma instalação agendada.' : overviewFailed ? 'Agenda indisponível.' : 'Carregando agenda…'}</p>}
+          </div>
+          <Link className="do-button" to="/agenda">Ver agenda <Icon name="arrow" /></Link>
+        </section>
+        <section className="do-card do-operation">
+          <Icon name="target" />
+          <div>
+            <h2>Oportunidades</h2>
+            {opportunities ? (
+              <ul>
+                <li>{opportunities.open} {opportunities.open === 1 ? 'pedido disponível' : 'pedidos disponíveis'}</li>
+                <li>{opportunities.selected} {opportunities.selected === 1 ? 'pedido em que escolheram você' : 'pedidos em que escolheram você'}</li>
+              </ul>
+            ) : <p>{opportunitiesFailed ? 'Oportunidades indisponíveis.' : 'Carregando oportunidades…'}</p>}
+            {opportunities && opportunitiesFailed && <p className="do-note">Última atualização disponível.</p>}
+          </div>
+          <Link className="do-button" to="/opportunities">Ver oportunidades <Icon name="arrow" /></Link>
+        </section>
       </div>
-    </>
+      <DashboardAds />
+    </section>
   );
-
-  if (ad.link_url) {
-    return (
-      <a className={className} href={ad.link_url} rel="noopener noreferrer" target="_blank">
-        {content}
-      </a>
-    );
-  }
-
-  return <article className={className}>{content}</article>;
 }
 
 export default function Dashboard() {
-  const { logout, user } = useAuth();
-  const { isPro } = useSubscription();
-  const isDashboardMountedRef = useRef(false);
-  const [today, setToday] = useState(() => new Date());
-  const [data, setData] = useState({
-    metrics: {
-      monthly_revenue: 0,
-      installations_this_week: 0,
-      completed_this_week: 0,
-      available_dates: [],
-      ranking_position: null,
-      average_rating: null,
-      review_count: 0,
-      approved_this_month: 0,
-      pending_budgets: 0,
-      monthly_goal: 0,
-      goal_progress: 0,
-      public_profile: true,
-      profile_completeness: 0,
-    },
-    ranking: [],
-    profile: {},
-  });
-  const [budgets, setBudgets] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [dashboardAds, setDashboardAds] = useState([]);
-  const [dashboardAdIndex, setDashboardAdIndex] = useState(0);
-  const [search, setSearch] = useState('');
-  const [chartView, setChartView] = useState('monthly');
-  const [chartDate, setChartDate] = useState(() => new Date());
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const badgeCounts = usePanelBadgeCounts();
-  const notificationBadge = badgeCounts.notifications > 0 ? formatPanelBadgeCount(badgeCounts.notifications) : null;
-  const canSeeAdmin = !IS_INSTALLER_APP && hasAdminAccess(user);
-  const panelNavItems = useMemo(() => {
-    const visibleItems = PANEL_NAV_ITEMS.filter((item) => !item.webOnly || !IS_INSTALLER_APP);
-    return canSeeAdmin ? [...visibleItems, ADMIN_NAV_ITEM] : visibleItems;
-  }, [canSeeAdmin]);
-  const loadDashboardData = useCallback(async ({ silent = false } = {}) => {
-    try {
-      const [dashboardResponse, budgetsResponse, clientsResponse] = await Promise.all([
-        api.get('/users/dashboard'),
-        api.get('/budgets').catch(() => ({ data: [] })),
-        api.get('/clients').catch(() => ({ data: [] })),
-      ]);
-
-      if (!isDashboardMountedRef.current) {
-        return;
-      }
-
-      setToday(new Date());
-      setData(dashboardResponse.data);
-      setBudgets(Array.isArray(budgetsResponse.data) ? budgetsResponse.data : []);
-      setClients(Array.isArray(clientsResponse.data) ? clientsResponse.data : []);
-    } catch (error) {
-      if (!silent && isDashboardMountedRef.current) {
-        toast.error(error.response?.data?.error || 'Não foi possível carregar o dashboard.');
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    let lastAttentionRefreshAt = 0;
-    isDashboardMountedRef.current = true;
-    loadDashboardData();
-
-    const refreshSilently = () => loadDashboardData({ silent: true });
-    const refreshAfterAttentionReturn = () => {
-      const now = Date.now();
-
-      if (document.hidden || now - lastAttentionRefreshAt < 5000) {
-        return;
-      }
-
-      lastAttentionRefreshAt = now;
-      refreshSilently();
-    };
-    const refreshWhenVisible = () => {
-      if (!document.hidden) {
-        refreshAfterAttentionReturn();
-      }
-    };
-    const interval = setInterval(() => {
-      if (!document.hidden) {
-        refreshSilently();
-      }
-    }, DASHBOARD_REFRESH_INTERVAL);
-
-    window.addEventListener('focus', refreshAfterAttentionReturn);
-    window.addEventListener(PANEL_BADGE_REFRESH_EVENT, refreshSilently);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-
-    return () => {
-      isDashboardMountedRef.current = false;
-      clearInterval(interval);
-      window.removeEventListener('focus', refreshAfterAttentionReturn);
-      window.removeEventListener(PANEL_BADGE_REFRESH_EVENT, refreshSilently);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-    };
-  }, [loadDashboardData]);
-
-  useEffect(() => {
-    let active = true;
-
-    api.get('/public/dashboard-ads')
-      .then((response) => {
-        if (!active) return;
-
-        const ads = Array.isArray(response.data?.ads)
-          ? response.data.ads.filter((ad) => ad?.title && ['image', 'video', 'text'].includes(ad?.media_type))
-          : [];
-        setDashboardAds(ads);
-      })
-      .catch(() => {
-        if (active) setDashboardAds([]);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    setDashboardAdIndex(0);
-
-    if (dashboardAds.length < 2) {
-      return undefined;
-    }
-
-    const rotation = window.setInterval(() => {
-      setDashboardAdIndex((current) => (current + 1) % dashboardAds.length);
-    }, 12000);
-
-    return () => window.clearInterval(rotation);
-  }, [dashboardAds.length]);
-
-  useEffect(() => {
-    document.body.style.overflow = mobileDrawerOpen ? 'hidden' : '';
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') setMobileDrawerOpen(false);
-    };
-
-    window.addEventListener('keydown', handleEscape);
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleEscape);
-    };
-  }, [mobileDrawerOpen]);
-
-  const { metrics, ranking } = data;
-  const firstName = user?.name?.split(' ')[0] || 'Instalador';
-  const clientsWithEmail = clients.filter((client) => Boolean(client.email)).length;
-  const budgetsThisMonth = useMemo(() => {
-    const monthStart = startOfMonth(today);
-    const monthEnd = endOfMonth(today);
-
-    return budgets.filter((budget) => {
-      const createdAt = new Date(budget.created_at || budget.updated_at || Date.now());
-      return !Number.isNaN(createdAt.getTime()) && createdAt >= monthStart && createdAt <= monthEnd;
-    });
-  }, [budgets, today]);
-
-  const approvedBudgetsThisMonth = budgetsThisMonth.filter((budget) => budget.status === 'approved').length;
-  const averageTicket = approvedBudgetsThisMonth
-    ? Number(metrics.monthly_revenue || 0) / approvedBudgetsThisMonth
-    : budgetsThisMonth.length
-      ? budgetsThisMonth.reduce((sum, budget) => sum + Number(budget.total_amount || 0), 0) / budgetsThisMonth.length
-      : 0;
-
-  const chartData = useMemo(() => buildChartSeries(budgets, chartView, chartDate), [budgets, chartView, chartDate]);
-  const chartSeries = useMemo(() => chartData.series, [chartData]);
-  const chartGeometry = useMemo(() => buildLineGeometry(chartSeries), [chartSeries]);
-  const segmentData = useMemo(() => buildStatusSegments(budgetsThisMonth), [budgetsThisMonth]);
-  const currentPeriodStart = useMemo(() => getChartPeriodStart(chartView, today), [chartView, today]);
-  const selectedPeriodStart = useMemo(() => getChartPeriodStart(chartView, chartDate), [chartView, chartDate]);
-  const canAdvanceChart = selectedPeriodStart.getTime() < currentPeriodStart.getTime();
-
-  const chartYears = useMemo(() => {
-    const budgetYears = budgets
-      .map((budget) => new Date(budget.created_at || budget.updated_at || Date.now()))
-      .filter((date) => !Number.isNaN(date.getTime()))
-      .map((date) => date.getFullYear());
-
-    const currentYear = today.getFullYear();
-    const minYear = Math.min(currentYear - 2, ...(budgetYears.length ? budgetYears : [currentYear]));
-    const maxYear = Math.max(currentYear, ...(budgetYears.length ? budgetYears : [currentYear]));
-
-    return Array.from({ length: maxYear - minYear + 1 }, (_, index) => maxYear - index);
-  }, [budgets, today]);
-
-  const chartWeekOptions = useMemo(() => {
-    const budgetDates = budgets
-      .map((budget) => new Date(budget.created_at || budget.updated_at || Date.now()))
-      .filter((date) => !Number.isNaN(date.getTime()));
-
-    const latestWeek = startOfWeek(today);
-    const earliestBudgetWeek = budgetDates.length
-      ? startOfWeek(new Date(Math.min(...budgetDates.map((date) => date.getTime()))))
-      : addWeeks(latestWeek, -24);
-    const fallbackWeek = addWeeks(latestWeek, -24);
-    const firstWeek = earliestBudgetWeek < fallbackWeek ? earliestBudgetWeek : fallbackWeek;
-    const options = [];
-
-    for (let cursor = new Date(latestWeek); cursor >= firstWeek; cursor = addWeeks(cursor, -1)) {
-      options.push({
-        value: getWeekKey(cursor),
-        label: `Semana ${getIsoWeekInfo(cursor).week} · ${getWeekRangeLabel(cursor)}`,
-      });
-    }
-
-    const selectedWeekValue = getWeekKey(chartDate);
-    if (!options.some((option) => option.value === selectedWeekValue)) {
-      options.unshift({
-        value: selectedWeekValue,
-        label: `Semana ${getIsoWeekInfo(chartDate).week} · ${getWeekRangeLabel(chartDate)}`,
-      });
-    }
-
-    return options;
-  }, [budgets, chartDate, today]);
-
-  const mobileChartTicks = useMemo(() => {
-    if (!chartGeometry.ticks.length) {
-      return [];
-    }
-
-    return chartGeometry.ticks.filter((_, index) => index === 0 || index === 2 || index === 4);
-  }, [chartGeometry]);
-
-  const filteredRecentBudgets = useMemo(() => {
-    const normalizedQuery = search.trim().toLowerCase();
-    const sorted = [...budgets].sort(
-      (first, second) => new Date(second.created_at || 0).getTime() - new Date(first.created_at || 0).getTime()
-    );
-
-    if (!normalizedQuery) {
-      return sorted.slice(0, 5);
-    }
-
-    return sorted
-      .filter((budget) => {
-        const haystack = [budget.id, budget.client_name, budget.status]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase();
-        return haystack.includes(normalizedQuery);
-      })
-      .slice(0, 5);
-  }, [budgets, search]);
-
-  const dashboardCards = [
-    {
-      label: 'Receita total',
-      value: compactCurrency(metrics.monthly_revenue),
-      detail: `${metrics.goal_progress || 0}% da meta mensal`,
-      tone: 'blue',
-      type: 'revenue',
-    },
-    {
-      label: 'Novos orçamentos',
-      value: `${budgetsThisMonth.length}`,
-      detail: `${metrics.pending_budgets || 0} aguardando retorno`,
-      tone: 'green',
-      type: 'budgets',
-    },
-    {
-      label: 'Novos clientes',
-      value: `${clients.length}`,
-      detail: `${clientsWithEmail} com email cadastrado`,
-      tone: 'purple',
-      type: 'clients',
-    },
-    {
-      label: 'Ticket medio',
-      value: compactCurrency(averageTicket),
-      detail: `${approvedBudgetsThisMonth || 0} aprovados no mês`,
-      tone: 'orange',
-      type: 'ticket',
-    },
-  ];
-
-  const publicRating = metrics.average_rating == null ? null : installerRating(metrics);
-  const quickSummary = [
-    { label: 'Receita', value: formatCurrency(metrics.monthly_revenue), tone: 'positive' },
-    {
-      label: 'Em aberto',
-      value: formatCurrency(
-        budgetsThisMonth
-          .filter((budget) => ['pending', 'scheduled'].includes(String(budget.status || '').toLowerCase()))
-          .reduce((sum, budget) => sum + Number(budget.total_amount || 0), 0)
-      ),
-      tone: 'neutral',
-    },
-    {
-      label: publicRating?.isInitial ? 'Nota inicial' : 'Nota pública',
-      value: publicRating?.formatted ?? '—',
-      tone: 'neutral',
-    },
-    {
-      label: 'Disponibilidade',
-      value: metrics.available_dates?.length ? `${metrics.available_dates.length} datas` : 'Ajustar',
-      tone: metrics.available_dates?.length ? 'positive' : 'warning',
-    },
-  ];
-
-  const handleChartShift = (direction) => {
-    setChartDate((current) => shiftChartDate(chartView, current, direction));
-  };
-
-  const handleChartViewChange = (nextView) => {
-    if (!CHART_VIEWS.includes(nextView)) {
-      return;
-    }
-
-    setChartView(nextView);
-    setChartDate((current) => getChartPeriodStart(nextView, current));
-  };
-
-  const handleChartYearChange = (yearValue) => {
-    const nextYear = Number(yearValue);
-    if (!Number.isFinite(nextYear)) {
-      return;
-    }
-
-    setChartDate((current) => new Date(nextYear, current.getMonth(), 1));
-  };
-
-  const handleChartMonthChange = (monthValue) => {
-    const nextMonth = Number(monthValue);
-    if (!Number.isFinite(nextMonth)) {
-      return;
-    }
-
-    setChartDate((current) => new Date(current.getFullYear(), nextMonth, 1));
-  };
-
-  const initials = (user?.name || 'Instalador')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase() || 'IN';
-  const pendingBudgets = budgetsThisMonth.filter((budget) => String(budget.status || '').toLowerCase() === 'pending');
-  const conversionRate = budgetsThisMonth.length
-    ? Math.round((approvedBudgetsThisMonth / budgetsThisMonth.length) * 100)
-    : 0;
-  const todayAgendaLabel = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long' }).format(today);
-  const referenceCards = [
-    {
-      label: 'Receita total',
-      mobileLabel: 'Receita',
-      value: formatCurrencyWhole(metrics.monthly_revenue),
-      detail: `${metrics.goal_progress || 0}% da meta mensal`,
-      mobileDetail: `${metrics.goal_progress || 0}% da meta`,
-      delta: `${metrics.goal_progress || 0}%`,
-      type: 'dollar',
-      positive: true,
-    },
-    {
-      label: 'Orçamentos enviados',
-      mobileLabel: 'Orçamentos',
-      value: `${budgetsThisMonth.length}`,
-      detail: `${metrics.pending_budgets || pendingBudgets.length} aguardando resposta`,
-      mobileDetail: `${metrics.pending_budgets || pendingBudgets.length} pendentes`,
-      delta: `+${Math.max(approvedBudgetsThisMonth, 0)}`,
-      type: 'file',
-      positive: true,
-    },
-    {
-      label: 'Novos clientes',
-      mobileLabel: 'Clientes',
-      value: `${clients.length}`,
-      detail: 'no mês atual',
-      mobileDetail: 'este mês',
-      delta: `+${clientsWithEmail}`,
-      type: 'clients',
-      positive: true,
-    },
-    {
-      label: 'Taxa de conversão',
-      mobileLabel: 'Conversão',
-      value: `${conversionRate}%`,
-      detail: 'orçamentos aprovados',
-      mobileDetail: 'aprovados',
-      delta: `${approvedBudgetsThisMonth} aprov.`,
-      type: 'trend',
-      positive: approvedBudgetsThisMonth > 0,
-    },
-  ];
-  const upcomingAppointments = filteredRecentBudgets.slice(0, 3);
-  const visibleRecentBudgets = filteredRecentBudgets.slice(0, isPro ? 5 : 3);
-  const installationsThisWeek = Number(metrics.installations_this_week || 0);
-  const completedThisWeek = Number(metrics.completed_this_week || 0);
-  const rankingItems = ranking.slice(0, 4);
-  const dashboardAd = dashboardAds.length ? dashboardAds[dashboardAdIndex % dashboardAds.length] : null;
-
-  const useLegacyDashboard = process.env.REACT_APP_DASHBOARD_VARIANT === 'legacy';
-
-  if (useLegacyDashboard) {
-    return (
-    <section className={`ref-panel-shell ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
-      <aside className="ref-panel-sidebar" aria-label="Navegação do painel">
-        <div className="ref-panel-brand">
-          <BrandWordmark className="ref-panel-wordmark" size="sm" />
-          <BrandMark className="ref-panel-logo ref-panel-collapsed-logo" />
-          <button aria-label="Recolher menu" onClick={() => setSidebarCollapsed((current) => !current)} type="button">
-            <span>{sidebarCollapsed ? '>' : '<'}</span>
-          </button>
-        </div>
-
-        <div className="ref-panel-user">
-          <span className="ref-panel-avatar">{initials}</span>
-          <div>
-            <strong>{user?.name || 'Instalador'}</strong>
-            <small>{isPro ? 'Instalador Pro' : 'Plano Grátis'}</small>
-          </div>
-        </div>
-
-        <nav className="ref-panel-nav">
-          {panelNavItems.map((item) => {
-            const badge = getPanelBadgeValue(item, badgeCounts);
-
-            return (
-              <div className="ref-panel-nav-block" key={`${item.section || ''}-${item.label}`}>
-                {item.section ? <p>{item.section}</p> : null}
-                <NavLink className={({ isActive }) => `ref-panel-nav-link ${isActive && item.label === 'Início' ? 'is-active' : ''}`} to={item.to}>
-                  <PanelIcon type={item.icon} />
-                  <span>{item.label}</span>
-                  {badge !== null ? <em>{badge}</em> : null}
-                </NavLink>
-              </div>
-            );
-          })}
-        </nav>
-
-        <button className="ref-panel-logout" onClick={logout} type="button">
-          <PanelIcon type="logout" />
-          <span>Sair</span>
-        </button>
-      </aside>
-
-      <div
-        aria-hidden="true"
-        className={`ref-panel-drawer-backdrop ${mobileDrawerOpen ? 'is-open' : ''}`}
-        onClick={() => setMobileDrawerOpen(false)}
-      />
-      <aside
-        aria-hidden={!mobileDrawerOpen}
-        aria-label="Menu mobile do painel"
-        className={`ref-panel-mobile-drawer ${mobileDrawerOpen ? 'is-open' : ''}`}
-        id="mobile-dashboard-menu"
-      >
-        <SidebarContent
-          badgeCounts={badgeCounts}
-          initials={initials}
-          onNavigate={() => setMobileDrawerOpen(false)}
-          userName={user?.name || 'Instalador'}
-        />
-      </aside>
-
-      <div className="ref-panel-main">
-        <header className="ref-panel-topbar">
-          <label className="ref-panel-search">
-            <PanelIcon type="search" size={18} />
-            <input onChange={(event) => setSearch(event.target.value)} placeholder="Buscar clientes, orçamentos..." type="search" value={search} />
-          </label>
-          <div className="ref-panel-top-actions">
-            <span className="ref-panel-date">
-              <PanelIcon type="agenda" size={17} />
-              {formatReferenceDate(today)}
-            </span>
-            <Link aria-label="Abrir notificações" className="ref-panel-bell" to="/notifications">
-              <PanelIcon type="bell" size={18} />
-              {notificationBadge ? <em>{notificationBadge}</em> : null}
-            </Link>
-            <Link className="ref-panel-account" to="/profile">
-              <span>{initials}</span>
-              <strong>{firstName}</strong>
-              <PanelIcon type="chevron" size={15} />
-            </Link>
-          </div>
-        </header>
-
-        <header className="ref-panel-mobile-header">
-          <button
-            aria-controls="mobile-dashboard-menu"
-            aria-expanded={mobileDrawerOpen}
-            aria-label="Abrir menu"
-            onClick={() => setMobileDrawerOpen(true)}
-            type="button"
-          >
-            <PanelIcon type="menu" />
-          </button>
-          <div>
-            <BrandWordmark className="ref-panel-mobile-wordmark" size="sm" />
-          </div>
-          <nav aria-label="Ações rápidas do painel">
-            <Link aria-label="Buscar clientes" to="/clients"><PanelIcon type="search" size={18} /></Link>
-            <Link aria-label="Abrir notificações" to="/notifications"><PanelIcon type="bell" size={18} />{notificationBadge ? <em>{notificationBadge}</em> : null}</Link>
-            <Link aria-label="Abrir perfil" to="/profile" className="ref-panel-avatar">{initials}</Link>
-          </nav>
-        </header>
-
-        <main className="ref-panel-content">
-          <section className="ref-panel-hero">
-            <div>
-              <p>Painel do instalador</p>
-              <h1>Bom dia, <span>{firstName}</span></h1>
-              <h2>Olá, <span>{firstName}</span></h2>
-              <small>
-                <span className="ref-panel-hero-copy-desktop">
-                  Você tem <strong>{installationsThisWeek} instalações</strong> agendadas para esta semana.
-                  Continue assim para alcançar sua meta mensal.
-                </span>
-                <span className="ref-panel-hero-copy-mobile">
-                  Continue assim para alcançar sua <strong>meta mensal</strong>.
-                </span>
-              </small>
-            </div>
-            <div className="ref-panel-hero-actions">
-              <span className="ref-panel-week-badge"><i />{installationsThisWeek} esta semana</span>
-              <Link className="ref-panel-primary" to="/budgets/new">
-                Novo orçamento <PanelIcon type="arrow" size={16} />
-              </Link>
-              <Link aria-label="Abrir agenda" className="ref-panel-secondary" to="/agenda">
-                <PanelIcon type="agenda" size={18} />
-                <span>Ver agenda</span>
-              </Link>
-            </div>
-          </section>
-
-          <PlanUsage usageKey="monthly_budgets" />
-
-          <section className="ref-panel-mobile-section-head">
-            <h3>Resumo do mês</h3>
-            <Link to="/budgets">Ver orçamentos <PanelIcon type="chevron" size={14} /></Link>
-          </section>
-
-          <section className="ref-panel-metrics" aria-label="Resumo do mês">
-            {referenceCards.slice(0, isPro ? 4 : 3).map((card, index) => (
-              <article className="ref-panel-metric-card" key={card.label} style={{ animationDelay: `${index * 70}ms` }}>
-                <span className="ref-panel-metric-icon">
-                  <PanelIcon type={card.type} />
-                </span>
-                <p>
-                  <span className="ref-panel-label-desktop">{card.label}</span>
-                  <span className="ref-panel-label-mobile">{card.mobileLabel}</span>
-                </p>
-                <strong>{card.value}</strong>
-                <div>
-                  <small>
-                    <span className="ref-panel-label-desktop">{card.detail}</span>
-                    <span className="ref-panel-label-mobile">{card.mobileDetail}</span>
-                  </small>
-                  <em data-positive={card.positive}>{card.positive ? '+' : ''}{card.delta.replace('+', '')}</em>
-                </div>
-              </article>
-            ))}
-          </section>
-          <div className="ref-panel-metric-dots" aria-hidden="true">
-            <span className="is-active" />
-            <span />
-            <span />
-            <span />
-          </div>
-
-          {isPro ? <section className="ref-panel-grid">
-            <article className="ref-panel-card ref-panel-chart-card">
-              <div className="ref-panel-card-head">
-                <div>
-                  <h3>Visão geral de vendas</h3>
-                  <p>{chartData.description}</p>
-                </div>
-                <div className="ref-panel-tabs">
-                  {CHART_VIEWS.map((view) => (
-                    <button className={chartView === view ? 'is-active' : ''} key={view} onClick={() => handleChartViewChange(view)} type="button">
-                      {CHART_VIEW_LABELS[view]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="ref-panel-chart-wrap">
-                <svg aria-hidden="true" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}>
-                  {chartGeometry.ticks.map((tick) => (
-                    <line className="ref-panel-chart-gridline" key={`grid-${tick.y}`} x1={CHART_PADDING_X} x2={CHART_WIDTH - CHART_PADDING_X} y1={tick.y} y2={tick.y} />
-                  ))}
-                  <path className="ref-panel-chart-area" d={chartGeometry.areaPath} />
-                  <path className="ref-panel-chart-line" d={chartGeometry.linePath} />
-                </svg>
-              </div>
-            </article>
-
-            <article className="ref-panel-card ref-panel-donut-card">
-              <div className="ref-panel-card-head">
-                <div>
-                  <h3>Distribuição das propostas</h3>
-                  <p>Como o valor total do mês está dividido por status.</p>
-                </div>
-              </div>
-              <div className="ref-panel-donut-row">
-                <div className="ref-panel-donut" style={{ background: segmentData.gradient }}>
-                  <span>{budgetsThisMonth.length}<small>propostas</small></span>
-                </div>
-                <div className="ref-panel-legend">
-                  {segmentData.items.map((item) => (
-                    <p key={item.label}><i style={{ background: item.color }} />{item.label}<strong>{Math.round(item.percentage || 0)}%</strong></p>
-                  ))}
-                </div>
-              </div>
-            </article>
-          </section> : (
-            <ProFeatureNotice title="Visão comercial Pro">
-              Libere gráficos semanais, mensais e anuais, distribuição das propostas, conversão, ticket médio e análise financeira completa.
-            </ProFeatureNotice>
-          )}
-
-          <section className="ref-panel-mobile-stack">
-            <article className="ref-panel-card ref-panel-agenda-card">
-              <div className="ref-panel-card-head is-inline">
-                <div className="ref-panel-agenda-title">
-                  <PanelIcon type="agenda" size={16} />
-                  <h3>Hoje</h3>
-                  <span>{todayAgendaLabel}</span>
-                </div>
-                <Link to="/agenda">Ver agenda <PanelIcon type="chevron" size={14} /></Link>
-              </div>
-              <div className="ref-panel-agenda-stats">
-                <span><strong>{installationsThisWeek}</strong>esta semana</span>
-                <span><strong>{completedThisWeek}</strong>concluídas</span>
-                <span><strong>{pendingBudgets.length}</strong>pendentes</span>
-              </div>
-              <div className="ref-panel-appointment-list">
-                {upcomingAppointments.map((budget) => (
-                  <article className="ref-panel-appointment" data-status={budget.status} key={budget.id}>
-                    <div className="ref-panel-appointment-head">
-                      <div>
-                        <strong>{budget.client_name || `Orçamento #${budget.id}`}</strong>
-                        <small>{budget.rooms_count ? `${budget.rooms_count} ambientes` : 'Ambientes a confirmar'}</small>
-                      </div>
-                      <em className="ref-panel-status-pill" data-status={budget.status}>
-                        {String(budget.status || '').toLowerCase() === 'approved' ? 'confirmado' : formatStatusLabel(budget.status).toLowerCase()}
-                      </em>
-                    </div>
-                    <div className="ref-panel-appointment-meta">
-                      <span><PanelIcon type="clock" size={13} />{budget.scheduled_time || 'Horário a confirmar'}</span>
-                      <span><PanelIcon type="pin" size={13} />{budget.address || budget.client_address || 'Endereço a confirmar'}</span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-              <Link className="ref-panel-add-appointment" to="/agenda">
-                <PanelIcon type="plus" size={17} />
-                Agendar instalação
-              </Link>
-            </article>
-
-            {isPro ? <article className="ref-panel-card ref-panel-ranking-card">
-              <div className="ref-panel-card-head is-inline">
-                <h3>Ranking</h3>
-                <span>Top instaladores</span>
-              </div>
-              {rankingItems.length ? rankingItems.map((item, index) => (
-                <div className="ref-panel-ranking-row" key={item.id || item.display_name || item.name || `ranking-${index}`}>
-                  <em>{item.ranking_position ? `#${item.ranking_position}` : '-'}</em>
-                  <span>{item.display_name || 'Instalador'}</span>
-                  <strong>{Number(item.review_count || 0) ? formatStarRating(item.average_rating) : 'Sem nota real'}</strong>
-                </div>
-              )) : (
-                <p className="ref-panel-empty-copy">O ranking aparecerá quando houver serviços e avaliações reais.</p>
-              )}
-            </article> : (
-              <article className="ref-panel-card ref-panel-ranking-card">
-                <div className="ref-panel-card-head is-inline">
-                  <h3>Seu perfil</h3>
-                  <Link to="/profile">Ver dados essenciais</Link>
-                </div>
-                <div className="ref-panel-ranking-row">
-                  <em>#{metrics.ranking_position || '--'}</em>
-                  <span>Posição no ranking</span>
-                  <strong>{metrics.profile_completeness || 0}%</strong>
-                </div>
-                <p className="ref-panel-empty-copy">Percentual de apresentação. Não é preciso chegar a 100% para aceitar pedidos.</p>
-              </article>
-            )}
-
-            <article className="ref-panel-card ref-panel-quotes-card">
-              <div className="ref-panel-card-head is-inline">
-                <h3>Orçamentos recentes</h3>
-                <Link to="/budgets">Ver todos</Link>
-              </div>
-              {visibleRecentBudgets.map((budget) => (
-                <Link className="ref-panel-quote-row" key={budget.id} to="/budgets">
-                  <span>#{budget.id}</span>
-                  <strong>{budget.client_name || 'Cliente não informado'}</strong>
-                  <em>{formatCurrency(budget.total_amount)}</em>
-                </Link>
-              ))}
-            </article>
-
-            {isPro ? <article className="ref-panel-card ref-panel-finance-card">
-              <div className="ref-panel-card-head">
-                <div>
-                  <h3>Resumo financeiro</h3>
-                  <p>Leitura rápida do que entra, do que está em aberto e do desempenho.</p>
-                </div>
-              </div>
-              {quickSummary.map((item) => (
-                <div className="ref-panel-finance-row" key={item.label}>
-                  <span>{item.label}</span>
-                  <strong data-tone={item.tone}>{item.value}</strong>
-                </div>
-              ))}
-            </article> : null}
-          </section>
-        </main>
-      </div>
-    </section>
-    );
-  }
-
-  return (
-    <section className="dashboard-neo-shell dashboard-aqua-theme">
-      <div className="dashboard-neo-frame fade-up" style={{ animationDelay: '0.06s' }}>
-        <div className="dashboard-neo-heading">
-          <div>
-            <p className="dashboard-neo-kicker">Resumo do negócio</p>
-            <h1>Dashboard</h1>
-            <p>
-              Bem-vindo de volta, {firstName}. Acompanhe receita, propostas, clientes e agenda
-              em uma leitura mais clara e organizada.
-            </p>
-          </div>
-
-          {dashboardAd ? <DashboardSponsor ad={dashboardAd} /> : null}
-        </div>
-
-        <PlanUsage usageKey="monthly_budgets" />
-
-        <div className="dashboard-neo-metrics">
-          {dashboardCards.slice(0, isPro ? 4 : 3).map((card) => (
-            <article className="dashboard-neo-card" key={card.label}>
-              <div className="dashboard-neo-card-top">
-                <DashboardIcon tone={card.tone} type={card.type} />
-                <div>
-                  <p className="dashboard-neo-card-label">{card.label}</p>
-                  <h2>{card.value}</h2>
-                </div>
-              </div>
-              <p className="dashboard-neo-card-foot">{card.detail}</p>
-            </article>
-          ))}
-        </div>
-
-        {isPro ? <div className="dashboard-neo-main-grid">
-          <article className="dashboard-neo-panel dashboard-neo-panel--chart">
-            <div className="dashboard-neo-panel-head">
-              <div>
-                <h3>Visão geral de vendas</h3>
-                <p>{chartData.description}</p>
-              </div>
-              <div className="dashboard-neo-panel-tools">
-                <div className="dashboard-neo-view-switch" role="tablist" aria-label="Período do gráfico">
-                  {CHART_VIEWS.map((view) => (
-                    <button
-                      aria-selected={chartView === view}
-                      className={`dashboard-neo-view-tab ${chartView === view ? 'is-active' : ''}`}
-                      key={view}
-                      onClick={() => handleChartViewChange(view)}
-                      role="tab"
-                      type="button"
-                    >
-                      {CHART_VIEW_LABELS[view]}
-                    </button>
-                  ))}
-                </div>
-
-                <div className={`dashboard-neo-period-controls ${chartView === 'monthly' ? '' : 'is-single'}`.trim()}>
-                  <button
-                    aria-label="Período anterior"
-                    className="dashboard-neo-nav"
-                    onClick={() => handleChartShift(-1)}
-                    type="button"
-                  >
-                    ‹
-                  </button>
-
-                  {chartView === 'weekly' ? (
-                    <select
-                      className="dashboard-neo-select"
-                      onChange={(event) => setChartDate(parseWeekKey(event.target.value))}
-                      value={getWeekKey(chartDate)}
-                    >
-                      {chartWeekOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : null}
-
-                  {chartView === 'monthly' ? (
-                    <>
-                      <select
-                        className="dashboard-neo-select dashboard-neo-select--compact"
-                        onChange={(event) => handleChartMonthChange(event.target.value)}
-                        value={chartDate.getMonth()}
-                      >
-                        {MONTH_OPTIONS.map((month) => (
-                          <option key={month.value} value={month.value}>
-                            {month.label}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        className="dashboard-neo-select dashboard-neo-select--year"
-                        onChange={(event) => handleChartYearChange(event.target.value)}
-                        value={chartDate.getFullYear()}
-                      >
-                        {chartYears.map((year) => (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        ))}
-                      </select>
-                    </>
-                  ) : null}
-
-                  {chartView === 'yearly' ? (
-                    <select
-                      className="dashboard-neo-select dashboard-neo-select--year"
-                      onChange={(event) => handleChartYearChange(event.target.value)}
-                      value={chartDate.getFullYear()}
-                    >
-                      {chartYears.map((year) => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </select>
-                  ) : null}
-
-                  <button
-                    aria-label="Próximo período"
-                    className="dashboard-neo-nav"
-                    disabled={!canAdvanceChart}
-                    onClick={() => handleChartShift(1)}
-                    type="button"
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="dashboard-neo-chart-meta">
-              <span className="dashboard-neo-filter">{chartData.periodLabel}</span>
-              {!chartGeometry.hasValues ? (
-                  <span className="dashboard-neo-chart-empty">Sem valores registrados neste período.</span>
-              ) : null}
-            </div>
-
-            <div className="dashboard-neo-chart">
-              <div className="dashboard-neo-chart-y">
-                {chartGeometry.ticks.map((tick) => (
-                  <span key={`${tick.label}-${tick.y}`}>{tick.label}</span>
-                ))}
-              </div>
-
-              <div className="dashboard-neo-chart-main">
-                <div className="dashboard-neo-chart-scale-mobile">
-                  {mobileChartTicks.map((tick) => (
-                    <span key={`mobile-${tick.label}-${tick.y}`}>{tick.label}</span>
-                  ))}
-                </div>
-
-                <svg aria-hidden="true" className="dashboard-neo-chart-svg" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}>
-                  {chartGeometry.ticks.map((tick) => (
-                    <line
-                      className="dashboard-neo-chart-gridline"
-                      key={`grid-${tick.y}`}
-                      x1={CHART_PADDING_X}
-                      x2={CHART_WIDTH - CHART_PADDING_X}
-                      y1={tick.y}
-                      y2={tick.y}
-                    />
-                  ))}
-                  <path className="dashboard-neo-chart-area" d={chartGeometry.areaPath} />
-                  <path className="dashboard-neo-chart-line" d={chartGeometry.linePath} />
-                  {chartGeometry.points.map((point) => (
-                    <circle className="dashboard-neo-chart-point" cx={point.x} cy={point.y} key={point.label} r="4.5" />
-                  ))}
-                </svg>
-
-                <div className="dashboard-neo-chart-labels">
-                  {chartSeries.map((item) => (
-                    <span key={item.label}>{item.label}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <article className="dashboard-neo-panel dashboard-neo-panel--donut">
-            <div className="dashboard-neo-panel-head">
-              <div>
-                <h3>Distribuição das propostas</h3>
-                <p>Como o valor total do mês está dividido por status.</p>
-              </div>
-              <span className="dashboard-neo-filter">Este mês</span>
-            </div>
-
-            <div className="dashboard-neo-donut-layout">
-              <div className="dashboard-neo-donut" style={{ background: segmentData.gradient }}>
-                <div className="dashboard-neo-donut-hole">
-                  <strong>{budgetsThisMonth.length}</strong>
-                  <span>propostas</span>
-                </div>
-              </div>
-
-              <div className="dashboard-neo-legend">
-                {segmentData.items.map((segment) => (
-                  <article className="dashboard-neo-legend-item" key={segment.label}>
-                    <span className="dashboard-neo-legend-mark" style={{ background: segment.color }} />
-                    <div>
-                      <p>{segment.label}</p>
-                      <span>
-                        {compactCurrency(segment.value)} ({Math.round(segment.percentage || 0)}%)
-                      </span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </article>
-        </div> : (
-          <ProFeatureNotice title="Visão comercial Pro">
-            Libere gráficos, distribuição das propostas, conversão, ticket médio e análise financeira completa.
-          </ProFeatureNotice>
-        )}
-
-        <div className="dashboard-neo-bottom-grid">
-          <article className="dashboard-neo-panel">
-            <div className="dashboard-neo-panel-head">
-              <div>
-                <h3>Orçamentos recentes</h3>
-                <p>As oportunidades mais novas da operação comercial.</p>
-              </div>
-              <Link className="dashboard-neo-link" to="/budgets">
-                Ver todos
-              </Link>
-            </div>
-
-            <div className="dashboard-neo-table-wrap">
-              <table className="dashboard-neo-table">
-                <thead>
-                  <tr>
-                    <th>Orçamento</th>
-                    <th>Cliente</th>
-                    <th>Data</th>
-                    <th>Status</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRecentBudgets.length > 0 ? (
-                    visibleRecentBudgets.map((budget) => (
-                      <tr key={budget.id}>
-                        <td data-label="Orçamento">#{budget.id}</td>
-                        <td data-label="Cliente">{budget.client_name || 'Cliente não informado'}</td>
-                        <td data-label="Data">{formatDateTime(budget.created_at)}</td>
-                        <td data-label="Status">
-                          <span className="dashboard-neo-status" data-tone={budget.status}>
-                            {formatStatusLabel(budget.status)}
-                          </span>
-                        </td>
-                        <td data-label="Total">{formatCurrency(budget.total_amount)}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="dashboard-neo-empty-row" colSpan="5">
-                        Nenhum orçamento encontrado para esse filtro.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </article>
-
-          <div className="dashboard-neo-bottom-side">
-            <article className="dashboard-neo-panel dashboard-neo-panel--summary">
-            <div className="dashboard-neo-panel-head">
-              <div>
-                <h3>{isPro ? 'Resumo financeiro' : 'Seu perfil'}</h3>
-                <p>{isPro ? 'Leitura rápida do que entra, do que está em aberto e do desempenho do perfil.' : 'Posição pública e conclusão do cadastro.'}</p>
-              </div>
-              <span className="dashboard-neo-filter">Hoje</span>
-            </div>
-
-            {isPro ? <div className="dashboard-neo-summary-list">
-              {quickSummary.map((item) => (
-                <div className="dashboard-neo-summary-row" key={item.label}>
-                  <span>{item.label}</span>
-                  <strong data-tone={item.tone}>{item.value}</strong>
-                </div>
-              ))}
-            </div> : null}
-
-            <div className="dashboard-neo-note">
-              <p>
-                Ranking público atual: <strong>#{metrics.ranking_position || '--'}</strong>
-              </p>
-              <p>
-                Avaliações recebidas: <strong>{metrics.review_count || 0}</strong>
-              </p>
-              <p>
-                Apresentação do perfil (opcional): <strong>{metrics.profile_completeness || 0}%</strong>
-              </p>
-            </div>
-
-            <div className="dashboard-neo-mini-feed">
-              <p className="dashboard-neo-mini-title">Próximas datas disponíveis</p>
-              {metrics.available_dates?.length ? (
-                metrics.available_dates.slice(0, 4).map((date) => (
-                  <span className="dashboard-neo-mini-chip" key={date}>
-                    {formatShortDate(date)}
-                  </span>
-                ))
-              ) : (
-                <span className="dashboard-neo-mini-chip is-muted">Defina horários no perfil</span>
-              )}
-            </div>
-
-            {ranking.length > 0 ? (
-              <div className="dashboard-neo-top-list">
-                <p className="dashboard-neo-mini-title">Ranking público de instaladores</p>
-                {ranking.slice(0, 3).map((item, index) => (
-                  <div className="dashboard-neo-top-item" key={item.id || item.display_name || item.name || `top-${index}`}>
-                    <span>#{item.ranking_position}</span>
-                    <p>{item.display_name}</p>
-                    <strong>{Number(item.review_count || 0) ? formatStarRating(item.average_rating) : 'Sem nota real'}</strong>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            </article>
-
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+  const { user } = useAuth();
+  return <DashboardContent key={user?.id ?? 'account'} />;
 }
