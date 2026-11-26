@@ -1,0 +1,185 @@
+.subscription-v3--preview {
+  --offer-surface: #fff;
+  --offer-border: #c7daeb;
+  --offer-ink: #132235;
+  --offer-muted: #42576e;
+  --offer-accent: #125b99;
+  --offer-soft: #ecf5ff;
+}
+
+html[data-site-theme='dark'] .subscription-v3--preview {
+  --offer-surface: #151b23;
+  --offer-border: #31475d;
+  --offer-ink: #f2f6fc;
+  --offer-muted: #b8c8db;
+  --offer-accent: #9bceff;
+  --offer-soft: #152942;
+}
+
+.subscription-v3--preview :is(h1, h2) {
+  margin: 0;
+  color: var(--offer-ink);
+  text-wrap: balance;
+}
+
+.subscription-v3--preview :is(.subscription-offer-header, .subscription-offer-trial, .subscription-offer-card, .subscription-offer-included) p {
+  margin: .4rem 0 0;
+  color: var(--offer-muted);
+  text-wrap: pretty;
+}
+
+.subscription-offer-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+}
+
+.subscription-offer-header h1 {
+  font-size: clamp(1.8rem, 3vw, 2.45rem);
+}
+
+.subscription-offer-current {
+  display: grid;
+  gap: .35rem;
+  padding: .75rem 1rem;
+  border: 1px solid var(--offer-border);
+  border-radius: .75rem;
+  background: var(--offer-surface);
+  color: var(--offer-ink);
+}
+
+.subscription-offer-current > span {
+  color: var(--offer-muted);
+  font-size: .875rem;
+}
+
+.subscription-offer-current > button {
+  margin-top: .25rem;
+}
+
+.subscription-offer-trial,
+.subscription-offer-card,
+.subscription-offer-included {
+  border: 1px solid var(--offer-border);
+  border-radius: .9rem;
+  padding: clamp(1rem, 2vw, 1.45rem);
+}
+
+.subscription-offer-trial {
+  display: grid;
+  gap: .75rem;
+  background: var(--offer-soft);
+  border-inline-start: 4px solid var(--offer-accent);
+}
+
+.subscription-offer-trial .subscription-offer-notice {
+  margin: 0;
+  font-size: .875rem;
+}
+
+.subscription-offer-notice strong {
+  color: var(--offer-ink);
+}
+
+.subscription-offer-options,
+.subscription-offer-included {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.subscription-offer-card,
+.subscription-offer-included {
+  background: var(--offer-surface);
+  color: var(--offer-ink);
+}
+
+.subscription-offer-card--yearly {
+  border-color: var(--offer-accent);
+}
+
+.subscription-v3--preview h2 {
+  font-size: 1.18rem;
+}
+
+.subscription-offer-card-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem .7rem;
+}
+
+.subscription-offer-card-title span {
+  border-radius: .4rem;
+  background: var(--offer-soft);
+  color: var(--offer-accent);
+  padding: .15rem .45rem;
+  font-size: .8rem;
+  font-weight: 700;
+}
+
+.subscription-v3--preview .subscription-offer-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .15rem .4rem;
+  margin-block: .5rem;
+}
+
+.subscription-offer-price strong {
+  color: var(--offer-ink);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.subscription-offer-included ul {
+  margin: .55rem 0 0;
+  padding-inline-start: 1.15rem;
+  color: var(--offer-muted);
+}
+
+.subscription-offer-included li + li {
+  margin-top: .25rem;
+}
+
+.subscription-offer-checkout,
+.subscription-offer-checkout fieldset {
+  display: grid;
+  gap: .7rem;
+}
+
+.subscription-offer-checkout fieldset {
+  min-inline-size: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.subscription-offer-checkout legend {
+  margin-bottom: .5rem;
+  font-weight: 700;
+}
+
+.subscription-offer-checkout label {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+}
+
+.subscription-offer-checkout input {
+  accent-color: var(--offer-accent);
+}
+
+.subscription-offer-checkout :is(a, button) {
+  justify-self: start;
+}
+
+@media (max-width: 670px) {
+  .subscription-offer-header,
+  .subscription-offer-options,
+  .subscription-offer-included {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

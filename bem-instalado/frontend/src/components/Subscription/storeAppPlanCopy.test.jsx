@@ -107,3 +107,53 @@ describe('site continua vendendo o Pro', () => {
     expect(visibleText(render(() => <PlanUsage usageKey="clients" />))).toContain('Conhecer o Pro');
   });
 });
+
+describe('prévia da nova assinatura', () => {
+  beforeEach(() => {
+    fixtures.storeApp = false;
+    fixtures.subscription.subscription.offer_preview = {
+      checkout_available: false,
+      trial_days: 7,
+      annual_discount_percent: 10,
+      options: { monthly: { amount: 49.9 }, yearly: { amount: 538.92, savings: 59.88 } },
+    };
+  });
+
+  it('mostra as duas opções e quando cobra, sem oferecer o Grátis permanente ou usar o checkout anterior', () => {
+    const text = visibleText(render(() => <Subscription />));
+    expect(text).toContain('7 dias grátis');
+    expect(text).toContain('validar um cartão de crédito');
+    expect(text).toContain('A primeira cobrança só acontece depois');
+    expect(text).toMatch(/R\$\s?49,90 por mês/);
+    expect(text).toMatch(/R\$\s?538,92 por ano/);
+    expect(text).toContain('10% de desconto');
+    expect(text).toContain('ainda não está disponível');
+    expect(text).toContain('Quem já está no Grátis');
+    expect(text).not.toMatch(/para sempre|Ativar o Pro|Pix mensal/);
+  });
+
+  it('não migra a assinatura Pro atual e preserva a opção de gerenciamento', () => {
+    fixtures.subscription.isPro = true;
+    fixtures.subscription.subscription.access_mode = 'pro';
+    const text = visibleText(render(() => <Subscription />));
+    expect(text).toContain('Pro ativo');
+    expect(text).toContain('Sua assinatura continua como está');
+    expect(text).toContain('Cancelar assinatura');
+  });
+
+  it('não mostra os novos valores nem CTA nos apps da loja', () => {
+    fixtures.storeApp = true;
+    const text = visibleText(render(() => <Subscription />));
+    expect(text).not.toMatch(/538,92|7 dias grátis|Novos planos em preparação/);
+    expect(text).not.toMatch(STEERING);
+  });
+
+  it('oferece escolha e consentimento apenas quando a API libera o Sandbox', () => {
+    const form = () => render(() => <Subscription />);
+    expect(form()).not.toContain('Preparar checkout de teste');
+    fixtures.subscription.subscription.offer_preview.checkout_available = true;
+    expect(form()).toContain('Preparar checkout de teste');
+    expect(form()).toContain('não devo usar um cartão real');
+    expect(form()).not.toMatch(/(https:\/\/asaas\.com|Continuar pagamento)/);
+  });
+});

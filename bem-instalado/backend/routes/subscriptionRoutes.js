@@ -18,6 +18,8 @@ router.use(auth);
 router.use(requireAccountType('installer'));
 router.use(requireVerifiedEmail);
 router.get('/', controller.getSubscription);
+router.get('/launch-status', paymentCreationLimiter, controller.getLaunchBillingStatus);
+router.post('/trial-checkout', paymentCreationLimiter, controller.createSandboxTrialCheckout);
 router.post('/pay', paymentCreationLimiter, controller.createPayment);
 router.delete('/', controller.cancelSubscription);
 router.get('/payment/:externalId', controller.checkPayment);
