@@ -7,6 +7,8 @@ const requireAccountType = require('../middleware/accountTypeMiddleware');
 const requireVerifiedEmail = require('../middleware/verifiedEmailMiddleware');
 const { createRateLimiter } = require('../middleware/rateLimit');
 const profileUpload = require('../middleware/profileUpload');
+const pool = require('../config/database');
+const { getDashboardOverview } = require('../services/dashboardOverview');
 
 const router = express.Router();
 const requireInstaller = requireAccountType('installer');
@@ -34,6 +36,14 @@ router.post('/pdf-branding/preview', auth, requireInstaller, requireVerifiedEmai
 router.get('/data-export', auth, controller.exportOwnData);
 router.delete('/account', auth, controller.deleteOwnAccount);
 router.get('/dashboard', auth, requireInstaller, requireVerifiedEmail, controller.getDashboard);
+router.get('/dashboard-overview', auth, requireInstaller, requireVerifiedEmail, async (req, res) => {
+  try {
+    const overview = await getDashboardOverview(pool, req.userId);
+    return res.set('Cache-Control', 'private, no-store').json(overview);
+  } catch (_error) {
+    return res.status(500).json({ error: 'Não foi possível atualizar o resumo do painel.' });
+  }
+});
 router.get('/reviews/summary', auth, requireInstaller, requireVerifiedEmail, controller.getReviewsSummary);
 router.get('/reviews-dashboard', auth, requireInstaller, requireVerifiedEmail, controller.getReviewsDashboard);
 router.put('/profile', auth, requireInstaller, requireVerifiedEmail, controller.updateProfile);

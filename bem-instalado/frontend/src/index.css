@@ -25087,7 +25087,7 @@ html[data-site-theme='light'] :is(
   [class*='support-'],
   [class*='profile'],
   [class*='settings-']
-) :is(h1, h2, h3, h4, h5, h6, p, small, strong, span, label, legend, dt, dd, th, td, li, a, button):not(:where(.settings-v2 *)) {
+) :is(h1, h2, h3, h4, h5, h6, p, small, strong, span, label, legend, dt, dd, th, td, li, a, button):not(:where(.settings-v2 *, .dashboard-overview *)) {
   color: var(--text) !important;
 }
 
@@ -29762,7 +29762,7 @@ html[data-site-theme='dark'] .dashboard-reference-layout.aqua-panel-theme :is(
   a,
   button,
   summary
-) {
+):not(:where(.dashboard-overview *)) {
   color: #f5f5f5 !important;
 }
 
