@@ -1,5 +1,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
+// 4×4 JPEG generated for this fixture.
+const photo = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAAEAAQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD8qqKKKAP/2Q==';
 
 test('orçamento de catálogo, edição e horário na agenda com PostgreSQL isolado', { skip: !process.env.TEST_DATABASE_URL }, async () => {
   const target = new URL(process.env.TEST_DATABASE_URL);
@@ -44,12 +46,19 @@ test('orçamento de catálogo, edição e horário na agenda com PostgreSQL isol
       ...(data ? { body: JSON.stringify(data) } : {}),
     });
     const { rows: [client] } = await pool.query("INSERT INTO clients (user_id, name, phone) VALUES ($1, 'Cliente QA', '') RETURNING id", [installer]);
-    const first = await catalog(installer, { method: 'POST', data: { name: 'Produto QA', price: 125.50 } });
+    assert.equal((await catalog(installer, { method: 'POST', data: { name: 'Sem formato', price: 12, photo: 'data:image/jpeg;base64,YQ==' } })).status, 400);
+    const first = await catalog(installer, { method: 'POST', data: { name: 'Produto QA', price: 125.50, photo } });
     assert.equal(first.status, 201);
     const product = await first.json();
+    assert.ok(product.photo_version);
+    assert.equal(product.photo, undefined);
     const second = await catalog(other, { method: 'POST', data: { name: 'Outro', price: 35 } });
     assert.equal(second.status, 201);
     const foreign = await second.json();
+    assert.equal(foreign.photo_version, null);
+    const photoPath = `/photos?ids=${product.id}`;
+    assert.deepEqual(await (await catalog(installer, { path: photoPath })).json(), { [product.id]: photo });
+    assert.deepEqual(await (await catalog(other, { path: photoPath })).json(), {});
     assert.deepEqual((await (await catalog(other)).json()).map((item) => item.id), [foreign.id]);
     assert.equal((await catalog(other, { path: `/${product.id}`, method: 'DELETE' })).status, 404);
     const input = { pricing_mode: 'fixed', client_id: client.id, product_items: [{ product_id: product.id, quantity: 2, unit_price: 1 }] };
@@ -60,6 +69,16 @@ test('orçamento de catálogo, edição e horário na agenda com PostgreSQL isol
     assert.equal((await call(createBudget, installer, { ...input, product_items: [{ product_id: foreign.id, quantity: 1 }] })).statusCode, 409);
     assert.equal((await call(updateBudget, other, input, id)).statusCode, 404);
     assert.equal((await catalog(installer, { path: `/${product.id}`, method: 'PUT', data: { name: 'Produto atualizado', price: 999 } })).status, 200);
+    assert.deepEqual(await (await catalog(installer, { path: photoPath })).json(), { [product.id]: photo });
+    const replacementBytes = Buffer.from(photo.split(',')[1], 'base64');
+    replacementBytes.writeUInt16BE(72, 14); // A different valid JPEG: change JFIF horizontal density.
+    const replacement = 'data:image/jpeg;base64,' + replacementBytes.toString('base64');
+    const replacePhoto = await catalog(installer, { path: `/${product.id}`, method: 'PUT', data: { name: 'Produto atualizado', price: 999, photo: replacement } });
+    assert.equal(replacePhoto.status, 200);
+    assert.deepEqual(await (await catalog(installer, { path: photoPath })).json(), { [product.id]: replacement });
+    const removedPhoto = await catalog(installer, { path: `/${product.id}`, method: 'PUT', data: { name: 'Produto atualizado', price: 999, photo: null } });
+    assert.equal((await removedPhoto.json()).photo_version, null);
+    assert.deepEqual(await (await catalog(installer, { path: photoPath })).json(), {});
     assert.equal((await catalog(installer, { path: `/${product.id}`, method: 'DELETE' })).status, 204);
     const edited = await call(updateBudget, installer, { ...input, product_items: [{ product_id: product.id, quantity: 3 }], version: quote.body.updated_at.toISOString() }, id);
     assert.equal(edited.statusCode, 200, JSON.stringify(edited.body));

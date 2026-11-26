@@ -95,6 +95,25 @@
 .quote-pricing-choice strong { color: var(--quote-link); font-size: 1.05rem; }
 .quote-pricing-choice span, .quote-product-line p { color: var(--quote-muted); font-size: .88rem; }
 .quote-product-lines, .quote-product-review { display: grid; gap: .55rem; }
+.quote-catalog { display: grid; gap: .6rem; }
+.quote-catalog-filters { display: grid; grid-template-columns: minmax(10rem, 2fr) minmax(8rem, 1fr) minmax(6rem, .8fr); gap: .55rem; }
+.quote-catalog-meta, .quote-catalog-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .35rem .7rem; }
+.quote-catalog-meta p { color: var(--quote-muted); font-size: .86rem; }
+.quote-catalog-list { margin: 0; padding: 0; list-style: none; border: 1px solid var(--quote-border); border-radius: .5rem; overflow: hidden; }
+.quote-catalog-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .65rem; padding: .55rem .65rem; }
+.quote-catalog-row + .quote-catalog-row { border-top: 1px solid var(--quote-border); }
+.quote-catalog-info { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.quote-catalog-info span { font-size: .88rem; color: var(--quote-muted); font-variant-numeric: tabular-nums; }
+.quote-catalog-row .quote-button { min-height: 2.5rem; padding: .35rem .65rem; font-size: .86rem; }
+.quote-catalog-row .quote-catalog-added { color: var(--quote-link); border-color: transparent; background: transparent; cursor: default; }
+.quote-catalog-selection h3 { margin: .3rem 0; font-size: 1rem; font-weight: 740; }
+.quote-catalog-empty { padding: .8rem; border-radius: .5rem; background: var(--quote-faint); color: var(--quote-muted); }
+.quote-catalog-empty .quote-catalog-actions { justify-content: flex-start; margin-top: .5rem; }
+.quote-catalog-pagination { font-size: .9rem; }
+@media (max-width: 650px) {
+  .quote-catalog-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .quote-catalog-filters > label:first-child { grid-column: 1 / -1; }
+}
 .quote-product-line {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(5rem, 9rem) auto; align-items: end;
   gap: .5rem; border-top: 1px solid var(--quote-border); padding-block: .55rem; overflow-wrap: anywhere;

@@ -1,0 +1,15 @@
+.product-thumbnail {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--quote-border);
+  border-radius: .45rem;
+  overflow: hidden;
+  color: var(--quote-muted);
+  background: var(--quote-faint);
+}
+.product-thumbnail img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.product-thumbnail-preview { width: 4.5rem; height: 4.5rem; }
+.product-thumbnail-preview img { object-fit: contain; }

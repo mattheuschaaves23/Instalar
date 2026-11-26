@@ -5,9 +5,11 @@ const requireAccount = require('../middleware/accountTypeMiddleware');
 const verified = require('../middleware/verifiedEmailMiddleware');
 const subscription = require('../middleware/subscriptionMiddleware');
 const limits = require('../../shared/quoteProducts.json');
+const { parseProductPhoto, encodeProductPhoto } = require('../utils/productPhoto');
 
 const router = express.Router();
 router.use(auth, requireAccount('installer'), verified, subscription);
+const productFields = 'id, name, price, CASE WHEN photo_jpeg IS NOT NULL THEN updated_at ELSE NULL END AS photo_version';
 
 function productId(value) {
   const id = Number(value);
@@ -24,29 +26,53 @@ function parseProduct(body = {}) {
 router.get('/', async (req, res, next) => {
   try {
     const { rows } = await db.query(`
-      SELECT id, name, price FROM installer_products
+      SELECT ${productFields} FROM installer_products
       WHERE user_id = $1 AND archived_at IS NULL ORDER BY LOWER(name), id
     `, [req.userId]);
     return res.json(rows);
   } catch (error) { return next(error); }
 });
 
+router.get('/photos', async (req, res, next) => {
+  const ids = typeof req.query.ids === 'string' ? req.query.ids.split(',') : [];
+  if (!ids.length || ids.length > limits.catalogPageSize || ids.some((id) => !/^[1-9]\d{0,9}$/.test(id) || !productId(id))) {
+    return res.status(400).json({ error: 'Selecione produtos válidos para consultar as fotos.' });
+  }
+  try {
+    const { rows } = await db.query(`
+      SELECT id, photo_jpeg FROM installer_products
+      WHERE user_id = $1 AND id = ANY($2::int[]) AND archived_at IS NULL AND photo_jpeg IS NOT NULL
+    `, [req.userId, ids.map(Number)]);
+    return res.set('Cache-Control', 'private, no-store').json(Object.fromEntries(
+      rows.map((row) => [row.id, encodeProductPhoto(row.photo_jpeg)])
+    ));
+  } catch (error) { return next(error); }
+});
+
 async function saveProduct(req, res, next) {
-  const data = parseProduct(req.body);
+  const body = req.body ?? {};
+  const data = parseProduct(body);
   const editing = req.params.id !== undefined;
   const id = editing ? productId(req.params.id) : null;
   if (!data || (editing && !id)) {
     return res.status(400).json({ error: 'Informe um nome e um preço válido para o produto.' });
   }
+  // Omission keeps the saved photo, so older apps may still edit name and price.
+  const photoChanged = Object.hasOwn(body, 'photo');
+  const photo = photoChanged ? parseProductPhoto(body.photo) : null;
+  if (photoChanged && photo === undefined) {
+    return res.status(400).json({ error: 'Não foi possível validar a foto. Escolha outra imagem JPG, PNG ou WebP.' });
+  }
   try {
     const { rows } = editing
       ? await db.query(`
-        UPDATE installer_products SET name = $2, price = $3, updated_at = NOW()
-        WHERE user_id = $1 AND id = $4 AND archived_at IS NULL RETURNING id, name, price
-      `, [req.userId, ...data, id])
+        UPDATE installer_products SET name = $2, price = $3, updated_at = NOW(),
+          photo_jpeg = CASE WHEN $5::boolean THEN $6::bytea ELSE photo_jpeg END
+        WHERE user_id = $1 AND id = $4 AND archived_at IS NULL RETURNING ${productFields}
+      `, [req.userId, ...data, id, photoChanged, photo])
       : await db.query(`
-        INSERT INTO installer_products (user_id, name, price) VALUES ($1, $2, $3) RETURNING id, name, price
-      `, [req.userId, ...data]);
+        INSERT INTO installer_products (user_id, name, price, photo_jpeg) VALUES ($1, $2, $3, $4) RETURNING ${productFields}
+      `, [req.userId, ...data, photo]);
     if (!rows[0]) return res.status(404).json({ error: 'Produto não encontrado.' });
     return res.status(editing ? 200 : 201).json(rows[0]);
   } catch (error) { return next(error); }

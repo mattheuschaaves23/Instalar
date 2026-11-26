@@ -7,6 +7,7 @@ import { useSubscription } from '../../contexts/SubscriptionContext';
 import PlanUsage from '../Subscription/PlanUsage';
 import ClientForm from '../Clients/ClientForm';
 import BudgetClientChoice from './BudgetClientChoice';
+import QuoteProductCatalog from './QuoteProductCatalog';
 import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import { installmentInfo, installmentConditionsLabel } from '../../../../shared/installmentTerms.mjs';
 import productLimits from '../../../../shared/quoteProducts.json';
@@ -252,7 +253,6 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
   const [catalogError, setCatalogError] = useState('');
   const [catalogRetry, setCatalogRetry] = useState(0);
   const [productItems, setProductItems] = useState(() => original?.product_items || []);
-  const [productId, setProductId] = useState('');
 
   useEffect(() => {
     if (!productMode) return;
@@ -265,12 +265,15 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
     return () => controller.abort();
   }, [catalogRetry, productMode]);
 
-  function addProduct() {
-    const item = catalog?.find((entry) => String(entry.id) === productId);
-    if (!item || productItems.length >= productLimits.maximumItems) return;
-    setProductItems((current) => current.some((entry) => entry.product_id === item.id) ? current
+  function reloadCatalog() {
+    setCatalogError('');
+    setCatalogRetry((value) => value + 1);
+  }
+
+  function addProduct(item) {
+    setProductItems((current) => current.length >= productLimits.maximumItems ||
+      current.some((entry) => Number(entry.product_id) === Number(item.id)) ? current
       : [...current, { product_id: item.id, name: item.name, unit_price: Number(item.price), quantity: 1 }]);
-    setProductId('');
   }
 
   useEffect(() => {
@@ -815,21 +818,12 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
                     {!productMode && !fixed && <label className="quote-check"><input type="checkbox" checked={withoutMeasurements}
                       onChange={(event) => setWithoutMeasurements(event.target.checked)} />Informar total sem medidas</label>}
                     {productMode ? <div className="quote-product-lines">
-                      {catalogError ? <><p role="alert">{catalogError}</p><button className="quote-action-link" type="button" onClick={() => {
-                        setCatalogError(''); setCatalogRetry((value) => value + 1);
-                      }}>Tentar novamente</button></> : catalog == null ? <p role="status">Carregando produtos…</p> : (
-                        <div className="quote-group-head">
-                          <label className="quote-field"><span>Produto do catálogo</span><select value={productId} onChange={(event) => setProductId(event.target.value)}>
-                            <option value="">Selecione um produto</option>
-                            {catalog.filter((item) => !productItems.some((line) => line.product_id === item.id)).map((item) => (
-                              <option value={item.id} key={item.id}>{item.name} · {formatCurrency(item.price)}</option>
-                            ))}
-                          </select></label>
-                          <button className="quote-button" type="button" onClick={addProduct} disabled={!productId || productItems.length >= productLimits.maximumItems}>Adicionar produto</button>
-                        </div>
+                      {catalogError ? <><p role="alert">{catalogError}</p><button className="quote-action-link" type="button" onClick={reloadCatalog}>Tentar novamente</button></> : catalog == null ? <p role="status">Carregando produtos…</p> : (
+                        <QuoteProductCatalog products={catalog} selected={productItems} onAdd={addProduct} onReload={reloadCatalog} />
                       )}
-                      {catalog?.length === 0 && !productItems.length && <p className="quote-help">Seu catálogo está vazio. <Link className="quote-action-link" to="/products" target="_blank" rel="noopener noreferrer">Cadastrar produtos</Link></p>}
-                      {productItems.map((item) => (
+                      {productItems.length > 0 && <section className="quote-catalog-selection" aria-label="Itens adicionados ao orçamento">
+                        <h3>Itens do orçamento ({productItems.length})</h3>
+                        {productItems.map((item) => (
                         <div key={item.product_id} className="quote-product-line">
                           <div><strong>{item.name}</strong><p>{formatCurrency(item.unit_price)} por unidade</p></div>
                           <label className="quote-field"><span>Quantidade de {item.name}</span><input type="number" inputMode="numeric" min="1" max={productLimits.maximumQuantity} step="1" required value={item.quantity}
@@ -840,7 +834,8 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
                           <button aria-label={`Remover ${item.name}`} className="quote-action-link" type="button"
                             onClick={() => setProductItems((items) => items.filter((line) => line.product_id !== item.product_id))}>Remover</button>
                         </div>
-                      ))}
+                        ))}
+                      </section>}
                     </div> : <>
                     <div className="quote-material" data-mode={pricingMode}>
                       {noMeasures ? <label className="quote-field">

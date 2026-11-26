@@ -1,6 +1,7 @@
 # Operação: catálogo, orçamento e agenda
 
-- `GET /api/products` lista os produtos ativos da conta. `POST /api/products` e `PUT /api/products/:id` aceitam nome e preço unitário; `DELETE /api/products/:id` arquiva. Uma conta nunca lê nem altera os produtos de outra.
+- `GET /api/products` lista os produtos ativos da conta e sinaliza se têm foto. `POST /api/products` e `PUT /api/products/:id` aceitam nome, preço unitário e, opcionalmente, uma miniatura JPEG. Omitir a foto preserva a anterior; enviar `null` remove. `DELETE /api/products/:id` arquiva. Uma conta nunca lê nem altera os produtos de outra.
+- O navegador transforma um JPG, PNG ou WebP em uma miniatura de até 256 px e 64 KiB. A lista A–Z no orçamento filtra por nome, seleção e foto; `GET /api/products/photos` retorna apenas as miniaturas da página visível, protegidas pela mesma sessão do catálogo.
 - Em orçamento com produtos, o formulário envia apenas IDs e quantidades. A API copia nomes e valores unitários para o orçamento. Um produto depois arquivado ou com preço alterado não muda um orçamento antigo. No PDF, os produtos aparecem como itens, não como cômodos. O banco preserva o modo antigo `fixed` para leitura por clientes existentes, e distingue os produtos pela presença de `product_items`.
 - Para Por rolo e Por m² sem medidas, o total combinado é obrigatório e salvo em `manual_price`; a modalidade escolhida permanece. A ausência de medidas não transforma o valor em zero.
 - A edição manual mantém o ID e a data de criação do orçamento. Ela não altera propostas já aprovadas nem pedidos da plataforma. Para liberar a edição desses casos, seria necessário versionar a proposta já aceita e definir como o cliente confirma alterações.

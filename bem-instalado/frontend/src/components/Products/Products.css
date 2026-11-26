@@ -11,6 +11,11 @@
 .product-list h2 { margin: 0 0 .35rem; font-weight: 700; }
 .product-rows { list-style: none; margin: 0; padding: 0; }
 .product-rows li { border-top: 1px solid var(--quote-line, #b7cbe0); padding: .6rem 0; }
-.product-rows li div:first-child { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.product-row-lead { display: flex; gap: .65rem; align-items: center; min-width: 0; }
+.product-row-lead > div { display: grid; min-width: 0; overflow-wrap: anywhere; }
 .product-rows li span { font-variant-numeric: tabular-nums; }
 .product-board :focus-visible { outline-offset: 2px; }
+.product-photo-field { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .75rem; align-items: start; }
+.product-photo-field input[type='file'] { width: 100%; }
+.product-photo-field .quote-help { margin-top: .3rem; }
+.product-form-error { color: var(--quote-danger); }
