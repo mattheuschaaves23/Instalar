@@ -19,19 +19,21 @@ const october = { month: '2026-10', revenue: '975.50', approved: 1, pending: 0, 
 const upcoming = [{ id: 'manual-2', date: '2026-11-26T14:00:00Z', client_name: 'Cliente fictício' }];
 let response;
 let offline;
+let ads;
 
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(useSubscription).mockReturnValue({ isPro: true });
   response = { month: '2026-11', months: [october, november], upcoming };
   offline = false;
+  ads = [];
   api.get.mockImplementation(async (path) => {
     if (path === '/users/dashboard-overview') {
       if (offline) throw new Error('offline');
       return { data: response };
     }
     if (path === '/opportunities') return { data: { opportunities: [], stats: { open: 3, selected: 1 } } };
-    if (path === '/public/dashboard-ads') return { data: { ads: [] } };
+    if (path === '/public/dashboard-ads') return { data: { ads } };
     return { data: [] };
   });
 });
@@ -41,9 +43,25 @@ const open = () => render(<MemoryRouter initialEntries={['/dashboard']}><Dashboa
 const metrics = () => within(screen.getByRole('region', { name: 'Indicadores do mês' }));
 const money = (amount) => new RegExp(amount.replace('.', '\\.'));
 
+it('mostra o anúncio patrocinado entre o título e os indicadores do dashboard', async () => {
+  ads = [{
+    id: 1, title: 'Parceiro de teste', description: 'Materiais para instalação',
+    media_type: 'image', media_url: 'https://example.test/banner.png',
+    link_url: 'https://example.test/catalogo', cta_label: 'Ver catálogo',
+  }];
+  open();
+  const title = screen.getByRole('heading', { name: 'Dashboard' });
+  const ad = await screen.findByRole('complementary', { name: 'Patrocinado' });
+  expect(title.compareDocumentPosition(ad) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const indicators = screen.getByRole('region', { name: 'Indicadores do mês' });
+  expect(ad.compareDocumentPosition(indicators) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(within(ad).getByRole('link', { name: 'Ver catálogo' }).getAttribute('href')).toBe('https://example.test/catalogo');
+});
+
 it('usa dados da conta para os indicadores e gráficos e permite consultar outro mês', async () => {
   open();
   expect(await metrics().findByText(money('3.250,00'))).toBeTruthy();
+  expect(screen.queryByRole('complementary', { name: 'Patrocinado' })).toBeNull();
   expect(metrics().getByText('2 de 4')).toBeTruthy();
   expect(metrics().getByText('50%')).toBeTruthy();
   expect(metrics().getByText('5')).toBeTruthy();
