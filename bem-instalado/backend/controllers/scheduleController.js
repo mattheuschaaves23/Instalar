@@ -153,6 +153,60 @@ exports.getSchedules = async (req, res) => {
   }
 };
 
+exports.reschedule = async (req, res) => {
+  const id = Number(req.params.id);
+  const value = req.body?.schedule_date;
+  const date = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(value)
+    ? parseLocalDateTime(value) : null;
+  if (!Number.isInteger(id) || id < 1 || id > 2147483647 || !date) {
+    return res.status(400).json({ error: 'Informe uma data e um horário válidos.' });
+  }
+  let db;
+  let active = false;
+  try {
+    db = await pool.connect();
+    await db.query('BEGIN');
+    active = true;
+    await db.query('SELECT pg_advisory_xact_lock($1)', [req.userId]);
+    const ownership = await db.query(
+      'SELECT id, budget_id, status FROM schedules WHERE id = $1 AND user_id = $2 FOR UPDATE',
+      [id, req.userId]
+    );
+    const item = ownership.rows[0];
+    if (!item) return res.status(404).json({ error: 'Agendamento não encontrado.' });
+    if (item.status !== 'scheduled') {
+      return res.status(409).json({ error: 'Somente uma instalação agendada pode mudar de data.' });
+    }
+    const conflict = await db.query(`
+      SELECT id FROM schedules WHERE user_id = $1 AND id <> $2 AND status = 'scheduled' AND date = $3
+      UNION ALL
+      SELECT id FROM service_bookings
+      WHERE installer_id = $1 AND status IN ('scheduled', 'in_progress')
+        AND scheduled_start <= $3 AND scheduled_end > $3
+      LIMIT 1
+    `, [req.userId, id, date]);
+    if (conflict.rowCount) {
+      return res.status(409).json({ code: 'SCHEDULE_TIME_CONFLICT', error: 'Esse horário já está ocupado na agenda.' });
+    }
+    const { rows } = await db.query(
+      'UPDATE schedules SET date = $3, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING id, date',
+      [id, req.userId, date]
+    );
+    if (item.budget_id) {
+      await db.query('UPDATE budgets SET schedule_date = $3, updated_at = NOW() WHERE id = $1 AND user_id = $2',
+        [item.budget_id, req.userId, date]);
+    }
+    await db.query('COMMIT');
+    active = false;
+    return res.json(rows[0]);
+  } catch (_error) {
+    return res.status(500).json({ error: 'Não foi possível alterar a data do agendamento.' });
+  } finally {
+    if (active) await db.query('ROLLBACK').catch(() => {});
+    db?.release();
+  }
+};
+
 exports.updateScheduleStatus = async (req, res) => {
   try {
     const { status } = req.body;

@@ -16,6 +16,7 @@ beforeEach(() => {
   api.get.mockImplementation(async (url) => {
     if (url === '/clients') return { data: [{ id: 7, name: 'Cliente QA' }, { id: 8, name: 'João Silva', phone: '+55 (48) 99999-1234', email: 'joao@example.test' }] };
     if (url === '/users/profile') return { data: { default_price_per_roll: 80, default_removal_price: 50 } };
+    if (url === '/products') return { data: [{ id: 4, name: 'Instalação premium', price: '125.50' }] };
     return { data: { request: {
       id: 32, is_direct: true, client_name: 'Cliente QA',
       direct_quote_details: { environments: [
@@ -28,21 +29,24 @@ afterEach(cleanup);
 
 const change = (name, value) => fireEvent.change(screen.getByLabelText(name, { exact: true }), { target: { value } });
 const click = (name) => fireEvent.click(screen.getByRole('button', { name, exact: true }));
+const selectMode = (name = /^Por rolo/) => fireEvent.click(screen.getByRole('button', { name }));
 
-it('salva um orçamento com valor fechado sem informar medidas nem ambientes', async () => {
+it.each([['roll', /^Por rolo/], ['square_meter', /^Por m²/]])('salva em %s sem informar medidas nem ambientes', async (mode, label) => {
   api.post.mockResolvedValue({ data: { id: 55 } });
   render(<MemoryRouter><BudgetForm /></MemoryRouter>);
   fireEvent.click(await screen.findByRole('radio', { name: 'Cliente QA' }));
   click('Continuar para o cálculo');
-  fireEvent.click(screen.getByRole('radio', { name: 'Valor fechado (sem medidas)' }));
+  expect(screen.getByRole('heading', { name: 'Como você quer montar o orçamento?' })).toBeTruthy();
+  selectMode(label);
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Informar total sem medidas' }));
   expect(screen.queryByLabelText('Largura (m)')).toBeNull();
   change('Valor do serviço', '450.50');
   click('Revisar orçamento');
-  expect(screen.getByText('Valor fechado', { exact: true })).toBeTruthy();
+  expect(screen.getByText('Medidas não informadas.', { exact: true })).toBeTruthy();
   click('Continuar para salvar');
   click('Salvar orçamento');
   await waitFor(() => expect(api.post).toHaveBeenCalledWith('/budgets', expect.objectContaining({
-    client_id: 7, pricing_mode: 'fixed', fixed_price: 450.50, environments: [],
+    client_id: 7, pricing_mode: mode, manual_price: 450.50, environments: [],
   })));
 });
 
@@ -63,6 +67,7 @@ it('mostra o total ao calcular e permite corrigir o pagamento sem perder as medi
   render(<MemoryRouter><BudgetForm /></MemoryRouter>);
   fireEvent.click(await screen.findByRole('radio', { name: 'Cliente QA' }));
   click('Continuar para o cálculo');
+  selectMode();
   change('Ambiente', 'Sala');
   change('Largura (m)', '2');
   change('Altura (m)', '3');
@@ -78,8 +83,10 @@ it('mantém a remoção independente da instalação e valida antes de revisar',
   render(<MemoryRouter><BudgetForm /></MemoryRouter>);
   fireEvent.click(await screen.findByRole('radio', { name: 'Cliente QA' }));
   click('Continuar para o cálculo');
+  selectMode();
   expect(screen.queryByText('Cartão à vista')).toBeNull();
   expect(screen.getByText('Cartão de débito')).toBeTruthy();
+  expect(screen.getByText('Cartão de crédito à vista')).toBeTruthy();
   expect(screen.getByRole('checkbox', { name: 'Aceitar parcelamento' })).toBeTruthy();
   fireEvent.click(screen.getByRole('checkbox', { name: /^Pix/ }));
   change('Ambiente', 'Sala');
@@ -125,6 +132,7 @@ it('envia a quantidade também ao concluir um rascunho criado de um pedido', asy
     <Route path="/budgets" element={<p>Lista de orçamentos</p>} />
   </Routes></MemoryRouter>);
   fireEvent.click(await screen.findByRole('button', { name: 'Continuar para o cálculo' }));
+  selectMode();
   fireEvent.change(screen.getByRole('spinbutton', { name: 'Preço por rolo' }), { target: { value: '80' } });
   fireEvent.change(screen.getByRole('spinbutton', { name: 'Valor por rolo' }), { target: { value: '25' } });
   change('Rolos a remover', '4');
@@ -136,4 +144,51 @@ it('envia a quantidade também ao concluir um rascunho criado de um pedido', asy
     removal_price_per_roll: 25,
     environments: [expect.objectContaining({ rolls_manual: 2, removal_included: true })],
   })));
+});
+
+it('usa produtos do catálogo e envia apenas os identificadores e as quantidades', async () => {
+  api.post.mockResolvedValue({ data: { id: 55 } });
+  render(<MemoryRouter><BudgetForm /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('radio', { name: 'Cliente QA' }));
+  click('Continuar para o cálculo');
+  selectMode(/^Produtos/);
+  await screen.findByRole('option', { name: /Instalação premium/ });
+  change('Produto do catálogo', '4');
+  click('Adicionar produto');
+  change('Quantidade de Instalação premium', '2');
+  click('Revisar orçamento');
+  expect(screen.getByText(/2 × Instalação premium/)).toBeTruthy();
+  click('Continuar para salvar');
+  click('Salvar orçamento');
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith('/budgets', expect.objectContaining({
+    client_id: 7, pricing_mode: 'fixed', product_items: [{ product_id: 4, quantity: 2 }], environments: [],
+  })));
+});
+
+it('edita o mesmo orçamento, pré-carrega o cliente e preserva as condições antigas não alteradas', async () => {
+  const updatedAt = '2026-11-25T14:00:00.000Z';
+  api.get.mockResolvedValueOnce({ data: {
+    id: 25, status: 'pending', updated_at: updatedAt, client_id: 7, pricing_mode: 'square_meter', manual_price: '450.00',
+    installment_enabled: true, installments_count: 5, interest_free_installments: 3, installment_interest_rate: '1.50',
+    payment_terms: [{ method: 'credit_card', discount_percent: 5 }], environments: [],
+  } });
+  api.put.mockResolvedValue({ data: { id: 25 } });
+  render(<MemoryRouter initialEntries={['/budgets/25/edit']}><Routes>
+    <Route path="/budgets/:budgetId/edit" element={<BudgetForm />} />
+    <Route path="/budgets" element={<p>Lista de orçamentos</p>} />
+  </Routes></MemoryRouter>);
+  expect((await screen.findByRole('radio', { name: 'Cliente QA' })).checked).toBe(true);
+  click('Continuar para o cálculo');
+  selectMode(/^Por m²/);
+  expect(screen.queryByText('Juros após (% a.m.)')).toBeNull();
+  expect(screen.getByLabelText('Sem juros até').value).toBe('3');
+  change('Valor do serviço', '550');
+  click('Revisar orçamento');
+  click('Continuar para salvar');
+  click('Salvar orçamento');
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith('/budgets/25', expect.objectContaining({
+    version: updatedAt, manual_price: 550, installment_interest_rate: 1.5,
+    upfront_payment_terms: [expect.objectContaining({ method: 'credit_card', discount_percent: 5 })],
+  })));
+  expect(api.post).not.toHaveBeenCalled();
 });

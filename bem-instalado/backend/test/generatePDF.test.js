@@ -56,6 +56,21 @@ test('PDF do valor fechado mostra o total sem imprimir medidas ou rolos zerados'
   assert.doesNotMatch(text, /0 rolos|Nenhum ambiente discriminado|Dimensões/);
 });
 
+test('PDF discrimina os produtos salvos e não lhes atribui medidas', async () => {
+  const { text } = await inspectPdf({
+    ...sample,
+    isPro: true,
+    budget: { id: 43, status: 'pending', pricing_mode: 'fixed', total_amount: 251, subtotal_rolls: 251,
+      product_items: [{ product_id: 23, name: 'Produto do catálogo QA', quantity: 2, unit_price: 125.50 }] },
+    branding: { show_measurements: true, show_environment_prices: true },
+    environments: [],
+  });
+  assert.match(text, /Produtos/);
+  assert.match(text, /Produto do catálogo QA/);
+  assert.match(text, /251,00/);
+  assert.doesNotMatch(text, /Serviço a valor fechado|0 rolos|Nenhum ambiente discriminado/);
+});
+
 test('preserva configurações antigas e valida cor, modelo e texto personalizados', () => {
   const result = normalizePdfBranding({
     brand_name: '  Marca  antiga ', accent_color: '#cda349', intro_text: 'Primeiro parágrafo\r\n\nSegundo',

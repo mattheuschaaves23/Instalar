@@ -6,7 +6,7 @@ import api from '../../services/api';
 import Agenda from './Agenda';
 import { useConfirm } from '../../contexts/ConfirmContext';
 
-vi.mock('../../services/api', () => ({ default: { get: vi.fn(), put: vi.fn(), delete: vi.fn() } }));
+vi.mock('../../services/api', () => ({ default: { get: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn() } }));
 vi.mock('../../contexts/ConfirmContext', () => ({ useConfirm: vi.fn() }));
 vi.mock('../Layout/panelBadgeCounts', () => ({ notifyPanelBadgeCountsChanged: vi.fn() }));
 
@@ -80,6 +80,21 @@ it('mantém endereço, rotas e conclusão no detalhe do agendamento', async () =
   fireEvent.click(within(dialog).getByRole('button', { name: 'Concluir' }));
   await waitFor(() => expect(api.put).toHaveBeenCalledWith('/schedules/2/status', { status: 'completed' }));
   expect(await screen.findByText('Concluído')).toBeTruthy();
+});
+
+it('mantém o diálogo aberto em caso de conflito e permite salvar outra data', async () => {
+  api.patch.mockRejectedValueOnce({ response: { data: { error: 'Esse horário já está ocupado.' } } })
+    .mockResolvedValueOnce({ data: { id: 2, date: new Date(2026, 10, 25, 10).toISOString() } });
+  open();
+  fireEvent.click(await screen.findByRole('button', { name: 'Ver endereço de Ana Ribeiro' }));
+  const detail = within(screen.getByRole('dialog', { name: 'Ana Ribeiro' }));
+  fireEvent.click(detail.getByRole('button', { name: 'Alterar data e horário' }));
+  fireEvent.change(detail.getByLabelText(/Nova data e horário/), { target: { value: '2026-11-25T10:00' } });
+  fireEvent.click(detail.getByRole('button', { name: 'Salvar nova data' }));
+  expect(await detail.findByRole('alert')).toBeTruthy();
+  fireEvent.click(detail.getByRole('button', { name: 'Salvar nova data' }));
+  await waitFor(() => expect(api.patch).toHaveBeenLastCalledWith('/schedules/2/date', { schedule_date: '2026-11-25T10:00' }));
+  expect(await screen.findByRole('heading', { name: 'Quarta-feira, 25 de novembro' })).toBeTruthy();
 });
 
 it('pede confirmação antes de excluir um agendamento', async () => {

@@ -61,6 +61,7 @@ const NAV_GROUPS = [
       { to: '/cliente', label: 'Área do cliente', kicker: 'Vitrine pública' },
       { to: '/clients', label: 'Clientes', kicker: 'Relacionamento' },
       { to: '/budgets', label: 'Orçamentos', kicker: 'Comercial' },
+      { to: '/products', label: 'Produtos', kicker: 'Catálogo de preços' },
       { to: '/agenda', label: 'Agenda', kicker: 'Execução' },
     ],
   },

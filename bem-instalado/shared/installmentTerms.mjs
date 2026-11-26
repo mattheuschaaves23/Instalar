@@ -30,6 +30,7 @@ export function installmentConditionsLabel(terms) {
   if (!terms.enabled) return '';
   const free = `Sem juros até ${terms.interestFreeCount}x.`;
   if (terms.interestFreeCount === terms.count) return free;
+  if (!terms.interestRate) return `${free} Após esse limite, eventuais juros são calculados pela operadora.`;
   const rate = terms.interestRate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return `${free} Após: taxa informada de ${rate}% a.m. Juros calculados pela operadora, não incluídos no valor base.`;
 }

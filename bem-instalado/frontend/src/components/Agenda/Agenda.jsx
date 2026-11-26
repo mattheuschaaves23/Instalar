@@ -124,9 +124,17 @@ async function copyAddress(address) {
   }
 }
 
-function AppointmentDetails({ item, onClose, onUpdate, onDelete }) {
+const saoPauloInput = new Intl.DateTimeFormat('sv-SE', {
+  year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo',
+});
+
+function AppointmentDetails({ item, onClose, onUpdate, onDelete, onReschedule }) {
   const dialog = useRef(null);
   const titleId = useId();
+  const [editing, setEditing] = useState(false);
+  const [newDate, setNewDate] = useState(() => saoPauloInput.format(item.parsedDate).replace(' ', 'T'));
+  const [dateError, setDateError] = useState('');
+  const [changingDate, setChangingDate] = useState(false);
   const address = addressLabel(item.destination);
   const { google_maps: googleMaps, waze } = item.route_links || {};
 
@@ -163,15 +171,37 @@ function AppointmentDetails({ item, onClose, onUpdate, onDelete }) {
           {address && <button type="button" onClick={() => copyAddress(address)}>Copiar endereço</button>}
         </div>
       )}
-      <footer className="agenda-board-dialog-actions" aria-label="Gerenciar agendamento">
+      {editing && (
+        <form className="agenda-board-dialog-actions" aria-label="Alterar data do compromisso" onSubmit={async (event) => {
+          event.preventDefault();
+          if (changingDate) return;
+          setChangingDate(true);
+          setDateError('');
+          try {
+            await onReschedule(item.id, newDate);
+            dialog.current?.close();
+          } catch (error) {
+            setDateError(error.response?.data?.error || 'Não foi possível alterar a data.');
+          } finally {
+            setChangingDate(false);
+          }
+        }}>
+          <label>Nova data e horário (Brasília)<input type="datetime-local" required value={newDate} onChange={(event) => setNewDate(event.target.value)} /></label>
+          <button type="submit" disabled={changingDate}>{changingDate ? 'Salvando…' : 'Salvar nova data'}</button>
+          <button type="button" disabled={changingDate} onClick={() => setEditing(false)}>Voltar</button>
+          {dateError && <p role="alert">{dateError}</p>}
+        </form>
+      )}
+      {!editing && <footer className="agenda-board-dialog-actions" aria-label="Gerenciar agendamento">
         {item.source === 'marketplace' ? <Link to="/opportunities">Abrir pedido</Link> : (
           <>
+            {item.status === 'scheduled' && <button type="button" onClick={() => setEditing(true)}>Alterar data e horário</button>}
             {item.status !== 'completed' && <button type="button" onClick={() => runAction(() => onUpdate(item.id, 'completed'))}>Concluir</button>}
             {item.status !== 'canceled' && <button type="button" onClick={() => runAction(() => onUpdate(item.id, 'canceled'))}>Cancelar</button>}
             <button className="agenda-board-danger" type="button" onClick={() => runAction(() => onDelete(item.id))}>Excluir</button>
           </>
         )}
-      </footer>
+      </footer>}
     </dialog>
   );
 }
@@ -211,6 +241,18 @@ export default function Agenda() {
     setLoading(true);
     setLoadError('');
     setReload((current) => current + 1);
+  }
+
+  async function reschedule(id, scheduleDate) {
+    const { data } = await api.patch(`/schedules/${id}/date`, { schedule_date: scheduleDate });
+    const day = parseDate(data.date);
+    setItems((current) => current.map((item) => item.id === id ? { ...item, date: data.date } : item));
+    if (day) {
+      setViewDate(startOfMonth(day));
+      setSelectedDate(day);
+    }
+    toast.success('Nova data salva.');
+    notifyPanelBadgeCountsChanged();
   }
 
   async function changeSchedule(id, status) {
@@ -366,7 +408,7 @@ export default function Agenda() {
         </section>
       </div>
       {openItem && (
-        <AppointmentDetails item={openItem} onClose={() => setOpenItem(null)} onUpdate={changeSchedule} onDelete={(id) => changeSchedule(id, 'delete')} />
+        <AppointmentDetails item={openItem} onClose={() => setOpenItem(null)} onUpdate={changeSchedule} onDelete={(id) => changeSchedule(id, 'delete')} onReschedule={reschedule} />
       )}
     </section>
   );

@@ -20,6 +20,7 @@ function PageOutlet() {
 const PANEL_ROUTE_PREFIXES = [
   '/agenda',
   '/budgets',
+  '/products',
   '/clients',
   '/dashboard',
   '/download-app',
@@ -50,7 +51,7 @@ export default function Layout() {
     return <AdminWorkspace><EmailVerificationNotice /><PageOutlet /></AdminWorkspace>;
   }
 
-  if (/^\/budgets\/(?:new|[^/]+\/complete)\/?$/.test(location.pathname)) {
+  if (/^\/budgets\/(?:new|[^/]+\/(?:complete|edit))\/?$/.test(location.pathname)) {
     return (
       <>
         <EmailVerificationNotice />

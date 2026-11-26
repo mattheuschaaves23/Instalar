@@ -126,6 +126,8 @@ function BudgetActions({ budget, busy, onApprove, onReject, onDownload, onWhatsA
               {budget.installment_enabled ? <p>{installmentConditionsLabel(installmentInfo(budget))}</p> : null}
             </div>
           </details>
+          {budget.client_id ? <Link to={`/clients?editar=${budget.client_id}&origem=orcamentos`}>{budget.client_profile_complete === false ? 'Completar cadastro' : 'Editar cadastro'}</Link> : null}
+          {!budget.source_service_request_id && ['pending', 'rejected'].includes(budget.status) && <Link to={`/budgets/${budget.id}/edit`}>Editar orçamento</Link>}
           {budget.status !== 'approved' ? <button onClick={() => runAction(onDownload)} type="button">Baixar PDF</button> : null}
           <button onClick={() => runAction(onWhatsApp)} type="button">Enviar no WhatsApp</button>
           {budget.status === 'pending' ? <button disabled={busy} onClick={() => runAction(onReject)} type="button">Rejeitar</button> : null}
@@ -382,7 +384,10 @@ export default function Budgets() {
               {paginatedBudgets.map((budget) => (
                 <tr data-status={budget.status} key={budget.id} role="row">
                   <td className="budget-list-id" role="cell">#{budget.id}</td>
-                  <td className="budget-list-client" role="cell">{budget.client_name || 'Cliente não informado'}</td>
+                  <td className="budget-list-client" role="cell">
+                    {budget.client_name || 'Cliente não informado'}
+                    {budget.client_profile_complete === false && <span className="budget-client-incomplete">Cadastro incompleto</span>}
+                  </td>
                   <td className="budget-list-date" role="cell"><span className="budget-list-mobile-id">#{budget.id} <span aria-hidden="true">·</span> </span>{formatBudgetDate(budget.created_at)}</td>
                   <td className="budget-list-state" role="cell"><span className="budget-list-status" data-status={budget.status}>{formatStatusLabel(budget.status)}</span></td>
                   <td className="budget-list-value" role="cell">{budget.status === 'draft' || budget.total_amount == null ? '—' : formatCurrency(budget.total_amount)}</td>

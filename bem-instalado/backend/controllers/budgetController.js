@@ -4,6 +4,7 @@ const generateBudgetPDF = require('../utils/generatePDF');
 const generateWhatsAppLink = require('../utils/whatsapp');
 const { normalizeBrazilianWhatsApp } = require('../utils/installerEligibility');
 const { parseLocalDateTime } = require('../utils/appTimeZone');
+const productLimits = require('../../shared/quoteProducts.json');
 const {
   getInstallerPlanAccess,
   isLimitReached,
@@ -253,7 +254,26 @@ exports.getBudgetDraft = async (req, res) => {
   }
 };
 
-exports.createBudget = async (req, res) => {
+function money(value) {
+  return typeof value === 'number' && value > 0 && value <= MAX_BUDGET_AMOUNT && Math.round(value * 100) / 100 === value;
+}
+
+function requestedProducts(value) {
+  if (!Array.isArray(value) || !value.length || value.length > productLimits.maximumItems) return null;
+  const items = [];
+  const ids = new Set();
+  for (const item of value) {
+    const id = item?.product_id;
+    const quantity = item?.quantity;
+    if (!Number.isInteger(id) || id < 1 || id > 2147483647 || ids.has(id) ||
+        !Number.isInteger(quantity) || quantity < 1 || quantity > productLimits.maximumQuantity) return null;
+    ids.add(id);
+    items.push({ product_id: id, quantity });
+  }
+  return items;
+}
+
+async function writeBudget(req, res, editing = false) {
   let db;
   let transactionStarted = false;
 
@@ -278,15 +298,26 @@ exports.createBudget = async (req, res) => {
       removal_rolls,
     } = req.body;
     let cleanClientId = Number(client_id);
-    const draftId = req.params?.id === undefined ? null : Number(req.params.id);
+    const draftId = editing || req.params?.id === undefined ? null : Number(req.params.id);
+    const editId = editing ? Number(req.params.id) : null;
     const cleanPricingMode = normalizePricingMode(pricing_mode);
     const fixed = cleanPricingMode === 'fixed';
-    const fixedCents = typeof fixed_price === 'number' ? Math.round(fixed_price * 100) : NaN;
-    if (fixed && (!Number.isSafeInteger(fixedCents) || fixedCents < 1 || fixed_price > MAX_BUDGET_AMOUNT || fixedCents / 100 !== fixed_price)) {
+    const productMode = req.body.product_items !== undefined;
+    const productSelections = productMode ? requestedProducts(req.body.product_items) : null;
+    const manualMode = !fixed && req.body.manual_price !== undefined;
+    const manualPrice = manualMode ? req.body.manual_price : null;
+    if (productMode && (!fixed || !productSelections)) {
+      return res.status(400).json({ error: 'Escolha produtos do seu catálogo e confira as quantidades.' });
+    }
+    if (manualMode && !money(manualPrice)) {
+      return res.status(400).json({ error: 'Informe o total do serviço, maior que zero e com até duas casas decimais.' });
+    }
+    if (fixed && !productMode && !money(fixed_price)) {
       return res.status(400).json({ error: 'Informe um valor fechado positivo, com até duas casas decimais, dentro do limite suportado.' });
     }
-    const environments = fixed ? [] : requestedEnvironments;
-    const cleanRollArea = fixed || roll_area === null || roll_area === undefined || String(roll_area).trim() === ''
+    const noMeasures = fixed || manualMode;
+    const environments = noMeasures ? [] : requestedEnvironments;
+    const cleanRollArea = noMeasures || roll_area === null || roll_area === undefined || String(roll_area).trim() === ''
       ? DEFAULT_ROLL_AREA
       : Number(roll_area);
     const cleanPricePerRoll = normalizeNumber(price_per_roll);
@@ -303,8 +334,8 @@ exports.createBudget = async (req, res) => {
     const interestFreeInstallments = installmentsEnabled ? requestedInterestFreeInstallments : 1;
     const installmentInterestRate = installmentsEnabled ? requestedInstallmentInterestRate : 0;
     const upfrontPaymentTerms = normalizeUpfrontPaymentTerms(upfront_payment_terms);
-    const usesRemovalPerRoll = !fixed && Object.prototype.hasOwnProperty.call(req.body || {}, 'removal_price_per_roll');
-    const hasManualRemovalRolls = !fixed && removal_rolls !== undefined && removal_rolls !== null;
+    const usesRemovalPerRoll = !noMeasures && Object.prototype.hasOwnProperty.call(req.body || {}, 'removal_price_per_roll');
+    const hasManualRemovalRolls = !noMeasures && removal_rolls !== undefined && removal_rolls !== null;
     const manualRemovalRolls = typeof removal_rolls === 'number' ? removal_rolls : NaN;
     if (hasManualRemovalRolls && (
       !usesRemovalPerRoll ||
@@ -318,7 +349,7 @@ exports.createBudget = async (req, res) => {
       : Number(removal_price_per_roll);
     const removalUnitCents = Math.round(rawRemovalPricePerRoll * 100);
     const removalPricePerRoll = hasManualRemovalRolls && rawRemovalPricePerRoll >= 0 ? removalUnitCents / 100 : rawRemovalPricePerRoll;
-    const legacyRemovalIncluded = !fixed && normalizeBoolean(removal_included);
+    const legacyRemovalIncluded = !noMeasures && normalizeBoolean(removal_included);
     const legacyRemovalPrice = removal_price === null || removal_price === undefined || String(removal_price).trim() === ''
       ? 0
       : Number(removal_price);
@@ -331,13 +362,29 @@ exports.createBudget = async (req, res) => {
       return res.status(400).json({ error: 'Cliente inválido.' });
     }
 
-    if (!fixed && (!Array.isArray(environments) || environments.length === 0)) {
+    if (editing && (!Number.isInteger(editId) || editId < 1 || editId > 2147483647)) {
+      return res.status(400).json({ error: 'Orçamento inválido.' });
+    }
+    if (!noMeasures && (!Array.isArray(environments) || environments.length === 0)) {
       return res.status(400).json({ error: 'Cliente e ambientes são obrigatórios.' });
     }
 
     await db.query('BEGIN');
     transactionStarted = true;
     await db.query('SELECT pg_advisory_xact_lock($1)', [req.userId]);
+
+    let original;
+    if (editing) {
+      const found = await db.query('SELECT * FROM budgets WHERE id = $1 AND user_id = $2 FOR UPDATE', [editId, req.userId]);
+      original = found.rows[0];
+      if (!original) return res.status(404).json({ error: 'Orçamento não encontrado.' });
+      if (!['pending', 'rejected'].includes(original.status) || original.source_service_request_id) {
+        return res.status(409).json({ error: 'Só é possível editar orçamentos manuais ainda não aprovados.' });
+      }
+      if (req.body.version && new Date(original.updated_at).toISOString() !== req.body.version) {
+        return res.status(409).json({ error: 'O orçamento mudou. Abra-o novamente para editar a versão mais recente.' });
+      }
+    }
 
     let draftRequest;
     if (draftId !== null) {
@@ -359,7 +406,7 @@ exports.createBudget = async (req, res) => {
     // Re-check usage under the same lock used by manual and automatic budgets.
     const planAccess = await getInstallerPlanAccess(req.userId, db);
 
-    if (isLimitReached(planAccess, 'monthly_budgets')) {
+    if (!editing && isLimitReached(planAccess, 'monthly_budgets')) {
       return upgradeRequired(res, {
         code: 'FREE_BUDGET_LIMIT',
         error: `O plano Grátis permite ${planAccess.limits.monthly_budgets} novos orçamentos por mês. Seus orçamentos atuais continuam disponíveis.`,
@@ -378,11 +425,11 @@ exports.createBudget = async (req, res) => {
       });
     }
 
-    if (cleanPricingMode === 'roll' && !isPositiveNumber(cleanPricePerRoll)) {
+    if (!noMeasures && cleanPricingMode === 'roll' && !isPositiveNumber(cleanPricePerRoll)) {
       return res.status(400).json({ error: 'Preço por rolo deve ser maior que zero.' });
     }
 
-    if (cleanPricingMode === 'square_meter' && !isPositiveNumber(cleanPricePerSquareMeter)) {
+    if (!noMeasures && cleanPricingMode === 'square_meter' && !isPositiveNumber(cleanPricePerSquareMeter)) {
       return res.status(400).json({ error: 'Preço por metro quadrado deve ser maior que zero.' });
     }
 
@@ -425,9 +472,28 @@ exports.createBudget = async (req, res) => {
       if (!clientCheck.rowCount) return res.status(404).json({ error: 'Cliente não encontrado.' });
     }
 
+    let productItems = null;
+    if (productMode) {
+      const previous = new Map((original?.product_items || []).map((item) => [item.product_id, item]));
+      const newIds = productSelections.map((item) => item.product_id).filter((id) => !previous.has(id));
+      const { rows } = newIds.length ? await db.query(
+        `SELECT id, name, price FROM installer_products WHERE user_id = $1 AND archived_at IS NULL AND id = ANY($2::int[])`,
+        [req.userId, newIds]
+      ) : { rows: [] };
+      const catalog = new Map(rows.map((row) => [row.id, { name: row.name, unit_price: Number(row.price) }]));
+      if (catalog.size !== newIds.length) {
+        return res.status(409).json({ error: 'Um produto não está mais disponível. Atualize a seleção.' });
+      }
+      productItems = productSelections.map((item) => {
+        const product = previous.get(item.product_id) || catalog.get(item.product_id);
+        return { ...item, name: product.name, unit_price: product.unit_price };
+      });
+    }
     let totalArea = 0;
     let totalRolls = 0;
-    let subtotal = fixed ? fixedCents / 100 : 0;
+    let subtotal = productMode
+      ? productItems.reduce((sum, item) => sum + Math.round(item.unit_price * 100) * item.quantity, 0) / 100
+      : fixed ? fixed_price : manualPrice || 0;
     let totalRemovalByEnvironment = 0;
     let totalRemovalRolls = 0;
 
@@ -550,6 +616,9 @@ exports.createBudget = async (req, res) => {
 
     const removalCost = totalRemovalByEnvironment;
     const totalAmount = subtotal + removalCost;
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0 || totalAmount > MAX_BUDGET_AMOUNT) {
+      return res.status(400).json({ error: 'O valor total do orçamento está fora do limite suportado.' });
+    }
 
     if (draftRequest) {
       cleanClientId = await attachDraftClient(db, req.userId, draftRequest, planAccess);
@@ -568,8 +637,8 @@ exports.createBudget = async (req, res) => {
       cleanClientId,
       cleanPricingMode,
       cleanRollArea,
-      cleanPricingMode === 'roll' ? cleanPricePerRoll : 0,
-      cleanPricingMode === 'square_meter' ? cleanPricePerSquareMeter : 0,
+      !noMeasures && cleanPricingMode === 'roll' ? cleanPricePerRoll : 0,
+      !noMeasures && cleanPricingMode === 'square_meter' ? cleanPricePerSquareMeter : 0,
       totalRolls,
       totalArea,
       subtotal,
@@ -585,17 +654,18 @@ exports.createBudget = async (req, res) => {
       JSON.stringify(upfrontPaymentTerms),
     ];
 
-    const budgetResult = draftRequest
+    const budgetResult = draftRequest || editing
       ? await db.query(
         `UPDATE budgets SET client_id = $2, status = 'pending', pricing_mode = $3, roll_area = $4,
            price_per_roll = $5, price_per_square_meter = $6, total_rolls = $7, total_area = $8,
            subtotal_rolls = $9, removal_cost = $10, removal_included = $11,
            removal_price_per_roll = $12, removal_rolls = $13, total_amount = $14,
            installment_enabled = $15, installments_count = $16, interest_free_installments = $17,
-           installment_interest_rate = $18, payment_terms = $19, created_at = NOW(), updated_at = NOW()
-         WHERE user_id = $1 AND id = $20 AND status = 'draft'
+           installment_interest_rate = $18, payment_terms = $19,
+           created_at = CASE WHEN status = 'draft' THEN NOW() ELSE created_at END, updated_at = NOW()
+         WHERE user_id = $1 AND id = $20 AND status = ANY($21::text[])
          RETURNING *`,
-        [...budgetValues, draftId]
+        [...budgetValues, draftId ?? editId, editing ? ['pending', 'rejected'] : ['draft']]
       )
       : await db.query(`
         INSERT INTO budgets (
@@ -626,7 +696,16 @@ exports.createBudget = async (req, res) => {
       budgetValues
     );
 
-    const budget = budgetResult.rows[0];
+    let budget = budgetResult.rows[0];
+    if (!budget) return res.status(409).json({ error: 'O orçamento mudou e não pode ser salvo agora.' });
+    if (editing || productMode || manualMode) {
+      const { rows } = await db.query(
+        'UPDATE budgets SET product_items = $2::jsonb, manual_price = $3 WHERE id = $1 RETURNING *',
+        [budget.id, productItems ? JSON.stringify(productItems) : null, manualPrice]
+      );
+      budget = rows[0];
+    }
+    if (editing) await db.query('DELETE FROM environments WHERE budget_id = $1', [budget.id]);
 
     for (const environment of computedEnvironments) {
       await db.query(
@@ -668,7 +747,7 @@ exports.createBudget = async (req, res) => {
 
     await db.query('COMMIT');
     transactionStarted = false;
-    return res.status(draftRequest ? 200 : 201).json(budget);
+    return res.status(draftRequest || editing ? 200 : 201).json(budget);
   } catch (error) {
     if (error?.message === 'VALIDATION_ENV_NAME') {
       return res.status(400).json({ error: 'Cada ambiente precisa ter um nome.' });
@@ -699,7 +778,10 @@ exports.createBudget = async (req, res) => {
     if (transactionStarted) await db.query('ROLLBACK').catch(() => null);
     db?.release();
   }
-};
+}
+
+exports.createBudget = (req, res) => writeBudget(req, res);
+exports.updateBudget = (req, res) => writeBudget(req, res, true);
 
 exports.getBudgets = async (req, res) => {
   try {
@@ -721,7 +803,13 @@ exports.getBudgets = async (req, res) => {
 
     const { rows } = await pool.query(
       `
-        SELECT b.*, COALESCE(c.name, sr.client_name) AS client_name, sr.status AS source_request_status
+        SELECT b.*, COALESCE(c.name, sr.client_name) AS client_name, sr.status AS source_request_status,
+          CASE WHEN c.id IS NULL THEN NULL ELSE (
+            COALESCE(NULLIF(BTRIM(c.phone), ''), NULLIF(BTRIM(c.whatsapp), ''), NULLIF(BTRIM(c.email), '')) IS NOT NULL
+            AND NULLIF(BTRIM(c.street), '') IS NOT NULL AND NULLIF(BTRIM(c.house_number), '') IS NOT NULL
+            AND NULLIF(BTRIM(c.neighborhood), '') IS NOT NULL AND NULLIF(BTRIM(c.city), '') IS NOT NULL
+            AND NULLIF(BTRIM(c.state), '') IS NOT NULL AND NULLIF(BTRIM(c.zip_code), '') IS NOT NULL
+          ) END AS client_profile_complete
         FROM budgets b
         LEFT JOIN clients c ON c.id = b.client_id AND c.user_id = b.user_id
         LEFT JOIN service_requests sr ON sr.id = b.source_service_request_id

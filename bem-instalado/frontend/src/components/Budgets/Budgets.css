@@ -296,7 +296,7 @@ html[data-site-theme='dark'] .budget-list :is(.budget-list-period select, .budge
 
 .budget-list-action-panel[data-open-up='true'] { top: auto; bottom: calc(100% + .25rem); }
 
-.budget-list-action-panel :is(button, summary) {
+.budget-list-action-panel :is(button, summary, a) {
   width: 100%;
   min-height: 2.5rem;
   padding: .5rem .6rem;
@@ -309,7 +309,9 @@ html[data-site-theme='dark'] .budget-list :is(.budget-list-period select, .budge
   cursor: pointer;
 }
 
-.budget-list-action-panel :is(button, summary):hover { background: var(--bl-hover); }
+.budget-list-action-panel :is(button, summary, a):hover { background: var(--bl-hover); }
+.budget-list-action-panel a { display: flex; align-items: center; text-decoration: none; }
+.budget-client-incomplete { display: block; color: currentColor; font-size: .75rem; font-weight: 650; margin-top: .18rem; }
 .budget-list-row-details > div { padding: .35rem .6rem; color: var(--bl-muted); font-size: .8rem; }
 .budget-list-row-details p + p { margin-top: .3rem; }
 .budget-list-footer { --text: var(--bl-muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: .45rem 1rem; color: var(--bl-muted); margin-block: 1rem; font-size: .92rem; }
