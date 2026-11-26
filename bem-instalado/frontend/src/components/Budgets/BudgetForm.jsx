@@ -9,11 +9,11 @@ import ClientForm from '../Clients/ClientForm';
 import BudgetClientChoice from './BudgetClientChoice';
 import { notifyPanelBadgeCountsChanged } from '../Layout/panelBadgeCounts';
 import { installmentInfo, installmentConditionsLabel } from '../../../../shared/installmentTerms.mjs';
+import productLimits from '../../../../shared/quoteProducts.json';
 import './BudgetWizard.css';
 
 const INSTALLMENT_OPTIONS = Array.from({ length: 11 }, (_, index) => index + 2);
 const INTEREST_FREE_INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1);
-const INSTALLMENT_INTEREST_OPTIONS = [0, 1, 1.5, 2, 2.5, 3, 4, 5];
 const MAX_REMOVAL_ROLLS = 1000;
 const REMOVAL_ROLLS_ERROR = 'Informe de 1 a 1000 rolos inteiros para a remoção.';
 const MEASURE = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -37,11 +37,15 @@ const UPFRONT_PAYMENT_METHODS = [
   { id: 'debit_card', label: 'Cartão de débito' },
   { id: 'cash', label: 'Dinheiro' },
   { id: 'bank_transfer', label: 'Transferência' },
+  { id: 'credit_card', label: 'Cartão de crédito à vista' },
 ];
 
-function createUpfrontPaymentTerms() {
+function createUpfrontPaymentTerms(terms = []) {
   return Object.fromEntries(
-    UPFRONT_PAYMENT_METHODS.map((method) => [method.id, { enabled: false, discount: 0 }])
+    UPFRONT_PAYMENT_METHODS.map((method) => {
+      const saved = terms.find((term) => term.method === method.id);
+      return [method.id, { enabled: Boolean(saved), discount: Number(saved?.discount_percent || 0) }];
+    })
   );
 }
 
@@ -122,8 +126,30 @@ function requestAddressLabel(draft) {
 }
 
 export default function BudgetForm() {
-  const { draftId } = useParams();
+  const { draftId, budgetId } = useParams();
+  if (budgetId) return <ExistingBudgetLoader key={budgetId} budgetId={budgetId} />;
   return draftId ? <BudgetDraftLoader key={draftId} draftId={draftId} /> : <BudgetEditor />;
+}
+
+function ExistingBudgetLoader({ budgetId }) {
+  const [load, setLoad] = useState({ budget: null, error: '' });
+  useEffect(() => {
+    const request = new AbortController();
+    api.get(`/budgets/${budgetId}`, { signal: request.signal }).then(({ data }) => {
+      if (request.signal.aborted) return;
+      if (!['pending', 'rejected'].includes(data?.status) || data.source_service_request_id) {
+        setLoad({ budget: null, error: 'Só é possível editar orçamentos manuais ainda não aprovados.' });
+      } else setLoad({ budget: data, error: '' });
+    }).catch((error) => {
+      if (!request.signal.aborted) setLoad({ budget: null, error: error.response?.data?.error || 'Não foi possível abrir o orçamento.' });
+    });
+    return () => request.abort();
+  }, [budgetId]);
+  if (load.budget) return <BudgetEditor original={load.budget} />;
+  return <section className="lux-panel p-6">
+    {load.error ? <p role="alert">{load.error}</p> : <p role="status">Carregando orçamento…</p>}
+    <Link className="ghost-button mt-4" to="/budgets">Voltar aos orçamentos</Link>
+  </section>;
 }
 
 function BudgetDraftLoader({ draftId }) {
@@ -171,13 +197,13 @@ function DraftRequestDetails({ draft }) {
   );
 }
 
-function BudgetEditor({ draft = null, draftId = null }) {
+function BudgetEditor({ draft = null, draftId = null, original = null }) {
   const navigate = useNavigate();
   const { isPro, refreshSubscription } = useSubscription();
   const [clients, setClients] = useState([]);
   const [clientStatus, setClientStatus] = useState('loading');
   const [clientQuery, setClientQuery] = useState('');
-  const [clientId, setClientId] = useState('');
+  const [clientId, setClientId] = useState(() => String(original?.client_id || ''));
   const [clientFormMode, setClientFormMode] = useState(null);
   const newClientTrigger = useRef(null);
   const closeClientForm = () => {
@@ -185,6 +211,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
     newClientTrigger.current?.focus({ preventScroll: true });
   };
   const [activeStep, setActiveStep] = useState(1);
+  const [choosePricing, setChoosePricing] = useState(false);
   const formRef = useRef(null);
   const headingRef = useRef(null);
   const paymentHeading = useRef(null);
@@ -200,22 +227,51 @@ function BudgetEditor({ draft = null, draftId = null }) {
     nextFocus.current = null;
     target?.focus();
     target?.scrollIntoView?.({ block: 'nearest' });
-  }, [activeStep]);
+  }, [activeStep, choosePricing]);
   const [saving, setSaving] = useState(false);
-  const [pricingMode, setPricingMode] = useState('roll');
-  const [fixedPrice, setFixedPrice] = useState('');
+  const [pricingMode, setPricingMode] = useState(() => original?.product_items?.length ? 'products' : original?.pricing_mode || 'roll');
+  const [fixedPrice, setFixedPrice] = useState(() => original?.manual_price ?? (original?.pricing_mode === 'fixed' ? original.total_amount : ''));
   const fixed = pricingMode === 'fixed';
-  const [rollArea, setRollArea] = useState(4.5);
-  const [pricePerRoll, setPricePerRoll] = useState(0);
-  const [pricePerSquareMeter, setPricePerSquareMeter] = useState(draft ? '' : 10);
-  const [removalPricePerRoll, setRemovalPricePerRoll] = useState(0);
-  const [removalRollsInput, setRemovalRollsInput] = useState('');
-  const [installmentEnabled, setInstallmentEnabled] = useState(false);
-  const [installmentsCount, setInstallmentsCount] = useState(3);
-  const [interestFreeInstallments, setInterestFreeInstallments] = useState(3);
-  const [installmentInterestRate, setInstallmentInterestRate] = useState(0);
-  const [upfrontPaymentTerms, setUpfrontPaymentTerms] = useState(createUpfrontPaymentTerms);
-  const [environments, setEnvironments] = useState(() => requestEnvironments(draft));
+  const productMode = pricingMode === 'products';
+  const [withoutMeasurements, setWithoutMeasurements] = useState(() => Number(original?.manual_price) > 0);
+  const noMeasures = fixed || productMode || withoutMeasurements;
+  const [rollArea, setRollArea] = useState(original?.roll_area || 4.5);
+  const [pricePerRoll, setPricePerRoll] = useState(original?.price_per_roll || 0);
+  const [pricePerSquareMeter, setPricePerSquareMeter] = useState(original?.price_per_square_meter || (draft ? '' : 10));
+  const [removalPricePerRoll, setRemovalPricePerRoll] = useState(original?.removal_price_per_roll || 0);
+  const [removalRollsInput, setRemovalRollsInput] = useState(Number(original?.removal_rolls) || '');
+  const [installmentEnabled, setInstallmentEnabled] = useState(Boolean(original?.installment_enabled));
+  const [installmentsCount, setInstallmentsCount] = useState(Math.max(2, Number(original?.installments_count || 3)));
+  const [interestFreeInstallments, setInterestFreeInstallments] = useState(Number(original?.interest_free_installments || 3));
+  const installmentInterestRate = original?.installment_enabled && Number(original.installments_count) === installmentsCount
+    && Number(original.interest_free_installments) === interestFreeInstallments ? Number(original.installment_interest_rate || 0) : 0;
+  const [upfrontPaymentTerms, setUpfrontPaymentTerms] = useState(() => createUpfrontPaymentTerms(original?.payment_terms ?? []));
+  const [environments, setEnvironments] = useState(() => original?.environments?.length
+    ? original.environments.map((item) => ({ ...item, rolls_manual: item.rolls_manual ?? '' })) : requestEnvironments(draft));
+  const [catalog, setCatalog] = useState(null);
+  const [catalogError, setCatalogError] = useState('');
+  const [catalogRetry, setCatalogRetry] = useState(0);
+  const [productItems, setProductItems] = useState(() => original?.product_items || []);
+  const [productId, setProductId] = useState('');
+
+  useEffect(() => {
+    if (!productMode) return;
+    const controller = new AbortController();
+    api.get(productLimits.catalogPath, { signal: controller.signal }).then(({ data }) => {
+      if (!controller.signal.aborted) setCatalog(Array.isArray(data) ? data : []);
+    }).catch((error) => {
+      if (!controller.signal.aborted) setCatalogError(error.response?.data?.error || 'Não foi possível abrir o catálogo.');
+    });
+    return () => controller.abort();
+  }, [catalogRetry, productMode]);
+
+  function addProduct() {
+    const item = catalog?.find((entry) => String(entry.id) === productId);
+    if (!item || productItems.length >= productLimits.maximumItems) return;
+    setProductItems((current) => current.some((entry) => entry.product_id === item.id) ? current
+      : [...current, { product_id: item.id, name: item.name, unit_price: Number(item.price), quantity: 1 }]);
+    setProductId('');
+  }
 
   useEffect(() => {
     if (draft) return;
@@ -231,7 +287,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
       })
       .catch(() => { if (!cancelled) setClientStatus('error'); });
 
-    api.get('/users/profile')
+    if (!original) api.get('/users/profile')
       .then((response) => {
         const profileDefaultRollPrice = Number(response.data.default_price_per_roll || 0);
         const profileDefaultRemovalPrice = Number(response.data.default_removal_price || 0);
@@ -242,7 +298,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
       })
       .catch(() => null);
     return () => { cancelled = true; };
-  }, [draft]);
+  }, [draft, original]);
 
   const updateEnvironment = (index, field, value) => {
     setEnvironments((current) =>
@@ -271,7 +327,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
     setEnvironments((current) => current.filter((_, currentIndex) => currentIndex !== index));
   };
 
-  const removalIncluded = !fixed && environments.some((environment) => Boolean(environment.removal_included));
+  const removalIncluded = !noMeasures && environments.some((environment) => Boolean(environment.removal_included));
   const manualRemovalRolls = removalIncluded && removalRollsInput !== '' ? Number(removalRollsInput) : null;
   const invalidRemovalRolls = manualRemovalRolls !== null &&
     (!Number.isInteger(manualRemovalRolls) || manualRemovalRolls < 1 || manualRemovalRolls > MAX_REMOVAL_ROLLS);
@@ -306,8 +362,9 @@ function BudgetEditor({ draft = null, draftId = null }) {
   const totals = useMemo(
     () =>
       (() => {
-        if (fixed) {
-          const total = Number(fixedPrice) || 0;
+        if (noMeasures) {
+          const total = productMode ? productItems.reduce((sum, item) => sum + Math.round(item.unit_price * 100) * Number(item.quantity), 0) / 100
+            : Number(fixedPrice) || 0;
           return { area: 0, rolls: 0, removalRolls: 0, automaticRemovalRolls: 0, subtotal: total, removal: 0, total };
         }
         const baseTotals = environmentBreakdown.reduce(
@@ -335,7 +392,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
           total: baseTotals.subtotal + removal,
         };
       })(),
-    [environmentBreakdown, fixed, fixedPrice, invalidRemovalRolls, manualRemovalRolls, removalIncluded, removalPricePerRoll]
+    [environmentBreakdown, noMeasures, fixedPrice, productMode, productItems, invalidRemovalRolls, manualRemovalRolls, removalIncluded, removalPricePerRoll]
   );
 
   const grandTotal = totals.total;
@@ -396,7 +453,9 @@ function BudgetEditor({ draft = null, draftId = null }) {
   const hasClient = Boolean(draft || Number(clientId) > 0);
   const fixedPriceIsValid = Number.isFinite(grandTotal) && grandTotal > 0 && grandTotal <= 99_999_999.99 &&
     Math.round(grandTotal * 100) / 100 === grandTotal;
-  const canCalculate = fixed ? fixedPriceIsValid : totals.area > 0;
+  const validProducts = productItems.length > 0 && productItems.every((item) => Number.isInteger(Number(item.quantity))
+    && Number(item.quantity) >= 1 && Number(item.quantity) <= productLimits.maximumQuantity);
+  const canCalculate = noMeasures ? fixedPriceIsValid && (!productMode || validProducts) : totals.area > 0;
   const canSave = canCalculate && grandTotal > 0 && hasClient;
 
   const visibleClients = clients.filter((client) => matchesClient(client, clientQuery));
@@ -406,6 +465,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
       toast.error('Escolha o cliente antes de montar o orçamento.');
       return;
     }
+    setChoosePricing(true);
     goToStep(2);
   };
 
@@ -415,7 +475,8 @@ function BudgetEditor({ draft = null, draftId = null }) {
       return;
     }
     if (!canCalculate || grandTotal <= 0) {
-      toast.error(fixed ? 'Informe um valor positivo com até duas casas decimais.' : 'Preencha as medidas e os valores, ou escolha Valor fechado.');
+      toast.error(productMode ? 'Adicione produtos e confira as quantidades.'
+        : noMeasures ? 'Informe um valor positivo com até duas casas decimais.' : 'Preencha as medidas ou informe o total do serviço sem medidas.');
       return;
     }
     if (formRef.current && !formRef.current.reportValidity()) return;
@@ -443,6 +504,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
     ]);
     setClientId(String(client.id));
     setClientQuery('');
+    setChoosePricing(true);
     goToStep(2);
     refreshSubscription().catch(() => null);
   };
@@ -465,23 +527,23 @@ function BudgetEditor({ draft = null, draftId = null }) {
       return;
     }
 
-    if (fixed && !fixedPriceIsValid) {
+    if (noMeasures && !canCalculate) {
       toast.error('Informe um valor positivo com até duas casas decimais.');
       return;
     }
 
-    if (pricingMode === 'roll' && (!Number.isFinite(normalizedPricePerRoll) || normalizedPricePerRoll <= 0)) {
+    if (!noMeasures && pricingMode === 'roll' && (!Number.isFinite(normalizedPricePerRoll) || normalizedPricePerRoll <= 0)) {
       toast.error('Informe um preço por rolo maior que zero.');
       return;
     }
 
-    if (!fixed && (!Number.isFinite(normalizedRollArea) || normalizedRollArea <= 0 || normalizedRollArea > 1000)) {
+    if (!noMeasures && (!Number.isFinite(normalizedRollArea) || normalizedRollArea <= 0 || normalizedRollArea > 1000)) {
       toast.error('Informe um rendimento de rolo válido.');
       return;
     }
 
     if (
-      pricingMode === 'square_meter' &&
+      !noMeasures && pricingMode === 'square_meter' &&
       (!Number.isFinite(normalizedPricePerSquareMeter) || normalizedPricePerSquareMeter <= 0)
     ) {
       toast.error('Informe um preço por metro quadrado maior que zero.');
@@ -553,7 +615,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
       );
     });
 
-    if (!fixed && invalidEnvironment) {
+    if (!noMeasures && invalidEnvironment) {
       toast.error('Revise nome, medidas e rolos dos ambientes.');
       return;
     }
@@ -562,8 +624,9 @@ function BudgetEditor({ draft = null, draftId = null }) {
     try {
       const payload = {
         ...(draft ? {} : { client_id: normalizedClientId }),
-        pricing_mode: pricingMode,
-        ...(fixed ? { fixed_price: grandTotal } : {
+        pricing_mode: productMode ? 'fixed' : pricingMode,
+        ...(productMode ? { product_items: productItems.map(({ product_id, quantity }) => ({ product_id, quantity: Number(quantity) })) }
+          : fixed ? { fixed_price: grandTotal } : withoutMeasurements ? { manual_price: grandTotal } : {
           roll_area: normalizedRollArea,
           price_per_roll: normalizedPricePerRoll,
           price_per_square_meter: normalizedPricePerSquareMeter,
@@ -576,7 +639,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
         removal_included: removalIncluded,
         removal_price_per_roll: removalIncluded ? normalizedRemovalPricePerRoll : 0,
         ...(manualRemovalRolls !== null ? { removal_rolls: manualRemovalRolls } : {}),
-        environments: fixed ? [] : environments.map((environment) => ({
+        environments: noMeasures ? [] : environments.map((environment) => ({
           name: environment.name,
           height: Number(environment.height),
           width: Number(environment.width),
@@ -585,11 +648,12 @@ function BudgetEditor({ draft = null, draftId = null }) {
         })),
       };
       if (draft) await api.put(`/budgets/${draftId}/draft`, payload);
+      else if (original) await api.put(`/budgets/${original.id}`, { ...payload, version: original.updated_at });
       else await api.post('/budgets', payload);
 
       Promise.resolve(refreshSubscription()).catch(() => null);
       notifyPanelBadgeCountsChanged();
-      toast.success(draft ? 'Orçamento concluído. Nenhuma mensagem foi enviada.' : 'Orçamento criado.');
+      toast.success(draft ? 'Orçamento concluído. Nenhuma mensagem foi enviada.' : original ? 'Orçamento atualizado.' : 'Orçamento criado.');
       navigate('/budgets');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível salvar o orçamento.');
@@ -606,7 +670,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
   ].filter(Boolean).join(' ou ') || 'Não informado';
   const title = [
     draft ? 'Confira o cliente e o pedido' : 'Escolha o cliente',
-    'Calcule o orçamento',
+    choosePricing ? 'Como você quer montar o orçamento?' : 'Calcule o orçamento',
     'Revise o orçamento',
     'Confirme e salve',
   ][activeStep - 1];
@@ -637,8 +701,8 @@ function BudgetEditor({ draft = null, draftId = null }) {
       <section aria-labelledby="quote-financial-heading" className="quote-card quote-financial">
         <h2 id="quote-financial-heading">{name}</h2>
         <dl>
-          <div><dt>{live || fixed ? 'Instalação' : pricingMode === 'roll' ? `Instalação (${totals.rolls} ${totals.rolls === 1 ? 'rolo' : 'rolos'})` : `Instalação (${MEASURE.format(totals.area)} m²)`}</dt><dd>{formatCurrency(totals.subtotal)}</dd></div>
-          {!fixed && <div><dt>{live ? 'Remoção' : `Remoção (${totals.removalRolls} ${totals.removalRolls === 1 ? 'rolo' : 'rolos'})`}</dt><dd>{formatCurrency(totals.removal)}</dd></div>}
+          <div><dt>{productMode ? 'Produtos' : live || noMeasures ? 'Instalação' : pricingMode === 'roll' ? `Instalação (${totals.rolls} ${totals.rolls === 1 ? 'rolo' : 'rolos'})` : `Instalação (${MEASURE.format(totals.area)} m²)`}</dt><dd>{formatCurrency(totals.subtotal)}</dd></div>
+          {!noMeasures && <div><dt>{live ? 'Remoção' : `Remoção (${totals.removalRolls} ${totals.removalRolls === 1 ? 'rolo' : 'rolos'})`}</dt><dd>{formatCurrency(totals.removal)}</dd></div>}
         </dl>
         <div className="quote-total">
           <span>{live ? 'Total estimado' : 'Total do orçamento'}</span>
@@ -653,7 +717,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
       <form className="quote-wizard-form" onSubmit={handleSubmit} ref={formRef}>
         <header className="quote-topbar">
           <Link aria-label="InstalarPro: voltar aos orçamentos" className="quote-wordmark" to="/budgets">Instalar<span>Pro</span></Link>
-          <span className="quote-topbar-title">{draft ? 'Completar orçamento' : 'Novo orçamento'}</span>
+          <span className="quote-topbar-title">{draft ? 'Completar orçamento' : original ? `Editar orçamento #${original.id}` : 'Novo orçamento'}</span>
         </header>
 
         <main className="quote-workspace" data-step={activeStep}>
@@ -715,20 +779,71 @@ function BudgetEditor({ draft = null, draftId = null }) {
             </section>
           ))}
 
-          {activeStep === 2 && (
+          {activeStep === 2 && choosePricing && (
+            <section className="quote-card quote-client-picker quote-pricing-picker" aria-label="Tipo de cobrança">
+              {[
+                ['products', 'Produtos', 'Use produtos e preços do seu catálogo.'],
+                ['roll', 'Por rolo', 'Calcule por rolo ou informe só o total.'],
+                ['square_meter', 'Por m²', 'Calcule por metragem ou informe só o total.'],
+                ...(original?.pricing_mode === 'fixed' && !original.product_items?.length
+                  ? [['fixed', 'Manter valor original', 'Continue editando o orçamento antigo sem medidas.']] : []),
+              ].map(([mode, label, description]) => (
+                <button key={mode} className="quote-pricing-choice" type="button" onClick={() => {
+                  nextFocus.current = 'heading';
+                  setPricingMode(mode);
+                  setChoosePricing(false);
+                }}>
+                  <strong>{label}</strong><span>{description}</span>
+                </button>
+              ))}
+            </section>
+          )}
+
+          {activeStep === 2 && !choosePricing && (
             <>
               {draft && <div className="quote-card quote-draft"><DraftRequestDetails draft={draft} /></div>}
               <div className="quote-columns">
                 <div className="quote-card quote-sheet">
                   <section className="quote-group">
-                    <h2>Material e cobrança</h2>
+                    <div className="quote-group-head">
+                      <h2>{productMode ? 'Produtos' : pricingMode === 'roll' ? 'Por rolo' : pricingMode === 'square_meter' ? 'Por m²' : 'Valor original'}</h2>
+                      <button className="quote-action-link" type="button" onClick={() => {
+                        nextFocus.current = 'heading';
+                        setChoosePricing(true);
+                      }}>Trocar tipo</button>
+                    </div>
+                    {!productMode && !fixed && <label className="quote-check"><input type="checkbox" checked={withoutMeasurements}
+                      onChange={(event) => setWithoutMeasurements(event.target.checked)} />Informar total sem medidas</label>}
+                    {productMode ? <div className="quote-product-lines">
+                      {catalogError ? <><p role="alert">{catalogError}</p><button className="quote-action-link" type="button" onClick={() => {
+                        setCatalogError(''); setCatalogRetry((value) => value + 1);
+                      }}>Tentar novamente</button></> : catalog == null ? <p role="status">Carregando produtos…</p> : (
+                        <div className="quote-group-head">
+                          <label className="quote-field"><span>Produto do catálogo</span><select value={productId} onChange={(event) => setProductId(event.target.value)}>
+                            <option value="">Selecione um produto</option>
+                            {catalog.filter((item) => !productItems.some((line) => line.product_id === item.id)).map((item) => (
+                              <option value={item.id} key={item.id}>{item.name} · {formatCurrency(item.price)}</option>
+                            ))}
+                          </select></label>
+                          <button className="quote-button" type="button" onClick={addProduct} disabled={!productId || productItems.length >= productLimits.maximumItems}>Adicionar produto</button>
+                        </div>
+                      )}
+                      {catalog?.length === 0 && !productItems.length && <p className="quote-help">Seu catálogo está vazio. <Link className="quote-action-link" to="/products" target="_blank" rel="noopener noreferrer">Cadastrar produtos</Link></p>}
+                      {productItems.map((item) => (
+                        <div key={item.product_id} className="quote-product-line">
+                          <div><strong>{item.name}</strong><p>{formatCurrency(item.unit_price)} por unidade</p></div>
+                          <label className="quote-field"><span>Quantidade de {item.name}</span><input type="number" inputMode="numeric" min="1" max={productLimits.maximumQuantity} step="1" required value={item.quantity}
+                            onChange={(event) => {
+                              const quantity = event.target.value;
+                              setProductItems((items) => items.map((line) => line.product_id === item.product_id ? { ...line, quantity } : line));
+                            }} /></label>
+                          <button aria-label={`Remover ${item.name}`} className="quote-action-link" type="button"
+                            onClick={() => setProductItems((items) => items.filter((line) => line.product_id !== item.product_id))}>Remover</button>
+                        </div>
+                      ))}
+                    </div> : <>
                     <div className="quote-material" data-mode={pricingMode}>
-                      <div aria-label="Unidade de cobrança" className="quote-modes" role="radiogroup">
-                        <label className="quote-check"><input checked={fixed} name="pricing-mode" onChange={() => setPricingMode('fixed')} type="radio" />Valor fechado (sem medidas)</label>
-                        <label className="quote-check"><input checked={pricingMode === 'roll'} name="pricing-mode" onChange={() => setPricingMode('roll')} type="radio" />Por rolo</label>
-                        <label className="quote-check"><input checked={pricingMode === 'square_meter'} name="pricing-mode" onChange={() => setPricingMode('square_meter')} type="radio" />Por m²</label>
-                      </div>
-                      {fixed ? <label className="quote-field">
+                      {noMeasures ? <label className="quote-field">
                         <span>Valor do serviço</span>
                         <span className="quote-affix" data-side="before"><span aria-hidden="true">R$</span><input aria-label="Valor do serviço" aria-describedby="quote-fixed-help" inputMode="decimal" max="99999999.99" min="0.01" onChange={(event) => setFixedPrice(event.target.value)} placeholder="0,00" required step="0.01" type="number" value={fixedPrice} /></span>
                       </label> : <>
@@ -742,10 +857,11 @@ function BudgetEditor({ draft = null, draftId = null }) {
                       </label>
                       </>}
                     </div>
-                    {fixed && <p className="quote-help" id="quote-fixed-help">Informe o valor combinado por todo o serviço, incluindo a remoção se fizer parte do combinado.</p>}
+                    {noMeasures && <p className="quote-help" id="quote-fixed-help">Informe o total combinado com o cliente. As medidas não serão exigidas.</p>}
+                    </>}
                   </section>
 
-                  {!fixed && <section className="quote-group">
+                  {!noMeasures && <section className="quote-group">
                     <div className="quote-group-head">
                       <h2>Ambientes</h2>
                       <button className="quote-action-link" onClick={addEnvironment} type="button"><BudgetIcon type="add" />{isPro ? 'Adicionar ambiente' : 'Adicionar ambiente (Pro)'}</button>
@@ -802,7 +918,6 @@ function BudgetEditor({ draft = null, draftId = null }) {
                       {installmentEnabled && (
                         <div className="quote-removal-fields">
                           <label className="quote-field"><span>Sem juros até</span><select onChange={(event) => setInterestFreeInstallments(Number(event.target.value))} value={normalizedInterestFreeInstallments}>{INTEREST_FREE_INSTALLMENT_OPTIONS.filter((option) => option <= installmentsCount).map((option) => <option key={option} value={option}>{option}x</option>)}</select></label>
-                          {normalizedInterestFreeInstallments < normalizedInstallments && <label className="quote-field"><span>Juros após (% a.m.)</span><select onChange={(event) => setInstallmentInterestRate(Number(event.target.value))} value={installmentInterestRate}>{INSTALLMENT_INTEREST_OPTIONS.map((option) => <option key={option} value={option}>{MEASURE.format(option)}%</option>)}</select></label>}
                         </div>
                       )}
                       {installmentEnabled && <p className="quote-help">{installmentConditionsLabel(installmentPreview)}</p>}
@@ -827,8 +942,9 @@ function BudgetEditor({ draft = null, draftId = null }) {
                   </div>
                 </section>
                 <section className="quote-group">
-                  <div className="quote-group-head"><h2>{fixed ? 'Valor fechado' : 'Ambientes'}</h2><button className="quote-action-link" onClick={() => goToStep(2)} type="button">Editar cálculo</button></div>
-                  {fixed ? <p>Medidas não informadas.</p> : (
+                  <div className="quote-group-head"><h2>{productMode ? 'Produtos' : noMeasures ? 'Valor do serviço' : 'Ambientes'}</h2><button className="quote-action-link" onClick={() => goToStep(2)} type="button">Editar cálculo</button></div>
+                  {productMode ? <ul className="quote-product-review">{productItems.map((item) => <li key={item.product_id}>{item.quantity} × {item.name}: {formatCurrency(Number(item.quantity) * Number(item.unit_price))}</li>)}</ul>
+                    : noMeasures ? <p>Medidas não informadas.</p> : (
                   <div className="quote-review-rooms">
                     {environments.map((environment, index) => {
                       const details = environmentBreakdown[index];
@@ -877,7 +993,7 @@ function BudgetEditor({ draft = null, draftId = null }) {
               <button className="quote-action-link" onClick={() => goToStep(activeStep - 1)} type="button">{activeStep === 2 ? 'Voltar ao cliente' : 'Voltar ao cálculo'}</button>
             )}
             {activeStep === 1 && <button className="quote-button quote-button--primary" onClick={continueFromClient} type="button">Continuar para o cálculo</button>}
-            {activeStep === 2 && <button className="quote-button quote-button--primary" onClick={continueFromCalculation} type="button">Revisar orçamento</button>}
+            {activeStep === 2 && !choosePricing && <button className="quote-button quote-button--primary" onClick={continueFromCalculation} type="button">Revisar orçamento</button>}
             {activeStep === 3 && <button className="quote-button quote-button--primary" disabled={!canSave} onClick={() => goToStep(4)} type="button">Continuar para salvar</button>}
           </footer>
         )}

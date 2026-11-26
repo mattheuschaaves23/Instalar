@@ -13,6 +13,7 @@ router.use(requireVerifiedEmail);
 router.use(hasSubscription);
 
 router.get('/', controller.getSchedules);
+router.patch('/:id/date', controller.reschedule);
 router.put('/:id/status', controller.updateScheduleStatus);
 router.delete('/:id', controller.deleteSchedule);
 

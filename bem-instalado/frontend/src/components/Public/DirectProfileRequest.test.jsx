@@ -226,6 +226,7 @@ it('abre o cálculo com os ambientes e medidas do pedido, sem definir o preço',
   </Routes></MemoryRouter>);
   expect((await screen.findAllByText(/Rua de teste, Nº 101/)).length).toBeGreaterThan(0);
   fireEvent.click(screen.getByRole('button', { name: 'Continuar para o cálculo' }));
+  fireEvent.click(screen.getByRole('button', { name: /^Por rolo/ }));
   expect(screen.getAllByLabelText('Ambiente', { exact: true }).map(({ value }) => value)).toEqual(['Sala', 'Quarto']);
   expect(screen.getAllByLabelText('Largura (m)', { exact: true }).map(({ value }) => value)).toEqual(['3.5', '']);
   expect(screen.getAllByLabelText('Altura (m)', { exact: true }).map(({ value }) => value)).toEqual(['2.4', '']);

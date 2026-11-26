@@ -1,0 +1,7 @@
+{
+  "catalogPath": "/products",
+  "maximumNameLength": 120,
+  "maximumPrice": 99999999.99,
+  "maximumQuantity": 1000,
+  "maximumItems": 30
+}

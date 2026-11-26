@@ -22,6 +22,7 @@ const INSTALLER_APP_PATHS = [
   '/opportunities',
   '/clients',
   '/budgets',
+  '/products',
   '/agenda',
   '/reviews',
   '/notifications',
@@ -44,6 +45,7 @@ const Register = lazy(routeModules.Register);
 const AdminDashboard = lazy(routeModules.AdminDashboard);
 const Agenda = lazy(routeModules.Agenda);
 const Budgets = lazy(routeModules.Budgets);
+const Products = lazy(routeModules.Products);
 const BudgetForm = lazy(routeModules.BudgetForm);
 const Clients = lazy(routeModules.Clients);
 const Dashboard = lazy(routeModules.Dashboard);
@@ -144,7 +146,9 @@ export default function App() {
               <Route element={<Clients />} path="/clients" />
               <Route element={<Clients />} path="/clients/new" />
               <Route element={<Budgets />} path="/budgets" />
+              <Route element={<Products />} path="/products" />
               <Route element={<BudgetForm />} path="/budgets/new" />
+              <Route element={<BudgetForm />} path="/budgets/:budgetId/edit" />
               <Route element={<BudgetForm />} path="/budgets/:draftId/complete" />
               <Route element={<Agenda />} path="/agenda" />
               <Route element={<ReviewsDashboard />} path="/reviews" />

@@ -23,6 +23,7 @@ const imports = {
   AdminDashboard: () => import('../components/Admin/AdminDashboard'),
   Agenda: () => import('../components/Agenda/Agenda'),
   Budgets: () => import('../components/Budgets/Budgets'),
+  Products: () => import('../components/Products/Products'),
   BudgetForm: () => import('../components/Budgets/BudgetForm'),
   Clients: () => import('../components/Clients/Clients'),
   Dashboard: () => import('../components/Dashboard/Dashboard'),
@@ -59,6 +60,7 @@ const panelRoutes = {
   '/dashboard': 'Dashboard', '/opportunities': 'Opportunities', '/agenda': 'Agenda',
   '/budgets': 'Budgets', '/budgets/new': 'BudgetForm', '/clients': 'Clients',
   '/clients/new': 'Clients', '/reviews': 'ReviewsDashboard', '/profile': 'Profile',
+  '/products': 'Products',
   '/pdf-profissional': 'PdfBranding', '/settings': 'Settings', '/subscription': 'Subscription',
   '/notifications': 'Notifications', '/support': 'SupportChat', '/download-app': 'AppDownload',
   '/admin': 'AdminDashboard',
@@ -67,7 +69,7 @@ const panelRoutes = {
 export function getRouteModules(path) {
   const pathname = String(path || '').split(/[?#]/)[0].replace(/\/$/, '') || '/';
   if (panelRoutes[pathname]) return ['Layout', panelRoutes[pathname]];
-  if (/^\/budgets\/[1-9]\d*\/complete$/.test(pathname)) return ['Layout', 'BudgetForm'];
+  if (/^\/budgets\/[1-9]\d*\/(complete|edit)$/.test(pathname)) return ['Layout', 'BudgetForm'];
   if (publicRoutes[pathname]) return [publicRoutes[pathname]];
   if (/^\/installers\/[^/]+$/.test(pathname)) return ['InstallerProfile'];
   return [];

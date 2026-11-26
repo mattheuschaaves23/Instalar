@@ -1,0 +1,16 @@
+.product-board { display: grid; gap: 1rem; }
+.product-board-header,
+.product-rows li,
+.product-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
+.product-board-header,
+.product-rows li { justify-content: space-between; }
+.product-editor,
+.product-list { padding: 1rem; }
+.product-editor { display: grid; gap: .8rem; }
+.product-editor h2,
+.product-list h2 { margin: 0 0 .35rem; font-weight: 700; }
+.product-rows { list-style: none; margin: 0; padding: 0; }
+.product-rows li { border-top: 1px solid var(--quote-line, #b7cbe0); padding: .6rem 0; }
+.product-rows li div:first-child { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.product-rows li span { font-variant-numeric: tabular-nums; }
+.product-board :focus-visible { outline-offset: 2px; }

@@ -86,6 +86,23 @@
 .quote-wizard .quote-plan-usage { margin: 0 0 1rem; border-radius: 0.65rem; }
 .quote-client-picker, .quote-draft { padding: clamp(0.85rem, 1.65vw, 1.75rem); }
 .quote-draft { margin-bottom: 1rem; }
+.quote-pricing-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: .75rem; }
+.quote-pricing-choice {
+  min-height: 5.5rem; padding: .85rem 1rem; text-align: start; border: 1px solid var(--quote-control);
+  border-radius: .55rem; color: var(--quote-ink); background: var(--quote-surface); display: grid; align-content: center; gap: .25rem;
+}
+.quote-pricing-choice:hover { border-color: var(--quote-blue); background: var(--quote-faint); }
+.quote-pricing-choice strong { color: var(--quote-link); font-size: 1.05rem; }
+.quote-pricing-choice span, .quote-product-line p { color: var(--quote-muted); font-size: .88rem; }
+.quote-product-lines, .quote-product-review { display: grid; gap: .55rem; }
+.quote-product-line {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(5rem, 9rem) auto; align-items: end;
+  gap: .5rem; border-top: 1px solid var(--quote-border); padding-block: .55rem; overflow-wrap: anywhere;
+}
+@media (max-width: 520px) {
+  .quote-product-line { grid-template-columns: minmax(0, 1fr) auto; }
+  .quote-product-line > div { grid-column: 1 / -1; }
+}
 .quote-draft h2 + p { margin-top: 0.45rem; }
 .quote-draft-details { display: grid; gap: 0.4rem; overflow-wrap: anywhere; }
 .quote-draft > :is(h2, p) + .quote-draft-details { margin-top: 0.8rem; }

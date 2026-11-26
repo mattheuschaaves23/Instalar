@@ -1,0 +1,16 @@
+# Operação: catálogo, orçamento e agenda
+
+- `GET /api/products` lista os produtos ativos da conta. `POST /api/products` e `PUT /api/products/:id` aceitam nome e preço unitário; `DELETE /api/products/:id` arquiva. Uma conta nunca lê nem altera os produtos de outra.
+- Em orçamento com produtos, o formulário envia apenas IDs e quantidades. A API copia nomes e valores unitários para o orçamento. Um produto depois arquivado ou com preço alterado não muda um orçamento antigo. No PDF, os produtos aparecem como itens, não como cômodos. O banco preserva o modo antigo `fixed` para leitura por clientes existentes, e distingue os produtos pela presença de `product_items`.
+- Para Por rolo e Por m² sem medidas, o total combinado é obrigatório e salvo em `manual_price`; a modalidade escolhida permanece. A ausência de medidas não transforma o valor em zero.
+- A edição manual mantém o ID e a data de criação do orçamento. Ela não altera propostas já aprovadas nem pedidos da plataforma. Para liberar a edição desses casos, seria necessário versionar a proposta já aceita e definir como o cliente confirma alterações.
+- `PATCH /api/schedules/:id/date` muda a data/hora de agendamentos manuais ativos, respeita o horário de Brasília e atualiza o orçamento vinculado na mesma transação. Compromissos da plataforma não são movidos unilateralmente.
+- A migração `028_installer_products.sql` é aditiva; não apaga nem reescreve orçamentos. Se for preciso recuar o aplicativo, reverter o código primeiro e deixar a tabela e colunas no banco para preservar os dados.
+
+## Assinatura: decisão comercial e etapa separada
+
+- Manter o mensal atual. Preço anual em centavos: arredondar `preço mensal × 12 × 90%`. Exemplo: R$ 49,90/mês → R$ 538,92/ano.
+- Para novos instaladores: oferecer mensal ou anual, autorização antes do início do teste e primeira cobrança após sete dias. Mostrar periodicidade, valor integral, data do primeiro débito e forma de cancelar antes de autorizar. Não usar redirecionamento como prova de contratação ou pagamento.
+- CPF com dígitos válidos não comprova titularidade. Definir com o provedor uma verificação real de titularidade antes da concessão do teste. Depois de comprovada a identidade, registrar um identificador único derivado com HMAC e chave privada, separado do cadastro. Evitar documentar ou registrar o CPF em logs e aplicar controles de abuso no servidor.
+- Antes de remover o plano Grátis para novas contas, definir a situação das contas já cadastradas. Não cancelar assinaturas atuais, cobrar usuários existentes ou reaproveitar silenciosamente o ID de cliente de uma conta Asaas em outra. IDs de clientes, assinaturas e webhooks precisam continuar associados à conta emissora durante a transição.
+- Testar na conta Sandbox: autorização sem débito imediato, início e fim do teste, cancelamento antes de cobrar, cobrança mensal e anual, eventos repetidos ou fora de ordem e recusa de uma segunda tentativa para a mesma identidade. Só depois configurar as credenciais da nova conta pelo painel seguro da Vercel, sem registrar segredos no Git ou no chat.

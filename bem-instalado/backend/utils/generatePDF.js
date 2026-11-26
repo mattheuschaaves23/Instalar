@@ -270,7 +270,9 @@ function render(doc, { budget, client, environments, user, branding, logo, photo
   y += partyHeight + 17 + pad;
 
   const detail = branding.show_measurements;
-  const fixedPrice = budget.pricing_mode === 'fixed';
+  const productItems = Array.isArray(budget.product_items) ? budget.product_items : [];
+  const manualPrice = number(budget.manual_price) > 0;
+  const fixedPrice = budget.pricing_mode === 'fixed' || manualPrice;
   const prices = branding.show_environment_prices;
   const cols = [...(technical ? [['Nº', 34]] : []), ['Ambiente', 0],
     ...(detail ? [['Medidas', 102], ['Área', 68], ['Rolos', 46]] : []), ...(prices ? [['Valor', 108]] : [])];
@@ -299,8 +301,20 @@ function render(doc, { budget, client, environments, user, branding, logo, photo
     ? Math.max(compact ? 29 : 35, measure(name, cardNameWidth, 11, true) + 14 + (detail ? 13 : 0))
     : Math.max(compact ? 22 : 27, measure(name, nameWidth - 16, 10) + 10);
   room(43 + (environments.length ? rowSize(roomName(environments[0])) : 27));
-  if (fixedPrice) {
-    heading('Serviço a valor fechado');
+  if (productItems.length) {
+    heading('Produtos');
+    for (const item of productItems) {
+      const name = clean(item.name, 120);
+      const value = prices ? ` · ${money(number(item.unit_price) * number(item.quantity))}` : '';
+      const text = `${number(item.quantity)} × ${name}${value}`;
+      const height = measure(text, width - 16, 10) + 12;
+      if (room(height)) heading('Produtos (continuação)');
+      write(text, M + 8, y + 4, width - 16, { size: 10 });
+      y += height;
+      rule(y);
+    }
+  } else if (fixedPrice) {
+    heading(manualPrice ? 'Serviço sem medidas informadas' : 'Serviço a valor fechado');
     write('Instalação combinada sem detalhamento de medidas.', M + 8, y + 6, width - 16, { color: MUTED });
     y += 26;
     rule(y);
@@ -312,7 +326,7 @@ function render(doc, { budget, client, environments, user, branding, logo, photo
     y += 27;
     rule(y);
   }
-  environments.forEach((environment, index) => {
+  if (!fixedPrice) environments.forEach((environment, index) => {
     const rolls = number(environment.rolls_manual) > 0 ? number(environment.rolls_manual) : number(environment.rolls_auto);
     const name = roomName(environment);
     const dimensions = `${decimal(environment.width)} x ${decimal(environment.height)} m`;

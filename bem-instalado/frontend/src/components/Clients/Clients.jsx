@@ -141,7 +141,7 @@ function ClientDetails({ client, onClose, onEdit }) {
 
 export default function Clients() {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search: routeSearch } = useLocation();
   const { isPro, planAccess, refreshSubscription } = useSubscription();
   const confirm = useConfirm();
   const [response, setResponse] = useState({ clients: [], loading: true, error: '' });
@@ -155,6 +155,8 @@ export default function Clients() {
   const [viewingClient, setViewingClient] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const isCreateRoute = pathname === '/clients/new';
+  const routeQuery = new URLSearchParams(routeSearch);
+  const editFromRoute = routeQuery.get('editar');
 
   useEffect(() => {
     const request = new AbortController();
@@ -174,6 +176,8 @@ export default function Clients() {
   }
 
   const { clients, loading, error } = response;
+  const linkedClient = /^[1-9]\d{0,9}$/.test(editFromRoute || '')
+    ? clients.find((client) => String(client.id) === editFromRoute) : null;
   const { entries, cities, counts } = useMemo(() => {
     const citiesByKey = new Map();
     const entries = clients.map((client) => {
@@ -256,6 +260,7 @@ export default function Clients() {
   const closeClientForm = () => {
     setEditingClient(null);
     if (isCreateRoute) navigate('/clients', { replace: true });
+    else if (linkedClient) navigate(routeQuery.get('origem') === 'orcamentos' ? '/budgets' : '/clients', { replace: true });
   };
 
   const totalPages = Math.max(1, Math.ceil(results.length / CLIENTS_PER_PAGE));
@@ -371,8 +376,8 @@ export default function Clients() {
       </div>
 
       {viewingClient ? <ClientDetails client={viewingClient} onClose={() => setViewingClient(null)} onEdit={setEditingClient} /> : null}
-      {editingClient || isCreateRoute ? (
-        <ClientForm client={editingClient} onClose={closeClientForm} onSaved={handleClientSaved} />
+      {editingClient || linkedClient || isCreateRoute ? (
+        <ClientForm client={editingClient || linkedClient || null} onClose={closeClientForm} onSaved={handleClientSaved} />
       ) : null}
     </section>
   );
