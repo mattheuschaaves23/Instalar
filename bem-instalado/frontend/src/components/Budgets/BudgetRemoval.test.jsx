@@ -152,9 +152,7 @@ it('usa produtos do catálogo e envia apenas os identificadores e as quantidades
   fireEvent.click(await screen.findByRole('radio', { name: 'Cliente QA' }));
   click('Continuar para o cálculo');
   selectMode(/^Produtos/);
-  await screen.findByRole('option', { name: /Instalação premium/ });
-  change('Produto do catálogo', '4');
-  click('Adicionar produto');
+  fireEvent.click(await screen.findByRole('button', { name: 'Adicionar Instalação premium' }));
   change('Quantidade de Instalação premium', '2');
   click('Revisar orçamento');
   expect(screen.getByText(/2 × Instalação premium/)).toBeTruthy();
