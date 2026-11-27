@@ -88,6 +88,20 @@ test('orçamento de catálogo, edição e horário na agenda com PostgreSQL isol
     assert.equal(manual.statusCode, 201, JSON.stringify(manual.body));
     assert.equal(manual.body.pricing_mode, 'square_meter');
     assert.equal(manual.body.total_amount, '345.00');
+    const rollInput = { pricing_mode: 'roll', client_id: client.id, price_per_roll: 80, removal_price_per_roll: 10 };
+    const byRoll = await call(createBudget, installer, { ...rollInput, environments: [
+      { height: null, width: null, rolls_manual: 3, removal_included: true },
+    ] });
+    assert.equal(byRoll.statusCode, 201, JSON.stringify(byRoll.body));
+    assert.equal(byRoll.body.total_amount, '270.00');
+    assert.equal(Number(byRoll.body.total_rolls), 3);
+    assert.equal(Number(byRoll.body.total_area), 0);
+    const storedRoom = await pool.query('SELECT width, height, rolls_manual, rolls_auto FROM environments WHERE budget_id = $1', [byRoll.body.id]);
+    assert.deepEqual(storedRoom.rows[0], { width: '0.00', height: '0.00', rolls_manual: 3, rolls_auto: 0 });
+    for (const environment of [{}, { rolls_manual: 2.5 }, { width: 4, rolls_manual: 3 }]) {
+      const invalid = await call(createBudget, installer, { ...rollInput, environments: [{ name: 'Sala', ...environment }] });
+      assert.equal(invalid.statusCode, 400, JSON.stringify(invalid.body));
+    }
     const listed = await call(getBudgets, installer);
     assert.equal(listed.body.find((row) => row.id === id).client_profile_complete, false);
 

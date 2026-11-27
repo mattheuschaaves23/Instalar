@@ -31,13 +31,13 @@ const change = (name, value) => fireEvent.change(screen.getByLabelText(name, { e
 const click = (name) => fireEvent.click(screen.getByRole('button', { name, exact: true }));
 const selectMode = (name = /^Por rolo/) => fireEvent.click(screen.getByRole('button', { name }));
 
-it.each([['roll', /^Por rolo/], ['square_meter', /^Por m²/]])('salva em %s sem informar medidas nem ambientes', async (mode, label) => {
+it('continua salvando por m² sem informar medidas nem ambientes', async () => {
   api.post.mockResolvedValue({ data: { id: 55 } });
   render(<MemoryRouter><BudgetForm /></MemoryRouter>);
   fireEvent.click(await screen.findByRole('radio', { name: 'Cliente QA' }));
   click('Continuar para o cálculo');
   expect(screen.getByRole('heading', { name: 'Como você quer montar o orçamento?' })).toBeTruthy();
-  selectMode(label);
+  selectMode(/^Por m²/);
   fireEvent.click(screen.getByRole('checkbox', { name: 'Informar total sem medidas' }));
   expect(screen.queryByLabelText('Largura (m)')).toBeNull();
   change('Valor do serviço', '450.50');
@@ -46,8 +46,51 @@ it.each([['roll', /^Por rolo/], ['square_meter', /^Por m²/]])('salva em %s sem 
   click('Continuar para salvar');
   click('Salvar orçamento');
   await waitFor(() => expect(api.post).toHaveBeenCalledWith('/budgets', expect.objectContaining({
-    client_id: 7, pricing_mode: mode, manual_price: 450.50, environments: [],
+    client_id: 7, pricing_mode: 'square_meter', manual_price: 450.50, environments: [],
   })));
+});
+
+it('usa a quantidade informada quando não há medidas, sem pedir valor fechado', async () => {
+  api.post.mockResolvedValue({ data: { id: 55 } });
+  render(<MemoryRouter><BudgetForm /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('radio', { name: 'Cliente QA' }));
+  click('Continuar para o cálculo');
+  selectMode();
+  expect(screen.queryByRole('checkbox', { name: 'Informar total sem medidas' })).toBeNull();
+  expect(screen.getByRole('spinbutton', { name: 'Rolos' }).required).toBe(true);
+  click('Revisar orçamento');
+  expect(screen.queryByRole('button', { name: 'Continuar para salvar' })).toBeNull();
+  change('Rolos', '2.5');
+  click('Revisar orçamento');
+  expect(screen.queryByRole('button', { name: 'Continuar para salvar' })).toBeNull();
+  change('Rolos', '3');
+  expect(screen.getByRole('region', { name: 'Resumo do cálculo' }).textContent).toMatch(/Total estimado\s*R\$\s*240,00/);
+  click('Revisar orçamento');
+  expect(screen.getByText(/Medidas não informadas.*3 rolos/)).toBeTruthy();
+  click('Continuar para salvar');
+  click('Salvar orçamento');
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith('/budgets', expect.objectContaining({
+    client_id: 7, pricing_mode: 'roll', price_per_roll: 80,
+    environments: [expect.objectContaining({ height: null, width: null, rolls_manual: 3 })],
+  })));
+  expect(api.post.mock.calls[0][1]).not.toHaveProperty('manual_price');
+});
+
+it('não descarta uma medida preenchida e mantém a quantidade opcional quando o par está completo', async () => {
+  render(<MemoryRouter><BudgetForm /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('radio', { name: 'Cliente QA' }));
+  click('Continuar para o cálculo');
+  selectMode();
+  change('Ambiente', 'Sala');
+  change('Largura (m)', '4');
+  change('Rolos', '3');
+  click('Revisar orçamento');
+  expect(screen.queryByRole('button', { name: 'Continuar para salvar' })).toBeNull();
+  change('Altura (m)', '2');
+  change('Rolos (opcional)', '');
+  expect(screen.getByRole('spinbutton', { name: 'Rolos (opcional)' }).required).toBe(false);
+  click('Revisar orçamento');
+  expect(screen.getByRole('button', { name: 'Continuar para salvar' })).toBeTruthy();
 });
 
 it('encontra clientes sem acentos e por telefone formatado', async () => {
