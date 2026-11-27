@@ -98,3 +98,21 @@ test('a aprovação cadastral não confunde uma carteira de produção diferente
     }), want);
   }
 });
+
+test('lê a carteira retornada na lista real e rejeita destino ambíguo ou incompleto', async () => {
+  const wallet = '11111111-1111-4111-8111-111111111111';
+  const other = { object: 'wallet', id: '22222222-2222-4222-8222-222222222222' };
+  const correct = { object: 'wallet', id: wallet };
+  const env = { ASAAS_NEXT_API_KEY: '$aact_prod_destino_ficticio', ASAAS_NEXT_EXPECTED_WALLET_ID: wallet };
+  for (const [data, hasMore, expected] of [
+    [[correct], false, 'verified_destination'],
+    [[other], false, 'wrong_destination'],
+    [[other, correct], false, 'wrong_destination'],
+    [[correct], true, 'wrong_destination'],
+    [[{ ...correct, object: 'account' }], false, 'wrong_destination'],
+  ]) {
+    assert.equal(await checkNextAccount(env, async (url) => url.endsWith('/wallets/')
+      ? Response.json({ object: 'list', data, totalCount: data.length, hasMore })
+      : Response.json({ general: 'APPROVED' })), expected);
+  }
+});
