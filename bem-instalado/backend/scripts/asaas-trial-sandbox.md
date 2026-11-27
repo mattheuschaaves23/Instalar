@@ -140,6 +140,10 @@ referência e horário do aceite no banco, sem guardar o CPF ou os dados do cart
    só para testar o transporte do webhook.
 4. **Identidade do piloto:** confirmar titularidade fora do formulário, obter
    consentimento do participante para o piloto e verificar o cadastro Asaas.
+   O cadastro vinculado ao checkout precisa ter nome, e-mail, telefone e
+   endereço completo, incluindo número, CEP, bairro e cidade. Dados
+   incompletos são recusados antes de reservar a tentativa, para que o
+   participante possa corrigir o cadastro sem perder o teste.
    Com adesões pausadas, o operador autorizado executa
    `approveAsaasPilotTrial.js <id-do-instalador> <id-do-cliente-asaas> --titularidade-verificada`
    no ambiente de operação aprovado, passando o CPF pelo stdin protegido.
