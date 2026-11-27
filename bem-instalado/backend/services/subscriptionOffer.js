@@ -22,7 +22,8 @@ function getOfferPrices(monthlyPrice = DEFAULT_MONTHLY_PRICE) {
 function legacyCheckoutBlocked(env) {
   return env.NODE_ENV === 'production' || env.VERCEL === '1' ||
     env.SUBSCRIPTION_TRIAL_PREVIEW_ENABLED === 'true' ||
-    env.SUBSCRIPTION_TRIAL_SANDBOX_ENABLED === 'true';
+    env.SUBSCRIPTION_TRIAL_SANDBOX_ENABLED === 'true' ||
+    env.ASAAS_MANAGED_TRIAL_SANDBOX === 'true';
 }
 
 function sandboxCheckoutAllowed(env, isAdmin) {
