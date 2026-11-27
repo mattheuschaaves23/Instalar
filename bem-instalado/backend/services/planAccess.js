@@ -38,7 +38,9 @@ async function ensureFreeSubscription(userId, db = pool) {
     || (['pro', 'monthly'].includes(normalizedPlan) && !isProSubscription(existing));
   const shouldRepairFree = normalizedPlan === 'free' && (existing.status !== 'active' || existing.expires_at);
 
-  if (!shouldDowngrade && !shouldRepairFree) return existing;
+  // The managed Asaas projection owns its row, including mutations at renewal.
+  // buildPlanAccess independently checks expires_at on every read.
+  if (existing.provider === 'asaas_trial_v2' || (!shouldDowngrade && !shouldRepairFree)) return existing;
 
   const updated = await db.query(
     `

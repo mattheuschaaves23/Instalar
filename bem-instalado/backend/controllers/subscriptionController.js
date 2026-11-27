@@ -5,6 +5,7 @@ const { logAudit } = require('../utils/auditLog');
 const { getInstallerPlanAccess } = require('../services/planAccess');
 const { DEFAULT_MONTHLY_PRICE, getOfferPreview, legacyCheckoutBlocked } = require('../services/subscriptionOffer');
 const { createTrialCheckout, checkNextAccount } = require('../services/subscriptionRollout');
+const managedAsaas = require('../services/managedAsaasTrial');
 const {
   cancelRecurringSubscription,
   createRecurringCheckout,
@@ -680,6 +681,20 @@ exports.getSubscription = async (req, res) => {
     const complimentaryAccess = adminAccess;
     const signupsPaused = legacyCheckoutBlocked(process.env);
     const paymentMode = signupsPaused && !complimentaryAccess ? 'disabled' : getPaymentMode(complimentaryAccess);
+    const managedConfig = managedAsaas.getBillingConfig(process.env);
+    const managedTrial = managedConfig && !adminAccess
+      ? managedAsaas.summarizeTrial(await managedAsaas.getTrial(pool, managedConfig, req.userId), new Date(), managedConfig)
+      : null;
+    const offer = getOfferPreview(process.env, SUBSCRIPTION_AMOUNT, adminAccess);
+    if (offer && managedTrial) {
+      offer.checkout_available = managedTrial.state === 'eligible' && !planAccess.is_pro &&
+        managedAsaas.canStartManagedTrial(managedConfig, req.userId);
+      offer.managed_trial = managedTrial;
+      if (managedConfig.environment === 'production') {
+        offer.checkout_environment = 'production';
+        offer.consent_version = managedAsaas.PILOT_CONSENT;
+      }
+    }
 
     return res.json({
       ...subscription,
@@ -696,7 +711,7 @@ exports.getSubscription = async (req, res) => {
         period: 'mês',
         label: 'InstalarPro Pro',
       },
-      offer_preview: getOfferPreview(process.env, SUBSCRIPTION_AMOUNT, adminAccess),
+      offer_preview: offer,
       plan_benefits: getPlanBenefits(),
       plan_access: planAccess,
       limits: planAccess.limits,
@@ -737,9 +752,16 @@ exports.getSubscription = async (req, res) => {
   }
 };
 
-exports.createSandboxTrialCheckout = async (req, res) => {
+exports.createTrialCheckout = async (req, res) => {
   res.set('Cache-Control', 'no-store');
   try {
+    const managedConfig = managedAsaas.getBillingConfig(process.env);
+    if (managedConfig && !req.user?.is_admin) {
+      const accepted = managedConfig.environment === 'production' ? req.body : req.body?.accepted;
+      const data = await managedAsaas.startTrial(pool, managedConfig, req.userId, req.body?.plan, accepted,
+        SUBSCRIPTION_AMOUNT);
+      return res.status(201).json(data);
+    }
     const result = await createTrialCheckout({
       env: process.env,
       isAdmin: Boolean(req.user?.is_admin),
@@ -748,11 +770,37 @@ exports.createSandboxTrialCheckout = async (req, res) => {
       monthlyPrice: SUBSCRIPTION_AMOUNT,
     });
     return res.status(result.status).json(result.data);
-  } catch {
+  } catch (error) {
+    if (error instanceof managedAsaas.BillingError) return res.status(error.status).json({ error: error.message });
     return res.status(502).json({
-      error: 'Não foi possível gerar o checkout de teste. Confira no Asaas antes de tentar novamente.',
-      code: 'TRIAL_SANDBOX_ERROR',
+      error: 'Não foi possível gerar o checkout. Confira o status no Asaas antes de tentar novamente.',
+      code: 'TRIAL_CHECKOUT_ERROR',
     });
+  }
+};
+
+exports.refreshManagedTrial = async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const config = managedAsaas.getBillingConfig(process.env);
+  if (!config) return res.sendStatus(404);
+  try {
+    return res.json(await managedAsaas.refreshTrial(pool, config, req.userId));
+  } catch (error) {
+    if (error instanceof managedAsaas.BillingError) return res.status(error.status).json({ error: error.message });
+    return res.status(502).json({ error: 'A consulta ao Asaas não foi concluída. Tente novamente em instantes.' });
+  }
+};
+
+exports.receiveManagedTrialEvent = async (req, res) => {
+  const config = managedAsaas.getBillingConfig(process.env);
+  if (!config) return res.sendStatus(404);
+  try {
+    await managedAsaas.handleManagedEvent(pool, config, req.get('asaas-access-token'), req.body);
+    return res.sendStatus(200);
+  } catch (error) {
+    if (error instanceof managedAsaas.BillingError && error.status === 401) return res.sendStatus(401);
+    // No request bodies, payer data, provider responses or credentials in logs.
+    return res.sendStatus(503);
   }
 };
 
@@ -760,7 +808,12 @@ exports.getLaunchBillingStatus = async (req, res) => {
   res.set('Cache-Control', 'no-store');
   if (!req.user?.is_admin) return res.status(403).json({ error: 'Acesso não autorizado.' });
   const destination = await checkNextAccount(process.env);
-  return res.json({ destination, real_checkout_available: false });
+  const config = managedAsaas.getBillingConfig(process.env);
+  return res.json({
+    destination, real_checkout_available: false,
+    pilot_receiver_enabled: config?.environment === 'production',
+    pilot_enrollment_configured: destination === 'verified_destination' && config?.environment === 'production' && config.enrollment,
+  });
 };
 
 async function createManualPayment(req, subscription, db) {
@@ -1028,6 +1081,13 @@ exports.cancelSubscription = async (req, res) => {
     await getInstallerPlanAccess(req.userId);
     const subscription = await ensureSubscription(req.userId);
 
+    if (subscription.provider === managedAsaas.PROVIDER || req.query?.managed_trial === '1') {
+      const config = managedAsaas.getBillingConfig(process.env);
+      if (!config) return res.status(503).json({ error: 'Não foi possível acessar a conta Asaas para cancelar. Fale com o suporte.' });
+      const trial = await managedAsaas.refreshTrial(pool, config, req.userId, { cancel: true });
+      return res.json({ trial, message: 'Recorrência cancelada no Asaas. Seus dados continuam salvos.' });
+    }
+
     if (subscription.provider === 'asaas' && subscription.provider_subscription_id) {
       await cancelRecurringSubscription(subscription.provider_subscription_id);
     }
@@ -1070,6 +1130,7 @@ exports.cancelSubscription = async (req, res) => {
       message: 'Plano Grátis ativado. Seus dados continuam salvos.',
     });
   } catch (error) {
+    if (error instanceof managedAsaas.BillingError) return res.status(error.status).json({ error: error.message });
     console.error('Erro ao cancelar assinatura.', error.code || error.message);
     return res.status(error?.code?.startsWith('ASAAS_') ? 502 : 500).json({
       error: 'Não foi possível cancelar a recorrência agora. Tente novamente ou fale com o suporte.',

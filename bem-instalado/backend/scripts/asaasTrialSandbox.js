@@ -46,17 +46,21 @@ function makeCheckout(plan, now = new Date(), reference = `instalapro-trial-sand
   };
 }
 
-function parseCheckoutLink(checkout) {
+function parseCheckoutLink(checkout, production = false) {
   if (typeof checkout?.id !== 'string' || !ID.test(checkout.id)) {
     throw new Error('Sandbox não retornou um identificador de checkout válido.');
   }
-  const expected = new URL('/checkoutSession/show', CHECKOUT);
+  const origin = production ? 'https://asaas.com' : CHECKOUT;
+  const expected = new URL('/checkoutSession/show', origin);
   expected.searchParams.set('id', checkout.id);
   if (!checkout.link) return expected.href;
   let actual;
   try { actual = new URL(checkout.link); } catch { /* fail closed below */ }
-  if (actual?.origin !== CHECKOUT || actual.username || actual.password) {
-    throw new Error('O checkout retornou um link diferente do endereço esperado do Sandbox.');
+  const allowedOrigin = actual?.origin === origin || (production && actual?.origin === 'https://www.asaas.com');
+  if (!allowedOrigin || actual.username || actual.password) {
+    throw new Error(production
+      ? 'O checkout retornou um link fora do endereço Asaas de produção.'
+      : 'O checkout retornou um link diferente do endereço esperado do Sandbox.');
   }
   // Use the documented route, verified in the Sandbox. The returned link can
   // have a different route or query string, neither of which we carry forward.
@@ -106,14 +110,15 @@ function readDate(value) {
 }
 
 async function inspect(request, checkoutId, reference, firstChargeOn, plan) {
-  if (!checkoutId || !ID.test(checkoutId) || !reference || !REFERENCE.test(reference) ||
+  if (!checkoutId || !ID.test(checkoutId) || (reference !== null && (!reference || !REFERENCE.test(reference))) ||
       !firstChargeOn || firstChargeOn !== readDate(firstChargeOn)) {
     throw new Error('Informe CheckoutId, Referencia e PrimeiroDebito conforme a saída de Criar.');
   }
   const { cents, cycle } = getPlan(plan);
   const [byCheckout, byReference] = await Promise.all([
     request(`/payments?${new URLSearchParams({ checkoutSession: checkoutId, limit: '100' })}`),
-    request(`/subscriptions?${new URLSearchParams({ externalReference: reference, limit: '100' })}`),
+    reference ? request(`/subscriptions?${new URLSearchParams({ externalReference: reference, limit: '100' })}`) :
+      Promise.resolve({ data: [] }),
   ]);
   if (!Array.isArray(byCheckout?.data) || !Array.isArray(byReference?.data)) {
     throw new Error('O Sandbox não devolveu o formato esperado de listagem.');
@@ -200,7 +205,8 @@ async function run(args, key, fetchImpl) {
     };
   }
   if (command === 'inspecionar' && params.length === 4) return inspect(request, ...params);
-  throw new Error('Ações disponíveis: verificar, criar <mensal|anual>, inspecionar <id> <referência> <data> <plano>.');
+  if (command === 'inspecionar-checkout' && params.length === 3) return inspect(request, params[0], null, params[1], params[2]);
+  throw new Error('Ações disponíveis: verificar, criar <mensal|anual>, inspecionar <id> <referência> <data> <plano>, inspecionar-checkout <id> <data> <plano>.');
 }
 
 if (require.main === module) {

@@ -83,3 +83,18 @@ test('a conta nova só é consultada por leitura e nunca usa a chave do checkout
   }), 'approved');
   assert.equal(await checkNextAccount(env, async () => Response.json({}, { status: 401 })), 'verification_failed');
 });
+
+test('a aprovação cadastral não confunde uma carteira de produção diferente com a de destino', async () => {
+  const wallet = '11111111-1111-4111-8111-111111111111';
+  const env = {
+    ASAAS_NEXT_API_KEY: '$aact_prod_destino_ficticio',
+    ASAAS_NEXT_EXPECTED_WALLET_ID: wallet,
+  };
+  for (const [actualWallet, want] of [[wallet, 'verified_destination'], ['22222222-2222-4222-8222-222222222222', 'wrong_destination']]) {
+    assert.equal(await checkNextAccount(env, async (url, options) => {
+      assert.equal(options.method, 'GET');
+      assert.equal(options.headers.access_token, env.ASAAS_NEXT_API_KEY);
+      return url.endsWith('/wallets/') ? Response.json({ walletId: actualWallet }) : Response.json({ general: 'APPROVED' });
+    }), want);
+  }
+});

@@ -124,3 +124,20 @@ test('sinaliza vencimento ou débito anterior à data e confirma só recebimento
     assert.equal(result.firstDebitObserved, false);
   }
 });
+
+test('consulta o checkout já concluído usando só o ID do link e não faz POST', async () => {
+  const fetchImpl = async (url, options) => {
+    assert.equal(options.method, 'GET');
+    if (url.pathname === '/v3/payments') {
+      assert.equal(url.searchParams.get('checkoutSession'), checkoutId);
+      return response({ data: [{ id: 'pay_first', checkoutSession: checkoutId, subscription: subscriptionId,
+        status: 'PENDING', dueDate: firstChargeOn, value: 49.9, privatePayerField: 'não deve sair' }] });
+    }
+    return asaas()(url);
+  };
+  const result = await run(['inspecionar-checkout', checkoutId, firstChargeOn, 'mensal'], key, fetchImpl);
+  assert.equal(result.schedule, 'compativel_com_o_teste');
+  assert.equal(result.firstDebitObserved, false);
+  assert.equal(result.payments[0].status, 'PENDING');
+  assert.equal(JSON.stringify(result).includes('não deve sair'), false);
+});

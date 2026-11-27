@@ -62,3 +62,99 @@ administrador no painel do Asaas) e se a conta está aprovada. A chave é recebi
 stdin a partir de uma fonte segura, sem argumentos, logs ou arquivos. A verificação
 não mexe na Vercel e não habilita a cobrança. Não use a chave de produção no roteiro
 de teste dos 7 dias.
+
+## Consultar um checkout antigo sem entrar no painel
+
+Se você tem uma chave **segura e válida da mesma conta Sandbox**, não é preciso
+refazer o checkout. Use a referência de `id` do link, o vencimento exibido antes
+do envio e o plano. Execute na pasta backend, passando a chave **apenas pelo
+stdin** a partir da sua fonte segura, nunca como argumento, arquivo aberto ou chat:
+
+```text
+node scripts/asaasTrialSandbox.js inspecionar-checkout <id-do-checkout> 2026-12-04 mensal
+```
+
+Essa ação é somente leitura. Sem vínculo verificável com uma assinatura, devolve
+resultado inconclusivo. Ausência de débito antes do vencimento não confirma que a
+recorrência será executada. Se a chave não estiver disponível, recupere acesso à
+mesma conta pelo [suporte](https://docs.asaas.com/docs/entre-em-contato), sem
+compartilhar API keys ou dados de cartão.
+
+## Homologar o ciclo completo no InstalarPro
+
+1. Em ambiente isolado, aplique a migração `030_asaas_managed_trial.sql` pelo
+   migrador do projeto. Configure as variáveis `ASAAS_MANAGED_TRIAL_*` conforme
+   o `.env.example`, usando somente uma chave Sandbox nova. O webhook exige
+   token exclusivo e o ID da conta Asaas que emite os eventos. Configure
+   `POST /api/subscriptions/webhooks/asaas-managed-trial` somente nesse ambiente.
+2. Crie um cliente e um instalador fictícios sem Pro ou privilégio de administrador.
+   O responsável confirma a identidade de teste e o vínculo entre os cadastros,
+   e libera um único teste com `node scripts/approveAsaasSandboxTrial.js <id-do-instalador>
+   <id-do-cliente-asaas> --identidade-ficticia-conferida`. Passe o CPF fictício pelo stdin, nunca como argumento ou em logs.
+   O banco guarda um HMAC, não o CPF, e a unicidade impede outro resgate do mesmo
+   documento, mesmo com outro cadastro. Isso não é um serviço de prova de
+   titularidade para o público. Não use documentos reais nessa etapa.
+3. Teste os planos em identidades fictícias separadas. Confira consentimento,
+   preço, cartão válido/recusado, recorrência criada sem valor debitado à vista,
+   cancelamento antes do vencimento, primeiro débito e renovação. Verifique o
+   status no Asaas, sem considerar apenas a página de retorno. Um checkout
+   abandonado ou resposta ambígua não autoriza nova tentativa automática:
+   reconcilie no Asaas para não criar duplicatas.
+4. Na conta nova de produção, faça só o diagnóstico enquanto o checkout fica
+   bloqueado: configure `ASAAS_NEXT_API_KEY` e `ASAAS_NEXT_EXPECTED_WALLET_ID`
+   no servidor. O botão de verificação administrativa compara a carteira esperada
+   e o cadastro aprovado por GET; não troca credenciais antigas nem confirma
+   que cobranças recorrentes já estão liberadas.
+5. Para o piloto de produção, não reaproveite clientes ou IDs do Sandbox.
+   São pré-requisitos: confirmar recorrência por cartão e vencimento na conta
+   nova, registrar as evidências de homologação, aprovar o mecanismo de
+   titularidade e a retenção do identificador, aprovar a comunicação de
+   transição do Grátis e definir acompanhamento e desligamento. O piloto descrito
+   abaixo não migra assinaturas anteriores nem abre cobrança ao público.
+
+## Piloto de produção (somente um instalador, desligado por padrão)
+
+O projeto não abre adesões para todos. O servidor bloqueia checkout real quando
+o ambiente não é a Vercel de produção, quando a credencial é do Sandbox ou do
+contrato antigo, ou quando o cadastro não é daquele instalador autorizado.
+O cartão é informado diretamente no Asaas. O servidor registra o plano, preço,
+referência e horário do aceite no banco, sem guardar o CPF ou os dados do cartão.
+
+1. **Pré-requisito:** guardar as evidências de homologação do mensal, do anual e
+   de cancelamento antes do primeiro vencimento (não somente a tela de retorno).
+   O teste anterior pode ser consultado por chave do mesmo Sandbox. Não marque
+   `ASAAS_PILOT_SANDBOX_VERIFIED` antes de verificar a cobrança.
+2. **Publicação com adesões fechadas:** manter
+   `ASAAS_PILOT_ENROLLMENT_ENABLED=false`. Publicar a rota e a migração 030.
+   Configurar a chave nova da Bem Instalado (`ASAAS_NEXT_API_KEY`) nos segredos
+   de **Production** da Vercel. Conferir o identificador da carteira no painel
+   antes de preencher `ASAAS_NEXT_EXPECTED_WALLET_ID`. A chave antiga fica intacta.
+   Configurar `ASAAS_PILOT_ACCOUNT_ID`, um token exclusivo de webhook e uma chave
+   HMAC própria; o ID da conta que assina o evento não deve ser presumido igual ao
+   ID da carteira. Não envie chaves, senhas nem CPF pelo chat.
+3. **Notificações:** com `ASAAS_PILOT_RECEIVER_ENABLED=true`, cadastrar no Asaas
+   de produção `https://instalarpro.com.br/api/subscriptions/webhooks/asaas-managed-trial`
+   com o token configurado e eventos de checkout, assinatura e pagamentos que
+   mudam o acesso. Conferir uma entrega autenticada e HTTP 200 nos logs do Asaas
+   antes de marcar `ASAAS_PILOT_WEBHOOK_VERIFIED=true`. Não use um pagamento real
+   só para testar o transporte do webhook.
+4. **Identidade do piloto:** confirmar titularidade fora do formulário, obter
+   consentimento do participante para o piloto e verificar o cadastro Asaas.
+   Com adesões pausadas, o operador autorizado executa
+   `approveAsaasPilotTrial.js <id-do-instalador> <id-do-cliente-asaas> --titularidade-verificada`
+   no ambiente de operação aprovado, passando o CPF pelo stdin protegido.
+   O comando consulta o Asaas, bloqueia carteira ou CPF divergente e cria só
+   autorização local; não gera assinatura. A retenção do HMAC para o público
+   precisa de política validada antes de qualquer expansão.
+5. **Execução autorizada:** só então ativar a flag de adesão, para o único
+   `ASAAS_PILOT_INSTALLER_ID`. O participante vê que usará cartão real, confirma
+   o valor e termina o checkout pessoalmente. Confirmar que o Pro entra em teste
+   sem pagamento imediato e conciliar o primeiro débito e o repasse. O preço
+   mensal é R$ 49,90; o anual é R$ 538,92 em cobrança única anual.
+6. **Pausa e reversão:** para parar novas adesões, desligar somente
+   `ASAAS_PILOT_ENROLLMENT_ENABLED`. Manter a recepção e a conciliação ativas
+   enquanto houver contrato do piloto, para permitir cancelamento e acompanhar
+   pagamentos e estornos. Um checkout já emitido pode continuar no Asaas até
+   expirar; a flag não cancela contratos nem revoga links já emitidos. Em
+   incidente, conferir os registros no painel e tratar cada contrato afetado
+   antes de remover o webhook ou credenciais.

@@ -206,17 +206,20 @@ export default function Subscription() {
   };
 
   const handleCancel = async () => {
+    const managedTrial = offerPreview?.managed_trial;
     const accepted = await confirm({
-      title: 'Voltar para o plano Grátis?',
-      message: 'A recorrência será cancelada. Seus clientes, orçamentos e demais dados não serão apagados.',
-      confirmText: 'Voltar para o Grátis',
-      cancelText: 'Manter o Pro',
+      title: managedTrial ? 'Cancelar assinatura?' : 'Voltar para o plano Grátis?',
+      message: managedTrial
+        ? 'O teste não continuará e a recorrência será encerrada no Asaas. Se já houver um período pago, o acesso segue até o fim desse período.'
+        : 'A recorrência será cancelada. Seus clientes, orçamentos e demais dados não serão apagados.',
+      confirmText: managedTrial ? 'Cancelar recorrência' : 'Voltar para o Grátis',
+      cancelText: managedTrial ? 'Manter recorrência' : 'Manter o Pro',
     });
     if (!accepted) return;
 
     try {
       setIsCanceling(true);
-      const response = await api.delete('/subscriptions');
+      const response = await api.delete(managedTrial ? '/subscriptions?managed_trial=1' : '/subscriptions');
       toast.success(response.data?.message || 'Plano Grátis ativado.');
       setPayment(null);
       setShowPaymentDetails(false);
@@ -254,9 +257,10 @@ export default function Subscription() {
           offer={offerPreview}
           isPro={isPro}
           features={PRO_ITEMS}
-          canCancel={subscription?.access_mode === 'pro'}
+          canCancel={offerPreview.managed_trial ? offerPreview.managed_trial.can_cancel : subscription?.access_mode === 'pro'}
           isCanceling={isCanceling}
           onCancel={handleCancel}
+          onRefresh={loadSubscription}
         />
       ) : <section className="subscription-v3-hero">
         <div aria-hidden="true" className="subscription-v3-orbit subscription-v3-orbit-one" />
