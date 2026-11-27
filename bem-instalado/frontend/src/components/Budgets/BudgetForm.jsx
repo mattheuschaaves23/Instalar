@@ -234,8 +234,11 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
   const [fixedPrice, setFixedPrice] = useState(() => original?.manual_price ?? (original?.pricing_mode === 'fixed' ? original.total_amount : ''));
   const fixed = pricingMode === 'fixed';
   const productMode = pricingMode === 'products';
-  const [withoutMeasurements, setWithoutMeasurements] = useState(() => Number(original?.manual_price) > 0);
-  const noMeasures = fixed || productMode || withoutMeasurements;
+  const [withoutMeasurements, setWithoutMeasurements] = useState(() => original?.pricing_mode === 'square_meter' && Number(original.manual_price) > 0);
+  const [keepLegacyRollTotal, setKeepLegacyRollTotal] = useState(() => original?.pricing_mode === 'roll' && Number(original.manual_price) > 0);
+  const legacyRollTotal = pricingMode === 'roll' && keepLegacyRollTotal;
+  const manualTotal = legacyRollTotal || (pricingMode === 'square_meter' && withoutMeasurements);
+  const noMeasures = fixed || productMode || manualTotal;
   const [rollArea, setRollArea] = useState(original?.roll_area || 4.5);
   const [pricePerRoll, setPricePerRoll] = useState(original?.price_per_roll || 0);
   const [pricePerSquareMeter, setPricePerSquareMeter] = useState(original?.price_per_square_meter || (draft ? '' : 10));
@@ -248,7 +251,12 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
     && Number(original.interest_free_installments) === interestFreeInstallments ? Number(original.installment_interest_rate || 0) : 0;
   const [upfrontPaymentTerms, setUpfrontPaymentTerms] = useState(() => createUpfrontPaymentTerms(original?.payment_terms ?? []));
   const [environments, setEnvironments] = useState(() => original?.environments?.length
-    ? original.environments.map((item) => ({ ...item, rolls_manual: item.rolls_manual ?? '' })) : requestEnvironments(draft));
+    ? original.environments.map((item) => ({
+      ...item,
+      height: Number(item.height) === 0 ? '' : item.height,
+      width: Number(item.width) === 0 ? '' : item.width,
+      rolls_manual: item.rolls_manual ?? '',
+    })) : requestEnvironments(draft));
   const [catalog, setCatalog] = useState(null);
   const [catalogError, setCatalogError] = useState('');
   const [catalogRetry, setCatalogRetry] = useState(0);
@@ -342,10 +350,17 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
       environments.map((environment) => {
         const height = Number(environment.height || 0);
         const width = Number(environment.width || 0);
-        const area = height * width;
+        const hasDimensions = Number.isFinite(height) && height > 0 && Number.isFinite(width) && width > 0;
+        const hasNoDimensions = pricingMode === 'roll'
+          && String(environment.height ?? '').trim() === '' && String(environment.width ?? '').trim() === '';
+        const area = hasDimensions ? height * width : 0;
         const rollsAuto = effectiveRollArea > 0 ? Math.ceil(area / effectiveRollArea) : 0;
         const rollsManual = environment.rolls_manual ? Number(environment.rolls_manual) : null;
-        const rollsForMode = pricingMode === 'roll' ? (rollsManual || rollsAuto) : rollsAuto;
+        const validRolls = Number.isInteger(rollsManual) && rollsManual >= 1 && rollsManual <= 2147483647;
+        const valid = hasNoDimensions
+          ? validRolls
+          : hasDimensions && Boolean(String(environment.name || '').trim()) && (pricingMode !== 'roll' || rollsManual === null || validRolls);
+        const rollsForMode = pricingMode === 'roll' && validRolls ? rollsManual : rollsAuto;
         const baseSubtotal =
           pricingMode === 'square_meter'
             ? area * Number(pricePerSquareMeter || 0)
@@ -353,10 +368,13 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
         return {
           area,
           baseSubtotal,
+          hasDimensions,
+          hasNoDimensions,
           removalIncluded: Boolean(environment.removal_included),
           rollsAuto,
           rollsForMode,
           total: baseSubtotal,
+          valid,
         };
       }),
     [effectiveRollArea, environments, pricePerRoll, pricePerSquareMeter, pricingMode]
@@ -458,7 +476,9 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
     Math.round(grandTotal * 100) / 100 === grandTotal;
   const validProducts = productItems.length > 0 && productItems.every((item) => Number.isInteger(Number(item.quantity))
     && Number(item.quantity) >= 1 && Number(item.quantity) <= productLimits.maximumQuantity);
-  const canCalculate = noMeasures ? fixedPriceIsValid && (!productMode || validProducts) : totals.area > 0;
+  const needsRollYield = !noMeasures && (pricingMode !== 'roll' || environmentBreakdown.some((room) => !room.hasNoDimensions));
+  const canCalculate = noMeasures ? fixedPriceIsValid && (!productMode || validProducts)
+    : environmentBreakdown.length > 0 && environmentBreakdown.every((room) => room.valid);
   const canSave = canCalculate && grandTotal > 0 && hasClient;
 
   const visibleClients = clients.filter((client) => matchesClient(client, clientQuery));
@@ -477,12 +497,13 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
       toast.error(REMOVAL_ROLLS_ERROR);
       return;
     }
+    if (formRef.current && !formRef.current.reportValidity()) return;
     if (!canCalculate || grandTotal <= 0) {
       toast.error(productMode ? 'Adicione produtos e confira as quantidades.'
-        : noMeasures ? 'Informe um valor positivo com até duas casas decimais.' : 'Preencha as medidas ou informe o total do serviço sem medidas.');
+        : noMeasures ? 'Informe um valor positivo com até duas casas decimais.'
+          : pricingMode === 'roll' ? 'Preencha largura e altura ou informe a quantidade de rolos.' : 'Confira as medidas dos ambientes.');
       return;
     }
-    if (formRef.current && !formRef.current.reportValidity()) return;
     goToStep(3);
   };
 
@@ -519,7 +540,7 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
     const normalizedClientId = Number(clientId);
     const normalizedPricePerRoll = Number(pricePerRoll);
     const normalizedPricePerSquareMeter = Number(pricePerSquareMeter);
-    const normalizedRollArea = Number(rollArea);
+    const normalizedRollArea = !needsRollYield && rollArea === '' ? 4.5 : Number(rollArea);
     const normalizedRemovalPricePerRoll = Number(removalPricePerRoll);
     const normalizedInstallmentsCount = Number(installmentsCount);
     const normalizedInterestFreeCount = Number(interestFreeInstallments);
@@ -603,22 +624,7 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
       return;
     }
 
-    const invalidEnvironment = environments.find((environment) => {
-      const height = Number(environment.height);
-      const width = Number(environment.width);
-      const hasManualRolls = String(environment.rolls_manual || '').trim() !== '';
-      const manualRolls = hasManualRolls ? Number(environment.rolls_manual) : null;
-      return (
-        !String(environment.name || '').trim() ||
-        !Number.isFinite(height) ||
-        height <= 0 ||
-        !Number.isFinite(width) ||
-        width <= 0 ||
-        (pricingMode === 'roll' && hasManualRolls && (!Number.isInteger(manualRolls) || manualRolls <= 0))
-      );
-    });
-
-    if (!noMeasures && invalidEnvironment) {
+    if (!noMeasures && !canCalculate) {
       toast.error('Revise nome, medidas e rolos dos ambientes.');
       return;
     }
@@ -629,7 +635,7 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
         ...(draft ? {} : { client_id: normalizedClientId }),
         pricing_mode: productMode ? 'fixed' : pricingMode,
         ...(productMode ? { product_items: productItems.map(({ product_id, quantity }) => ({ product_id, quantity: Number(quantity) })) }
-          : fixed ? { fixed_price: grandTotal } : withoutMeasurements ? { manual_price: grandTotal } : {
+          : fixed ? { fixed_price: grandTotal } : manualTotal ? { manual_price: grandTotal } : {
           roll_area: normalizedRollArea,
           price_per_roll: normalizedPricePerRoll,
           price_per_square_meter: normalizedPricePerSquareMeter,
@@ -642,10 +648,10 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
         removal_included: removalIncluded,
         removal_price_per_roll: removalIncluded ? normalizedRemovalPricePerRoll : 0,
         ...(manualRemovalRolls !== null ? { removal_rolls: manualRemovalRolls } : {}),
-        environments: noMeasures ? [] : environments.map((environment) => ({
+        environments: noMeasures ? [] : environments.map((environment, index) => ({
           name: environment.name,
-          height: Number(environment.height),
-          width: Number(environment.width),
+          height: environmentBreakdown[index].hasNoDimensions ? null : Number(environment.height),
+          width: environmentBreakdown[index].hasNoDimensions ? null : Number(environment.width),
           rolls_manual: pricingMode === 'roll' && environment.rolls_manual ? Number(environment.rolls_manual) : null,
           removal_included: Boolean(environment.removal_included),
         })),
@@ -786,7 +792,7 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
             <section className="quote-card quote-client-picker quote-pricing-picker" aria-label="Tipo de cobrança">
               {[
                 ['products', 'Produtos', 'Use produtos e preços do seu catálogo.'],
-                ['roll', 'Por rolo', 'Calcule por rolo ou informe só o total.'],
+                ['roll', 'Por rolo', 'Use as medidas ou informe quantos rolos são.'],
                 ['square_meter', 'Por m²', 'Calcule por metragem ou informe só o total.'],
                 ...(original?.pricing_mode === 'fixed' && !original.product_items?.length
                   ? [['fixed', 'Manter valor original', 'Continue editando o orçamento antigo sem medidas.']] : []),
@@ -815,8 +821,9 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
                         setChoosePricing(true);
                       }}>Trocar tipo</button>
                     </div>
-                    {!productMode && !fixed && <label className="quote-check"><input type="checkbox" checked={withoutMeasurements}
+                    {pricingMode === 'square_meter' && <label className="quote-check"><input type="checkbox" checked={withoutMeasurements}
                       onChange={(event) => setWithoutMeasurements(event.target.checked)} />Informar total sem medidas</label>}
+                    {legacyRollTotal && <button className="quote-action-link" type="button" onClick={() => setKeepLegacyRollTotal(false)}>Usar preço por rolo</button>}
                     {productMode ? <div className="quote-product-lines">
                       {catalogError ? <><p role="alert">{catalogError}</p><button className="quote-action-link" type="button" onClick={reloadCatalog}>Tentar novamente</button></> : catalog == null ? <p role="status">Carregando produtos…</p> : (
                         <QuoteProductCatalog products={catalog} selected={productItems} onAdd={addProduct} onReload={reloadCatalog} />
@@ -848,7 +855,7 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
                       </label>
                       <label className="quote-field">
                         <span>Rendimento do rolo</span>
-                        <span className="quote-affix"><input inputMode="decimal" max="1000" min="0.01" onChange={(event) => setRollArea(event.target.value)} required step="0.01" type="number" value={rollArea} /><span aria-hidden="true">m²</span></span>
+                        <span className="quote-affix"><input inputMode="decimal" max="1000" min="0.01" onChange={(event) => setRollArea(event.target.value)} required={needsRollYield} step="0.01" type="number" value={rollArea} /><span aria-hidden="true">m²</span></span>
                       </label>
                       </>}
                     </div>
@@ -861,6 +868,7 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
                       <h2>Ambientes</h2>
                       <button className="quote-action-link" onClick={addEnvironment} type="button"><BudgetIcon type="add" />{isPro ? 'Adicionar ambiente' : 'Adicionar ambiente (Pro)'}</button>
                     </div>
+                    {pricingMode === 'roll' && <p className="quote-help" id="quote-rolls-help">Preencha largura e altura para calcular os rolos. Se deixar as duas medidas em branco, informe a quantidade de rolos.</p>}
                     {environments.map((environment, index) => {
                       const details = environmentBreakdown[index];
                       return (
@@ -868,11 +876,16 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
                           <legend className={environments.length > 1 ? 'quote-room-title' : 'quote-sr-only'}>Ambiente {index + 1}</legend>
                           {environments.length > 1 && <button aria-label={`Remover ambiente ${index + 1}`} className="quote-room-delete" onClick={() => removeEnvironment(index)} type="button"><BudgetIcon type="trash" /></button>}
                           <div className="quote-room-fields" data-mode={pricingMode}>
-                            <label className="quote-field quote-room-name"><span>Ambiente</span><input onChange={(event) => updateEnvironment(index, 'name', event.target.value)} placeholder="Ex.: Sala" required value={environment.name} /></label>
-                            <label className="quote-field"><span>Largura (m)</span><input inputMode="decimal" min="0.01" onChange={(event) => updateEnvironment(index, 'width', event.target.value)} placeholder="0,00" required step="0.01" type="number" value={environment.width} /></label>
-                            <label className="quote-field"><span>Altura (m)</span><input inputMode="decimal" min="0.01" onChange={(event) => updateEnvironment(index, 'height', event.target.value)} placeholder="0,00" required step="0.01" type="number" value={environment.height} /></label>
-                            <div className="quote-field quote-room-area"><span>Área</span><span>{MEASURE.format(details.area)} m²</span></div>
-                            {pricingMode === 'roll' && <label className="quote-field"><span>Rolos<span className="quote-sr-only"> (opcional)</span></span><input inputMode="numeric" min="1" onChange={(event) => updateEnvironment(index, 'rolls_manual', event.target.value)} placeholder={details.rollsAuto ? String(details.rollsAuto) : 'Auto'} step="1" type="number" value={environment.rolls_manual} /></label>}
+                            <label className="quote-field quote-room-name"><span>Ambiente</span><input onChange={(event) => updateEnvironment(index, 'name', event.target.value)} placeholder="Ex.: Sala" required={!details.hasNoDimensions} value={environment.name} /></label>
+                            <label className="quote-field"><span>Largura (m)</span><input inputMode="decimal" min="0.01" onChange={(event) => updateEnvironment(index, 'width', event.target.value)} placeholder="0,00" required={!details.hasNoDimensions} step="0.01" type="number" value={environment.width} /></label>
+                            <label className="quote-field"><span>Altura (m)</span><input inputMode="decimal" min="0.01" onChange={(event) => updateEnvironment(index, 'height', event.target.value)} placeholder="0,00" required={!details.hasNoDimensions} step="0.01" type="number" value={environment.height} /></label>
+                            <div className="quote-field quote-room-area"><span>Área</span><span>{details.hasDimensions ? `${MEASURE.format(details.area)} m²` : '—'}</span></div>
+                            {pricingMode === 'roll' && <label className="quote-field">
+                              <span>Rolos{!details.hasDimensions && <span aria-hidden="true"> *</span>}</span>
+                              <input aria-describedby="quote-rolls-help" aria-label={details.hasDimensions ? 'Rolos (opcional)' : 'Rolos'}
+                                inputMode="numeric" max="2147483647" min="1" onChange={(event) => updateEnvironment(index, 'rolls_manual', event.target.value)}
+                                placeholder={details.rollsAuto ? String(details.rollsAuto) : 'Ex.: 3'} required={!details.hasDimensions} step="1" type="number" value={environment.rolls_manual} />
+                            </label>}
                           </div>
                           <label className="quote-check"><input checked={Boolean(environment.removal_included)} onChange={(event) => updateEnvironment(index, 'removal_included', event.target.checked)} type="checkbox" />Remover papel</label>
                         </fieldset>
@@ -946,7 +959,9 @@ function BudgetEditor({ draft = null, draftId = null, original = null }) {
                       return (
                         <div key={index}>
                           <strong>{environment.name || `Ambiente ${index + 1}`}</strong>
-                          <p>{MEASURE.format(Number(environment.width))} m × {MEASURE.format(Number(environment.height))} m · {MEASURE.format(details.area)} m²</p>
+                          <p>{details.hasDimensions
+                            ? `${MEASURE.format(Number(environment.width))} m × ${MEASURE.format(Number(environment.height))} m · ${MEASURE.format(details.area)} m²`
+                            : `Medidas não informadas · ${details.rollsForMode} ${details.rollsForMode === 1 ? 'rolo' : 'rolos'}`}</p>
                         </div>
                       );
                     })}

@@ -13,6 +13,7 @@ const {
 
 const DEFAULT_ROLL_AREA = 4.5;
 const MAX_ROLL_AREA = 1000;
+const MAX_INSTALLATION_ROLLS = 2147483647; // INTEGER
 const MAX_REMOVAL_ROLLS = 1000;
 const MAX_BUDGET_AMOUNT = 99_999_999.99; // NUMERIC(10, 2)
 const UPFRONT_PAYMENT_METHODS = new Set([
@@ -497,8 +498,11 @@ async function writeBudget(req, res, editing = false) {
     let totalRemovalByEnvironment = 0;
     let totalRemovalRolls = 0;
 
-    const computedEnvironments = environments.map((environment) => {
-      const name = normalizeString(environment.name);
+    const computedEnvironments = environments.map((environment, index) => {
+      const noDimensions = cleanPricingMode === 'roll'
+        && String(environment.height ?? '').trim() === ''
+        && String(environment.width ?? '').trim() === '';
+      const name = normalizeString(environment.name) || (noDimensions ? `Ambiente ${index + 1}` : '');
       const height = normalizeNumber(environment.height);
       const width = normalizeNumber(environment.width);
       const hasManualRolls = environment.rolls_manual !== null && environment.rolls_manual !== undefined && String(environment.rolls_manual).trim() !== '';
@@ -515,11 +519,11 @@ async function writeBudget(req, res, editing = false) {
         throw new Error('VALIDATION_ENV_NAME');
       }
 
-      if (!isPositiveNumber(height) || !isPositiveNumber(width)) {
+      if (!noDimensions && (!isPositiveNumber(height) || !isPositiveNumber(width))) {
         throw new Error('VALIDATION_ENV_SIZE');
       }
 
-      if (hasManualRolls && (!Number.isInteger(rollsManual) || rollsManual <= 0)) {
+      if ((hasManualRolls || noDimensions) && (!Number.isInteger(rollsManual) || rollsManual <= 0 || rollsManual > MAX_INSTALLATION_ROLLS)) {
         throw new Error('VALIDATION_ENV_ROLLS');
       }
 
