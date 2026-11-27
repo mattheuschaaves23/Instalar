@@ -83,6 +83,17 @@ test('PDF de orçamento por rolo mostra a quantidade sem inventar medidas zerada
   assert.doesNotMatch(text, /\b0,00 (?:x|m²)/);
 });
 
+test('PDF por m² conserva a área informada mesmo sem largura e altura', async () => {
+  const { text } = await inspectPdf({
+    ...sample, isPro: true,
+    budget: { id: 45, status: 'pending', pricing_mode: 'square_meter', total_amount: 250, subtotal_rolls: 250, total_rolls: 3, total_area: 12.5 },
+    branding: { show_measurements: true },
+    environments: [{ name: 'Ambiente por área', width: 0, height: 0, area: 12.5, rolls_auto: 3, total: 250 }],
+  });
+  assert.match(text, /Ambiente por área\n12,50 m²/);
+  assert.doesNotMatch(text, /\b0,00 x/);
+});
+
 test('preserva configurações antigas e valida cor, modelo e texto personalizados', () => {
   const result = normalizePdfBranding({
     brand_name: '  Marca  antiga ', accent_color: '#cda349', intro_text: 'Primeiro parágrafo\r\n\nSegundo',

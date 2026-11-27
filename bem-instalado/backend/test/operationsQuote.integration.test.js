@@ -102,6 +102,16 @@ test('orçamento de catálogo, edição e horário na agenda com PostgreSQL isol
       const invalid = await call(createBudget, installer, { ...rollInput, environments: [{ name: 'Sala', ...environment }] });
       assert.equal(invalid.statusCode, 400, JSON.stringify(invalid.body));
     }
+    const m2 = { pricing_mode: 'square_meter', price_per_square_meter: 20, client_id: client.id };
+    const byArea = await call(createBudget, installer, { ...m2, environments: [{ area_manual: 12.5 }] });
+    assert.equal(byArea.statusCode, 201, JSON.stringify(byArea.body));
+    assert.equal(byArea.body.total_amount, '250.00');
+    const areaRoom = await pool.query('SELECT height, width, area FROM environments WHERE budget_id = $1', [byArea.body.id]);
+    assert.deepEqual(areaRoom.rows[0], { height: '0.00', width: '0.00', area: '12.50' });
+    for (const room of [{}, { area_manual: 0 }, { area_manual: 1.125 }, { width: 4, area_manual: 12.5 }]) {
+      const invalid = await call(createBudget, installer, { ...m2, environments: [{ name: 'Sala', ...room }] });
+      assert.equal(invalid.statusCode, 400, JSON.stringify(invalid.body));
+    }
     const listed = await call(getBudgets, installer);
     assert.equal(listed.body.find((row) => row.id === id).client_profile_complete, false);
 
