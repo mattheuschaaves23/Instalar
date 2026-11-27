@@ -106,7 +106,9 @@ function validateCheckoutCustomer(config, customer, customerId, expectedDigest) 
   const missing = [];
   if (!filled(customer.name)) missing.push('nome');
   if (!filled(customer.email) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(customer.email.trim())) missing.push('e-mail');
-  if (!filled(customer.phone) || !/^(?:55)?\d{10,11}$/.test(customer.phone.replace(/\D/g, ''))) missing.push('telefone');
+  // Asaas already normalizes phone numbers; the linked checkout requires
+  // this field to be present, not a second local format rule.
+  if (!filled(customer.phone)) missing.push('telefone');
   if (!filled(customer.address) || !filled(customer.addressNumber) || !filled(customer.province) ||
       !filled(customer.postalCode) || !/^\d{8}$/.test(customer.postalCode.replace(/\D/g, '')) ||
       !Number.isSafeInteger(customer.city) || customer.city <= 0) missing.push('endereço completo');

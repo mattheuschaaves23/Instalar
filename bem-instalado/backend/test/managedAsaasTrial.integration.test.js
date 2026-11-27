@@ -48,7 +48,7 @@ test(`${environment}: identidade única, replay, débito posterior, estorno e ca
       let payments = [];
       let lastPayload;
       const validCustomer = { cpfCnpj: cpf, name: 'Instalador fictício', email: 'instalarpro@example.com',
-        phone: '1100000000', address: 'Avenida de teste', addressNumber: '150', postalCode: '01310000',
+        phone: '110', address: 'Avenida de teste', addressNumber: '150', postalCode: '01310000',
         province: 'Bairro de teste', city: 1 };
       let customer = { ...validCustomer };
       let customerReadError = false;
@@ -93,6 +93,7 @@ test(`${environment}: identidade única, replay, débito posterior, estorno e ca
       await assert.rejects(approveVerifiedTrial(pool, config, 2, 'cus_outra_ficha', cpf, request), { status: production ? 403 : 409 });
       for (const [missing, message] of [
         [{ phone: null }, /telefone/i],
+        [{ phone: ' ' }, /telefone/i],
         [{ postalCode: null, city: null }, /endereço/i],
       ]) {
         customer = { ...validCustomer, ...missing };
