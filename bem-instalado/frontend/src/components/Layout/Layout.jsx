@@ -5,15 +5,19 @@ import Header from './Header';
 import InstallerPanelShell from './InstallerPanelShell';
 import { EmailVerificationNotice } from '../Auth/EmailVerification';
 import DecoratingWallLoader from './DecoratingWallLoader';
+import AppErrorBoundary from './AppErrorBoundary';
 import { useAuth } from '../../contexts/AuthContext';
 import { hasAdminAccess } from '../../utils/adminAccess';
 import { AdminWorkspace } from '../Admin/AdminWorkspace';
 
 function PageOutlet() {
+  const location = useLocation();
   return (
-    <Suspense fallback={<DecoratingWallLoader embedded phrase="Abrindo esta área do painel." />}>
-      <Outlet />
-    </Suspense>
+    <AppErrorBoundary embedded navigationKey={location.key}>
+      <Suspense fallback={<DecoratingWallLoader embedded phrase="Abrindo esta área do painel." />}>
+        <Outlet />
+      </Suspense>
+    </AppErrorBoundary>
   );
 }
 

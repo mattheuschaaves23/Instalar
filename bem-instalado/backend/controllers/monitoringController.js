@@ -2,6 +2,9 @@ const { cleanText, logApplicationError, safeMetadata } = require('../utils/error
 
 exports.reportClientError = async (req, res) => {
   const message = cleanText(req.body?.message, 1200);
+  const view = typeof req.body?.view === 'string' && /^[A-Z][A-Za-z]{0,39}$/.test(req.body.view)
+    ? req.body.view
+    : undefined;
 
   if (!message) {
     return res.status(400).json({ error: 'Mensagem do erro não informada.' });
@@ -21,6 +24,7 @@ exports.reportClientError = async (req, res) => {
       componentStack: req.body?.component_stack,
       browser: req.body?.browser,
       release: req.body?.release,
+      view,
     }),
   });
 
