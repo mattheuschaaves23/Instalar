@@ -313,6 +313,11 @@
 }
 .quote-wizard-form[data-client-picker] .quote-steps { width: min(100%, 43rem); margin-bottom: 0.9rem; }
 .quote-wizard-form[data-client-picker] .quote-step { --quote-step-size: 2rem; font-size: 0.85rem; }
+.quote-wizard-form[data-client-picker] .quote-plan-usage { padding: 0.35rem 0.6rem; margin-bottom: 0.6rem; }
+.quote-wizard-form[data-client-picker] .plan-usage-head { flex-wrap: nowrap; gap: 0.35rem 0.65rem; }
+.quote-wizard-form[data-client-picker] :is(.plan-usage-label, .plan-usage-copy) { font-size: 0.75rem; line-height: 1.25; }
+.quote-wizard-form[data-client-picker] .plan-usage-head a { padding: 0.25rem 0.5rem !important; white-space: nowrap; }
+.quote-wizard-form[data-client-picker] .plan-usage-track { margin-top: 0.25rem; height: 0.25rem; }
 .quote-wizard-form[data-client-picker] .quote-heading { margin-bottom: 0.85rem; }
 .quote-wizard-form[data-client-picker] .quote-heading h1 { font-size: clamp(1.45rem, 2.5vw, 2rem); }
 .quote-wizard-form[data-client-picker] .quote-heading p { font-size: 1rem; }
@@ -325,6 +330,9 @@
   margin-top: 0.6rem;
   max-height: 14rem;
   max-height: clamp(5.5rem, calc(100dvh - 31rem), 14rem);
+}
+.quote-wizard-form[data-client-picker] .quote-workspace:has(> .quote-plan-usage) .quote-client-list {
+  max-height: clamp(4.5rem, calc(100dvh - 35rem), 14rem);
 }
 .quote-wizard-form[data-client-picker] .quote-client-row { min-height: 2.75rem; padding-block: 0.2rem; font-size: 0.95rem; }
 .quote-wizard-form[data-client-picker] .quote-client-avatar { width: 1.75rem; }
