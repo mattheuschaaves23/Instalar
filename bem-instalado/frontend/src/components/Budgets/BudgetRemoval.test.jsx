@@ -31,23 +31,44 @@ const change = (name, value) => fireEvent.change(screen.getByLabelText(name, { e
 const click = (name) => fireEvent.click(screen.getByRole('button', { name, exact: true }));
 const selectMode = (name = /^Por rolo/) => fireEvent.click(screen.getByRole('button', { name }));
 
-it('continua salvando por m² sem informar medidas nem ambientes', async () => {
+it('calcula por m² pela área informada, sem exigir largura e altura ou um valor fechado', async () => {
   api.post.mockResolvedValue({ data: { id: 55 } });
   render(<MemoryRouter><BudgetForm /></MemoryRouter>);
   fireEvent.click(await screen.findByRole('radio', { name: 'Cliente QA' }));
   click('Continuar para o cálculo');
   expect(screen.getByRole('heading', { name: 'Como você quer montar o orçamento?' })).toBeTruthy();
   selectMode(/^Por m²/);
-  fireEvent.click(screen.getByRole('checkbox', { name: 'Informar total sem medidas' }));
-  expect(screen.queryByLabelText('Largura (m)')).toBeNull();
-  change('Valor do serviço', '450.50');
+  expect(screen.queryByRole('checkbox', { name: 'Informar total sem medidas' })).toBeNull();
+  expect(screen.getByRole('spinbutton', { name: 'Área total (m²)' }).required).toBe(true);
   click('Revisar orçamento');
-  expect(screen.getByText('Medidas não informadas.', { exact: true })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Continuar para salvar' })).toBeNull();
+  change('Área total (m²)', '12.50');
+  change('Preço por m²', '20');
+  click('Revisar orçamento');
+  expect(screen.getByText(/Área informada.*12,50 m²/)).toBeTruthy();
   click('Continuar para salvar');
   click('Salvar orçamento');
   await waitFor(() => expect(api.post).toHaveBeenCalledWith('/budgets', expect.objectContaining({
-    client_id: 7, pricing_mode: 'square_meter', manual_price: 450.50, environments: [],
+    client_id: 7, pricing_mode: 'square_meter', price_per_square_meter: 20,
+    environments: [expect.objectContaining({ height: null, width: null, area_manual: 12.5 })],
   })));
+  expect(api.post.mock.calls[0][1]).not.toHaveProperty('manual_price');
+});
+
+it('calcula a área por m² ao informar largura e altura e não pede a área de novo', async () => {
+  render(<MemoryRouter><BudgetForm /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('radio', { name: 'Cliente QA' }));
+  click('Continuar para o cálculo');
+  selectMode(/^Por m²/);
+  change('Ambiente', 'Sala');
+  change('Área total (m²)', '12.50');
+  change('Largura (m)', '4');
+  click('Revisar orçamento');
+  expect(screen.queryByRole('button', { name: 'Continuar para salvar' })).toBeNull();
+  change('Altura (m)', '2');
+  expect(screen.queryByRole('spinbutton', { name: 'Área total (m²)' })).toBeNull();
+  click('Revisar orçamento');
+  expect(screen.getByText(/4,00 m × 2,00 m · 8,00 m²/)).toBeTruthy();
 });
 
 it('usa a quantidade informada quando não há medidas, sem pedir valor fechado', async () => {
