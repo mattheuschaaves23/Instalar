@@ -71,6 +71,18 @@ test('PDF discrimina os produtos salvos e não lhes atribui medidas', async () =
   assert.doesNotMatch(text, /Serviço a valor fechado|0 rolos|Nenhum ambiente discriminado/);
 });
 
+test('PDF de orçamento por rolo mostra a quantidade sem inventar medidas zeradas', async () => {
+  const { text } = await inspectPdf({
+    ...sample, isPro: true,
+    budget: { id: 44, status: 'pending', pricing_mode: 'roll', total_amount: 240, subtotal_rolls: 240, total_rolls: 3, total_area: 0 },
+    branding: { show_measurements: true },
+    environments: [{ name: 'Ambiente 1', width: 0, height: 0, area: 0, rolls_auto: 0, rolls_manual: 3, total: 240 }],
+  });
+  assert.match(text, /3 rolos/);
+  assert.match(text, /240,00/);
+  assert.doesNotMatch(text, /\b0,00 (?:x|m²)/);
+});
+
 test('preserva configurações antigas e valida cor, modelo e texto personalizados', () => {
   const result = normalizePdfBranding({
     brand_name: '  Marca  antiga ', accent_color: '#cda349', intro_text: 'Primeiro parágrafo\r\n\nSegundo',

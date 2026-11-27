@@ -329,8 +329,9 @@ function render(doc, { budget, client, environments, user, branding, logo, photo
   if (!fixedPrice) environments.forEach((environment, index) => {
     const rolls = number(environment.rolls_manual) > 0 ? number(environment.rolls_manual) : number(environment.rolls_auto);
     const name = roomName(environment);
-    const dimensions = `${decimal(environment.width)} x ${decimal(environment.height)} m`;
-    const area = `${decimal(environment.area)} m²`;
+    const hasMeasurements = number(environment.width) > 0 && number(environment.height) > 0;
+    const dimensions = hasMeasurements ? `${decimal(environment.width)} x ${decimal(environment.height)} m` : '—';
+    const area = hasMeasurements ? `${decimal(environment.area)} m²` : '—';
     const value = money(number(environment.total) - number(environment.removal_total));
     const rank = String(index + 1).padStart(2, '0');
     const rowHeight = rowSize(name);
@@ -340,7 +341,7 @@ function render(doc, { budget, client, environments, user, branding, logo, photo
       doc.circle(M + 19, y + 16, 10).fill(accentText);
       fixed(rank, M + 9, y + 12, 20, { size: 7, color: PAPER, bold: true, align: 'center' });
       write(name, M + 38, y + 7, cardNameWidth, { size: 11, bold: true });
-      if (detail) fixed(`${dimensions}  /  ${area}  /  ${rolls} ${rolls === 1 ? 'rolo' : 'rolos'}`, M + 38,
+      if (detail) fixed(`${hasMeasurements ? `${dimensions}  /  ${area}  /  ` : ''}${rolls} ${rolls === 1 ? 'rolo' : 'rolos'}`, M + 38,
         y + 7 + measure(name, cardNameWidth, 11, true), cardNameWidth, { size: 8 });
       if (prices) fixed(value, right - 120, y + 11, 108, { align: 'right', color: accentText, size: 11, bold: true });
       y += rowHeight + (compact ? 4 : 6);
@@ -371,7 +372,12 @@ function render(doc, { budget, client, environments, user, branding, logo, photo
   const removalRolls = number(budget.removal_rolls) || number(budget.total_rolls);
   const totals = [['Subtotal do serviço', money(budget.subtotal_rolls)]];
   if (removalCost > 0) totals.push([number(budget.removal_price_per_roll) > 0 ? `Remoção (${removalRolls} rolos x ${money(budget.removal_price_per_roll)})` : 'Remoção', money(removalCost)]);
-  if (detail && !fixedPrice) totals.unshift([`${decimal(budget.total_area)} m² / ${number(budget.total_rolls)} rolos`, '']);
+  if (detail && !fixedPrice) {
+    const totalArea = number(budget.total_area);
+    const totalRolls = number(budget.total_rolls);
+    const areaLabel = totalArea > 0 ? `${decimal(totalArea)} m² / ` : '';
+    totals.unshift([`${areaLabel}${totalRolls} ${totalRolls === 1 ? 'rolo' : 'rolos'}`, '']);
+  }
   const totalHeight = totals.length * 16 + (studio || classic ? 0 : compact ? 36 : 48);
   room(totalHeight);
   totals.forEach(([label, value]) => {
