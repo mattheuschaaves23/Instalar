@@ -230,7 +230,17 @@ it('abre o cálculo com os ambientes e medidas do pedido, sem definir o preço',
   expect(screen.getAllByLabelText('Ambiente', { exact: true }).map(({ value }) => value)).toEqual(['Sala', 'Quarto']);
   expect(screen.getAllByLabelText('Largura (m)', { exact: true }).map(({ value }) => value)).toEqual(['3.5', '']);
   expect(screen.getAllByLabelText('Altura (m)', { exact: true }).map(({ value }) => value)).toEqual(['2.4', '']);
-  expect(screen.getAllByLabelText('Rolos (opcional)', { exact: true }).map(({ value }) => value)).toEqual(['2', '']);
+  expect(screen.getByRole('spinbutton', { name: 'Rolos (opcional)' }).value).toBe('2');
+  const manualRolls = screen.getByRole('spinbutton', { name: 'Rolos', exact: true });
+  expect(manualRolls.value).toBe('');
+  expect(manualRolls.required).toBe(true);
+  const price = screen.getByRole('spinbutton', { name: 'Preço por rolo' });
+  fireEvent.change(price, { target: { value: '80' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Revisar orçamento' }));
+  expect(screen.queryByRole('button', { name: 'Continuar para salvar' })).toBeNull();
+  fireEvent.change(manualRolls, { target: { value: '1' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Revisar orçamento' }));
+  expect(screen.getByRole('button', { name: 'Continuar para salvar' })).toBeTruthy();
 });
 
 it('aceita o pedido direto no painel e abre o rascunho sem abrir WhatsApp', async () => {

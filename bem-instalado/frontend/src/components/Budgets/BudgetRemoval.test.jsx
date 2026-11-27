@@ -93,6 +93,24 @@ it('não descarta uma medida preenchida e mantém a quantidade opcional quando o
   expect(screen.getByRole('button', { name: 'Continuar para salvar' })).toBeTruthy();
 });
 
+it('reabre o orçamento por rolo sem transformar ausência de medidas em zeros editáveis', async () => {
+  api.get.mockResolvedValueOnce({ data: {
+    id: 25, status: 'pending', client_id: 7, pricing_mode: 'roll', price_per_roll: '80.00',
+    environments: [{ name: 'Ambiente 1', height: '0.00', width: '0.00', rolls_manual: 3 }],
+  } });
+  render(<MemoryRouter initialEntries={['/budgets/25/edit']}><Routes>
+    <Route path="/budgets/:budgetId/edit" element={<BudgetForm />} />
+  </Routes></MemoryRouter>);
+  expect((await screen.findByRole('radio', { name: 'Cliente QA' })).checked).toBe(true);
+  click('Continuar para o cálculo');
+  selectMode();
+  expect(screen.getByRole('spinbutton', { name: 'Largura (m)' }).value).toBe('');
+  expect(screen.getByRole('spinbutton', { name: 'Altura (m)' }).value).toBe('');
+  expect(screen.getByRole('spinbutton', { name: 'Rolos' }).value).toBe('3');
+  click('Revisar orçamento');
+  expect(screen.getByText(/Medidas não informadas.*3 rolos/)).toBeTruthy();
+});
+
 it('encontra clientes sem acentos e por telefone formatado', async () => {
   render(<MemoryRouter><BudgetForm /></MemoryRouter>);
   await screen.findByRole('radio', { name: 'João Silva' });
