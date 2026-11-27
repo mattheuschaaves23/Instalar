@@ -1,6 +1,6 @@
 const { createHmac, randomUUID, timingSafeEqual } = require('node:crypto');
 const { makeCheckout, parseCheckoutLink } = require('../scripts/asaasTrialSandbox');
-const { projectTrialAccess } = require('./subscriptionRollout');
+const { projectTrialAccess, readAsaasWalletId } = require('./subscriptionRollout');
 const { getOfferPrices } = require('./subscriptionOffer');
 
 const PROVIDER = 'asaas_trial_v2';
@@ -69,8 +69,7 @@ function canStartManagedTrial(config, userId) {
 
 async function assertProductionDestination(config, request) {
   if (config.environment !== 'production') return;
-  const wallet = await request('GET', '/wallets/');
-  if (typeof wallet?.walletId !== 'string' || wallet.walletId.toLowerCase() !== config.walletId.toLowerCase()) {
+  if (readAsaasWalletId(await request('GET', '/wallets/')) !== config.walletId.toLowerCase()) {
     throw new BillingError(503, 'Carteira do Asaas diferente da esperada. Contratação pausada.');
   }
   const status = await request('GET', '/myAccount/status/');
@@ -245,10 +244,22 @@ async function providerSnapshot(trial, request) {
     if (byRef.length > 1) throw new BillingError(409, 'Mais de uma assinatura vinculada. Acione o suporte.');
     if (byRef.length === 1) sub = byRef[0];
     else if (trial.checkout_id) {
-      const params = new URLSearchParams({ checkoutSession: trial.checkout_id, limit: '100' });
-      const linked = list(await request('GET', '/payments?' + params)).filter((item) =>
-        item.checkoutSession === trial.checkout_id && item.customer === trial.customer_id);
-      const ids = new Set(linked.map((item) => providerId(item.subscription, 'sub_')).filter(Boolean));
+      // Recurring charges can be missing from the checkout filter even though
+      // their records include its ID. Scan the customer's pages and match both IDs.
+      const ids = new Set();
+      for (let offset = 0; offset <= 400; offset += 100) {
+        const query = new URLSearchParams({ customer: trial.customer_id, limit: '100', offset: String(offset) });
+        const page = await request('GET', '/payments?' + query);
+        if (!Array.isArray(page?.data) || typeof page.hasMore !== 'boolean' || (page.hasMore && offset === 400)) {
+          throw new BillingError(502, 'Conciliação incompleta no Asaas.');
+        }
+        for (const item of page.data) {
+          if (item.checkoutSession !== trial.checkout_id || item.customer !== trial.customer_id) continue;
+          const linkedId = providerId(item.subscription, 'sub_');
+          if (linkedId) ids.add(linkedId);
+        }
+        if (!page.hasMore) break;
+      }
       if (ids.size > 1) throw new BillingError(409, 'Mais de uma assinatura vinculada. Acione o suporte.');
       [id] = ids;
     }

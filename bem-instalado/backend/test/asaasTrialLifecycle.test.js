@@ -27,6 +27,30 @@ test('a confirmação do checkout sozinha não concede Pro; uma assinatura verif
   });
 });
 
+test('Asaas pode adiantar o próximo vencimento interno sem ter debitado a primeira cobrança', () => {
+  const next = { ...providerSub, nextDueDate: '2027-02-04' };
+  const pending = { ...first, status: 'PENDING', confirmedDate: null, paymentDate: null };
+  assert.deepEqual(lifecycle.projectTrialAccess(intent, next, [pending], '2026-11-27'), {
+    state: 'trial', trialConfirmed: true, proUntil: '2026-12-04',
+  });
+  assert.deepEqual(lifecycle.projectTrialAccess(intent, next, [pending], '2026-12-04'), {
+    state: 'unpaid', trialConfirmed: true, proUntil: null,
+  });
+  for (const invalid of [
+    { ...pending, customer: 'cus_outro' },
+    { ...pending, deleted: true },
+    { ...pending, status: 'OVERDUE' },
+    { ...pending, dueDate: '2026-12-03' },
+  ]) {
+    assert.equal(lifecycle.projectTrialAccess(intent, next, [invalid], '2026-11-27').state, 'review');
+  }
+  for (const value of [49.90, 1]) {
+    assert.equal(lifecycle.projectTrialAccess(intent, next, [pending, {
+      ...pending, value, id: 'pay_adiantada', originalDueDate: '2026-12-02', dueDate: '2026-12-02',
+    }], '2026-11-27').state, 'review');
+  }
+});
+
 test('cobrança pendente, recusada, anterior ao vencimento ou de outra assinatura não estende Pro', () => {
   const started = { ...intent, trial_confirmed: true };
   for (const invalid of [

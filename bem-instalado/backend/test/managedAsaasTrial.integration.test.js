@@ -48,7 +48,9 @@ test(`${environment}: identidade única, replay, débito posterior, estorno e ca
       let payments = [];
       let lastPayload;
       const request = async (method, url, payload) => {
-        if (method === 'GET' && url === '/wallets/') return { walletId };
+        if (method === 'GET' && url === '/wallets/') {
+          return { object: 'list', hasMore: false, totalCount: 1, data: [{ object: 'wallet', id: walletId }] };
+        }
         if (method === 'GET' && url === '/myAccount/status/') return { general: 'APPROVED' };
         if (method === 'GET' && url.startsWith('/customers/')) return { id: url.split('/').at(-1), cpfCnpj: cpf };
         if (method === 'POST' && url === '/checkouts') {
@@ -58,7 +60,12 @@ test(`${environment}: identidade única, replay, débito posterior, estorno e ca
         }
         if (method === 'GET' && url.startsWith('/subscriptions?')) return { data: subscription ? [subscription] : [] };
         if (method === 'GET' && url.startsWith('/subscriptions/sub_fixture/payments?')) return { data: payments };
-        if (method === 'GET' && url.startsWith('/payments?')) return { data: payments };
+        if (method === 'GET' && url.startsWith('/payments?')) {
+          const params = new URL(url, 'https://asaas.example').searchParams;
+          if (params.has('checkoutSession')) return { data: payments.length > 1 ? [payments[0]] : [] };
+          assert.equal(params.get('customer'), 'cus_fixture');
+          return { data: payments, hasMore: false };
+        }
         if (method === 'DELETE' && url === '/subscriptions/sub_fixture') {
           subscription = { ...subscription, deleted: true, status: 'EXPIRED' };
           return { id: 'sub_fixture', deleted: true };
@@ -79,9 +86,22 @@ test(`${environment}: identidade única, replay, débito posterior, estorno e ca
       assert.equal((await getTrial(pool, config, 1)).state, 'pending');
       assert.equal((await query("SELECT id FROM subscriptions WHERE plan = 'pro'")).rowCount, 0);
 
+      assert.match(lastPayload.externalReference, /^instalapro-managed-/);
       subscription = { id: 'sub_fixture', customer: 'cus_fixture', status: 'ACTIVE', cycle: 'MONTHLY',
-        externalReference: lastPayload.externalReference, nextDueDate: checkout.first_charge_on, billingType: 'CREDIT_CARD', value: 49.90 };
+        externalReference: null, nextDueDate: '2099-12-04', billingType: 'CREDIT_CARD', value: 49.90 };
+      const future = { id: 'pay_fixture', subscription: subscription.id, customer: subscription.customer, status: 'PENDING',
+        value: 49.90, billingType: 'CREDIT_CARD', dueDate: checkout.first_charge_on };
       const created = event('evt_created', 'SUBSCRIPTION_CREATED', { subscription });
+      payments = [{ ...future, checkoutSession: 'co_diferente' }];
+      await handleManagedEvent(pool, config, config.webhookToken, event('evt_outro_checkout', 'SUBSCRIPTION_CREATED', { subscription }), request);
+      assert.equal((await getTrial(pool, config, 1)).state, 'pending');
+      payments = [
+        { ...future, checkoutSession: 'co_fixture' },
+        { ...future, id: 'pay_unexpected', subscription: 'sub_unexpected', checkoutSession: 'co_fixture' },
+      ];
+      await assert.rejects(handleManagedEvent(pool, config, config.webhookToken, created, request), { status: 409 });
+      assert.equal((await getTrial(pool, config, 1)).subscription_id, null);
+      payments = [{ ...future, checkoutSession: 'co_fixture' }];
       // Avoid treating legacy checkout confirmation as grant and process the exact same event twice.
       await handleManagedEvent(pool, config, config.webhookToken, created, request);
       await handleManagedEvent(pool, config, config.webhookToken, created, request);
