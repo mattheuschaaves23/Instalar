@@ -98,6 +98,21 @@ function identityDigest(config, cpf) {
   return createHmac('sha256', Buffer.from(config.identityKey, 'hex')).update('asaas-' + namespace + ':cpf:' + digits).digest('hex');
 }
 
+function validateCheckoutCustomer(config, customer, customerId, expectedDigest) {
+  if (customer?.id !== customerId || customer.deleted || identityDigest(config, customer.cpfCnpj) !== expectedDigest) {
+    throw new BillingError(422, 'O cadastro no Asaas diverge da identidade conferida pelo operador.');
+  }
+  const filled = (value) => typeof value === 'string' && value.trim().length > 0;
+  const missing = [];
+  if (!filled(customer.name)) missing.push('nome');
+  if (!filled(customer.email) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(customer.email.trim())) missing.push('e-mail');
+  if (!filled(customer.phone) || !/^(?:55)?\d{10,11}$/.test(customer.phone.replace(/\D/g, ''))) missing.push('telefone');
+  if (!filled(customer.address) || !filled(customer.addressNumber) || !filled(customer.province) ||
+      !filled(customer.postalCode) || !/^\d{8}$/.test(customer.postalCode.replace(/\D/g, '')) ||
+      !Number.isSafeInteger(customer.city) || customer.city <= 0) missing.push('endereço completo');
+  if (missing.length) throw new BillingError(422, 'Complete no Asaas os dados do cadastro: ' + missing.join(', ') + '.');
+}
+
 async function approveVerifiedTrial(db, config, userId, customerId, verifiedCpf, request = providerClient(config)) {
   if (!Number.isSafeInteger(userId) || userId < 1 || !providerId(customerId, 'cus_')) {
     throw new BillingError(400, 'Identificador de instalador ou cliente de teste inválido.');
@@ -108,9 +123,7 @@ async function approveVerifiedTrial(db, config, userId, customerId, verifiedCpf,
   }
   const digest = identityDigest(config, verifiedCpf);
   const customer = await request('GET', '/customers/' + customerId);
-  if (customer?.id !== customerId || customer.deleted || identityDigest(config, customer.cpfCnpj) !== digest) {
-    throw new BillingError(422, 'O cadastro no Asaas diverge da identidade conferida pelo operador.');
-  }
+  validateCheckoutCustomer(config, customer, customerId, digest);
   const { rowCount } = await db.query(`INSERT INTO asaas_managed_trials (account_id, user_id, identity_digest, customer_id)
     SELECT $1, id, $3, $4 FROM users WHERE id = $2 AND account_type = 'installer' AND deleted_at IS NULL AND NOT is_admin
     ON CONFLICT DO NOTHING`, [config.accountId, userId, digest, customerId]);
@@ -193,6 +206,13 @@ async function startTrial(pool, config, userId, plan, accepted, monthlyPrice, re
   } else if (accepted !== true) {
     throw new BillingError(400, 'Escolha o plano e confirme o teste.');
   }
+  // This GET cannot create a checkout. Keep it outside the transaction so a
+  // slow provider does not occupy the production database connection.
+  const candidate = await getTrial(pool, config, userId);
+  if (!candidate) throw new BillingError(403, 'A identidade ainda não foi aprovada para este teste.');
+  if (candidate.state !== 'eligible') throw new BillingError(409, 'Já existe uma tentativa para esta identidade. Confira o status ou fale com suporte.');
+  const customer = await request('GET', '/customers/' + candidate.customer_id);
+  validateCheckoutCustomer(config, customer, candidate.customer_id, candidate.identity_digest);
   const reservation = await transaction(pool, async (db) => {
     const allowed = await db.query("SELECT id FROM users WHERE id = $1 AND account_type = 'installer' AND deleted_at IS NULL AND NOT is_admin FOR UPDATE", [userId]);
     if (!allowed.rowCount) throw new BillingError(403, 'Use uma conta de instalador de teste, sem acesso administrativo.');
@@ -202,6 +222,9 @@ async function startTrial(pool, config, userId, plan, accepted, monthlyPrice, re
     const trial = await getTrial(db, config, userId);
     if (!trial) throw new BillingError(403, 'A identidade ainda não foi aprovada para este teste.');
     if (trial.state !== 'eligible') throw new BillingError(409, 'Já existe uma tentativa para esta identidade. Confira o status ou fale com suporte.');
+    if (trial.customer_id !== candidate.customer_id || trial.identity_digest !== candidate.identity_digest) {
+      throw new BillingError(409, 'O cadastro aprovado mudou. Confira os dados antes de continuar.');
+    }
     const reference = 'instalapro-managed-' + randomUUID();
     const payload = buildManagedCheckout(config, { ...trial, reference, plan }, new Date(), monthlyPrice);
     const { rowCount } = await db.query(`UPDATE asaas_managed_trials SET state = 'pending',
@@ -209,14 +232,10 @@ async function startTrial(pool, config, userId, plan, accepted, monthlyPrice, re
       WHERE account_id = $1 AND user_id = $2 AND state = 'eligible'`,
       [config.accountId, userId, reference, plan, Math.round(payload.items[0].value * 100), payload.subscription.nextDueDate]);
     if (!rowCount) throw new BillingError(409, 'Já existe um checkout para esta identidade.');
-    return { trial, reference, payload };
+    return { reference, payload };
   });
   // Don't retry automatically: a timeout can happen after Asaas creates it.
-  const { trial, reference, payload } = reservation;
-  const customer = await request('GET', '/customers/' + trial.customer_id);
-  if (customer?.id !== trial.customer_id || customer.deleted || identityDigest(config, customer.cpfCnpj) !== trial.identity_digest) {
-    throw new BillingError(422, 'O cadastro de teste no Asaas não corresponde à identidade aprovada.');
-  }
+  const { reference, payload } = reservation;
   const checkout = await request('POST', '/checkouts', payload);
   const url = parseCheckoutLink(checkout, config.environment === 'production');
   await pool.query(`UPDATE asaas_managed_trials SET checkout_id = $2 WHERE reference = $1`, [reference, checkout.id]);

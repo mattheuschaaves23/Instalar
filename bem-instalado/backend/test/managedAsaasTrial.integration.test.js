@@ -47,12 +47,24 @@ test(`${environment}: identidade única, replay, débito posterior, estorno e ca
       let subscription = null;
       let payments = [];
       let lastPayload;
+      const validCustomer = { cpfCnpj: cpf, name: 'Instalador fictício', email: 'instalarpro@example.com',
+        phone: '1100000000', address: 'Avenida de teste', addressNumber: '150', postalCode: '01310000',
+        province: 'Bairro de teste', city: 1 };
+      let customer = { ...validCustomer };
+      let customerReadError = false;
+      let changeIdentityDuringCheck = false;
       const request = async (method, url, payload) => {
         if (method === 'GET' && url === '/wallets/') {
           return { object: 'list', hasMore: false, totalCount: 1, data: [{ object: 'wallet', id: walletId }] };
         }
         if (method === 'GET' && url === '/myAccount/status/') return { general: 'APPROVED' };
-        if (method === 'GET' && url.startsWith('/customers/')) return { id: url.split('/').at(-1), cpfCnpj: cpf };
+        if (method === 'GET' && url.startsWith('/customers/')) {
+          if (customerReadError) throw new Error('Indisponibilidade do Asaas no teste');
+          if (changeIdentityDuringCheck) {
+            await query('UPDATE asaas_managed_trials SET identity_digest = $1 WHERE user_id = 1', ['d'.repeat(64)]);
+          }
+          return { id: url.split('/').at(-1), ...customer };
+        }
         if (method === 'POST' && url === '/checkouts') {
           createCount++;
           lastPayload = payload;
@@ -72,8 +84,33 @@ test(`${environment}: identidade única, replay, débito posterior, estorno e ca
         }
         assert.fail('unexpected provider call: ' + method + ' ' + url);
       };
+      customer = { ...validCustomer, email: null };
+      await assert.rejects(approveVerifiedTrial(pool, config, 1, 'cus_fixture', cpf, request),
+        { status: 422, message: /e-mail/i });
+      assert.equal(await getTrial(pool, config, 1), null);
+      customer = { ...validCustomer };
       await approveVerifiedTrial(pool, config, 1, 'cus_fixture', cpf, request);
       await assert.rejects(approveVerifiedTrial(pool, config, 2, 'cus_outra_ficha', cpf, request), { status: production ? 403 : 409 });
+      for (const [missing, message] of [
+        [{ phone: null }, /telefone/i],
+        [{ postalCode: null, city: null }, /endereço/i],
+      ]) {
+        customer = { ...validCustomer, ...missing };
+        await assert.rejects(startTrial(pool, config, 1, 'monthly', consent, 49.9, request), { status: 422, message });
+      }
+      customer = { ...validCustomer };
+      customerReadError = true;
+      await assert.rejects(startTrial(pool, config, 1, 'monthly', consent, 49.9, request), /Indisponibilidade/);
+      customerReadError = false;
+      const { identity_digest: currentDigest } = await getTrial(pool, config, 1);
+      changeIdentityDuringCheck = true;
+      await assert.rejects(startTrial(pool, config, 1, 'monthly', consent, 49.9, request), { status: 409 });
+      changeIdentityDuringCheck = false;
+      await query('UPDATE asaas_managed_trials SET identity_digest = $1 WHERE user_id = 1', [currentDigest]);
+      assert.equal((await getTrial(pool, config, 1)).state, 'eligible');
+      assert.equal((await getTrial(pool, config, 1)).reference, null);
+      assert.equal(createCount, 0);
+      customer = { ...validCustomer };
       const checkout = await startTrial(pool, config, 1, 'monthly', consent, 49.9, request);
       assert.equal(checkout.url, `https://${production ? '' : 'sandbox.'}asaas.com/checkoutSession/show?id=co_fixture`);
       await assert.rejects(startTrial(pool, config, 1, 'monthly', consent, 49.9, request), { status: 409 });
