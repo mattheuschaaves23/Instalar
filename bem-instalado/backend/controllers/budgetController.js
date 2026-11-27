@@ -499,9 +499,9 @@ async function writeBudget(req, res, editing = false) {
     let totalRemovalRolls = 0;
 
     const computedEnvironments = environments.map((environment, index) => {
-      const noDimensions = cleanPricingMode === 'roll'
-        && String(environment.height ?? '').trim() === ''
+      const noDimensions = String(environment.height ?? '').trim() === ''
         && String(environment.width ?? '').trim() === '';
+      const usesManualArea = cleanPricingMode === 'square_meter' && noDimensions;
       const name = normalizeString(environment.name) || (noDimensions ? `Ambiente ${index + 1}` : '');
       const height = normalizeNumber(environment.height);
       const width = normalizeNumber(environment.width);
@@ -523,7 +523,11 @@ async function writeBudget(req, res, editing = false) {
         throw new Error('VALIDATION_ENV_SIZE');
       }
 
-      if ((hasManualRolls || noDimensions) && (!Number.isInteger(rollsManual) || rollsManual <= 0 || rollsManual > MAX_INSTALLATION_ROLLS)) {
+      if (usesManualArea && !money(environment.area_manual)) {
+        throw new Error('VALIDATION_ENV_AREA');
+      }
+
+      if ((hasManualRolls || (noDimensions && !usesManualArea)) && (!Number.isInteger(rollsManual) || rollsManual <= 0 || rollsManual > MAX_INSTALLATION_ROLLS)) {
         throw new Error('VALIDATION_ENV_ROLLS');
       }
 
@@ -543,8 +547,11 @@ async function writeBudget(req, res, editing = false) {
         throw new Error('VALIDATION_ENV_REMOVAL');
       }
 
-      const area = height * width;
+      const area = usesManualArea ? environment.area_manual : height * width;
       const rollsAuto = Math.ceil(area / cleanRollArea);
+      if (usesManualArea && rollsAuto > MAX_INSTALLATION_ROLLS) {
+        throw new Error('VALIDATION_ENV_AREA');
+      }
       const rollsUsed = rollsManual || rollsAuto;
       const subtotalByEnvironment = cleanPricingMode === 'square_meter'
         ? area * cleanPricePerSquareMeter
@@ -759,6 +766,10 @@ async function writeBudget(req, res, editing = false) {
 
     if (error?.message === 'VALIDATION_ENV_SIZE') {
       return res.status(400).json({ error: 'Altura e largura devem ser maiores que zero.' });
+    }
+
+    if (error?.message === 'VALIDATION_ENV_AREA') {
+      return res.status(400).json({ error: 'Sem largura e altura, informe uma área em m² maior que zero, com até duas casas decimais e dentro do limite suportado.' });
     }
 
     if (error?.message === 'VALIDATION_ENV_ROLLS') {

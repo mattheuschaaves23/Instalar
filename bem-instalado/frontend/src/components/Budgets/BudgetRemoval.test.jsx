@@ -43,7 +43,7 @@ it('calcula por m² pela área informada, sem exigir largura e altura ou um valo
   click('Revisar orçamento');
   expect(screen.queryByRole('button', { name: 'Continuar para salvar' })).toBeNull();
   change('Área total (m²)', '12.50');
-  change('Preço por m²', '20');
+  fireEvent.change(screen.getByRole('spinbutton', { name: 'Preço por m²' }), { target: { value: '20' } });
   click('Revisar orçamento');
   expect(screen.getByText(/Área informada.*12,50 m²/)).toBeTruthy();
   click('Continuar para salvar');

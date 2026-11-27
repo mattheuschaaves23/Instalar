@@ -331,7 +331,8 @@ function render(doc, { budget, client, environments, user, branding, logo, photo
     const name = roomName(environment);
     const hasMeasurements = number(environment.width) > 0 && number(environment.height) > 0;
     const dimensions = hasMeasurements ? `${decimal(environment.width)} x ${decimal(environment.height)} m` : '—';
-    const area = hasMeasurements ? `${decimal(environment.area)} m²` : '—';
+    const hasArea = hasMeasurements || number(environment.area) > 0;
+    const area = hasArea ? `${decimal(environment.area)} m²` : '—';
     const value = money(number(environment.total) - number(environment.removal_total));
     const rank = String(index + 1).padStart(2, '0');
     const rowHeight = rowSize(name);
@@ -341,7 +342,8 @@ function render(doc, { budget, client, environments, user, branding, logo, photo
       doc.circle(M + 19, y + 16, 10).fill(accentText);
       fixed(rank, M + 9, y + 12, 20, { size: 7, color: PAPER, bold: true, align: 'center' });
       write(name, M + 38, y + 7, cardNameWidth, { size: 11, bold: true });
-      if (detail) fixed(`${hasMeasurements ? `${dimensions}  /  ${area}  /  ` : ''}${rolls} ${rolls === 1 ? 'rolo' : 'rolos'}`, M + 38,
+      const metrics = [hasMeasurements ? dimensions : '', hasArea ? area : '', `${rolls} ${rolls === 1 ? 'rolo' : 'rolos'}`].filter(Boolean).join('  /  ');
+      if (detail) fixed(metrics, M + 38,
         y + 7 + measure(name, cardNameWidth, 11, true), cardNameWidth, { size: 8 });
       if (prices) fixed(value, right - 120, y + 11, 108, { align: 'right', color: accentText, size: 11, bold: true });
       y += rowHeight + (compact ? 4 : 6);
